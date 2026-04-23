@@ -1,9 +1,10 @@
 // src/runtime.js
 class TTHComponent {
-    constructor(initialState = {}) {
+    constructor(initialState = {}, bridges = {}) {
         this.element = null;
         this._template = '';
         this.methods = {};
+        this.bridges = bridges;
         const self = this;
 
         // Reaktivität: Proxy triggert Re-Render bei Änderungen
@@ -20,8 +21,8 @@ class TTHComponent {
     }
 
     // Führt Inline-Code (@click) im Kontext der Komponente aus
-    _execute(code) {
-        const context = { ...this.state, ...this.methods };
+    _execute(code, event = null) {
+        const context = { ...this.state, ...this.methods, ...this.bridges, event };
         try {
             const fn = new Function(...Object.keys(context), `with(this) { ${code} }`);
             fn.call(this.state, ...Object.values(context));
@@ -32,10 +33,13 @@ class TTHComponent {
         let html = this._template;
         // Einfache {{ var }} Interpolation
         return html.replace(/\{\{\s*(.*?)\s*\}\}/g, (_, expr) => {
-            const context = { ...this.state };
+            const context = { ...this.state, ...this.bridges };
             try {
                 return new Function(...Object.keys(context), `return ${expr}`).call(this.state, ...Object.values(context));
-            } catch (e) { return ''; }
+            } catch (e) { 
+                console.warn("TTH Render Warning:", e, "Expression:", expr);
+                return ''; 
+            }
         });
     }
 
@@ -49,10 +53,10 @@ class TTHComponent {
         this.element.querySelectorAll('*').forEach(el => {
             Array.from(el.attributes).forEach(attr => {
                 if (attr.name.startsWith('@')) {
-                    const event = attr.name.substring(1);
-                    el.addEventListener(event, (e) => {
-                        e.preventDefault();
-                        this._execute(attr.value);
+                    const eventName = attr.name.substring(1);
+                    el.addEventListener(eventName, (e) => {
+                        // e.preventDefault(); // Sometimes we want default behavior (like input)
+                        this._execute(attr.value, e);
                     });
                 }
             });
@@ -69,31 +73,58 @@ class HoeApp {
     constructor(config) {
         this.target = document.querySelector(config.target);
         this.components = new Map();
+        this.bridges = {};
+        this.activeComponents = [];
     }
     register(name, compClass) { this.components.set(name, compClass); }
-    mount(name) {
+    
+    registerBridge(name, initialState) {
+        const self = this;
+        const reactiveState = new Proxy(initialState, {
+            set(target, key, value) {
+                target[key] = value;
+                self.updateAll();
+                return true;
+            },
+            get(target, key) {
+                return target[key];
+            }
+        });
+        this.bridges[name] = reactiveState;
+    }
+
+    updateAll() {
+        this.activeComponents.forEach(comp => comp.update());
+    }
+
+    mount(name, targetSelector = null) {
         const Comp = this.components.get(name);
-        if (Comp) new Comp().mount(this.target);
+        const target = targetSelector ? document.querySelector(targetSelector) : this.target;
+        if (Comp && target) {
+            const compInstance = new Comp(this.bridges);
+            compInstance.mount(target);
+            this.activeComponents.push(compInstance);
+        }
     }
 }
 
 class Counter extends TTHComponent {
-    constructor() {
-        super({"count":0,"step":1});
-        this._template = `<div class="tth-5edb3d4e">
+    constructor(bridges) {
+        super({"count":0,"step":1}, bridges);
+        this._template = `<div class="hoe-ad441ce7">
     
 
-    <h1 @click="count = 0" class="tth-3d4b3f98">
+    <h1 @click="count = 0" class="hoe-be13fe90">
         
         Hoe-JS @css PoC
     </h1>
     
-    <div class="tth-3c8dfc19">
+    <div class="hoe-1a055ca6">
         
         {{ count }}
     </div>
 
-    <button @click="count += step; log()" class="tth-44fd2c92">
+    <button @click="count += step; log()" class="hoe-07aa498a">
         
         Erhöhen (+{{ step }})
     </button>
@@ -101,14 +132,41 @@ class Counter extends TTHComponent {
         this.methods = { log: function() { console.log("Neuer Stand:", count); } };
     }
 }
+class Display extends TTHComponent {
+    constructor(bridges) {
+        super({}, bridges);
+        this._template = `<div>
+    <h3>Display Component</h3>
+    <p>Bridge Count: {{ CounterBridge.count }}</p>
+</div>`;
+        this.methods = {  };
+    }
+}
+class Source extends TTHComponent {
+    constructor(bridges) {
+        super({}, bridges);
+        this._template = `<div>
+    <h3>Source Component</h3>
+    <button @click="CounterBridge.count++">Increment Bridge</button>
+</div>`;
+        this.methods = {  };
+    }
+}
 (function(){
-// src/main.hoe
+
 
 
 
 const app = new HoeApp({ target: '#app' });
+app.registerBridge('CounterBridge', {
+    count: 0
+});
 
-app.register('Counter', Counter);
-app.mount('Counter');
+
+app.register('Source', Source);
+app.register('Display', Display);
+
+app.mount('Source', '#source');
+app.mount('Display', '#display');
 
 })();

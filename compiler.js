@@ -8,10 +8,11 @@ const DIST_DIR = path.join(__dirname, 'dist');
 if (!fs.existsSync(DIST_DIR)) fs.mkdirSync(DIST_DIR);
 
 let globalStyles = "";
+let cssVariables = {};
 
-function processCSS(html, desBlocks = []) {
-    // Sucht nach <@css>...</@css> ODER <@css />
-    const cssRegex = /<@css>([\s\S]*?)<\/ @css>|<@css\s*\/?>/g;
+function processCSS(html, desBlocks = {}, componentName = "") {
+    // Sucht nach <@css blockName>...</@css> ODER <@css blockName />
+    const cssRegex = /<@css\s*(\w+)?\s*>([\s\S]*?)<\/ @css>|<@css\s*(\w+)?\s*\/?>/g;
     let match;
     let modifiedHtml = html;
 
@@ -21,15 +22,22 @@ function processCSS(html, desBlocks = []) {
     }
 
     // Wir verarbeiten die Blöcke von hinten nach vorne
+    let anonymousIndex = 0;
     for (let i = matches.length - 1; i >= 0; i--) {
         const m = matches[i];
-        let cssContent = (m[1] || "").trim();
+        const blockName = m[1] || m[3];
+        let cssContent = (m[2] || "").trim();
         const fullMatch = m[0];
         const matchIndex = m.index;
 
-        // Falls kein Inline-CSS da ist, nimm den nächsten Block aus der .des
-        if (!cssContent && desBlocks.length > 0) {
-            cssContent = desBlocks[i] || "";
+        // Falls kein Inline-CSS da ist, nimm den Block aus der .des
+        if (!cssContent) {
+            if (blockName) {
+                cssContent = desBlocks[blockName] || "";
+            } else {
+                // Rückfall auf positionale Zuordnung für anonyme Blöcke
+                cssContent = desBlocks[`__anon_${anonymousIndex++}`] || "";
+            }
         }
 
         if (!cssContent) {
@@ -37,7 +45,13 @@ function processCSS(html, desBlocks = []) {
             continue;
         }
 
-        const hash = "tth-" + crypto.createHash('md5').update(cssContent).digest('hex').substring(0, 8);
+        // Variablen ersetzen
+        for (const [varName, varValue] of Object.entries(cssVariables)) {
+            const varRegex = new RegExp(`@${varName}\\b`, 'g');
+            cssContent = cssContent.replace(varRegex, varValue);
+        }
+
+        const hash = "hoe-" + crypto.createHash('md5').update(cssContent + componentName).digest('hex').substring(0, 8);
         
         let baseRules = "";
         let nestedRules = "";
@@ -83,7 +97,6 @@ function processCSS(html, desBlocks = []) {
             if (tagContent.includes('class="')) {
                 updatedTag = tagContent.replace('class="', `class="${hash} `);
             } else {
-                // Wir suchen das Ende des Tags (das erste >) und fügen die Klasse davor ein
                 updatedTag = tagContent.replace(/(\s*\/?>)/, ` class="${hash}"$1`);
             }
             
@@ -101,35 +114,56 @@ function parseTTH(filePath) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const name = path.basename(filePath, '.tth');
     const desPath = filePath.replace('.tth', '.des');
-    let desBlocks = [];
+    let desBlocks = {};
+    let anonymousCount = 0;
 
     if (fs.existsSync(desPath)) {
         const desContent = fs.readFileSync(desPath, 'utf-8');
-        let current = "";
-        let depth = 0;
-        let inBlock = false;
         
-        for (let i = 0; i < desContent.length; i++) {
-            const char = desContent[i];
-            if (!inBlock && desContent.substring(i, i + 4) === "@css") {
-                inBlock = true;
-                i += 3; // Überspringe @css
-                continue;
+        // 1. Variablen aus <@global> extrahieren
+        const globalMatch = desContent.match(/<@global>([\s\S]*?)<\/ @global>/i);
+        if (globalMatch) {
+            const globalInner = globalMatch[1];
+            const defRegex = /@def\s+(\w+)\s+([^;]+);/g;
+            let defMatch;
+            while ((defMatch = defRegex.exec(globalInner)) !== null) {
+                cssVariables[defMatch[1]] = defMatch[2].trim();
             }
-            if (inBlock) {
-                if (char === '{') {
-                    if (depth > 0) current += char;
+        }
+
+        // 2. Blöcke aus <@css> extrahieren
+        const cssBlockMatch = desContent.match(/<@css>([\s\S]*?)<\/ @css>/i);
+        
+        if (cssBlockMatch) {
+            const inner = cssBlockMatch[1];
+            let depth = 0;
+            let currentName = "";
+            let currentBody = "";
+            let inBlock = false;
+            
+            for (let i = 0; i < inner.length; i++) {
+                const char = inner[i];
+                if (char === '{' && depth === 0) {
+                    let before = inner.substring(0, i).trim();
+                    let lastBrace = before.lastIndexOf('}');
+                    currentName = before.substring(lastBrace + 1).trim();
+                    inBlock = true;
                     depth++;
+                } else if (char === '{') {
+                    depth++;
+                    currentBody += char;
                 } else if (char === '}') {
                     depth--;
-                    if (depth > 0) current += char;
-                    else {
-                        desBlocks.push(current.trim());
-                        current = "";
+                    if (depth === 0) {
+                        if (currentName) desBlocks[currentName] = currentBody.trim();
+                        currentBody = "";
+                        currentName = "";
                         inBlock = false;
+                    } else {
+                        currentBody += char;
                     }
-                } else if (depth > 0) {
-                    current += char;
+                } else if (inBlock) {
+                    currentBody += char;
                 }
             }
         }
@@ -157,15 +191,15 @@ function parseTTH(filePath) {
         .replace(/<action.*?>[\s\S]*?<\/action>/g, '')
         .trim();
     
-    template = processCSS(template, desBlocks);
+    template = processCSS(template, desBlocks, name);
 
     const methodStrings = Object.entries(methods)
         .map(([k, v]) => `${k}: function() { ${v} }`).join(',\n        ');
 
     const js = `
 class ${name} extends TTHComponent {
-    constructor() {
-        super(${JSON.stringify(state)});
+    constructor(bridges) {
+        super(${JSON.stringify(state)}, bridges);
         this._template = \`${template}\`;
         this.methods = { ${methodStrings} };
     }
@@ -178,6 +212,25 @@ function build() {
     console.log("--- Hoe-JS Compiler ---");
     
     let bundleJs = fs.readFileSync(path.join(SRC_DIR, 'runtime.js'), 'utf-8').replace(/export /g, '');
+
+    const bridgeDir = path.join(SRC_DIR, 'bridges');
+    let bridgeRegistrations = "";
+    if (fs.existsSync(bridgeDir)) {
+        fs.readdirSync(bridgeDir).forEach(file => {
+            if (file.endsWith('.js')) {
+                const bridgeName = path.basename(file, '.js');
+                console.log(`[Bridge] ${bridgeName}`);
+                let content = fs.readFileSync(path.join(bridgeDir, file), 'utf-8');
+                // Versuche den Export zu finden und in ein Objekt umzuwandeln
+                // Einfache Heuristik: export default { ... }
+                const match = content.match(/export\s+default\s+([\s\S]*)/);
+                if (match) {
+                    const objStr = match[1].trim().replace(/;$/, '');
+                    bridgeRegistrations += `app.registerBridge('${bridgeName}', ${objStr});\n`;
+                }
+            }
+        });
+    }
 
     const compDir = path.join(SRC_DIR, 'components');
     if (fs.existsSync(compDir)) {
@@ -193,6 +246,12 @@ function build() {
     const mainFile = path.join(SRC_DIR, 'main.hoe');
     if (fs.existsSync(mainFile)) {
         let main = fs.readFileSync(mainFile, 'utf-8').replace(/import.*?;/g, ''); 
+        // Wir fügen die Bridge-Registrierungen in das main-Script ein,
+        // nachdem die App-Instanz erstellt wurde.
+        // Das setzt voraus, dass die Variable 'app' heißt.
+        if (bridgeRegistrations) {
+            main = main.replace(/(const\s+app\s+=\s+new\s+HoeApp\(.*?\);)/, `$1\n${bridgeRegistrations}`);
+        }
         bundleJs += `\n(function(){\n${main}\n})();`;
     }
 

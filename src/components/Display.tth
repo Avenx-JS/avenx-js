@@ -1,0 +1,4 @@
+<div>
+    <h3>Display Component</h3>
+    <p>Bridge Count: {{ CounterBridge.count }}</p>
+</div>

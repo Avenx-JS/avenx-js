@@ -5,20 +5,20 @@
 </action>
 
 <div>
-    <@css />
+    <@css container />
 
     <h1 @click="count = 0">
-        <@css />
+        <@css title />
         Hoe-JS @css PoC
     </h1>
     
     <div>
-        <@css />
+        <@css value />
         {{ count }}
     </div>
 
     <button @click="count += step; log()">
-        <@css />
+        <@css button />
         Erhöhen (+{{ step }})
     </button>
 </div>

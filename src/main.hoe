@@ -1,8 +1,11 @@
-// src/main.hoe
 import { HoeApp } from './runtime.js';
-import Counter from './components/Counter.tth';
+import Source from './components/Source.tth';
+import Display from './components/Display.tth';
 
 const app = new HoeApp({ target: '#app' });
 
-app.register('Counter', Counter);
-app.mount('Counter');
+app.register('Source', Source);
+app.register('Display', Display);
+
+app.mount('Source', '#source');
+app.mount('Display', '#display');
