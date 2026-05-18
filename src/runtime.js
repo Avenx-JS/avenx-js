@@ -4,16 +4,22 @@
  * Handles reactivity, rendering, and event binding.
  */
 export class AvenxComponent {
+    #element = null;
+    #template = '';
+    #methods = {};
+    #bridges = {};
+
     /**
      * Creates an instance of AvenxComponent.
      * @param {Object} [initialState={}] - The initial local state of the component.
      * @param {Object} [bridges={}] - Shared reactive states (bridges) accessible to the component.
+     * @param {string} [template=''] - The HTML template for the component.
+     * @param {Object} [methods={}] - Component methods.
      */
-    constructor(initialState = {}, bridges = {}) {
-        this.element = null;
-        this._template = '';
-        this.methods = {};
-        this.bridges = bridges;
+    constructor(initialState = {}, bridges = {}, template = '', methods = {}) {
+        this.#template = template;
+        this.#methods = methods;
+        this.#bridges = bridges;
         const self = this;
 
         // Reaktivität: Proxy triggert Re-Render bei Änderungen
@@ -36,8 +42,8 @@ export class AvenxComponent {
      * @param {Event|null} [event=null] - The event object if triggered by an event.
      * @private
      */
-    _execute(code, event = null) {
-        const context = { ...this.state, ...this.methods, ...this.bridges, event };
+    #execute(code, event = null) {
+        const context = { ...this.state, ...this.#methods, ...this.#bridges, event };
         try {
             const fn = new Function(...Object.keys(context), `with(this) { ${code} }`);
             fn.call(this.state, ...Object.values(context));
@@ -49,10 +55,10 @@ export class AvenxComponent {
      * @returns {string} The rendered HTML string.
      */
     render() {
-        let html = this._template;
+        let html = this.#template;
         // Einfache {{ var }} Interpolation
         return html.replace(/\{\{\s*(.*?)\s*\}\}/g, (_, expr) => {
-            const context = { ...this.state, ...this.bridges };
+            const context = { ...this.state, ...this.#bridges };
             try {
                 return new Function(...Object.keys(context), `return ${expr}`).call(this.state, ...Object.values(context));
             } catch (e) { 
@@ -66,23 +72,23 @@ export class AvenxComponent {
      * Updates the component's DOM element with the rendered template and re-binds events.
      */
     update() {
-        if (!this.element) return;
-        this.element.innerHTML = this.render();
-        this._bindEvents();
+        if (!this.#element) return;
+        this.#element.innerHTML = this.render();
+        this.#bindEvents();
     }
 
     /**
      * Scans the component's DOM for attributes starting with '@' and binds them as event listeners.
      * @private
      */
-    _bindEvents() {
-        this.element.querySelectorAll('*').forEach(el => {
+    #bindEvents() {
+        this.#element.querySelectorAll('*').forEach(el => {
             Array.from(el.attributes).forEach(attr => {
                 if (attr.name.startsWith('@')) {
                     const eventName = attr.name.substring(1);
                     el.addEventListener(eventName, (e) => {
                         // e.preventDefault(); // Sometimes we want default behavior (like input)
-                        this._execute(attr.value, e);
+                        this.#execute(attr.value, e);
                     });
                 }
             });
@@ -94,7 +100,7 @@ export class AvenxComponent {
      * @param {HTMLElement} target - The DOM element where the component should be mounted.
      */
     mount(target) {
-        this.element = target;
+        this.#element = target;
         this.update();
     }
 }
@@ -104,16 +110,18 @@ export class AvenxComponent {
  * Manages component registration, bridges, and application mounting.
  */
 export class AvenxApp {
+    #activeComponents = [];
+    #target = null;
+
     /**
      * Creates an instance of AvenxApp.
      * @param {Object} config - The application configuration.
      * @param {string} config.target - The selector for the main application target element.
      */
     constructor(config) {
-        this.target = document.querySelector(config.target);
+        this.#target = document.querySelector(config.target);
         this.components = new Map();
         this.bridges = {};
-        this.activeComponents = [];
     }
 
     /**
@@ -147,7 +155,7 @@ export class AvenxApp {
      * Triggers an update (re-render) for all active component instances.
      */
     updateAll() {
-        this.activeComponents.forEach(comp => comp.update());
+        this.#activeComponents.forEach(comp => comp.update());
     }
 
     /**
@@ -157,11 +165,11 @@ export class AvenxApp {
      */
     mount(name, targetSelector = null) {
         const Comp = this.components.get(name);
-        const target = targetSelector ? document.querySelector(targetSelector) : this.target;
+        const target = targetSelector ? document.querySelector(targetSelector) : this.#target;
         if (Comp && target) {
             const compInstance = new Comp(this.bridges);
             compInstance.mount(target);
-            this.activeComponents.push(compInstance);
+            this.#activeComponents.push(compInstance);
         }
     }
 }

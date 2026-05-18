@@ -1,7 +1,7 @@
 # local dev files
-issues.md
-tooling.md
-ideas.md
+md/
+
+dev-notes/
 
 # documentation
 docs/

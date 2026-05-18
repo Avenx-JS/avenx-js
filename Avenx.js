@@ -216,9 +216,7 @@ function parseAXT(filePath) {
     const js = `
 class ${name} extends AvenxComponent {
     constructor(bridges) {
-        super(${JSON.stringify(state)}, bridges);
-        this._template = \`${template}\`;
-        this.methods = { ${methodStrings} };
+        super(${JSON.stringify(state)}, bridges, \`${template}\`, { ${methodStrings} });
     }
 }`;
     return { name, js };
