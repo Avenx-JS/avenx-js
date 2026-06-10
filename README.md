@@ -15,7 +15,7 @@ A lightweight, reactive JavaScript framework Proof-of-Concept featuring **Zero-C
 To use Avenx-JS in your project, install it via npm:
 
 ```bash
-npm install avenx-js
+npm install avenx-core
 ```
 
 ## CLI Usage
