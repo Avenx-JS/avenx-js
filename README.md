@@ -1,131 +1,231 @@
-![Alternativtext](https://raw.githubusercontent.com/Avenx-JS/.github/refs/heads/main/media/core-header.jpeg)
+![Avenx Header](https://raw.githubusercontent.com/Avenx-JS/.github/refs/heads/main/media/core-header.jpeg)
 
 # 🚀 Avenx-JS
 
-A lightweight reactive JavaScript framework with a custom compiler, scoped styling, and built-in state management.
-Avenx-JS is an experimental frontend framework designed to simplify UI development by reducing boilerplate and introducing a compiler-driven component system with reactive state, scoped CSS, and CLI tooling.
+**Avenx-JS** is a lightweight, experimental frontend framework designed for simplicity and performance. It features a custom compiler-driven component system, Proxy-based reactivity, scoped CSS, and powerful CLI tooling—all with zero runtime dependencies.
 
 ---
 
 ## ✨ Why Avenx?
 
-Modern frontend stacks often come with:
+Modern frontend development often requires complex build chains and heavy runtime libraries. Avenx explores a different path by providing:
 
-- heavy tooling
-- large dependency trees
-- verbose state management
-- framework lock-in complexity
-
-Avenx explores a different approach:
-
-> Minimal setup. Reactive by default. Compiler-driven components.
+- **⚡ Zero Boilerplate:** Logic, state, and template in a single unified component file.
+- **🔄 Transparent Reactivity:** Automatic UI updates via JavaScript Proxies without manual `setState` or `ref` calls.
+- **🎨 Scoped Styling:** CSS is automatically scoped to your component using hashed class generation.
+- **🛠️ Integrated Tooling:** A built-in CLI handles project scaffolding, component generation, and development servers.
+- **📦 Lightweight Core:** Minimal runtime footprint for fast loading and execution.
 
 ---
 
-## ⚡ Features
+## ⚡ Key Features
 
-### 🔄 Reactivity
+### 🔄 Proxy-based Reactivity
+State management is built directly into the core. Changing a property on the `state` object automatically triggers a re-render of only the affected parts of the DOM.
 
-State is automatically tracked and re-rendered using JavaScript Proxies.
+### 🧩 Declarative Components
+Define your UI using standard HTML with added superpowers. Components support `state`, `computed` properties, and `actions` (methods) defined directly in the `.component.js` file.
 
-### 🧩 Component System
+### 🎨 Intelligent Scoped CSS
+Styles defined in `.component.css` are automatically scoped to that specific component. Use the `<@global>` tag for global variables and the `<@css>` tag for component-specific styles.
 
-Components combine template, logic, and state in a single `.component.js` file.
+### 🌐 Reactive Bridges (Shared State)
+Shared state across multiple components is handled via **Bridges**. These are global reactive objects that any component can subscribe to and update.
 
-### 🎨 Scoped Styling
-
-CSS is automatically scoped using hashed class generation to avoid conflicts.
-
-### 🌐 Global State (Bridges)
-
-Shared reactive state across components via `.bridge.js`.
-
-### 🛠️ CLI Tooling
-
-Built-in CLI for project scaffolding and development workflow.
+### 🛠️ CLI-First Workflow
+Generate components, pages, and bridges with a single command. The built-in dev server provides hot-reloading for a seamless development experience.
 
 ---
 
 ## 🚀 Quick Start
 
+### Installation
+
 ```bash
 npm install avenx-core
+```
 
+### Scaffolding a Project
+
+```bash
+# Initialize project structure
 npx avenx init
-npx avenx g component test
-npx avenx build
+
+# Create a new component
+npx avenx g counter
+
+# Start development server
 npx avenx serve
 ```
-**Your app will run at:**
 
-```text
-http://localhost:3000
-```
+Your app will be running at `http://localhost:3000`.
+
 ---
 
-## 🧠 Example
+## 🧠 Core Concepts & Syntax
 
-**Component**
+### 1. Component Structure
+An Avenx component consists of two files: `<name>.component.js` and `<name>.component.css`.
 
+#### JavaScript (`.component.js`)
 ```html
-<state count="0" />
+<state count="0" title="Counter" />
 
-<h1 @click="count++">
-    Count: {{ count }}
-</h1>
+<computed name="doubleCount" value="count * 2" />
+
+<action name="increment">
+    state.count++;
+</action>
+
+<div class="card">
+    <h1>{{ title }}</h1>
+    <p>Count: {{ count }} (Double: {{ doubleCount }})</p>
+    <button @click="increment()">Increment</button>
+</div>
 ```
 
-That's it - fully reactive UI without additional state libraries.
-
-**Styling**
-
+#### CSS (`.component.css`)
 ```css
 <@global>
-    @def primary-color #ff3e00;
+    @def primary-color #646cff;
+    @def bg-color #242424;
 </@global>
 
 <@css>
-    h1 {
-        color: var(--primary-color);
-        cursor: pointer;
+    .card {
+        padding: 2rem;
+        border-radius: 8px;
+        background: var(--bg-color);
     }
 
-    h1:hover {
-        opacity: 0.8;
+    button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.6em 1.2em;
+        cursor: pointer;
     }
 </@css>
 ```
 
-**Shared State (Bridges)**
+### 2. Reactive Bridges (Shared State)
+Bridges allow you to share reactive state between components without complex prop drilling. They are defined in the `src/global/` directory.
 
+#### Creation
+```bash
+npx avenx g bridge auth
+```
+
+#### Definition (`src/global/auth.bridge.js`)
 ```javascript
 export default {
     isLoggedIn: false,
-    username: ''
+    user: {
+        name: 'Guest',
+        role: 'visitor'
+    }
 }
 ```
 
-**Usage:**
+#### Usage in Component
+Bridges are automatically available in your component templates and actions.
 ```html
-<p>User: {{ AuthBridge.username }}</p>
+<p>Welcome, {{ AuthBridge.user.name }}</p>
+
+<action name="login">
+    AuthBridge.isLoggedIn = true;
+    AuthBridge.user.name = 'John Doe';
+</action>
 ```
 
 ---
 
-## 📦 Installation
+### 3. Pages & Routing
+Pages are special components designed for top-level routing. They reside in `src/pages/`.
 
+#### Creation
 ```bash
-npm install avenx-core
+npx avenx g page profile
+```
+
+#### Definition (`src/pages/profile.page.js`)
+Pages use the same syntax as components (`<state>`, `<computed>`, `<action>`).
+```html
+<state userId="123" />
+
+<div class="profile-page">
+    <h1>User Profile</h1>
+    <p>Viewing ID: {{ userId }}</p>
+</div>
+```
+
+#### Routing (`src/main.app.js`)
+Pages are registered in the main application entry point and handled by the built-in router.
+```javascript
+import { AvenxApp } from 'avenx-js/runtime';
+import Home from './pages/home.page.js';
+import Profile from './pages/profile.page.js';
+
+const app = new AvenxApp({ target: '#app' });
+
+app.registerPage('Home', Home);
+app.registerPage('Profile', Profile);
+
+app.mount('Home'); // Initial page
 ```
 
 ---
 
-## 📁 Core Concept
+### 4. Nesting Components
+Components can be nested by using their name in PascalCase:
+```html
+<Navbar />
+<main>
+    <Sidebar />
+    <Content />
+</main>
+```
 
-Avenx-JS is built around 3 core ideas:
-- **Components as unified files**
-- **Reactivity via Proxy-based state tracking**
-- **Compiler-driven DOM updates**
+### 5. Events
+Use the `@` prefix to bind event listeners:
+```html
+<button @click="count++">Inline Action</button>
+<input @input="state.text = event.target.value" />
+```
+
+---
+
+## 📁 Project Structure
+
+A typical Avenx project looks like this:
+
+```text
+my-avenx-app/
+├── src/
+│   ├── components/       # UI Components
+│   │   └── counter/
+│   │       ├── counter.component.js
+│   │       └── counter.component.css
+│   ├── pages/            # Application Pages (Routed)
+│   ├── global/           # Shared Bridges & Styles
+│   └── main.app.js       # App entry point & registration
+├── dist/                 # Compiled bundle (generated)
+├── index.html            # Main entry HTML
+└── package.json
+```
+
+---
+
+## 🛠️ CLI Reference
+
+| Command | Description |
+| :--- | :--- |
+| `avenx init` | Scaffolds a new project structure. |
+| `avenx g <name>` | Generates a new component. |
+| `avenx g p <name>` | Generates a new page for routing. |
+| `avenx g bridge <name>` | Generates a new shared reactive bridge. |
+| `avenx build` | Compiles the project into `dist/`. |
+| `avenx serve [port]` | Starts the dev server with hot-reload (default: 3000). |
 
 ---
 
@@ -137,10 +237,12 @@ This project is currently a proof-of-concept framework and actively evolving.
 
 ## 📄 License
 
-MIT
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
 ## ⭐ Support
 
-If you find Avenx-JS useful, consider leaving a star on GitHub - it helps the project grow.
+If you like what we're building, please give us a ⭐ on [GitHub](https://github.com/avenx-js/avenx-js)! 
+
+Built with ❤️ by the Avenx Team.
