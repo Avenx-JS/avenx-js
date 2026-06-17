@@ -22,6 +22,7 @@
     "test": "node test/cli.test.js && node test/unit.test.js",
     "test:coverage": "c8 --reporter=text --reporter=html npm test",
     "bench": "node benches/run.js",
+    "bench:report": "node benches/run.js --json > bench-results/results.json",
     "docs": "jsdoc -c jsdoc.json"
   },
   "keywords": [

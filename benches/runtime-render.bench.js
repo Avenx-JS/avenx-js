@@ -41,12 +41,12 @@ function benchmark() {
         <h2>{{ name }}</h2>
         <p>Age: {{ age }}</p>
         <p>Status: {{ age >= 18 ? 'Adult' : 'Minor' }}</p>
-        <p>Double Age: {{ doubleAge }}</p>
+        <p>Double Age: {{ age * 2 }}</p>
     </div>
     `;
 
     const initialState = { name: 'John Doe', age: 25 };
-    const computed = { doubleAge: 'age * 2' };
+    const computed = {};
     
     const component = new AvenxComponent(initialState, computed, {}, template, {});
 
