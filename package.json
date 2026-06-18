@@ -1,6 +1,6 @@
 {
   "name": "avenx-core",
-  "version": "0.4.1",
+  "version": "0.4.3",
   "description": "A lightweight reactive framework with scoped CSS and custom components.",
   "main": "lib/compiler.js",
   "exports": {

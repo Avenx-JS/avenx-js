@@ -64,10 +64,63 @@ function testListRenderingCompiler() {
     console.log('  ✅ List Rendering Compiler tests passed!');
 }
 
+function testLifecycleHooks() {
+    console.log('🧪 Testing Lifecycle Hooks...');
+    // Since we are in Node environment without a real DOM, 
+    // we'll mock the necessary parts to test hook triggering.
+    
+    const mockElement = { 
+        innerHTML: '',
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        attributes: [],
+        hasAttribute: () => false,
+        setAttribute: () => {},
+        removeAttribute: () => {},
+        appendChild: () => {},
+        removeChild: () => {},
+        replaceWith: () => {},
+        childNodes: []
+    };
+
+    // Mock DOMParser for DomPatcher
+    global.DOMParser = class {
+        parseFromString() {
+            return { body: mockElement };
+        }
+    };
+    global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+
+    let mountCalled = false;
+    let updateCalled = false;
+    let unmountCalled = false;
+
+    const { AvenxComponent } = require('../lib/core/runtime/AvenxComponent');
+    
+    const comp = new AvenxComponent({}, {}, {}, '<div></div>', {
+        onMount: () => { mountCalled = true; },
+        onUpdate: () => { updateCalled = true; },
+        onUnmount: () => { unmountCalled = true; }
+    });
+
+    comp.__setMountTarget(mockElement);
+    comp.__afterMount();
+    assert.strictEqual(mountCalled, true, 'onMount should be called');
+
+    comp.update();
+    assert.strictEqual(updateCalled, true, 'onUpdate should be called');
+
+    comp.unmount();
+    assert.strictEqual(unmountCalled, true, 'onUnmount should be called');
+
+    console.log('  ✅ Lifecycle Hooks tests passed!');
+}
+
 try {
     testStyleProcessor();
     testComponentParser();
     testListRenderingCompiler();
+    testLifecycleHooks();
     console.log('✅ All unit tests passed!');
 } catch (error) {
     console.error('❌ Unit tests failed!');
