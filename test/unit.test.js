@@ -42,9 +42,32 @@ function testComponentParser() {
     console.log('  ✅ ComponentParser tests passed!');
 }
 
+function testListRenderingCompiler() {
+    console.log('🧪 Testing List Rendering Compiler...');
+    const sp = new StyleProcessor();
+    const cp = new ComponentParser(sp);
+    
+    const content = `
+    <ul>
+        <@for item in list key="item.id">
+            <li>{{ item.name }}</li>
+        </@for>
+    </ul>
+    `;
+    
+    const template = cp.extractTemplate(content, {}, 'TestComp');
+    assert.ok(template.includes('template data-ax-for="list"'));
+    assert.ok(template.includes('data-ax-as="item"'));
+    assert.ok(template.includes('data-ax-key="item.id"'));
+    assert.ok(template.includes('<li>{% item.name %}</li>'));
+    
+    console.log('  ✅ List Rendering Compiler tests passed!');
+}
+
 try {
     testStyleProcessor();
     testComponentParser();
+    testListRenderingCompiler();
     console.log('✅ All unit tests passed!');
 } catch (error) {
     console.error('❌ Unit tests failed!');
