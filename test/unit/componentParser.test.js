@@ -37,6 +37,33 @@ try {
     assert.ok(template.includes('<li>{% item.name %}</li>'));
     
     console.log('  ✅ List Rendering Compiler tests passed!');
+
+    console.log('🧪 Testing Style block matching with/without spaces...');
+    const cssNoSpaces = `
+    <@global>
+        @def primary #ff0000;
+    </@global>
+    <@css>
+        title { color: @primary; }
+    </@css>
+    `;
+    const blocks1 = {};
+    cp.extractStylesAndVars(cssNoSpaces, blocks1);
+    assert.strictEqual(blocks1['title'], 'color: @primary;');
+
+    const cssWithSpaces = `
+    <@global>
+        @def secondary #00ff00;
+    </ @global>
+    <@css>
+        container { padding: 10px; }
+    </ @css>
+    `;
+    const blocks2 = {};
+    cp.extractStylesAndVars(cssWithSpaces, blocks2);
+    assert.strictEqual(blocks2['container'], 'padding: 10px;');
+
+    console.log('  ✅ Style block matching tests passed!');
 } catch (error) {
     console.error('❌ ComponentParser tests failed!');
     console.error(error);
