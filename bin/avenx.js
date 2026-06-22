@@ -278,10 +278,27 @@ class AvenxCLI {
      * Starts a local development server and watches for changes.
      */
     serveProject(port) {
+        this.liveReloadClients = [];
         this.buildProject();
         this.watchProject();
 
         const server = http.createServer((req, res) => {
+            if (req.url === '/__avenx_live_reload__') {
+                res.writeHead(200, {
+                    'Content-Type': 'text/event-stream',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive'
+                });
+                res.write('data: connected\n\n');
+                
+                this.liveReloadClients.push(res);
+                
+                req.on('close', () => {
+                    this.liveReloadClients = this.liveReloadClients.filter(client => client !== res);
+                });
+                return;
+            }
+
             let filePath = path.join(this.baseDir, req.url === '/' ? 'index.html' : req.url);
             
             if (!fs.existsSync(filePath) && !path.extname(filePath)) {
@@ -312,8 +329,30 @@ class AvenxCLI {
                         res.end('Server error: ' + error.code);
                     }
                 } else {
+                    let responseContent = content;
+                    if (contentType === 'text/html') {
+                        const script = `
+<script>
+    if ('EventSource' in window) {
+        const source = new EventSource('/__avenx_live_reload__');
+        source.onmessage = (e) => {
+            if (e.data === 'reload') {
+                window.location.reload();
+            }
+        };
+    }
+</script>
+`;
+                        const contentStr = content.toString('utf-8');
+                        if (contentStr.includes('</body>')) {
+                            responseContent = contentStr.replace('</body>', `${script}</body>`);
+                        } else {
+                            responseContent = contentStr + script;
+                        }
+                    }
+
                     res.writeHead(200, { 'Content-Type': contentType });
-                    res.end(content, 'utf-8');
+                    res.end(responseContent, 'utf-8');
                 }
             });
         });
@@ -341,6 +380,12 @@ class AvenxCLI {
                 timeout = setTimeout(() => {
                     console.log(`\n📄 Change detected: ${filename}. Rebuilding...`);
                     this.buildProject();
+
+                    if (this.liveReloadClients) {
+                        this.liveReloadClients.forEach(client => {
+                            client.write('data: reload\n\n');
+                        });
+                    }
                 }, 100);
             }
         });
