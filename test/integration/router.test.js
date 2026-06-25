@@ -98,6 +98,7 @@ const { AvenxPage } = require('../../lib/core/runtime/AvenxPage');
 
         app.initRouter({
             '#/': 'TestPage',
+            '#/items*': 'TestPage',
             '#/user/:userId': {
                 page: 'TestPage',
                 guards: [MockGuard]
@@ -206,7 +207,20 @@ const { AvenxPage } = require('../../lib/core/runtime/AvenxPage');
             { ref: 'test' }
         );
 
-        // 7. Duplicate page registration should warn
+        // 7. Literal asterisk route should match correctly
+        mountedPageName = null;
+        mountedParams = null;
+
+        window.location.hash = '#/items*';
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        assert.strictEqual(
+            mountedPageName,
+            'TestPage',
+            'Route containing a literal * should match correctly'
+        );
+
+        // 8. Duplicate page registration should warn
         const originalWarn = console.warn;
         let warningMessage = '';
 
