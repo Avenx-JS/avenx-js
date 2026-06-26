@@ -220,7 +220,27 @@ const { AvenxPage } = require('../../lib/core/runtime/AvenxPage');
             'Route containing a literal * should match correctly'
         );
 
-        // 8. Duplicate page registration should warn
+        // Reset tracking
+        mountedPageName = null;
+        mountedParams = null;
+
+        // 8. Malformed URI parameters should not crash routing
+        window.location.hash = '#/user/%E0%A4%A';
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        assert.strictEqual(
+            mountedPageName,
+            'TestPage',
+            'Router should still mount the page when URI decoding fails'
+        );
+
+        assert.strictEqual(
+            mountedParams.userId,
+            '%E0%A4%A',
+            'Router should fall back to the raw parameter value'
+        );
+
+        // 9. Duplicate page registration should warn
         const originalWarn = console.warn;
         let warningMessage = '';
 
