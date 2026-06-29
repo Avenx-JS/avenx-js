@@ -79,6 +79,29 @@ try {
     assert.strictEqual(methods.dec, '// decrement count\n        count--;');
     assert.strictEqual(methods.format, 'const x = `hello\n        world`;\n        return x;');
 
+    // 5. Test action/method parsing with additional attributes, boolean flags, and alternate ordering
+    const contentMethodsComplex = `
+    <action async name="fetchData" defer>
+        const res = await fetch('/api');
+        state.data = await res.json();
+    </action>
+    <action data-custom="value" name='postData' async>
+        console.log('posting');
+    </action>
+    <action
+        name="multiLineAttrs"
+        async
+        custom-attr="hello"
+    >
+        return 42;
+    </action>
+    `;
+
+    const complexMethods = ep.parseMethods(contentMethodsComplex);
+    assert.strictEqual(complexMethods.fetchData, "const res = await fetch('/api');\n        state.data = await res.json();");
+    assert.strictEqual(complexMethods.postData, "console.log('posting');");
+    assert.strictEqual(complexMethods.multiLineAttrs, "return 42;");
+
     console.log('  ✅ ExpressionParser upgrades tests passed!');
 } catch (error) {
     console.error('❌ ExpressionParser upgrades tests failed!');
