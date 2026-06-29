@@ -78,6 +78,10 @@ class AvenxCLI {
             case 'b':
                 this.buildProject();
                 break;
+            case 'check':
+            case 'lint':
+                this.checkProject(args);
+                break;
             case 'serve':
                 this.serveProject(args[0] || process.env.PORT || 3000);
                 break;
@@ -352,6 +356,36 @@ class AvenxCLI {
         new AvenxCompiler().build();
     }
 
+    checkProject(args = []) {
+        const originalWarn = console.warn;
+        let warningCount = 0;
+
+        console.warn = (...messages) => {
+            warningCount++;
+            originalWarn(...messages);
+        };
+
+        const compiler = new AvenxCompiler();
+
+        compiler.processComponents();
+        compiler.processPages();
+
+        console.warn = originalWarn;
+
+        if (warningCount > 0) {
+            console.error(
+                `\nFound ${warningCount} validation warning(s).`
+            );
+            process.exit(1);
+        }
+
+        console.log(
+            '✓ No template validation issues found.'
+        );
+
+        process.exit(0);
+    }
+
     /**
      * Starts a local development server and watches for changes.
      */
@@ -499,8 +533,8 @@ class AvenxCLI {
     /**
      * Prints the help message with available commands to the console.
      */
-    printHelp() {
-        console.log(`
+printHelp() {
+    console.log(`
 Avenx-JS CLI
 Usage: avenx <command> [type] [name]
 
@@ -511,11 +545,15 @@ Commands:
   generate bridge <name>    Generate a new shared reactive bridge
   generate guard <name>     Generate a new route guard
   build (b)                 Build the project into dist/bundle.js
+  check (lint)              Validate templates without building
   serve [port]              Start dev server with hot-reload (default: 3000)
   help                      Show this help message
-        `);
-    }
-}
+    `);
+  }
+
+}  
+
+
 
 const cli = new AvenxCLI();
 cli.run(command, args);
