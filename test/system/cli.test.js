@@ -73,6 +73,17 @@ function runTest() {
         const defaultBoxJs = fs.readFileSync(path.join(TEST_DIR, 'src/components/default-box/default-box.component.js'), 'utf-8');
         assert.ok(defaultBoxJs.includes('DefaultBox Component'), 'Should contain default title');
 
+        console.log('🧪 Testing avenx generate component with camelCase name...');
+        execSync(`node ${BIN_PATH} generate component UserProfile`, { cwd: TEST_DIR });
+        const userProfileJs = fs.readFileSync(path.join(TEST_DIR, 'src/components/user-profile/user-profile.component.js'), 'utf-8');
+        assert.ok(userProfileJs.includes('UserProfile Component'), 'Should replace template name with camelCase preserved');
+
+        // Run build to verify compiling works and produces the correct class name
+        execSync(`node ${BIN_PATH} build`, { cwd: TEST_DIR });
+        const newBundleContent = fs.readFileSync(path.join(TEST_DIR, 'dist/bundle.js'), 'utf-8');
+        assert.ok(newBundleContent.includes('class UserProfile extends AvenxComponent'), 'Compiled bundle should contain correct class name for camelCase component');
+
+
         console.log('🧪 Testing avenx generate component with custom project-level templates...');
         // Create local templates folder
         const localTemplatesDir = path.join(TEST_DIR, '.avenxtemplates');

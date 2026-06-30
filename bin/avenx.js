@@ -9,6 +9,27 @@ const AvenxCompiler = require('../lib/compiler');
 const [, , command, ...args] = process.argv;
 
 /**
+ * Helper to parse input names into PascalCase and kebab-case.
+ * Supports camelCase, kebab-case, snake_case, and PascalCase.
+ * @param {string} inputName - The input name from CLI.
+ * @returns {{capitalizedName: string, folderFileName: string}}
+ */
+function parseName(inputName) {
+    let processedName = inputName;
+    if (inputName === inputName.toUpperCase() && inputName !== inputName.toLowerCase()) {
+        processedName = inputName.toLowerCase();
+    }
+    const parts = processedName.split(/(?<=[a-z0-9])(?=[A-Z])|[-_]/).filter(Boolean);
+    const capitalizedName = parts
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    const folderFileName = parts
+        .map(part => part.toLowerCase())
+        .join('-');
+    return { capitalizedName, folderFileName };
+}
+
+/**
  * Avenx CLI - Command Line Interface for Avenx-JS.
  */
 class AvenxCLI {
@@ -155,11 +176,8 @@ class AvenxCLI {
             return;
         }
 
-        const lowerName = name.toLowerCase();
-        const capitalizedName = lowerName
-            .split(/[-_]/)
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join('') + "Bridge";
+        const { capitalizedName: baseName, folderFileName: lowerName } = parseName(name);
+        const capitalizedName = baseName + "Bridge";
 
         const globalDir = path.join(this.baseDir, 'src/global');
         if (!fs.existsSync(globalDir)) {
@@ -193,11 +211,8 @@ class AvenxCLI {
             return;
         }
 
-        const lowerName = name.toLowerCase();
-        const capitalizedName = lowerName
-            .split(/[-_]/)
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join('') + "Guard";
+        const { capitalizedName: baseName, folderFileName: lowerName } = parseName(name);
+        const capitalizedName = baseName + "Guard";
 
         const guardDir = path.join(this.baseDir, 'src/guards');
         if (!fs.existsSync(guardDir)) {
@@ -231,11 +246,7 @@ class AvenxCLI {
             return;
         }
 
-        const lowerName = name.toLowerCase();
-        const capitalizedName = lowerName
-            .split(/[-_]/)
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join('');
+        const { capitalizedName, folderFileName: lowerName } = parseName(name);
 
         const pageDir = path.join(this.baseDir, 'src/pages');
         if (!fs.existsSync(pageDir)) {
@@ -269,11 +280,7 @@ class AvenxCLI {
             return;
         }
 
-        const lowerName = name.toLowerCase();
-        const capitalizedName = lowerName
-            .split(/[-_]/)
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join('');
+        const { capitalizedName, folderFileName: lowerName } = parseName(name);
 
         const compDir = path.join(this.baseDir, 'src/components', lowerName);
 
