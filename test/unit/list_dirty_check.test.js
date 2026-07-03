@@ -313,7 +313,7 @@ global.DOMParser = class {
     };
 
     const mockRenderer = {
-      render(template, evalFn) {
+      render() {
         renderCount++;
         return '<li>item</li>';
       },
@@ -334,7 +334,7 @@ global.DOMParser = class {
     // 1. Initial render with 3 items
     const list1 = ['a', 'b', 'c'];
     const scope1 = { items: list1 };
-    
+
     listManager.process(parentEl, scope1, {});
     assert.strictEqual(renderCount, 3, 'Should render 3 times initially');
 

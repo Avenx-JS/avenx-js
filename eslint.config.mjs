@@ -6,11 +6,13 @@ export default [
   jsdoc.configs['flat/recommended'],
   {
     ignores: [
-      "node_modules/",
-      "dist/",
+      "**/node_modules/",
+      "**/dist/",
       "docs/",
+      "dev-docs/",
       "coverage/",
-      "bench-results/"
+      "bench-results/",
+      "**/*.component.js"
     ]
   },
   {
