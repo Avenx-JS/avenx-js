@@ -99,11 +99,7 @@ class AvenxCLI {
         this.checkProject(args);
         break;
       case 'serve':
-        this.serveProject(
-          args[0] ||
-          process.env.PORT ||
-          this.config.server.port
-        );
+        this.serveProject(args[0] || process.env.PORT || this.config.server.port);
         break;
       case 'help':
       default:
@@ -123,7 +119,7 @@ class AvenxCLI {
       `${this.config.srcDir}/global`,
       `${this.config.srcDir}/guards`,
       this.config.distDir,
-      '.vscode'
+      '.vscode',
     ];
 
     dirs.forEach((dir) => {
@@ -169,10 +165,7 @@ class AvenxCLI {
     const gitignorePath = path.join(this.baseDir, '.gitignore');
 
     if (!fs.existsSync(gitignorePath)) {
-      fs.writeFileSync(
-        gitignorePath,
-        'node_modules/\ndist/\n.DS_Store\n',
-      );
+      fs.writeFileSync(gitignorePath, 'node_modules/\ndist/\n.DS_Store\n');
       console.log('  Created: .gitignore');
     }
     console.log('✅ Project initialized successfully!');

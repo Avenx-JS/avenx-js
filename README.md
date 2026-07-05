@@ -148,10 +148,7 @@ Bridges are automatically available in your component templates and actions.
 ```html
 <p>Welcome, {{ AuthBridge.user.name }}</p>
 
-<action name="login">
-  AuthBridge.isLoggedIn = true;
-  AuthBridge.user.name = 'John Doe';
-</action>
+<action name="login"> AuthBridge.isLoggedIn = true; AuthBridge.user.name = 'John Doe'; </action>
 ```
 
 ---
@@ -215,8 +212,7 @@ Components can be nested by using their name in PascalCase. Use `<slot />` tags 
 Use the `@` prefix to bind event listeners:
 
 ```html
-<button @click="count++">Inline Action</button>
-<input @input="state.text = event.target.value" />
+<button @click="count++">Inline Action</button> <input @input="state.text = event.target.value" />
 ```
 
 ---
@@ -244,16 +240,16 @@ my-avenx-app/
 
 ## 🛠️ CLI Reference
 
-| Command                 | Description                                            |
-| :---------------------- | :----------------------------------------------------- |
-| `avenx init`            | Scaffolds a new project structure.                     |
-| `avenx g <name>`        | Generates a new component.                             |
-| `avenx g p <name>`      | Generates a new page for routing.                      |
-| `avenx g bridge <name>` | Generates a new shared reactive bridge.                |
-| `avenx g guard <name>`  | Generates a new route guard.                           |
-| `avenx build`           | Compiles the project into `dist/`.                     |
-| `avenx check` (or `lint`)| Validates component templates without building.       |
-| `avenx serve [port]`    | Starts the dev server with hot-reload (default: 3000). |
+| Command                   | Description                                            |
+| :------------------------ | :----------------------------------------------------- |
+| `avenx init`              | Scaffolds a new project structure.                     |
+| `avenx g <name>`          | Generates a new component.                             |
+| `avenx g p <name>`        | Generates a new page for routing.                      |
+| `avenx g bridge <name>`   | Generates a new shared reactive bridge.                |
+| `avenx g guard <name>`    | Generates a new route guard.                           |
+| `avenx build`             | Compiles the project into `dist/`.                     |
+| `avenx check` (or `lint`) | Validates component templates without building.        |
+| `avenx serve [port]`      | Starts the dev server with hot-reload (default: 3000). |
 
 ---
 

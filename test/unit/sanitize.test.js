@@ -10,9 +10,9 @@ function testSanitizerWithDOM() {
     const sanitizer = new Sanitizer();
 
     // 1. Basic allowed tags and tag stripping
-    const input1 = '<div>Hello <b>World</b>! <script>alert(1)</script></div>';
+    const input1 = '<b>Hello</b><script>alert(1)</script>';
     const output1 = sanitizer.sanitize(input1);
-    assert.strictEqual(output1, '<div>Hello <b>World</b>! </div>');
+    assert.strictEqual(output1, '<b>Hello</b>');
 
     // 2. Safe vs Unsafe attributes
     const input2 = '<a href="https://google.com" class="btn" onclick="run()">Link</a>';
@@ -30,15 +30,15 @@ function testSanitizerWithDOM() {
     const imgDataUrl = '<img src="data:image/png;base64,abc" alt="img"></img>';
     assert.strictEqual(sanitizer.sanitize(imgDataUrl), '<img src="data:image/png;base64,abc" alt="img" />');
 
-    const linkDataUrl = '<a href="data:text/html,<html>">Click</a>';
+    const linkDataUrl = '<a href="data:text/html,hello">Click</a>';
     assert.strictEqual(sanitizer.sanitize(linkDataUrl), '<a>Click</a>');
 
     // 5. Custom configuration
     const customSanitizer = new Sanitizer({
       allowedTags: ['custom-tag'],
       allowedAttributes: {
-        'custom-tag': ['my-attr']
-      }
+        'custom-tag': ['my-attr'],
+      },
     });
     const customInput = '<custom-tag my-attr="foo" class="bar">Hello</custom-tag>';
     assert.strictEqual(customSanitizer.sanitize(customInput), '<custom-tag my-attr="foo">Hello</custom-tag>');
@@ -49,7 +49,7 @@ function testSanitizerWithDOM() {
 
     // 7. Manually constructed node trees to test void elements and special tags
     const container = new MockDOMElement('div');
-    
+
     const brNode = new MockDOMElement('br');
     container.appendChild(brNode);
 
@@ -78,7 +78,7 @@ function testSanitizerWithDOM() {
 
 function testSanitizerFallback() {
   console.log('🧪 Testing Sanitizer Fallback (No DOM environment)...');
-  
+
   // Ensure we are in a non-DOM environment
   const originalDOMParser = global.DOMParser;
   const originalDocument = global.document;

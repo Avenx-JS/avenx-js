@@ -63,6 +63,7 @@ Components can receive child HTML blocks using `<slot>` elements. Both default a
   <p>This content goes directly into the default slot!</p>
 </Card>
 ```
+
 ## 5. SVG Support
 
 Avenx-JS natively supports rendering SVG elements inside templates. During template cloning and patching, the framework automatically preserves the correct SVG namespace (`http://www.w3.org/2000/svg`), ensuring that SVG graphics render correctly in the browser.
@@ -73,25 +74,10 @@ This includes nested SVG elements such as `<rect>`, `<circle>`, `<path>`, and ot
 
 ```html
 <svg width="200" height="200" viewBox="0 0 200 200">
-  <rect
-    x="20"
-    y="20"
-    width="160"
-    height="160"
-    rx="12"
-    fill="#4F46E5"
-  />
+  <rect x="20" y="20" width="160" height="160" rx="12" fill="#4F46E5" />
 
-  <circle
-    cx="100"
-    cy="100"
-    r="50"
-    fill="#22C55E"
-  />
+  <circle cx="100" cy="100" r="50" fill="#22C55E" />
 
-  <path
-    d="M50 150 L100 50 L150 150 Z"
-    fill="#FACC15"
-  />
+  <path d="M50 150 L100 50 L150 150 Z" fill="#FACC15" />
 </svg>
 ```
