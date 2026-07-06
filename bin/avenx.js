@@ -6,6 +6,7 @@ const http = require('http');
 const { exec } = require('child_process');
 const AvenxCompiler = require('../lib/compiler');
 const loadConfig = require('../lib/config');
+const packageJson = require("../package.json");
 
 const [, , command, ...args] = process.argv;
 
@@ -564,5 +565,12 @@ Commands:
   }
 }
 
+if(command === "-v" || command === "--version"){
+  console.log("Avenx-JS v" + packageJson.version);
+  process.exit(0);
+}
+else{  
 const cli = new AvenxCLI();
 cli.run(command, args);
+}
+
