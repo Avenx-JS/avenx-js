@@ -71,11 +71,11 @@ before the new page is mounted.
 
 Pages use the same lifecycle hooks as components:
 
-| Hook          | When it runs                                                                 |
-| ------------- | ---------------------------------------------------------------------------- |
-| `onMount()`   | After the page is first mounted into the application target.                 |
+| Hook          | When it runs                                                                  |
+| ------------- | ----------------------------------------------------------------------------- |
+| `onMount()`   | After the page is first mounted into the application target.                  |
 | `onUpdate()`  | After page state changes, including route parameter updates on a reused page. |
-| `onUnmount()` | Before the page is removed, including cleanup of child components.           |
+| `onUnmount()` | Before the page is removed, including cleanup of child components.            |
 
 `AvenxPage.update()` first updates the page itself and then mounts or updates
 child components found in the rendered template. `AvenxPage.unmount()` unmounts
