@@ -30,6 +30,9 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Install Terser for build script
+        run: npm install -g terser
+
       - name: Install dependencies (PR)
         run: npm ci
 
@@ -92,3 +95,6 @@ jobs:
         run: |
           echo "❌ Bundle size check failed because the total bundle size exceeded the configured threshold."
           exit 1
+        
+        env:
+          NODE_PATH: /usr/local/lib/node_modules
