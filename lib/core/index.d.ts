@@ -404,3 +404,40 @@ export class Sanitizer {
     sanitize(html: string): string;
 }
 
+export interface AvenxLoggerOptions {
+    level?: string;
+    silent?: boolean;
+    formatter?: (level: string, args: any[]) => any[];
+    transports?: Array<any | ((level: string, formattedArgs: any[], rawArgs: any[]) => void)>;
+}
+
+export class AvenxLogger {
+    config: {
+        level: string;
+        silent: boolean;
+        formatter: (level: string, args: any[]) => any[];
+        transports: any[];
+    };
+    constructor(config?: AvenxLoggerOptions);
+    configure(config: AvenxLoggerOptions): void;
+    shouldLog(level: string): boolean;
+    write(level: string, ...args: any[]): void;
+    trace(...args: any[]): void;
+    debug(...args: any[]): void;
+    info(...args: any[]): void;
+    log(...args: any[]): void;
+    warn(...args: any[]): void;
+    error(...args: any[]): void;
+    fatal(...args: any[]): void;
+}
+
+export const logger: AvenxLogger;
+
+export const LogLevels: Record<string, number>;
+
+export function defaultFormatter(level: string, args: any[]): any[];
+
+export const consoleTransport: {
+    log(level: string, formattedArgs: any[]): void;
+};
+
