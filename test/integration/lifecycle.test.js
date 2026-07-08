@@ -2,56 +2,65 @@ const assert = require('assert');
 const { AvenxComponent } = require('../../lib/core/runtime/AvenxComponent');
 
 try {
-    console.log('🧪 Testing Lifecycle Hooks...');
-    // Since we are in Node environment without a real DOM, 
-    // we'll mock the necessary parts to test hook triggering.
-    
-    const mockElement = { 
-        innerHTML: '',
-        querySelector: () => null,
-        querySelectorAll: () => [],
-        attributes: [],
-        hasAttribute: () => false,
-        setAttribute: () => {},
-        removeAttribute: () => {},
-        appendChild: () => {},
-        removeChild: () => {},
-        replaceWith: () => {},
-        dispatchEvent: () => {},
-        childNodes: []
-    };
+  console.log('🧪 Testing Lifecycle Hooks...');
+  // Since we are in Node environment without a real DOM,
+  // we'll mock the necessary parts to test hook triggering.
 
-    // Mock DOMParser for DomPatcher
-    global.DOMParser = class {
-        parseFromString() {
-            return { body: mockElement };
-        }
-    };
-    global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+  const mockElement = {
+    innerHTML: '',
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    attributes: [],
+    hasAttribute: () => false,
+    setAttribute: () => {},
+    removeAttribute: () => {},
+    appendChild: () => {},
+    removeChild: () => {},
+    replaceWith: () => {},
+    dispatchEvent: () => {},
+    childNodes: [],
+  };
 
-    let mountCalled = false;
-    let updateCalled = false;
-    let unmountCalled = false;
+  // Mock DOMParser for DomPatcher
+  global.DOMParser = class {
+    /**
+     *
+     */
+    parseFromString() {
+      return { body: mockElement };
+    }
+  };
+  global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
 
-    const comp = new AvenxComponent({}, {}, {}, '<div></div>', {
-        onMount: () => { mountCalled = true; },
-        onUpdate: () => { updateCalled = true; },
-        onUnmount: () => { unmountCalled = true; }
-    });
+  let mountCalled = false;
+  let updateCalled = false;
+  let unmountCalled = false;
 
-    comp.__setMountTarget(mockElement);
-    comp.__afterMount();
-    assert.strictEqual(mountCalled, true, 'onMount should be called');
+  const comp = new AvenxComponent({}, {}, {}, '<div></div>', {
+    onMount: () => {
+      mountCalled = true;
+    },
+    onUpdate: () => {
+      updateCalled = true;
+    },
+    onUnmount: () => {
+      unmountCalled = true;
+    },
+  });
 
-    comp.update();
-    assert.strictEqual(updateCalled, true, 'onUpdate should be called');
+  comp.__setMountTarget(mockElement);
+  comp.__afterMount();
+  assert.strictEqual(mountCalled, true, 'onMount should be called');
 
-    comp.unmount();
-    assert.strictEqual(unmountCalled, true, 'onUnmount should be called');
+  comp.update();
+  assert.strictEqual(updateCalled, true, 'onUpdate should be called');
 
-    console.log('  ✅ Lifecycle Hooks tests passed!');
+  comp.unmount();
+  assert.strictEqual(unmountCalled, true, 'onUnmount should be called');
+
+  console.log('  ✅ Lifecycle Hooks tests passed!');
 } catch (error) {
-    console.error('❌ Lifecycle Hooks tests failed!');
-    console.error(error);
-    process.exit(1);
+  console.error('❌ Lifecycle Hooks tests failed!');
+  console.error(error);
+  process.exit(1);
 }

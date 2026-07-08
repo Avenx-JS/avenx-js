@@ -1,4 +1,4 @@
-import { AvenxBridge } from 'avenx-js/runtime';
+import { AvenxBridge } from 'avenx-core/runtime';
 
 /**
  * {{ name }} provides shared reactive state and logic.

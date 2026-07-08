@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/core/runtime/AvenxComponent.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/core/runtime/AvenxComponent.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { ComputedRegistry } from '../reactive/createComputed.js';
+import { StateFactory } from '../reactive/createState.js';
+import { TemplateRenderer } from '../renderer/renderTemplate.js';
+import { DomPatcher } from '../renderer/domPatch.js';
+import { EventBinder } from '../events/bindEvents.js';
+import { EventExecutor } from '../events/eventExecutor.js';
+import { DynamicEvaluator } from '../security/evaluator.js';
+import { LifecycleManager } from './lifecycle.js';
+
+/**
+ * Base class for all Avenx components.
+ * Manages state, reactivity, rendering, and lifecycle.
+ */
+export class AvenxComponent {
+    /** @type {Element|null} @private */
+    #element = null;
+    /** @type {string} @private */
+    #template = '';
+    /** @type {Object} @private */
+    #methods = {};
+    /** @type {Object} @private */
+    #bridges = {};
+    /** @type {ComputedRegistry} @private */
+    #computed;
+    /** @type {TemplateRenderer} @private */
+    #renderer;
+    /** @type {DomPatcher} @private */
+    #patcher;
+    /** @type {EventBinder} @private */
+    #eventBinder;
+    /** @type {EventExecutor} @private */
+    #eventExecutor;
+    /** @type {DynamicEvaluator} @private */
+    #evaluator;
+    /** @type {LifecycleManager} @private */
+    #lifecycle;
+
+    /**
+     * @param {Object} [initialState={}] - The initial state of the component.
+     * @param {Object} [computed={}] - Computed properties definitions.
+     * @param {Object} [bridges={}] - External bridges accessible to the component.
+     * @param {string} [template=''] - The HTML template string.
+     * @param {Object} [methods={}] - Component methods.
+     */
+    constructor(initialState = {}, computed = {}, bridges = {}, template = '', methods = {}) {
+        this.#template = template;
+        this.#bridges = bridges;
+        this.#computed = new ComputedRegistry(computed);
+        this.#renderer = new TemplateRenderer();
+        this.#patcher = new DomPatcher();
+        this.#eventBinder = new EventBinder();
+        this.#evaluator = new DynamicEvaluator();
+        this.#lifecycle = new LifecycleManager();
+
+        /**
+         * The reactive state of the component.
+         * @type {Proxy}
+         */
+        this.state = new StateFactory().create(initialState, {
+            computedKeys: this.#computed.keys(),
+            onChange: () => this.update(),
+            getComputedValue: key => this.#evaluateComputed(key)
+        });
+
+        this.#methods = this.#evaluator.createMethodMap(
+            methods,
+            executableMethods => this.#createScope(executableMethods),
+            () => this.state
+        );
+        this.#eventExecutor = new EventExecutor((source, event) => this.#runEventHandler(source, event));
+    }
+
+    /**
+     * Creates a scope object for expression evaluation.
+     * @param {Object} [methods=this.#methods] - Methods to include in the scope.
+     * @param {Object} [extras={}] - Additional variables to include.
+     * @returns {Object} The combined scope.
+     * @private
+     */
+    #createScope(methods = this.#methods, extras = {}) {
+        return { ...this.state, ...methods, ...this.#bridges, ...extras };
+    }
+
+    /**
+     * Evaluates a computed property.
+     * @param {string} key - The key of the computed property.
+     * @returns {any} The evaluated value.
+     * @private
+     */
+    #evaluateComputed(key) {
+        const expression = this.#computed.get(key);
+        try {
+            return this.#evaluator.evaluateExpression(expression, this.#createScope(), this.state);
+        } catch (error) {
+            console.warn("Avenx Computed Error:", error, "Expression:", expression);
+            return undefined;
+        }
+    }
+
+    /**
+     * Resolves an expression within the template.
+     * @param {string} expression - The expression to evaluate.
+     * @returns {any} The result of the evaluation.
+     * @private
+     */
+    #resolveTemplateExpression(expression) {
+        return this.#evaluator.evaluateExpression(expression, this.#createScope(), this.state);
+    }
+
+    /**
+     * Runs an event handler.
+     * @param {string} source - The source code of the handler.
+     * @param {Event} event - The event object.
+     * @returns {any} The result of the execution.
+     * @private
+     */
+    #runEventHandler(source, event) {
+        try {
+            return this.#evaluator.executeStatement(source, this.#createScope(this.#methods, { event }), this.state);
+        } catch (error) {
+            console.error("Avenx Exec Error:", error);
+            return undefined;
+        }
+    }
+
+    /**
+     * Renders the component template with current state.
+     * @returns {string} The rendered HTML string.
+     */
+    render() {
+        return this.#renderer.render(this.#template, expression => this.#resolveTemplateExpression(expression));
+    }
+
+    /**
+     * Updates the component in the DOM by re-rendering and patching.
+     */
+    update() {
+        if (!this.#element) return;
+        this.#patcher.patch(this.#element, this.render());
+        this.#eventBinder.bind(this.#element, this.#eventExecutor);
+    }
+
+    /**
+     * Internal method to set the mount target.
+     * @param {Element} target - The target element.
+     * @private
+     */
+    __setMountTarget(target) {
+        this.#element = target;
+    }
+
+    /**
+     * Mounts the component to a target element.
+     * @param {Element|string} target - The target element or selector.
+     */
+    mount(target) {
+        this.#lifecycle.mount(this, target);
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_core_index.html">lib/core/index</a></li></ul><h3>Classes</h3><ul><li><a href="AvenxApp.html">AvenxApp</a></li><li><a href="AvenxBridge.html">AvenxBridge</a></li><li><a href="AvenxCLI.html">AvenxCLI</a></li><li><a href="AvenxCompiler.html">AvenxCompiler</a></li><li><a href="AvenxComponent.html">AvenxComponent</a></li><li><a href="ComponentParser.html">ComponentParser</a></li><li><a href="ComputedRegistry.html">ComputedRegistry</a></li><li><a href="DomPatcher.html">DomPatcher</a></li><li><a href="DynamicEvaluator.html">DynamicEvaluator</a></li><li><a href="EventBinder.html">EventBinder</a></li><li><a href="EventExecutor.html">EventExecutor</a></li><li><a href="ExpressionParser.html">ExpressionParser</a></li><li><a href="HtmlDiff.html">HtmlDiff</a></li><li><a href="HtmlEscaper.html">HtmlEscaper</a></li><li><a href="LifecycleManager.html">LifecycleManager</a></li><li><a href="ProxyHandlerFactory.html">ProxyHandlerFactory</a></li><li><a href="Sanitizer.html">Sanitizer</a></li><li><a href="StateFactory.html">StateFactory</a></li><li><a href="StyleProcessor.html">StyleProcessor</a></li><li><a href="TemplateRenderer.html">TemplateRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jun 11 2026 13:17:17 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ---
-title: "Actions & Event Handling"
-description: "Learn about actions, event handling, event delegation, and custom events in Avenx-JS."
+title: 'Actions & Event Handling'
+description: 'Learn about actions, event handling, event delegation, and custom events in Avenx-JS.'
 ---
 
 Avenx-JS simplifies capturing DOM events by letting you attach action handlers directly within elements using an `@` prefix.
@@ -10,8 +10,7 @@ Avenx-JS simplifies capturing DOM events by letting you attach action handlers d
 To bind an event listener, prefix the event name with `@` followed by the expression to execute:
 
 ```html
-<button @click="increment()">Increment</button>
-<input @input="state.inputValue = event.target.value" />
+<button @click="increment()">Increment</button> <input @input="state.inputValue = event.target.value" />
 ```
 
 :::note

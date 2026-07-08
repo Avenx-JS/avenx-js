@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 const { performance } = require('perf_hooks');
 const StyleProcessor = require('../lib/compiler/StyleProcessor');
 const ComponentParser = require('../lib/compiler/ComponentParser');
@@ -124,43 +123,46 @@ const originalReadFileSync = fs.readFileSync;
 const originalExistsSync = fs.existsSync;
 
 fs.readFileSync = (filePath, options) => {
-    if (filePath.endsWith('.component.js')) return componentJs;
-    if (filePath.endsWith('.component.css')) return componentCss;
-    return originalReadFileSync(filePath, options);
+  if (filePath.endsWith('.component.js')) return componentJs;
+  if (filePath.endsWith('.component.css')) return componentCss;
+  return originalReadFileSync(filePath, options);
 };
 
 fs.existsSync = (filePath) => {
-    if (filePath.endsWith('.component.js') || filePath.endsWith('.component.css')) return true;
-    return originalExistsSync(filePath);
+  if (filePath.endsWith('.component.js') || filePath.endsWith('.component.css')) return true;
+  return originalExistsSync(filePath);
 };
 
+/**
+ *
+ */
 function benchmark() {
-    const iterations = 1000;
-    const styleProcessor = new StyleProcessor();
-    const parser = new ComponentParser(styleProcessor);
-    const testFile = 'test.component.js';
+  const iterations = 1000;
+  const styleProcessor = new StyleProcessor();
+  const parser = new ComponentParser(styleProcessor);
+  const testFile = 'test.component.js';
 
-    console.log(`Running ComponentParser benchmark with ${iterations} iterations...`);
+  console.log(`Running ComponentParser benchmark with ${iterations} iterations...`);
 
-    // Warmup
-    for (let i = 0; i < 100; i++) {
-        styleProcessor.reset();
-        parser.parse(testFile);
-    }
+  // Warmup
+  for (let i = 0; i < 100; i++) {
+    styleProcessor.reset();
+    parser.parse(testFile);
+  }
 
-    const start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-        styleProcessor.reset();
-        parser.parse(testFile);
-    }
-    const end = performance.now();
+  const start = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    styleProcessor.reset();
+    parser.parse(testFile);
+  }
+  const end = performance.now();
 
-    const totalTime = end - start;
-    const avgTime = totalTime / iterations;
+  const totalTime = end - start;
+  const avgTime = totalTime / iterations;
 
-    console.log(`Total time: ${totalTime.toFixed(2)}ms`);
-    console.log(`Average time per parse: ${avgTime.toFixed(4)}ms`);
-    console.log(`Ops/sec: ${Math.round(1000 / avgTime)}`);
+  console.log(`Total time: ${totalTime.toFixed(2)}ms`);
+  console.log(`Average time per parse: ${avgTime.toFixed(4)}ms`);
+  console.log(`Ops/sec: ${Math.round(1000 / avgTime)}`);
 }
 
 benchmark();

@@ -1,4 +1,4 @@
-import { AvenxGuard } from 'avenx-js/runtime';
+import { AvenxGuard } from 'avenx-core/runtime';
 
 /**
  * {{ name }} handles route protection.

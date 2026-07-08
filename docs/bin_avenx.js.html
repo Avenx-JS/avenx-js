@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bin/avenx.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bin/avenx.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const { exec } = require('child_process');
+const AvenxCompiler = require('../lib/compiler');
+
+const [, , command, ...args] = process.argv;
+
+/**
+ * Avenx CLI - Command Line Interface for Avenx-JS.
+ */
+class AvenxCLI {
+    constructor() {
+        this.baseDir = process.cwd();
+        this.frameworkDir = path.join(__dirname, '..');
+    }
+
+    run(command, args) {
+        const type = args[0];
+        const name = args[1];
+
+        switch (command) {
+            case 'init':
+                this.initProject();
+                break;
+            case 'generate':
+            case 'g':
+                if (type === 'bridge') {
+                    this.generateBridge(name);
+                } else {
+                    // Default to component if only one arg or type is 'component'
+                    this.generateComponent(name || type);
+                }
+                break;
+            case 'build':
+                this.buildProject();
+                break;
+            case 'serve':
+                this.serveProject(args[0] || 3000);
+                break;
+            case 'help':
+            default:
+                this.printHelp();
+                break;
+        }
+    }
+
+    /**
+     * Initializes a new Avenx project structure.
+     */
+    initProject() {
+        console.log('🚀 Initializing new Avenx-JS project...');
+        const dirs = [
+            'src/components',
+            'src/global',
+            'dist',
+            '.vscode'
+        ];
+
+        dirs.forEach(dir => {
+            const fullPath = path.join(this.baseDir, dir);
+            if (!fs.existsSync(fullPath)) {
+                fs.mkdirSync(fullPath, { recursive: true });
+                console.log(`  Created: ${dir}`);
+            }
+        });
+
+        // Create initial .vscode files
+        const jsConfigPath = path.join(this.baseDir, '.vscode/jsconfig.json');
+        if (!fs.existsSync(jsConfigPath)) {
+            const template = fs.readFileSync(path.join(this.frameworkDir, 'templates/vscode/jsconfig.json.template'), 'utf-8');
+            fs.writeFileSync(jsConfigPath, template);
+            console.log('  Created: .vscode/jsconfig.json');
+        }
+
+        const settingsPath = path.join(this.baseDir, '.vscode/settings.json');
+        if (!fs.existsSync(settingsPath)) {
+            const template = fs.readFileSync(path.join(this.frameworkDir, 'templates/vscode/settings.json.template'), 'utf-8');
+            fs.writeFileSync(settingsPath, template);
+            console.log('  Created: .vscode/settings.json');
+        }
+
+        // Create initial index.html
+        const indexHtmlPath = path.join(this.baseDir, 'index.html');
+        if (!fs.existsSync(indexHtmlPath)) {
+            fs.writeFileSync(indexHtmlPath, this.getInitialHtml());
+            console.log('  Created: index.html');
+        }
+
+        // Create initial main.app.js
+        const mainAppPath = path.join(this.baseDir, 'src/main.app.js');
+        if (!fs.existsSync(mainAppPath)) {
+            fs.writeFileSync(mainAppPath, "import { AvenxApp } from 'avenx-js/runtime';\n\nconst app = new AvenxApp({ target: '#app' });\n");
+            console.log('  Created: src/main.app.js');
+        }
+
+        console.log('✅ Project initialized successfully!');
+    }
+
+    /**
+     * Generates a new Bridge class and template file.
+     */
+    generateBridge(name) {
+        if (!name) {
+            console.error('❌ Error: Please provide a bridge name (e.g., avenx g bridge auth)');
+            return;
+        }
+
+        const lowerName = name.toLowerCase();
+        const capitalizedName = lowerName
+            .split(/[-_]/)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('') + "Bridge";
+        
+        const globalDir = path.join(this.baseDir, 'src/global');
+        if (!fs.existsSync(globalDir)) {
+            fs.mkdirSync(globalDir, { recursive: true });
+        }
+
+        const bridgePath = path.join(globalDir, `${lowerName}.bridge.js`);
+
+        if (fs.existsSync(bridgePath)) {
+            console.error(`❌ Error: Bridge '${lowerName}' already exists.`);
+            return;
+        }
+
+        const template = fs.readFileSync(path.join(this.frameworkDir, 'templates/bridge/bridge.js.template'), 'utf-8');
+
+        fs.writeFileSync(
+            bridgePath,
+            template.replace(/{{ name }}/g, capitalizedName)
+        );
+
+        console.log(`✅ Bridge '${capitalizedName}' generated at src/global/${lowerName}.bridge.js`);
+        console.log(`ℹ️ It will be automatically registered as '${capitalizedName}' on the next build.`);
+    }
+
+    /**
+     * Generates a new component folder and template files, and registers it in main.app.js.
+     */
+    generateComponent(name) {
+        if (!name) {
+            console.error('❌ Error: Please provide a component name (e.g., avenx g my-component)');
+            return;
+        }
+
+        const lowerName = name.toLowerCase();
+        const capitalizedName = lowerName
+            .split(/[-_]/)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+        
+        const compDir = path.join(this.baseDir, 'src/components', lowerName);
+
+        if (fs.existsSync(compDir)) {
+            console.error(`❌ Error: Component '${lowerName}' already exists.`);
+            return;
+        }
+
+        fs.mkdirSync(compDir, { recursive: true });
+
+        const jsTemplate = fs.readFileSync(path.join(this.frameworkDir, 'templates/component/component.js.template'), 'utf-8');
+        const cssTemplate = fs.readFileSync(path.join(this.frameworkDir, 'templates/component/component.css.template'), 'utf-8');
+
+        fs.writeFileSync(
+            path.join(compDir, `${lowerName}.component.js`),
+            jsTemplate.replace('{{ name }}', capitalizedName)
+        );
+        fs.writeFileSync(
+            path.join(compDir, `${lowerName}.component.css`),
+            cssTemplate
+        );
+
+        console.log(`✅ Component '${lowerName}' generated at src/components/${lowerName}/`);
+        this.registerInMainApp(capitalizedName, lowerName);
+    }
+
+    /**
+     * Automatically adds import and registration for a component in src/main.app.js.
+     */
+    registerInMainApp(className, folderName) {
+        const mainPath = path.join(this.baseDir, 'src/main.app.js');
+        if (!fs.existsSync(mainPath)) return;
+
+        let content = fs.readFileSync(mainPath, 'utf-8');
+        const importStatement = `import ${className} from './components/${folderName}/${folderName}.component.js';`;
+        const registerStatement = `app.register('${className}', ${className});`;
+
+        const lines = content.split('\n');
+        let lastImportIndex = -1;
+        for (let i = 0; i &lt; lines.length; i++) {
+            if (lines[i].startsWith('import ')) lastImportIndex = i;
+        }
+
+        if (lastImportIndex !== -1) {
+            lines.splice(lastImportIndex + 1, 0, importStatement);
+        } else {
+            lines.unshift(importStatement);
+        }
+
+        let lastRegisterIndex = -1;
+        let appInstanceIndex = -1;
+        for (let i = 0; i &lt; lines.length; i++) {
+            if (lines[i].includes('app.register(')) lastRegisterIndex = i;
+            if (lines[i].includes('new AvenxApp')) appInstanceIndex = i;
+        }
+
+        if (lastRegisterIndex !== -1) {
+            lines.splice(lastRegisterIndex + 1, 0, registerStatement);
+        } else if (appInstanceIndex !== -1) {
+            lines.splice(appInstanceIndex + 1, 0, '', registerStatement);
+        } else {
+            lines.push('', registerStatement);
+        }
+
+        const hasMount = lines.some(line => line.includes('app.mount('));
+        if (!hasMount) {
+            lines.push(`\napp.mount('${className}');`);
+        } else {
+            lines.push(`// app.mount('${className}'); // Uncomment to mount this component`);
+        }
+
+        fs.writeFileSync(mainPath, lines.join('\n'));
+        console.log(`✅ Component '${className}' registered in src/main.app.js`);
+    }
+
+    /**
+     * Runs the compiler build.
+     */
+    buildProject() {
+        new AvenxCompiler().build();
+    }
+
+    /**
+     * Starts a local development server and watches for changes.
+     */
+    serveProject(port) {
+        this.buildProject();
+        this.watchProject();
+
+        const server = http.createServer((req, res) => {
+            let filePath = path.join(this.baseDir, req.url === '/' ? 'index.html' : req.url);
+            
+            if (!fs.existsSync(filePath) &amp;&amp; !path.extname(filePath)) {
+                filePath = path.join(this.baseDir, 'index.html');
+            }
+
+            const extname = String(path.extname(filePath)).toLowerCase();
+            const mimeTypes = {
+                '.html': 'text/html',
+                '.js': 'text/javascript',
+                '.css': 'text/css',
+                '.json': 'application/json',
+                '.png': 'image/png',
+                '.jpg': 'image/jpg',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml',
+            };
+
+            const contentType = mimeTypes[extname] || 'application/octet-stream';
+
+            fs.readFile(filePath, (error, content) => {
+                if (error) {
+                    if (error.code === 'ENOENT') {
+                        res.writeHead(404);
+                        res.end('File not found');
+                    } else {
+                        res.writeHead(500);
+                        res.end('Server error: ' + error.code);
+                    }
+                } else {
+                    res.writeHead(200, { 'Content-Type': contentType });
+                    res.end(content, 'utf-8');
+                }
+            });
+        });
+
+        server.listen(port, () => {
+            const url = `http://localhost:${port}`;
+            console.log(`\n🚀 Dev-Server running at ${url}`);
+            console.log(`👀 Watching for changes in src/...\n`);
+            this.openBrowser(url);
+        });
+    }
+
+    /**
+     * Watches the src directory for changes and triggers a rebuild.
+     */
+    watchProject() {
+        let timeout;
+        const srcPath = path.join(this.baseDir, 'src');
+
+        if (!fs.existsSync(srcPath)) return;
+
+        fs.watch(srcPath, { recursive: true }, (eventType, filename) => {
+            if (filename) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    console.log(`\n📄 Change detected: ${filename}. Rebuilding...`);
+                    this.buildProject();
+                }, 100);
+            }
+        });
+    }
+
+    /**
+     * Opens the browser to the specified URL.
+     */
+    openBrowser(url) {
+        const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+        exec(`${start} ${url}`);
+    }
+
+    getInitialHtml() {
+        return `&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+    &lt;title>My Avenx App&lt;/title>
+    &lt;link rel="stylesheet" href="dist/bundle.css">
+&lt;/head>
+&lt;body>
+    &lt;div id="app">&lt;/div>
+    &lt;script src="dist/bundle.js">&lt;/script>
+&lt;/body>
+&lt;/html>`;
+    }
+
+    printHelp() {
+        console.log(`
+Avenx-JS CLI
+Usage: avenx &lt;command> [type] [name]
+
+Commands:
+  init                      Initialize a new Avenx project structure
+  generate component &lt;name> Generate a new component (alias: g)
+  generate bridge &lt;name>    Generate a new shared reactive bridge
+  build                     Build the project into dist/bundle.js
+  serve [port]              Start dev server with hot-reload (default: 3000)
+  help                      Show this help message
+        `);
+    }
+}
+
+const cli = new AvenxCLI();
+cli.run(command, args);
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_core_index.html">lib/core/index</a></li></ul><h3>Classes</h3><ul><li><a href="AvenxApp.html">AvenxApp</a></li><li><a href="AvenxBridge.html">AvenxBridge</a></li><li><a href="AvenxCLI.html">AvenxCLI</a></li><li><a href="AvenxCompiler.html">AvenxCompiler</a></li><li><a href="AvenxComponent.html">AvenxComponent</a></li><li><a href="ComponentParser.html">ComponentParser</a></li><li><a href="ComputedRegistry.html">ComputedRegistry</a></li><li><a href="DomPatcher.html">DomPatcher</a></li><li><a href="DynamicEvaluator.html">DynamicEvaluator</a></li><li><a href="EventBinder.html">EventBinder</a></li><li><a href="EventExecutor.html">EventExecutor</a></li><li><a href="ExpressionParser.html">ExpressionParser</a></li><li><a href="HtmlDiff.html">HtmlDiff</a></li><li><a href="HtmlEscaper.html">HtmlEscaper</a></li><li><a href="LifecycleManager.html">LifecycleManager</a></li><li><a href="ProxyHandlerFactory.html">ProxyHandlerFactory</a></li><li><a href="Sanitizer.html">Sanitizer</a></li><li><a href="StateFactory.html">StateFactory</a></li><li><a href="StyleProcessor.html">StyleProcessor</a></li><li><a href="TemplateRenderer.html">TemplateRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jun 11 2026 13:17:17 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

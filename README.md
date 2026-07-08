@@ -21,18 +21,23 @@ Modern frontend development often requires complex build chains and heavy runtim
 ## ⚡ Key Features
 
 ### 🔄 Proxy-based Reactivity
+
 State management is built directly into the core. Changing a property on the `state` object automatically triggers a re-render of only the affected parts of the DOM.
 
 ### 🧩 Declarative Components
+
 Define your UI using standard HTML with added superpowers. Components support `state`, `computed` properties, and `actions` (methods) defined directly in the `.component.js` file.
 
 ### 🎨 Intelligent Scoped CSS
+
 Styles defined in `.component.css` are automatically scoped to that specific component. Use the `<@global>` tag for global variables and the `<@css>` tag for component-specific styles.
 
 ### 🌐 Reactive Bridges (Shared State)
+
 Shared state across multiple components is handled via **Bridges**. These are global reactive objects that any component can subscribe to and update.
 
 ### 🛠️ CLI-First Workflow
+
 Generate components, pages, and bridges with a single command. The built-in dev server provides hot-reloading for a seamless development experience.
 
 ---
@@ -65,26 +70,27 @@ Your app will be running at `http://localhost:3000`.
 ## 🧠 Core Concepts & Syntax
 
 ### 1. Component Structure
+
 An Avenx component consists of two files: `<name>.component.js` and `<name>.component.css`.
 
 #### JavaScript (`.component.js`)
+
 ```html
 <state count="0" title="Counter" />
 
 <computed name="doubleCount" value="count * 2" />
 
-<action name="increment">
-    state.count++;
-</action>
+<action name="increment"> state.count++; </action>
 
 <div class="card">
-    <h1>{{ title }}</h1>
-    <p>Count: {{ count }} (Double: {{ doubleCount }})</p>
-    <button @click="increment()">Increment</button>
+  <h1>{{ title }}</h1>
+  <p>Count: {{ count }} (Double: {{ doubleCount }})</p>
+  <button @click="increment()">Increment</button>
 </div>
 ```
 
 #### CSS (`.component.css`)
+
 ```css
 <@global>
     @def primary-color #646cff;
@@ -109,60 +115,73 @@ An Avenx component consists of two files: `<name>.component.js` and `<name>.comp
 ```
 
 ### 2. Reactive Bridges (Shared State)
+
 Bridges allow you to share reactive state between components without complex prop drilling. They are defined in the `src/global/` directory.
 
 #### Creation
+
 ```bash
 npx avenx g bridge auth
 ```
 
 #### Definition (`src/global/auth.bridge.js`)
+
 ```javascript
-export default {
-    isLoggedIn: false,
-    user: {
-        name: 'Guest',
-        role: 'visitor'
-    }
+import { AvenxBridge } from 'avenx-core/runtime';
+
+export default class AuthBridge extends AvenxBridge {
+  constructor() {
+    super();
+    this.isLoggedIn = false;
+    this.user = {
+      name: 'Guest',
+      role: 'visitor',
+    };
+  }
 }
 ```
 
 #### Usage in Component
+
 Bridges are automatically available in your component templates and actions.
+
 ```html
 <p>Welcome, {{ AuthBridge.user.name }}</p>
 
-<action name="login">
-    AuthBridge.isLoggedIn = true;
-    AuthBridge.user.name = 'John Doe';
-</action>
+<action name="login"> AuthBridge.isLoggedIn = true; AuthBridge.user.name = 'John Doe'; </action>
 ```
 
 ---
 
 ### 3. Pages & Routing
+
 Pages are special components designed for top-level routing. They reside in `src/pages/`.
 
 #### Creation
+
 ```bash
 npx avenx g page profile
 ```
 
 #### Definition (`src/pages/profile.page.js`)
+
 Pages use the same syntax as components (`<state>`, `<computed>`, `<action>`).
+
 ```html
 <state userId="123" />
 
 <div class="profile-page">
-    <h1>User Profile</h1>
-    <p>Viewing ID: {{ userId }}</p>
+  <h1>User Profile</h1>
+  <p>Viewing ID: {{ userId }}</p>
 </div>
 ```
 
 #### Routing (`src/main.app.js`)
+
 Pages are registered in the main application entry point and handled by the built-in router.
+
 ```javascript
-import { AvenxApp } from 'avenx-js/runtime';
+import { AvenxApp } from 'avenx-core/runtime';
 import Home from './pages/home.page.js';
 import Profile from './pages/profile.page.js';
 
@@ -177,20 +196,23 @@ app.mount('Home'); // Initial page
 ---
 
 ### 4. Nesting Components
-Components can be nested by using their name in PascalCase:
+
+Components can be nested by using their name in PascalCase. Use `<slot />` tags to define where transcluded child content should render:
+
 ```html
 <Navbar />
 <main>
-    <Sidebar />
-    <Content />
+  <Sidebar />
+  <slot />
 </main>
 ```
 
 ### 5. Events
+
 Use the `@` prefix to bind event listeners:
+
 ```html
-<button @click="count++">Inline Action</button>
-<input @input="state.text = event.target.value" />
+<button @click="count++">Inline Action</button> <input @input="state.text = event.target.value" />
 ```
 
 ---
@@ -218,14 +240,16 @@ my-avenx-app/
 
 ## 🛠️ CLI Reference
 
-| Command | Description |
-| :--- | :--- |
-| `avenx init` | Scaffolds a new project structure. |
-| `avenx g <name>` | Generates a new component. |
-| `avenx g p <name>` | Generates a new page for routing. |
-| `avenx g bridge <name>` | Generates a new shared reactive bridge. |
-| `avenx build` | Compiles the project into `dist/`. |
-| `avenx serve [port]` | Starts the dev server with hot-reload (default: 3000). |
+| Command                   | Description                                            |
+| :------------------------ | :----------------------------------------------------- |
+| `avenx init`              | Scaffolds a new project structure.                     |
+| `avenx g <name>`          | Generates a new component.                             |
+| `avenx g p <name>`        | Generates a new page for routing.                      |
+| `avenx g bridge <name>`   | Generates a new shared reactive bridge.                |
+| `avenx g guard <name>`    | Generates a new route guard.                           |
+| `avenx build`             | Compiles the project into `dist/`.                     |
+| `avenx check` (or `lint`) | Validates component templates without building.        |
+| `avenx serve [port]`      | Starts the dev server with hot-reload (default: 3000). |
 
 ---
 
@@ -243,6 +267,6 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ## ⭐ Support
 
-If you like what we're building, please give us a ⭐ on [GitHub](https://github.com/avenx-js/avenx-js)! 
+If you like what we're building, please give us a ⭐ on [GitHub](https://github.com/avenx-js/avenx-js)!
 
 Built with ❤️ by the Avenx Team.

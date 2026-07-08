@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/core/reactive/proxyHandler.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/core/reactive/proxyHandler.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Factory for creating proxy handlers used in reactive state.
+ * Handles normal property access and computed property redirection.
+ */
+export class ProxyHandlerFactory {
+    /**
+     * @param {Object} [options={}] - Configuration options.
+     * @param {string[]} [options.computedKeys=[]] - List of keys that should be treated as computed properties.
+     * @param {function(): void} [options.onChange=() => {}] - Callback triggered when a property is set.
+     * @param {function(string, Object): any} [options.getComputedValue=() => undefined] - Function to evaluate a computed property.
+     */
+    constructor({
+        computedKeys = [],
+        onChange = () => {},
+        getComputedValue = () => undefined
+    } = {}) {
+        /** @type {Set&lt;string>} @private */
+        this.computedKeys = new Set(computedKeys);
+        /** @type {function(): void} @private */
+        this.onChange = onChange;
+        /** @type {function(string, Object): any} @private */
+        this.getComputedValue = getComputedValue;
+    }
+
+    /**
+     * Creates the proxy handler object.
+     * @returns {ProxyHandler&lt;Object>}
+     */
+    create() {
+        return {
+            set: (target, key, value) => this.set(target, key, value),
+            get: (target, key) => this.get(target, key),
+            ownKeys: target => this.ownKeys(target),
+            getOwnPropertyDescriptor: (target, key) => this.getOwnPropertyDescriptor(target, key)
+        };
+    }
+
+    /**
+     * Proxy 'set' trap.
+     * @param {Object} target - The target object.
+     * @param {string|symbol} key - The property key.
+     * @param {any} value - The new value.
+     * @returns {boolean}
+     */
+    set(target, key, value) {
+        target[key] = value;
+        this.onChange();
+        return true;
+    }
+
+    /**
+     * Proxy 'get' trap.
+     * Redirects to getComputedValue if the key is a computed property.
+     * @param {Object} target - The target object.
+     * @param {string|symbol} key - The property key.
+     * @returns {any}
+     */
+    get(target, key) {
+        if (this.computedKeys.has(key)) {
+            return this.getComputedValue(key, target);
+        }
+        return target[key];
+    }
+
+    /**
+     * Proxy 'ownKeys' trap.
+     * Includes computed keys in the list of keys.
+     * @param {Object} target - The target object.
+     * @returns {Array&lt;string|symbol>}
+     */
+    ownKeys(target) {
+        return [...Reflect.ownKeys(target), ...this.computedKeys];
+    }
+
+    /**
+     * Proxy 'getOwnPropertyDescriptor' trap.
+     * Ensures computed properties appear as own properties.
+     * @param {Object} target - The target object.
+     * @param {string|symbol} key - The property key.
+     * @returns {PropertyDescriptor|undefined}
+     */
+    getOwnPropertyDescriptor(target, key) {
+        if (this.computedKeys.has(key)) {
+            return { enumerable: true, configurable: true };
+        }
+        return Reflect.getOwnPropertyDescriptor(target, key);
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_core_index.html">lib/core/index</a></li></ul><h3>Classes</h3><ul><li><a href="AvenxApp.html">AvenxApp</a></li><li><a href="AvenxBridge.html">AvenxBridge</a></li><li><a href="AvenxCLI.html">AvenxCLI</a></li><li><a href="AvenxCompiler.html">AvenxCompiler</a></li><li><a href="AvenxComponent.html">AvenxComponent</a></li><li><a href="ComponentParser.html">ComponentParser</a></li><li><a href="ComputedRegistry.html">ComputedRegistry</a></li><li><a href="DomPatcher.html">DomPatcher</a></li><li><a href="DynamicEvaluator.html">DynamicEvaluator</a></li><li><a href="EventBinder.html">EventBinder</a></li><li><a href="EventExecutor.html">EventExecutor</a></li><li><a href="ExpressionParser.html">ExpressionParser</a></li><li><a href="HtmlDiff.html">HtmlDiff</a></li><li><a href="HtmlEscaper.html">HtmlEscaper</a></li><li><a href="LifecycleManager.html">LifecycleManager</a></li><li><a href="ProxyHandlerFactory.html">ProxyHandlerFactory</a></li><li><a href="Sanitizer.html">Sanitizer</a></li><li><a href="StateFactory.html">StateFactory</a></li><li><a href="StyleProcessor.html">StyleProcessor</a></li><li><a href="TemplateRenderer.html">TemplateRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jun 11 2026 13:17:17 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

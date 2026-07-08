@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/compiler.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/compiler.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const fs = require('fs');
+const path = require('path');
+const StyleProcessor = require('./compiler/StyleProcessor');
+const ComponentParser = require('./compiler/ComponentParser');
+
+/**
+ * AvenxCompiler is the main orchestrator for the Avenx-JS build process.
+ * It coordinates the parsing of components, processing of styles, and the
+ * final bundling of the application.
+ */
+class AvenxCompiler {
+    /**
+     * Creates an instance of AvenxCompiler and initializes its sub-processors.
+     * Uses the current working directory as the project root.
+     */
+    constructor() {
+        /** 
+         * The root directory of the project.
+         * @type {string} 
+         */
+        this.rootDir = process.cwd();
+        /** 
+         * The source directory (usually 'src').
+         * @type {string} 
+         */
+        this.srcDir = path.join(this.rootDir, 'src');
+        /** 
+         * The distribution directory (usually 'dist').
+         * @type {string} 
+         */
+        this.distDir = path.join(this.rootDir, 'dist');
+        /** 
+         * The directory containing core runtime files.
+         * @type {string} 
+         */
+        this.coreDir = path.join(__dirname, 'core');
+        
+        /** 
+         * @type {StyleProcessor} 
+         */
+        this.styleProcessor = new StyleProcessor();
+        /** 
+         * @type {ComponentParser} 
+         */
+        this.componentParser = new ComponentParser(this.styleProcessor);
+        
+        this.init();
+    }
+
+    /**
+     * Initializes the compiler environment, ensuring required directories exist.
+     * @private
+     */
+    init() {
+        if (!fs.existsSync(this.distDir)) {
+            try {
+                fs.mkdirSync(this.distDir, { recursive: true });
+            } catch (e) {
+                console.error(`❌ Error: Could not create dist directory at ${this.distDir}`);
+            }
+        }
+    }
+
+    /**
+     * Executes the full build process.
+     * Includes resetting style processor, generating runtime, processing bridges, components, and main app.
+     */
+    build() {
+        console.log("--- Avenx-JS Compiler ---");
+        
+        if (!fs.existsSync(this.srcDir)) {
+            console.error(`❌ Error: 'src' directory not found at ${this.srcDir}. Run 'avenx init' to scaffold a project.`);
+            return;
+        }
+
+        // Reset style processor to avoid accumulating styles across multiple builds (watch mode)
+        this.styleProcessor.reset();
+
+        let bundleJs = this.getRuntime();
+        const bridgeData = this.processBridges();
+        bundleJs += this.processComponents();
+        bundleJs += this.processMain(bridgeData.registrations);
+
+        fs.writeFileSync(path.join(this.distDir, 'bundle.js'), bundleJs);
+        fs.writeFileSync(path.join(this.distDir, 'bundle.css'), this.styleProcessor.getGlobalStyles());
+        
+        console.log("-----------------------");
+        console.log(`Build erfolgreich: dist/bundle.js &amp; dist/bundle.css`);
+    }
+
+    /**
+     * Reads the core runtime files and prepares them for the bundle.
+     * Strips imports and exports for a single-file bundle.
+     * @returns {string} The concatenated runtime source code.
+     * @private
+     */
+    getRuntime() {
+        const runtimeFiles = [
+            'security/evaluator.js',
+            'reactive/proxyHandler.js',
+            'reactive/createState.js',
+            'reactive/createComputed.js',
+            'renderer/renderTemplate.js',
+            'renderer/domPatch.js',
+            'events/eventExecutor.js',
+            'events/bindEvents.js',
+            'runtime/lifecycle.js',
+            'runtime/AvenxBridge.js',
+            'runtime/AvenxComponent.js',
+            'runtime/AvenxApp.js'
+        ];
+
+        return runtimeFiles
+            .map(file => fs.readFileSync(path.join(this.coreDir, file), 'utf-8'))
+            .map(source => source
+                .replace(/^import\s+.*?;\s*$/gm, '')
+                .replace(/export\s+/g, '')
+            )
+            .join("\n");
+    }
+
+    /**
+     * Processes bridge registrations from the global directory.
+     * @returns {{registrations: string}} The registration code for bridges.
+     * @private
+     */
+    processBridges() {
+        const globalDir = path.join(this.srcDir, 'global');
+        let registrations = "";
+        if (fs.existsSync(globalDir)) {
+            fs.readdirSync(globalDir).forEach(file => {
+                if (file.endsWith('.bridge.js')) {
+                    const name = path.basename(file, '.bridge.js');
+                    const capitalizedName = name.split(/[-_]/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join("") + "Bridge";
+                    
+                    console.log(`[Bridge] ${capitalizedName}`);
+                    const content = fs.readFileSync(path.join(globalDir, file), 'utf-8');
+                    const match = content.match(/export\s+default\s+([\s\S]*)/);
+                    if (match) {
+                        const objStr = match[1].trim().replace(/;$/, '');
+                        registrations += `app.registerBridge('${capitalizedName}', ${objStr});\n`;
+                    }
+                }
+            });
+        }
+        return { registrations };
+    }
+
+    /**
+     * Processes all components in the src/components folder recursively.
+     * @returns {string} The concatenated source code of all compiled components.
+     * @private
+     */
+    processComponents() {
+        let componentsJs = "";
+        const compDir = path.join(this.srcDir, 'components');
+        
+        const scan = (dir) => {
+            if (!fs.existsSync(dir)) return;
+            fs.readdirSync(dir).forEach(file => {
+                const fullPath = path.join(dir, file);
+                if (fs.statSync(fullPath).isDirectory()) {
+                    scan(fullPath);
+                } else if (file.endsWith('.component.js')) {
+                    console.log(`[Compiling] ${file}`);
+                    componentsJs += this.componentParser.parse(fullPath);
+                }
+            });
+        };
+
+        scan(compDir);
+        return componentsJs;
+    }
+
+    /**
+     * Processes the main application entry point.
+     * @param {string} bridgeRegistrations - The bridge registration code to inject.
+     * @returns {string} The wrapped main application code.
+     * @private
+     */
+    processMain(bridgeRegistrations) {
+        const mainFile = path.join(this.srcDir, 'main.app.js');
+        if (fs.existsSync(mainFile)) {
+            let main = fs.readFileSync(mainFile, 'utf-8')
+                .replace(/import\s*{\s*AvenxApp\s*}\s*from\s*['"].*?['"];?/g, '') 
+                .replace(/import\s+.*?\s+from\s+['"].*?['"];?/gm, ''); 
+            
+            if (bridgeRegistrations) {
+                main = main.replace(/(const\s+app\s+=\s+new\s+AvenxApp\([\s\S]*?\);)/, `$1\n${bridgeRegistrations}`);
+            }
+            return `\n(function(){\n${main}\n})();`;
+        }
+        return "";
+    }
+}
+
+module.exports = AvenxCompiler;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_core_index.html">lib/core/index</a></li></ul><h3>Classes</h3><ul><li><a href="AvenxApp.html">AvenxApp</a></li><li><a href="AvenxBridge.html">AvenxBridge</a></li><li><a href="AvenxCLI.html">AvenxCLI</a></li><li><a href="AvenxCompiler.html">AvenxCompiler</a></li><li><a href="AvenxComponent.html">AvenxComponent</a></li><li><a href="ComponentParser.html">ComponentParser</a></li><li><a href="ComputedRegistry.html">ComputedRegistry</a></li><li><a href="DomPatcher.html">DomPatcher</a></li><li><a href="DynamicEvaluator.html">DynamicEvaluator</a></li><li><a href="EventBinder.html">EventBinder</a></li><li><a href="EventExecutor.html">EventExecutor</a></li><li><a href="ExpressionParser.html">ExpressionParser</a></li><li><a href="HtmlDiff.html">HtmlDiff</a></li><li><a href="HtmlEscaper.html">HtmlEscaper</a></li><li><a href="LifecycleManager.html">LifecycleManager</a></li><li><a href="ProxyHandlerFactory.html">ProxyHandlerFactory</a></li><li><a href="Sanitizer.html">Sanitizer</a></li><li><a href="StateFactory.html">StateFactory</a></li><li><a href="StyleProcessor.html">StyleProcessor</a></li><li><a href="TemplateRenderer.html">TemplateRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jun 11 2026 13:17:17 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

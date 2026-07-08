@@ -1,6 +1,6 @@
 ---
-title: "Computed Properties"
-description: "Learn how to use computed properties with automatic caching and dependency updates in Avenx-JS."
+title: 'Computed Properties'
+description: 'Learn how to use computed properties with automatic caching and dependency updates in Avenx-JS.'
 ---
 
 Computed properties allow you to define state derivations that are cached and automatically updated whenever their source dependencies change.

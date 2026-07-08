@@ -29,6 +29,19 @@ Every contribution — whether code, documentation, or ideas — helps move the 
 - [@Nawal-Shahid](https://github.com/Nawal-Shahid)
 - [@vIktoiiaa](https://github.com/vIktoiiaa)
 - [@ramizqazi](https://github.com/ramizqazi)
+- [@Abhijay-29r](https://github.com/Abhijay-29r)
+- [@muskaan-255](https://github.com/muskaan-255)
+- [@Avi6969-git](https://github.com/Avi6969-git)
+- [@finiteskills](https://github.com/finiteskills)
+- [@ajay-02-06](https://github.com/ajay-02-06)
+- [@mayank-gariya](https://github.com/mayank-gariya)
+- [@kernelpanic888](https://github.com/kernelpanic888)
+- [@Shivam-1502](https://github.com/Shivam-1502)
+- [@Prasiddhi26](https://github.com/Prasiddhi26)
+- [@TrooperZ](https://github.com/TrooperZ)
+- [@aaditya755](https://github.com/aaditya755)
+- [@ychampion](https://github.com/ychampion)
+- [@luvkumar404](https://github.com/luvkumar404)
 
 ---
 
@@ -37,6 +50,7 @@ Every contribution — whether code, documentation, or ideas — helps move the 
 Contributions are always welcome.
 
 **Check out:**
+
 - open issues
 - good first issues
 

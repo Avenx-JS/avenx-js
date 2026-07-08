@@ -8,38 +8,38 @@ Avenx.js is an open-source JavaScript framework focused on simplicity, maintaina
 
 Before creating a contribution, please:
 
-* Search existing issues and pull requests to avoid duplicates.
-* Open an issue for larger changes or new features before implementing them.
-* Ensure your proposal aligns with the goals of Avenx.js.
+- Search existing issues and pull requests to avoid duplicates.
+- Open an issue for larger changes or new features before implementing them.
+- Ensure your proposal aligns with the goals of Avenx.js.
 
 ## Ways to Contribute
 
 You can contribute in several ways:
 
-* Reporting bugs
-* Suggesting new features
-* Improving documentation
-* Fixing issues
-* Writing tests
-* Improving performance
-* Reviewing pull requests
+- Reporting bugs
+- Suggesting new features
+- Improving documentation
+- Fixing issues
+- Writing tests
+- Improving performance
+- Reviewing pull requests
 
 ## Coding Guidelines
 
 ### General Principles
 
-* Keep code simple and readable.
-* Prefer clarity over cleverness.
-* Follow existing project conventions.
-* Write self-explanatory code whenever possible.
-* Add comments when the intent is not immediately obvious.
+- Keep code simple and readable.
+- Prefer clarity over cleverness.
+- Follow existing project conventions.
+- Write self-explanatory code whenever possible.
+- Add comments when the intent is not immediately obvious.
 
 ### JavaScript Standards
 
-* Use modern ECMAScript features where appropriate.
-* Avoid  dependencies at every cost.
-* Keep functions focused on a single responsibility.
-* Use meaningful variable and function names.
+- Use modern ECMAScript features where appropriate.
+- Avoid dependencies at every cost.
+- Keep functions focused on a single responsibility.
+- Use meaningful variable and function names.
 
 ## Testing
 
@@ -79,21 +79,21 @@ fix(state): resolve memory leak in subscriptions
 
 A Pull Request should:
 
-* Have a clear description.
-* Explain the motivation behind the change.
-* Include tests when applicable.
-* Pass all CI checks.
-* Keep unrelated changes out of the PR.
+- Have a clear description.
+- Explain the motivation behind the change.
+- Include tests when applicable.
+- Pass all CI checks.
+- Keep unrelated changes out of the PR.
 
 ## Design Philosophy
 
 When contributing to Avenx.js, keep these principles in mind:
 
-* Simplicity first
-* Developer experience matters
-* Minimal overhead
-* Predictable behavior
-* Backward compatibility whenever possible
+- Simplicity first
+- Developer experience matters
+- Minimal overhead
+- Predictable behavior
+- Backward compatibility whenever possible
 
 ## Code of Conduct
 

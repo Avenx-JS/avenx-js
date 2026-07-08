@@ -1,6 +1,6 @@
 ---
-title: "Pages & Routing"
-description: "Set up client-side routing, nested pages, dynamic parameters, and guards."
+title: 'Pages & Routing'
+description: 'Set up client-side routing, nested pages, dynamic parameters, and guards.'
 ---
 
 Avenx-JS features a built-in router designed for single-page applications. It handles hash-based navigation (e.g. `#/dashboard`), dynamic parameters, and guards.
@@ -14,7 +14,7 @@ Pages are top-level components located inside `src/pages/`. They extend `AvenxPa
 Define routes in your `src/main.app.js` file by mapping path patterns to page names:
 
 ```javascript
-import { AvenxApp } from 'avenx-js/runtime';
+import { AvenxApp } from 'avenx-core/runtime';
 
 const app = new AvenxApp({ target: '#app' });
 
@@ -24,9 +24,9 @@ app.registerPage('Profile', Profile);
 
 // Initialize router
 app.initRouter({
-    '/': 'Home',
-    '/profile/:id': 'Profile',
-    '*': 'Home' // Fallback route
+  '/': 'Home',
+  '/profile/:id': 'Profile',
+  '*': 'Home', // Fallback route
 });
 ```
 
@@ -38,7 +38,7 @@ Route segments starting with `:` are dynamic variables. The values parsed from t
 <!-- src/pages/profile.page.js -->
 <!-- state.id will contain the value from /profile/:id -->
 <div class="profile">
-    <h1>Viewing Profile ID: {{ id }}</h1>
+  <h1>Viewing Profile ID: {{ id }}</h1>
 </div>
 ```
 
@@ -57,13 +57,13 @@ Implement the `canActivate(to, from)` method. Return a boolean, a redirect strin
 import { AvenxGuard } from 'avenx-core/runtime';
 
 export default class AuthGuard extends AvenxGuard {
-    canActivate(to, from) {
-        // Return true to allow, false to block, or hash path to redirect
-        if (to.hash === '#/dashboard' && !window.isLoggedIn) {
-            return '#/login';
-        }
-        return true;
+  canActivate(to, from) {
+    // Return true to allow, false to block, or hash path to redirect
+    if (to.hash === '#/dashboard' && !window.isLoggedIn) {
+      return '#/login';
     }
+    return true;
+  }
 }
 ```
 
@@ -71,7 +71,7 @@ Map guards to routes in your application router initialization:
 
 ```javascript
 app.initRouter({
-    '/': 'Home',
-    '/dashboard': { page: 'Dashboard', guards: [AuthGuard] }
+  '/': 'Home',
+  '/dashboard': { page: 'Dashboard', guards: [AuthGuard] },
 });
 ```

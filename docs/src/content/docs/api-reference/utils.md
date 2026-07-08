@@ -1,6 +1,6 @@
 ---
-title: "Utility Functions"
-description: "API documentation for utility tags and helper classes like html, SafeHtml, and HTML Escapers."
+title: 'Utility Functions'
+description: 'API documentation for utility tags and helper classes like html, SafeHtml, and HTML Escapers.'
 ---
 
 Helper classes and tags to manage security and custom markup insertions.
@@ -27,6 +27,6 @@ Internal utility class providing character replacement mappings to prevent code 
 
 ```javascript
 const escaper = new HtmlEscaper();
-escaper.escape("<h1>Text</h1>"); 
+escaper.escape('<h1>Text</h1>');
 // Returns: <h1>Text</h1>
 ```

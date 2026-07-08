@@ -1,6 +1,6 @@
 ---
-title: "Introduction"
-description: "Learn about Avenx-JS, a lightweight experimental reactive frontend framework with scoped CSS and custom components."
+title: 'Introduction'
+description: 'Learn about Avenx-JS, a lightweight experimental reactive frontend framework with scoped CSS and custom components.'
 ---
 
 Avenx-JS is a lightweight, experimental frontend framework designed for simplicity and performance.

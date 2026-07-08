@@ -1,6 +1,6 @@
 ---
-title: "AvenxApp API"
-description: "API reference of AvenxApp class, the entry point for registering and mounting applications."
+title: 'AvenxApp API'
+description: 'API reference of AvenxApp class, the entry point for registering and mounting applications.'
 ---
 
 The core coordinator class for your application. It holds mappings of components, pages, active bridges, and handles mounting elements onto the DOM.
@@ -11,8 +11,8 @@ The core coordinator class for your application. It holds mappings of components
 const app = new AvenxApp({ target: '#app' });
 ```
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param           | Type     | Description                                                                                                    |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
 | `config.target` | `string` | A valid DOM selector (e.g., `'#app'`) pointing to the root element. Throws exception `[AVX_R01]` if not found. |
 
 ## Public Methods
@@ -39,8 +39,8 @@ Instantiates and starts the hash-based router. Accepts a route mapping configura
 
 ```javascript
 app.initRouter({
-    '/': 'Home',
-    '/profile/:id': { page: 'Profile', guards: [AuthGuard] }
+  '/': 'Home',
+  '/profile/:id': { page: 'Profile', guards: [AuthGuard] },
 });
 ```
 

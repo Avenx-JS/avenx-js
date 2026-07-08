@@ -1,23 +1,17 @@
 {
-    "source": {
-        "include": [
-            "lib",
-            "bin",
-            "README.md"
-        ],
-        "includePattern": ".+\\.js(doc|x)?$",
-        "excludePattern": "(^|\\/|\\\\)_"
-    },
-    "opts": {
-        "destination": "./dev-docs",
-        "recurse": true,
-        "readme": "README.md"
-    },
-    "plugins": [
-        "plugins/markdown"
-    ],
-    "templates": {
-        "cleverLinks": false,
-        "monospaceLinks": false
-    }
+  "source": {
+    "include": ["lib", "bin", "README.md"],
+    "includePattern": ".+\\.js(doc|x)?$",
+    "excludePattern": "(^|\\/|\\\\)_"
+  },
+  "opts": {
+    "destination": "./dev-docs",
+    "recurse": true,
+    "readme": "README.md"
+  },
+  "plugins": ["plugins/markdown"],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  }
 }

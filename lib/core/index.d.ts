@@ -93,6 +93,18 @@ export class AvenxComponent {
     onUnmount?(): void;
 
     /**
+     * Programmatically registers a watcher on a reactive expression/function.
+     * @param getter Evaluation function returning value to watch.
+     * @param callback Triggers when the value changes.
+     * @param options Config options.
+     */
+    watch(
+        getter: () => any,
+        callback: (newValue: any, oldValue: any) => void,
+        options?: { immediate?: boolean; lazy?: boolean }
+    ): AvenxWatcher;
+
+    /**
      * Internal method to set mount target element.
      * @param target
      * @private
@@ -143,6 +155,26 @@ export class AvenxPage extends AvenxComponent {
 }
 
 /**
+ * Configuration options for the AvenxRouter.
+ */
+export interface AvenxRouterOptions {
+    /**
+     * Optional path prefix for all routes (e.g. 'app').
+     */
+    prefix?: string;
+
+    /**
+     * The time in milliseconds to wait before a route guard execution times out (default is 5000ms).
+     */
+    guardTimeout?: number;
+
+    /**
+     * The target hash path to redirect to if a route guard times out (e.g. '#/').
+     */
+    guardTimeoutRedirect?: string;
+}
+
+/**
  * AvenxRouter handles hash-based routing for the application.
  * It maps URL hashes to specific Page components.
  */
@@ -165,10 +197,12 @@ export class AvenxRouter {
     /**
      * @param app AvenxApp instance.
      * @param routes Mapped routes.
+     * @param options Router options.
      */
     constructor(
         app: AvenxApp,
-        routes?: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>
+        routes?: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>,
+        options?: AvenxRouterOptions
     );
 
     /**
@@ -261,9 +295,11 @@ export class AvenxApp {
     /**
      * Scaffolds hash-change router listeners.
      * @param routes Map of URL hashes.
+     * @param options Router options.
      */
     initRouter(
-        routes: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>
+        routes: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>,
+        options?: AvenxRouterOptions
     ): AvenxRouter;
 }
 
@@ -378,5 +414,58 @@ export function html(strings: string | TemplateStringsArray, ...values: any[]): 
 
 export class Sanitizer {
     sanitize(html: string): string;
+}
+
+export interface AvenxLoggerOptions {
+    level?: string;
+    silent?: boolean;
+    formatter?: (level: string, args: any[]) => any[];
+    transports?: Array<any | ((level: string, formattedArgs: any[], rawArgs: any[]) => void)>;
+}
+
+export class AvenxLogger {
+    config: {
+        level: string;
+        silent: boolean;
+        formatter: (level: string, args: any[]) => any[];
+        transports: any[];
+    };
+    constructor(config?: AvenxLoggerOptions);
+    configure(config: AvenxLoggerOptions): void;
+    shouldLog(level: string): boolean;
+    write(level: string, ...args: any[]): void;
+    trace(...args: any[]): void;
+    debug(...args: any[]): void;
+    info(...args: any[]): void;
+    log(...args: any[]): void;
+    warn(...args: any[]): void;
+    error(...args: any[]): void;
+    fatal(...args: any[]): void;
+}
+
+export const logger: AvenxLogger;
+
+export const LogLevels: Record<string, number>;
+
+export function defaultFormatter(level: string, args: any[]): any[];
+
+export const consoleTransport: {
+    log(level: string, formattedArgs: any[]): void;
+};
+
+export class AvenxWatcher {
+    getter: () => any;
+    callback: (newValue: any, oldValue: any) => void;
+    options: { immediate?: boolean; lazy?: boolean };
+    value: any;
+    dirty: boolean;
+    constructor(
+        getter: () => any,
+        callback?: ((newValue: any, oldValue: any) => void) | null,
+        options?: { immediate?: boolean; lazy?: boolean }
+    );
+    get(): any;
+    evaluate(): any;
+    teardown(): void;
 }
 

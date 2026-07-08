@@ -1,6 +1,6 @@
 ---
-title: "Project Structure"
-description: "Understand the folder and file structure of an Avenx-JS application workspace."
+title: 'Project Structure'
+description: 'Understand the folder and file structure of an Avenx-JS application workspace.'
 ---
 
 When you scaffold a project using the `avenx init` command, it builds a organized structure designed to cleanly separate routing, components, page layout, and global configurations.

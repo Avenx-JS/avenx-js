@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/compiler/ComponentParser.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/compiler/ComponentParser.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const fs = require('fs');
+const path = require('path');
+const ExpressionParser = require('./expressionParser');
+
+/**
+ * ComponentParser handles the parsing of Avenx component files (.js and .css).
+ * It extracts component state, computed properties, methods, and templates,
+ * and coordinates with the StyleProcessor to handle styles.
+ */
+class ComponentParser {
+    /**
+     * @param {StyleProcessor} styleProcessor - An instance of StyleProcessor to handle styles.
+     */
+    constructor(styleProcessor) {
+        /** @type {StyleProcessor} */
+        this.styleProcessor = styleProcessor;
+        /** @type {ExpressionParser} */
+        this.expressionParser = new ExpressionParser();
+    }
+
+    /**
+     * Parses a .component.js file and its corresponding .component.css file.
+     * @param {string} filePath - The absolute path to the .component.js file.
+     * @returns {string} The generated JavaScript class for the component.
+     */
+    parse(filePath) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const fileName = path.basename(filePath, '.component.js');
+        
+        // Convert user-profile or user_profile to UserProfile
+        const name = fileName
+            .split(/[-_]/)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+
+        const desPath = filePath.replace('.component.js', '.component.css');
+        let desBlocks = {};
+
+        if (fs.existsSync(desPath)) {
+            this.extractStylesAndVars(fs.readFileSync(desPath, 'utf-8'), desBlocks);
+        }
+
+        const state = this.extractState(content);
+        const computed = this.extractComputed(content);
+        const methods = this.extractMethods(content);
+        let template = this.extractTemplate(content, desBlocks, name);
+
+        const methodStrings = Object.entries(methods)
+            .map(([k, v]) => `${k}: \`${v}\``).join(',\n        ');
+
+        return `
+class ${name} extends AvenxComponent {
+    constructor(bridges) {
+        super(${JSON.stringify(state)}, ${JSON.stringify(computed)}, bridges, \`${template}\`, { ${methodStrings} });
+    }
+}`;
+    }
+
+    /**
+     * Extracts global CSS variables and component-specific style blocks from CSS content.
+     * @param {string} desContent - The content of the .component.css file.
+     * @param {Object} desBlocks - An object to store the extracted style blocks.
+     * @private
+     */
+    extractStylesAndVars(desContent, desBlocks) {
+        const globalMatch = desContent.match(/&lt;@global>([\s\S]*?)&lt;\/ @global>/i);
+        if (globalMatch) {
+            let inner = globalMatch[1];
+            const defRegex = /@def\s+([\w-]+)\s+([^;]+);/g;
+            let defMatch;
+            while ((defMatch = defRegex.exec(inner)) !== null) {
+                this.styleProcessor.addVariable(defMatch[1], defMatch[2].trim());
+            }
+            
+            // Remove @def lines and add the rest as global CSS
+            const rawCss = inner.replace(/@def\s+[\w-]+\s+[^;]+;/g, '').trim();
+            if (rawCss) {
+                this.styleProcessor.addGlobalCSS(rawCss);
+            }
+        }
+
+        const cssBlockMatch = desContent.match(/&lt;@css>([\s\S]*?)&lt;\/ @css>/i);
+        if (cssBlockMatch) {
+            const inner = cssBlockMatch[1];
+            let depth = 0, currentName = "", currentBody = "", inBlock = false;
+            for (let i = 0; i &lt; inner.length; i++) {
+                const char = inner[i];
+                if (char === '{' &amp;&amp; depth === 0) {
+                    currentName = inner.substring(0, i).trim().split('}').pop().trim();
+                    inBlock = true; depth++;
+                } else if (char === '{') {
+                    depth++; currentBody += char;
+                } else if (char === '}') {
+                    depth--;
+                    if (depth === 0) {
+                        if (currentName) desBlocks[currentName] = currentBody.trim();
+                        currentBody = ""; currentName = ""; inBlock = false;
+                    } else { currentBody += char; }
+                } else if (inBlock) { currentBody += char; }
+            }
+        }
+    }
+
+    /**
+     * Extracts the initial state from the component's &lt;state /> tags.
+     * @param {string} content - The content of the .component.js file.
+     * @returns {Object} The extracted state object.
+     * @private
+     */
+    extractState(content) {
+        return this.expressionParser.parseState(content);
+    }
+
+    /**
+     * Extracts computed properties from the component's &lt;computed /> tags.
+     * @param {string} content - The content of the .component.js file.
+     * @returns {Object} A map of property names to their expression strings.
+     * @private
+     */
+    extractComputed(content) {
+        return this.expressionParser.parseComputed(content);
+    }
+
+    /**
+     * Extracts actions (methods) from the component's &lt;action /> tags.
+     * @param {string} content - The content of the .component.js file.
+     * @returns {Object&lt;string, string>} A map of method names to their stringified bodies.
+     * @private
+     */
+    extractMethods(content) {
+        return this.expressionParser.parseMethods(content);
+    }
+
+    /**
+     * Extracts the HTML template and processes internal styles.
+     * @param {string} content - The content of the .component.js file.
+     * @param {Object} desBlocks - The previously extracted design blocks.
+     * @param {string} name - The name of the component for style hashing.
+     * @returns {string} The cleaned and processed HTML template.
+     * @private
+     */
+    extractTemplate(content, desBlocks, name) {
+        let template = content
+            .replace(/&lt;state.*? \/>/g, '')
+            .replace(/&lt;computed.*? \/>/g, '')
+            .replace(/&lt;action.*?>[\s\S]*?&lt;\/action>/g, '')
+            .trim();
+        template = this.styleProcessor.process(template, desBlocks, name);
+        return template.split('\n').filter(line => line.trim() !== '').join('\n');
+    }
+}
+
+module.exports = ComponentParser;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-lib_core_index.html">lib/core/index</a></li></ul><h3>Classes</h3><ul><li><a href="AvenxApp.html">AvenxApp</a></li><li><a href="AvenxBridge.html">AvenxBridge</a></li><li><a href="AvenxCLI.html">AvenxCLI</a></li><li><a href="AvenxCompiler.html">AvenxCompiler</a></li><li><a href="AvenxComponent.html">AvenxComponent</a></li><li><a href="ComponentParser.html">ComponentParser</a></li><li><a href="ComputedRegistry.html">ComputedRegistry</a></li><li><a href="DomPatcher.html">DomPatcher</a></li><li><a href="DynamicEvaluator.html">DynamicEvaluator</a></li><li><a href="EventBinder.html">EventBinder</a></li><li><a href="EventExecutor.html">EventExecutor</a></li><li><a href="ExpressionParser.html">ExpressionParser</a></li><li><a href="HtmlDiff.html">HtmlDiff</a></li><li><a href="HtmlEscaper.html">HtmlEscaper</a></li><li><a href="LifecycleManager.html">LifecycleManager</a></li><li><a href="ProxyHandlerFactory.html">ProxyHandlerFactory</a></li><li><a href="Sanitizer.html">Sanitizer</a></li><li><a href="StateFactory.html">StateFactory</a></li><li><a href="StyleProcessor.html">StyleProcessor</a></li><li><a href="TemplateRenderer.html">TemplateRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jun 11 2026 13:17:17 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

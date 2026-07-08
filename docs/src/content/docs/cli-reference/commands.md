@@ -1,6 +1,6 @@
 ---
-title: "CLI Commands"
-description: "Explore the command-line interface of Avenx-JS to create, compile, run, and watch projects."
+title: 'CLI Commands'
+description: 'Explore the command-line interface of Avenx-JS to create, compile, run, and watch projects.'
 ---
 
 The `avenx` command line tool streamlines your workflow. It handles application scaffolding, file generation, building, and serving.

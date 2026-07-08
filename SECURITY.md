@@ -10,12 +10,12 @@ We take security seriously and appreciate responsible disclosure of potential vu
 
 The following table indicates which versions of Avenx.js currently receive security updates.
 
-| Version                 |    Supported   |
+| Version                 |   Supported    |
 | ----------------------- | :------------: |
-| Latest stable release   |        ✅       |
-| Previous stable release |        ✅       |
+| Latest stable release   |       ✅       |
+| Previous stable release |       ✅       |
 | Development (`main`)    | ⚠️ Best effort |
-| Older releases          |        ❌       |
+| Older releases          |       ❌       |
 
 Only the latest stable releases are guaranteed to receive security fixes.
 
@@ -27,15 +27,15 @@ Only the latest stable releases are guaranteed to receive security fixes.
 
 Instead, report vulnerabilities through:
 
-* **GitHub Security Advisories (preferred):** Use GitHub's private vulnerability reporting feature.
+- **GitHub Security Advisories (preferred):** Use GitHub's private vulnerability reporting feature.
 
 Please include as much information as possible:
 
-* A clear description of the vulnerability
-* Steps to reproduce the issue
-* A proof of concept (if applicable)
-* The affected version(s)
-* Any suggested mitigation or fix
+- A clear description of the vulnerability
+- Steps to reproduce the issue
+- A proof of concept (if applicable)
+- The affected version(s)
+- Any suggested mitigation or fix
 
 The more information you provide, the faster we can investigate.
 
@@ -45,11 +45,11 @@ The more information you provide, the faster we can investigate.
 
 After receiving your report, we aim to:
 
-* Acknowledge receipt within **48 hours**
-* Begin investigating the issue promptly
-* Keep you informed about our progress
-* Release a fix as soon as reasonably possible
-* Publicly credit you for the discovery (if you would like to be credited)
+- Acknowledge receipt within **48 hours**
+- Begin investigating the issue promptly
+- Keep you informed about our progress
+- Release a fix as soon as reasonably possible
+- Publicly credit you for the discovery (if you would like to be credited)
 
 Response times may vary depending on the complexity and severity of the issue.
 
@@ -59,10 +59,10 @@ Response times may vary depending on the complexity and severity of the issue.
 
 We kindly ask that you:
 
-* Give us reasonable time to investigate and fix the issue before public disclosure.
-* Avoid accessing, modifying, or deleting data that does not belong to you.
-* Avoid disrupting services or negatively impacting other users.
-* Conduct testing only in a safe and responsible manner.
+- Give us reasonable time to investigate and fix the issue before public disclosure.
+- Avoid accessing, modifying, or deleting data that does not belong to you.
+- Avoid disrupting services or negatively impacting other users.
+- Conduct testing only in a safe and responsible manner.
 
 We value responsible security research and appreciate your cooperation.
 
@@ -72,11 +72,11 @@ We value responsible security research and appreciate your cooperation.
 
 This policy applies to all official Avenx.js repositories and packages maintained by the Avenx.js team, including:
 
-* Core framework
-* Compiler
-* Runtime
-* Router
-* CLI
+- Core framework
+- Compiler
+- Runtime
+- Router
+- CLI
 
 ---
 
@@ -84,11 +84,11 @@ This policy applies to all official Avenx.js repositories and packages maintaine
 
 When using Avenx.js, we recommend:
 
-* Keeping your dependencies up to date.
-* Regularly updating to the latest Avenx.js release.
-* Avoiding untrusted third-party plugins.
-* Never exposing secrets or API keys in client-side code.
-* Following general web security best practices (e.g. Content Security Policy, input validation, output escaping, HTTPS).
+- Keeping your dependencies up to date.
+- Regularly updating to the latest Avenx.js release.
+- Avoiding untrusted third-party plugins.
+- Never exposing secrets or API keys in client-side code.
+- Following general web security best practices (e.g. Content Security Policy, input validation, output escaping, HTTPS).
 
 ---
 

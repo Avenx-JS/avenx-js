@@ -1,6 +1,6 @@
 ---
-title: "Best Practices"
-description: "Best practices for maximizing performance and securing Avenx-JS applications."
+title: 'Best Practices'
+description: 'Best practices for maximizing performance and securing Avenx-JS applications.'
 ---
 
 Maximize performance and security in your Avenx-JS applications by adhering to the following
@@ -16,7 +16,8 @@ guidelines.
 
 ## Performance Optimisations
 
-- **Assign Unique Keys to Loops**: When using the `<@for>` loop, always provide a `key` attribute (e.g. `key="item.id"`). This allows the `ListManager` to identify elements uniquely and move existing DOM elements instead of rebuilding them. 
+- **Assign Unique Keys to Loops**: When using the `<@for>` loop, always provide a `key` attribute (e.g. `key="item.id"`). This allows the `ListManager` to identify elements uniquely and move existing DOM elements instead of rebuilding them.
+
 ```html
 <!-- HIGHLY RECOMMENDED -->
 <@for item in state.items key="item.id">
@@ -24,7 +25,8 @@ guidelines.
 </@for>
 ```
 
-- **Clean up Global Listeners**: If your actions subscribe to window events or set timers, always clean them up in the `onUnmount()` lifecycle callback to prevent memory leaks: 
+- **Clean up Global Listeners**: If your actions subscribe to window events or set timers, always clean them up in the `onUnmount()` lifecycle callback to prevent memory leaks:
+
 ```javascript
 onMount() {
     this.timer = setInterval(() => this.state.tick++, 1000);

@@ -3,11 +3,13 @@ md/
 dev-notes/
 showcase/
 bench-results/
+issues.md
+backlog.md
+features.md
 
 # documentation
 dev-docs/
 coverage/
-issues.md
 
 # node & npm
 node_modules/
