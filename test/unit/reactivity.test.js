@@ -142,7 +142,76 @@ function testProxyUnwrapping() {
   state.user2.name = 'Charlie';
   assert.strictEqual(state.user1.name, 'Charlie');
 
-  console.log('  ✅ Proxy unwrapping tests passed!');
+  console.log('Proxy unwrapping tests passed!');
+}
+
+/**
+ *
+ */
+function testSymbolKeysAreNotTracked() {
+  console.log('Testing symbol keys are not tracked');
+
+  const symbolKey = Symbol('private');
+  let watcherCount = 0;
+  const state = new StateFactory().create({
+    [symbolKey]: 'hidden',
+  });
+
+  const watcher = new AvenxWatcher(
+    () => state[symbolKey],
+    () => {
+      watcherCount++;
+    }
+  );
+
+  assert.strictEqual(watcher.value, 'hidden');
+
+  delete state[symbolKey];
+
+  assert.strictEqual(watcherCount, 0);
+
+  console.log('Symbol key tracking tests passed!');
+}
+
+/**
+ *
+ */
+function testSymbolKeysDoNotTriggerUpdates() {
+  console.log('Testing symbol keys do not trigger updates');
+
+  const symbolKey = Symbol('private');
+  let changeCount = 0;
+  let watcherCount = 0;
+  const state = new StateFactory().create(
+    {
+      visible: 'shown',
+      [symbolKey]: 'hidden',
+    },
+    {
+      onChange: () => {
+        changeCount++;
+      },
+    }
+  );
+
+  new AvenxWatcher(
+    () => state.visible,
+    () => {
+      watcherCount++;
+    }
+  );
+
+  state[symbolKey] = 'updated';
+
+  assert.strictEqual(state[symbolKey], 'updated');
+  assert.strictEqual(changeCount, 0);
+  assert.strictEqual(watcherCount, 0);
+
+  state.visible = 'changed';
+  assert.strictEqual(changeCount, 1);
+  assert.strictEqual(watcherCount, 1);
+
+  console.log('Symbol key update tests passed!');
 }
 
 /**
@@ -230,6 +299,8 @@ function testBuiltinsAreNotProxied() {
     testStateDeepReactivity();
     testReferentialIdentity();
     testProxyUnwrapping();
+    testSymbolKeysAreNotTracked();
+    testSymbolKeysDoNotTriggerUpdates();
     await testBridgeDeepReactivity();
     testBuiltinsAreNotProxied();
     console.log('✅ All reactivity tests passed!');
