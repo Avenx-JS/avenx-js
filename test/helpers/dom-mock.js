@@ -21,6 +21,52 @@ class MockDOMElement {
     this.innerHTML = '';
     this.value = '';
 
+    const self = this;
+    this.style = {
+      get display() {
+        return self._display || '';
+      },
+      set display(val) {
+        self._display = val;
+        if (val) {
+          self.setAttribute('style', `display: ${val}`);
+        } else {
+          self.removeAttribute('style');
+        }
+      },
+      transitionDuration: '0s',
+      animationDuration: '0s',
+      transitionDelay: '0s',
+      animationDelay: '0s',
+    };
+    this._display = '';
+
+    this.classList = {
+      add: (...classes) => {
+        classes.forEach(cls => {
+          const current = self.getAttribute('class') ? self.getAttribute('class').split(/\s+/) : [];
+          if (!current.includes(cls)) {
+            current.push(cls);
+            self.setAttribute('class', current.join(' '));
+          }
+        });
+      },
+      remove: (...classes) => {
+        classes.forEach(cls => {
+          const current = self.getAttribute('class') ? self.getAttribute('class').split(/\s+/) : [];
+          const idx = current.indexOf(cls);
+          if (idx !== -1) {
+            current.splice(idx, 1);
+            self.setAttribute('class', current.join(' '));
+          }
+        });
+      },
+      contains: (cls) => {
+        const current = self.getAttribute('class') ? self.getAttribute('class').split(/\s+/) : [];
+        return current.includes(cls);
+      }
+    };
+
     // Verhaltensaufzeichnung (Interaction Logging)
     this.recordedCalls = [];
   }
@@ -49,6 +95,14 @@ class MockDOMElement {
    */
   hasAttribute(name) {
     return this._attrs[name] !== undefined;
+  }
+
+  get className() {
+    return this.getAttribute('class') || '';
+  }
+
+  set className(val) {
+    this.setAttribute('class', val);
   }
 
   /**
@@ -100,6 +154,22 @@ class MockDOMElement {
 
   /**
    *
+   * @param newChild
+   * @param referenceChild
+   */
+  insertBefore(newChild, referenceChild) {
+    newChild.parentNode = this;
+    const idx = this.childNodes.indexOf(referenceChild);
+    if (idx !== -1) {
+      this.childNodes.splice(idx, 0, newChild);
+    } else {
+      this.childNodes.push(newChild);
+    }
+    return newChild;
+  }
+
+  /**
+   *
    * @param deep
    */
   cloneNode(deep) {
@@ -107,6 +177,11 @@ class MockDOMElement {
     copy.value = this.value;
     copy._attrs = { ...this._attrs };
     copy.attributes = [...this.attributes];
+    copy.style.display = this.style.display;
+    copy.style.transitionDuration = this.style.transitionDuration;
+    copy.style.animationDuration = this.style.animationDuration;
+    copy.style.transitionDelay = this.style.transitionDelay;
+    copy.style.animationDelay = this.style.animationDelay;
     if (deep) {
       this.childNodes.forEach((child) => {
         if (child.nodeType === 1) {
@@ -124,20 +199,20 @@ class MockDOMElement {
    * @param selector
    */
   querySelectorAll(selector) {
-    if (selector === '*') {
-      const results = [];
-      const traverse = (node) => {
-        node.childNodes.forEach((child) => {
-          if (child.nodeType === 1) {
+    const results = [];
+    const lowerSel = selector.toLowerCase();
+    const traverse = (node) => {
+      node.childNodes.forEach((child) => {
+        if (child.nodeType === 1) {
+          if (selector === '*' || child.tagName.toLowerCase() === lowerSel) {
             results.push(child);
-            traverse(child);
           }
-        });
-      };
-      traverse(this);
-      return results;
-    }
-    return [];
+          traverse(child);
+        }
+      });
+    };
+    traverse(this);
+    return results;
   }
 
   /**
@@ -158,6 +233,14 @@ class MockDOMElement {
   removeEventListener(event, callback) {
     // Protokolliert den Aufruf für spätere Assertions
     this.recordedCalls.push({ method: 'removeEventListener', event, callback });
+  }
+
+  /**
+   *
+   * @param event
+   */
+  dispatchEvent(event) {
+    this.recordedCalls.push({ method: 'dispatchEvent', event });
   }
 
   // Verifikations-Methoden zur Verhaltensprüfung (Behavior Verification)
@@ -190,6 +273,19 @@ function setupDOMMock() {
     querySelector: () => new MockDOMElement('div'),
     createElement: (tag) => new MockDOMElement(tag),
     createElementNS: (ns, tag) => new MockDOMElement(tag, ns),
+  };
+
+  global.window = global.window || {};
+  global.window.getComputedStyle = (el) => {
+    return el.style || {
+      transitionDuration: '0s',
+      animationDuration: '0s',
+      transitionDelay: '0s',
+      animationDelay: '0s',
+    };
+  };
+  global.requestAnimationFrame = (cb) => {
+    return setTimeout(() => cb(Date.now()), 0);
   };
 
   global.DOMParser = class {
@@ -243,6 +339,8 @@ function teardownDOMMock() {
   delete global.Node;
   delete global.document;
   delete global.DOMParser;
+  delete global.window;
+  delete global.requestAnimationFrame;
 }
 
 module.exports = {
