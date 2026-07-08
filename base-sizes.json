@@ -1,0 +1,17 @@
+{
+  "js": {
+    "raw": 81292,
+    "minified": 27023,
+    "gzipped": 8205
+  },
+  "css": {
+    "raw": 49,
+    "minified": 0,
+    "gzipped": 20
+  },
+  "total": {
+    "raw": 81341,
+    "minified": 27023,
+    "gzipped": 8225
+  }
+}
