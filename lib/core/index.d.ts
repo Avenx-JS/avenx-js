@@ -34,6 +34,16 @@ export class AvenxComponent {
     props: Record<string, any>;
 
     /**
+     * Keys or mappings to share reactively with descendant components.
+     */
+    provide?: Record<string, any> | (() => Record<string, any>) | string[];
+
+    /**
+     * Keys or mappings injected from ancestor components.
+     */
+    inject?: Record<string, string> | (() => Record<string, string>) | string[];
+
+    /**
      * @param initialState Initial component state variables.
      * @param computed Map of computed properties to their expression strings.
      * @param bridges Global reactive bridges injected into this component.
