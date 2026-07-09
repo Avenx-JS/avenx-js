@@ -42,7 +42,7 @@ Every contribution — whether code, documentation, or ideas — helps move the 
 - [@aaditya755](https://github.com/aaditya755)
 - [@ychampion](https://github.com/ychampion)
 - [@luvkumar404](https://github.com/luvkumar404)
-- [@Nikunjdhakad](https://github.com/Nikundjhakad)
+- [@Nikunjdhakad](https://github.com/Nikunjdhakad)
 
 ---
 
