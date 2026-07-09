@@ -23,7 +23,7 @@ CSS rules defined inside `<@css>` use named blocks without dot prefixes. The com
 </@css>
 ```
 
-<div @css="card">
+<div @css card>
     <!-- Component Content -->
 </div>
 
