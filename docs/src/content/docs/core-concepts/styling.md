@@ -29,7 +29,65 @@ CSS rules defined inside `<@css>` use named blocks without dot prefixes. The com
 </div>
 ```
 
-## 2. Global CSS & Custom Variables (`<@global>`)
+## 2. Scoping Limitations and Nesting Rules
+
+Nested selectors are scoped by prefixing the generated component class. Selectors that do not use the `&` nesting reference are scoped directly and are **not** interpreted as descendant selectors.
+
+For example, the following does **not** target `h1` elements inside the component:
+
+```css
+<@css>
+    card {
+        h1 {
+            color: red;
+        }
+    }
+</@css>
+```
+
+To target descendant elements, use the `&` nesting reference:
+
+```css
+<@css>
+    card {
+        & h1 {
+            color: red;
+        }
+    }
+</@css>
+```
+
+### Parent Selectors
+
+Use `&` to reference the current selector when applying pseudo-classes or combining selectors.
+
+```css
+<@css>
+    button {
+        &:hover {
+            background-color: #6366f1;
+        }
+    }
+</@css>
+```
+
+### Nested At-Rules
+
+The `&` nesting reference behaves the same way inside nested at-rules such as `@media`, `@supports`, and `@container`.
+
+```css
+<@css>
+    card {
+        @media (max-width: 768px) {
+            & h1 {
+                font-size: 1rem;
+            }
+        }
+    }
+</@css>
+```
+
+## 3. Global CSS & Custom Variables (`<@global>`)
 
 Declare global styles or design token variables using the `<@global>` block. Use the `@def` directive to define custom color codes or measurements. The compiler replaces these variables statically at build time.
 
