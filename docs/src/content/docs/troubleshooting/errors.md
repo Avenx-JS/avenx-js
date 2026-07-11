@@ -5,6 +5,82 @@ description: 'Troubleshooting reference for compile-time and runtime error codes
 
 Avenx-JS uses structured error codes starting with `AVX_C` for compiler errors and `AVX_R` for runtime issues.
 
+## The `AvenxError` Class
+
+Every runtime error code in this guide (e.g. `AVX_R01`) is ultimately thrown as an instance of `AvenxError`, a custom error class exported from the framework's runtime module. It extends the native `Error` and pairs a structured `code` with a formatted, human-readable `message`. Understanding this class is useful if you're writing custom guards, components, or services and want to throw or catch framework-consistent errors yourself.
+
+### Constructor
+
+```
+new AvenxError(code, ...args)
+```
+
+| Parameter | Type      | Description                                                                                       |
+| --------- | --------- | --------------------------------------------------------------------------------------------------- |
+| `code`    | `string`  | One of the `AvenxErrorCodes` identifiers (e.g. `'AVX_R01'`). Selects which message template is used. |
+| `...args` | `any[]`   | Values substituted into the message template's `{0}`, `{1}`, etc. placeholders, in order.            |
+
+### Public Properties
+
+| Property  | Type     | Description                                                                                                  |
+| --------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `code`    | `string` | The raw error code passed to the constructor (e.g. `'AVX_R01'`).                                               |
+| `message` | `string` | The fully formatted message, prefixed with the code, e.g. `[AVX_R01] Mount target selector "#app" was not found in the DOM.` |
+| `name`    | `string` | Always `'AvenxError'`. Useful for distinguishing it from other `Error` subclasses in a `catch` block.          |
+
+### Importing
+
+```js
+import { AvenxError, AvenxErrorCodes } from 'avenx-js';
+```
+
+### Throwing an `AvenxError`
+
+```js
+import { AvenxError, AvenxErrorCodes } from 'avenx-js';
+
+function mount(selector) {
+  const target = document.querySelector(selector);
+  if (!target) {
+    throw new AvenxError(AvenxErrorCodes.MOUNT_TARGET_NOT_FOUND, selector);
+  }
+  // ...
+}
+```
+
+### Catching and Inspecting an `AvenxError`
+
+```js
+import { AvenxError, AvenxErrorCodes } from 'avenx-js';
+
+try {
+  mount('#app');
+} catch (err) {
+  if (err instanceof AvenxError) {
+    console.error(`Avenx error [${err.code}]:`, err.message);
+
+    if (err.code === AvenxErrorCodes.MOUNT_TARGET_NOT_FOUND) {
+      // Handle this specific failure mode
+    }
+  } else {
+    throw err; // Not an Avenx-specific error, rethrow
+  }
+}
+```
+
+> **Tip:** Branch on `err.code`, not `err.message` — `code` is a stable identifier, while the formatted message text may change between versions.
+
+### Non-throwing formatting with `formatMessage`
+
+To get the same formatted error string without throwing (for example, to log a warning), use the exported `formatMessage` helper. It applies the same code-to-template lookup and placeholder substitution as the `AvenxError` constructor:
+
+```js
+import { formatMessage, AvenxErrorCodes } from 'avenx-js';
+
+console.warn(formatMessage(AvenxErrorCodes.SANDBOX_VIOLATION, 'disallowed eval() call'));
+// -> "[AVX_R15] Sandbox security violation: disallowed eval() call"
+```
+
 ## Compiler Codes (`AVX_C*`)
 
 | Code        | Default Message                             | Cause & Resolution                                                                                                                        |

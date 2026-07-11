@@ -4,6 +4,9 @@
   "description": "A lightweight reactive framework with scoped CSS and custom components.",
   "type": "module",
   "main": "lib/compiler.js",
+  "engines": {
+    "node": ">=18"
+  },
   "exports": {
     ".": {
       "types": "./lib/compiler.d.ts",
