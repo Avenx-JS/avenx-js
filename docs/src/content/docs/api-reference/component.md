@@ -15,20 +15,20 @@ The base class from which all standard UI components inherit. It manages reactiv
 Implement these functions in your component logic to execute code at specific points in the component's lifespan:
 
 | Method Name   | Description                                                                                                    |
-| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| ------------- | -------------------------------------------------------------------------------------------------------------- |
 | `onMount()`   | Called immediately after the component's element is attached to the DOM. Place your initial data fetches here. |
 | `onUpdate()`  | Called after the component has updated and patched the DOM tree. Use this for DOM measurements.                |
 | `onUnmount()` | Called before the component is detached and cleaned up. Ideal for removing timers and global listeners.        |
 
 ## DOM Events
 
-In addition to the lifecycle hooks above, which you implement *inside* your component class, `AvenxComponent` also dispatches native DOM [`CustomEvent`](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent)s directly on the component's root element at the same points in its lifecycle. This makes it possible to hook into a component's lifecycle from *outside* the component — for example, when integrating a third-party library, or when a parent script doesn't have direct access to the component instance.
+In addition to the lifecycle hooks above, which you implement _inside_ your component class, `AvenxComponent` also dispatches native DOM [`CustomEvent`](https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent)s directly on the component's root element at the same points in its lifecycle. This makes it possible to hook into a component's lifecycle from _outside_ the component — for example, when integrating a third-party library, or when a parent script doesn't have direct access to the component instance.
 
-| Event Name       | Dispatched                                                    |
-| ----------------- | -------------------------------------------------------------- |
-| `avenx:mount`     | After the component has mounted and `onMount()` has run.       |
-| `avenx:update`    | After the component has updated and `onUpdate()` has run.      |
-| `avenx:unmount`   | Before the component is detached, just before `onUnmount()` runs. |
+| Event Name      | Dispatched                                                        |
+| --------------- | ----------------------------------------------------------------- |
+| `avenx:mount`   | After the component has mounted and `onMount()` has run.          |
+| `avenx:update`  | After the component has updated and `onUpdate()` has run.         |
+| `avenx:unmount` | Before the component is detached, just before `onUnmount()` runs. |
 
 Because these are standard DOM events, you can attach listeners to them the same way you would any other native event, using `addEventListener`:
 
@@ -65,9 +65,9 @@ btn.mount('#button-container');
 
 Updates the component's reactive `props` to match `newProps`. New or changed properties are applied, and properties omitted from `newProps` are removed. These reactive changes trigger the update scheduler, which queues a DOM patch with the component's updated props.
 
-| Param      | Type     | Description                              |
-| ---------- | -------- | ---------------------------------------- |
-| `newProps` | `object` | The complete set of props to apply.      |
+| Param      | Type     | Description                         |
+| ---------- | -------- | ----------------------------------- |
+| `newProps` | `object` | The complete set of props to apply. |
 
 ```javascript
 const btn = new ButtonComponent();

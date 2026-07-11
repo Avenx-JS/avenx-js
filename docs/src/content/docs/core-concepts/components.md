@@ -1,8 +1,9 @@
 ---
-
 title: 'Component Structure'
 description: 'Understand how Avenx Single File Components are structured with template, script, and style tags.'
-----------------------------------------------------------------------------------------------------------------
+---
+
+---
 
 In Avenx-JS, a component is defined by two companion files in the same directory: `<name>.component.js` (logic and template) and `<name>.component.css` (styles).
 
@@ -10,11 +11,11 @@ In Avenx-JS, a component is defined by two companion files in the same directory
 
 The component file contains configuration tags at the top and the HTML template at the bottom. The configuration tags are parsed at compile-time and stripped out before outputting class declarations.
 
-* `<state key="val" />` - Declares the component's reactive local properties. Attributes are coerced to their corresponding JS types (numbers, booleans, arrays, or objects).
+- `<state key="val" />` - Declares the component's reactive local properties. Attributes are coerced to their corresponding JS types (numbers, booleans, arrays, or objects).
 
-* `<computed name="computedName" value="expression" />` - Defines computed getters. The value attribute accepts stringified JS expressions.
+- `<computed name="computedName" value="expression" />` - Defines computed getters. The value attribute accepts stringified JS expressions.
 
-* `<action name="methodName"> ... </action>` - Defines actions (methods) that have access to the component's state, computed attributes, and bridges in their execution scope.
+- `<action name="methodName"> ... </action>` - Defines actions (methods) that have access to the component's state, computed attributes, and bridges in their execution scope.
 
 ```html
 <!-- src/components/greet/greet.component.js -->
@@ -61,17 +62,15 @@ Instead, keep component logic inside supported tags or move reusable utilities i
 For utilities that are intentionally exposed globally, reference them through the `window` object:
 
 ```html
-<action name="updateName">
-  state.username = window.AppUtils.formatName(state.username);
-</action>
+<action name="updateName"> state.username = window.AppUtils.formatName(state.username); </action>
 ```
 
 When writing `.component.js` files:
 
-* Keep reactive state declarations inside `<state>` tags.
-* Keep computed values inside `<computed>` tags.
-* Keep component methods and state mutations inside `<action>` tags.
-* Move reusable helper logic into external utility files.
-* Reference intentionally global utilities through properties on `window`.
+- Keep reactive state declarations inside `<state>` tags.
+- Keep computed values inside `<computed>` tags.
+- Keep component methods and state mutations inside `<action>` tags.
+- Move reusable helper logic into external utility files.
+- Reference intentionally global utilities through properties on `window`.
 
 Understanding these compilation limits helps prevent missing imports, undefined helpers, and runtime `ReferenceError` exceptions caused by code being removed from the compiled output.

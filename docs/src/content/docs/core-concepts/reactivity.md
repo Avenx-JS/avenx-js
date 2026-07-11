@@ -1,8 +1,9 @@
 ---
-
 title: 'Reactive State'
 description: 'Deep dive into the Proxy-based reactive state and transparent dependency tracking in Avenx-JS.'
--------------------------------------------------------------------------------------------------------------
+---
+
+---
 
 Avenx-JS implements a **transparent reactivity system** powered by JavaScript ES6 `Proxy`. There are no state setter functions or hooks required to update the user interface.
 
@@ -21,10 +22,7 @@ To maximize browser performance, state updates are batched together. If you chan
 
 ```javascript
 <action name="updateUser">
-  state.name = "John"; // Queued
-  state.age = 30; // Queued (deduplicated)
-  state.role = "admin"; // Queued (deduplicated)
-
+  state.name = "John"; // Queued state.age = 30; // Queued (deduplicated) state.role = "admin"; // Queued (deduplicated)
   // The DOM will render only ONCE at the end of the microtask queue.
 </action>
 ```

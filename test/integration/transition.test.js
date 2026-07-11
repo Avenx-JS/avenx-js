@@ -61,7 +61,11 @@ const waitForRaf = () => new Promise((resolve) => requestAnimationFrame(() => re
     patcher.flattenTransitionTags(parentEl);
     assert.strictEqual(parentEl.childNodes.length, 1, 'Should flatten transition tag and replace it with its child');
     assert.strictEqual(parentEl.childNodes[0], childNode, 'Child should be moved directly under parent');
-    assert.strictEqual(childNode.getAttribute('data-ax-transition'), 'fade', 'Child should receive data-ax-transition attribute');
+    assert.strictEqual(
+      childNode.getAttribute('data-ax-transition'),
+      'fade',
+      'Child should receive data-ax-transition attribute',
+    );
 
     // 3. Test conditional rendering transitions using data-ax-show
     class ShowComponent extends AvenxComponent {
@@ -70,7 +74,7 @@ const waitForRaf = () => new Promise((resolve) => requestAnimationFrame(() => re
           { isVisible: true },
           {},
           bridges,
-          '<div id="target" data-ax-show="isVisible" data-ax-transition="fade">Hello</div>'
+          '<div id="target" data-ax-show="isVisible" data-ax-transition="fade">Hello</div>',
         );
       }
     }
@@ -78,7 +82,7 @@ const waitForRaf = () => new Promise((resolve) => requestAnimationFrame(() => re
     // We mock document querySelector to return a target div
     const appContainer = new MockDOMElement('div');
     appContainer.setAttribute('id', 'app');
-    
+
     const originalQuerySelector = global.document.querySelector;
     global.document.querySelector = (sel) => {
       if (sel === '#app') return appContainer;
@@ -90,20 +94,20 @@ const waitForRaf = () => new Promise((resolve) => requestAnimationFrame(() => re
 
     app.mount('ShowComponent', '#app');
     await waitForRaf();
-    
+
     const targetDiv = appContainer.childNodes[0];
     assert.ok(targetDiv, 'Component should be mounted');
     assert.strictEqual(targetDiv.style.display, '', 'Element should be visible initially');
     assert.ok(targetDiv.axShowInitialized, 'Show initialization flag should be set');
-    
+
     // Toggle state to false (triggers leave transition)
     const componentInstance = appContainer.__avenx_comp_instance;
     componentInstance.state.isVisible = false;
     await Promise.resolve(); // Wait for update microtask to run patchNode
-    
+
     // Target should have leave classes active immediately after patch
     assert.ok(targetDiv.classList.contains('fade-leave-active'), 'Should start leave transition');
-    
+
     // Wait for transition to end (mock duration is 0, so runs after rafs)
     await waitForRaf();
     assert.strictEqual(targetDiv.style.display, 'none', 'Element should be hidden after leave transition finishes');
@@ -135,12 +139,12 @@ const waitForRaf = () => new Promise((resolve) => requestAnimationFrame(() => re
     // Mount PageA again to set state
     app.mountPage('PageA');
     assert.strictEqual(appContainer.childNodes.length, 1);
-    
+
     // Now trigger transition mounting PageB
     app.mountPage('PageB', {}, { transition: 'fade' });
-    
+
     // parentOfApp childNodes should contain exitWrapper next to appContainer
-    const exitWrapper = parentOfApp.childNodes.find(c => c.classList && c.classList.contains('ax-page-exit-wrapper'));
+    const exitWrapper = parentOfApp.childNodes.find((c) => c.classList && c.classList.contains('ax-page-exit-wrapper'));
     assert.ok(exitWrapper, 'Should insert exitWrapper into parent during route transition');
     assert.ok(exitWrapper.classList.contains('fade-leave-active'), 'Exit wrapper should run leave transition');
 

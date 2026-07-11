@@ -19,13 +19,13 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 
 ## Options
 
-| Option | Type | Default | Rules |
-| ------ | ---- | ------- | ----- |
-| `srcDir` | `string` | `"src"` | Non-empty relative path to application source files. |
-| `distDir` | `string` | `"dist"` | Non-empty relative path where compiled output is written. |
+| Option         | Type     | Default             | Rules                                                           |
+| -------------- | -------- | ------------------- | --------------------------------------------------------------- |
+| `srcDir`       | `string` | `"src"`             | Non-empty relative path to application source files.            |
+| `distDir`      | `string` | `"dist"`            | Non-empty relative path where compiled output is written.       |
 | `templatesDir` | `string` | `".avenxtemplates"` | Non-empty relative path for local generator template overrides. |
-| `server.port` | `number` | `3000` | Valid TCP port from `0` to `65535`. |
-| `server.host` | `string` | `"localhost"` | Non-empty host name or address for the local dev server. |
+| `server.port`  | `number` | `3000`              | Valid TCP port from `0` to `65535`.                             |
+| `server.host`  | `string` | `"localhost"`       | Non-empty host name or address for the local dev server.        |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
 

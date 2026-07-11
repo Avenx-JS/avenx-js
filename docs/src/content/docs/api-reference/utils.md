@@ -54,9 +54,11 @@ const sanitizer = new Sanitizer(config);
 Sanitizes an input string containing HTML by filtering it against the allowed tags and attributes configuration. Dangerous elements (like `<script>`, `<style>`, `<iframe>`, etc.) and unsafe URL protocols (like `javascript:`, `data:` except for safe image data) are stripped.
 
 **Parameters:**
+
 - `html` (any): The raw content to sanitize (coerced to a string).
 
 **Returns:**
+
 - `string`: The sanitized, safe HTML string.
 
 **Example**
@@ -108,10 +110,12 @@ const state = stateFactory.create(initialState, options);
 ```
 
 **Parameters**
+
 - `initialState` (object, optional): The initial state object to make reactive. Defaults to an empty object.
 - `options` (object, optional): Configuration options passed to the proxy handler factory. Defaults to an empty object.
 
 **Returns**
+
 - `Proxy`: A reactive proxy around the provided state object.
 
 If `initialState` is already an Avenx reactive proxy, `create()` returns the existing proxy instead of wrapping it in another proxy.
@@ -124,10 +128,10 @@ import { StateFactory } from 'avenx-core';
 const stateFactory = new StateFactory();
 
 const state = stateFactory.create({
-    count: 0,
-    user: {
-        name: 'Avenx User',
-    },
+  count: 0,
+  user: {
+    name: 'Avenx User',
+  },
 });
 
 state.count++;
@@ -138,14 +142,14 @@ Options supplied to `create()` are forwarded to the underlying `ProxyHandlerFact
 
 ```javascript
 const state = stateFactory.create(
-    {
-        count: 0,
+  {
+    count: 0,
+  },
+  {
+    onChange() {
+      console.log('State changed');
     },
-    {
-        onChange() {
-            console.log('State changed');
-        },
-    },
+  },
 );
 ```
 
@@ -162,6 +166,7 @@ const watcher = new AvenxWatcher(getter, callback, options);
 ```
 
 **Parameters**
+
 - `getter` (function): A function that returns the reactive value or expression to observe.
 - `callback` (function | null, optional): Called when the watched value changes. The callback receives the new value and previous value.
 - `options` (object, optional): Configuration options controlling watcher behavior.
@@ -172,7 +177,7 @@ const watcher = new AvenxWatcher(getter, callback, options);
 
 ```javascript
 {
-    immediate: true
+  immediate: true;
 }
 ```
 
@@ -184,7 +189,7 @@ The initial callback receives the current value as the first argument and `undef
 
 ```javascript
 {
-    lazy: true
+  lazy: true;
 }
 ```
 
@@ -246,11 +251,13 @@ this.watch(getter, callback, options);
 ```
 
 **Parameters**
+
 - `getter` (function): A function returning the reactive value to observe.
 - `callback` (function): Called when the watched value changes. Receives `newValue` and `oldValue`.
 - `options` (object, optional): Watcher configuration options such as `immediate` and `lazy`.
 
 **Returns**
+
 - `AvenxWatcher`: The watcher instance created for the component.
 
 Watchers registered with `this.watch()` are stored by the component and automatically cleaned up when the component is unmounted.
@@ -263,18 +270,18 @@ The getter function determines which reactive state properties should be tracked
 import { AvenxComponent } from 'avenx-core';
 
 class CounterComponent extends AvenxComponent {
-    constructor() {
-        super({
-            count: 0,
-        });
+  constructor() {
+    super({
+      count: 0,
+    });
 
-        this.watch(
-            () => this.state.count,
-            (newValue, oldValue) => {
-                console.log(`Count changed from ${oldValue} to ${newValue}`);
-            },
-        );
-    }
+    this.watch(
+      () => this.state.count,
+      (newValue, oldValue) => {
+        console.log(`Count changed from ${oldValue} to ${newValue}`);
+      },
+    );
+  }
 }
 ```
 
@@ -286,13 +293,13 @@ Set `immediate` to `true` to execute the callback immediately with the initial v
 
 ```javascript
 this.watch(
-    () => this.state.count,
-    (newValue, oldValue) => {
-        console.log('Current count:', newValue);
-    },
-    {
-        immediate: true,
-    },
+  () => this.state.count,
+  (newValue, oldValue) => {
+    console.log('Current count:', newValue);
+  },
+  {
+    immediate: true,
+  },
 );
 ```
 
@@ -304,14 +311,12 @@ Watchers track reactive properties that are accessed while the getter executes. 
 
 ```javascript
 this.watch(
-    () => {
-        return this.state.usePrimary
-            ? this.state.primaryValue
-            : this.state.secondaryValue;
-    },
-    (newValue, oldValue) => {
-        console.log('Selected value changed:', newValue, oldValue);
-    },
+  () => {
+    return this.state.usePrimary ? this.state.primaryValue : this.state.secondaryValue;
+  },
+  (newValue, oldValue) => {
+    console.log('Selected value changed:', newValue, oldValue);
+  },
 );
 ```
 
@@ -325,10 +330,10 @@ When creating an `AvenxWatcher` manually, call `teardown()` when the watcher is 
 
 ```javascript
 const watcher = new AvenxWatcher(
-    () => state.count,
-    (newValue, oldValue) => {
-        console.log(newValue, oldValue);
-    },
+  () => state.count,
+  (newValue, oldValue) => {
+    console.log(newValue, oldValue);
+  },
 );
 
 watcher.teardown();

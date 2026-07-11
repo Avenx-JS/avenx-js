@@ -57,7 +57,7 @@ function testBasicWatcher() {
       callbackCount++;
       lastNewValue = newVal;
       lastOldValue = oldVal;
-    }
+    },
   );
 
   // Initial value should be computed (not lazy by default)
@@ -99,7 +99,7 @@ function testImmediateWatcher() {
       lastNewValue = newVal;
       lastOldValue = oldVal;
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Callback should run immediately on instantiation
@@ -126,7 +126,7 @@ function testWatcherTeardown() {
     () => state.count,
     () => {
       callbackCount++;
-    }
+    },
   );
 
   state.count = 1;
@@ -166,7 +166,7 @@ function testComponentWatchAPI() {
     (newVal) => {
       watchCount++;
       lastNewVal = newVal;
-    }
+    },
   );
 
   assert.strictEqual(watchCount, 0);

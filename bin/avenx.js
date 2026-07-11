@@ -16,9 +16,7 @@ const findProjectRoot = loadConfig.findProjectRoot;
 const [, , command, ...args] = process.argv;
 
 const MIN_NODE_VERSION = [18, 0, 0];
-const current = process.versions.node
-  .split('.')
-  .map(Number);
+const current = process.versions.node.split('.').map(Number);
 
 function compareVersions(current, required) {
   for (let i = 0; i < required.length; i++) {
@@ -30,8 +28,7 @@ function compareVersions(current, required) {
 
 if (!compareVersions(current, MIN_NODE_VERSION)) {
   console.error(
-    `Avenx requires Node.js ${MIN_NODE_VERSION.join('.')} or later.\n` +
-    `Current version: ${process.versions.node}`
+    `Avenx requires Node.js ${MIN_NODE_VERSION.join('.')} or later.\n` + `Current version: ${process.versions.node}`,
   );
   process.exit(1);
 }
@@ -674,7 +671,7 @@ Options:
 if (command === '-v' || command === '--version') {
   console.log('Avenx-JS v' + packageJson.version);
   process.exit(0);
-} else {  
+} else {
   const cli = new AvenxCLI();
   cli.run(command, args);
 }

@@ -97,13 +97,13 @@ try {
   const preventEl = createMockElement('DIV', { '@click.prevent': 'handlePrevent' });
   binder.bind(preventEl, dispatcher);
   resetDispatcher();
-  
+
   let preventCalled = false;
   const mockPreventEvent = {
     type: 'click',
     preventDefault() {
       preventCalled = true;
-    }
+    },
   };
   preventEl.trigger('click', mockPreventEvent);
   assert.strictEqual(executedSource, 'handlePrevent');
@@ -119,7 +119,7 @@ try {
     type: 'click',
     stopPropagation() {
       stopCalled = true;
-    }
+    },
   };
   stopEl.trigger('click', mockStopEvent);
   assert.strictEqual(executedSource, 'handleStop');
@@ -173,7 +173,7 @@ try {
     },
     stopPropagation() {
       chainStop = true;
-    }
+    },
   };
   chainedEl.trigger('click', mockChainEvent);
   assert.strictEqual(executedSource, 'handleChained');

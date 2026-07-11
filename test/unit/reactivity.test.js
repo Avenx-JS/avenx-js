@@ -161,7 +161,7 @@ function testSymbolKeysAreNotTracked() {
     () => state[symbolKey],
     () => {
       watcherCount++;
-    }
+    },
   );
 
   assert.strictEqual(watcher.value, 'hidden');
@@ -191,14 +191,14 @@ function testSymbolKeysDoNotTriggerUpdates() {
       onChange: () => {
         changeCount++;
       },
-    }
+    },
   );
 
   new AvenxWatcher(
     () => state.visible,
     () => {
       watcherCount++;
-    }
+    },
   );
 
   state[symbolKey] = 'updated';
@@ -244,14 +244,14 @@ async function testBridgeDeepReactivity() {
     () => bridge.theme.colors.primary,
     () => {
       colorWatcherCount++;
-    }
+    },
   );
 
   new AvenxWatcher(
     () => bridge.theme.dark,
     () => {
       themeWatcherCount++;
-    }
+    },
   );
 
   // Mutating nested property triggers the color watcher
@@ -298,21 +298,24 @@ function testBuiltinsAreNotProxied() {
  */
 function testDoubleWrappingPrevention() {
   console.log('🧪 Testing prevention of double wrapping for reactive proxies...');
-  
+
   let changeCount = 0;
-  const state = new StateFactory().create({
-    child1: { a: 1 },
-    child2: { b: 2 }
-  }, {
-    onChange: () => changeCount++
-  });
+  const state = new StateFactory().create(
+    {
+      child1: { a: 1 },
+      child2: { b: 2 },
+    },
+    {
+      onChange: () => changeCount++,
+    },
+  );
 
   state.child1 = state.child2;
-  
+
   assert.strictEqual(state.child1, state.child2, 'The proxies should be identical (no double wrapping)');
-  
+
   changeCount = 0;
-  
+
   state.child1.b = 3;
   assert.strictEqual(changeCount, 1, 'Mutating the assigned proxy should trigger only 1 update, not 2');
   assert.strictEqual(state.child2.b, 3, 'Mutation should reflect in the original proxy');

@@ -1,8 +1,9 @@
 ---
-
 title: 'Shared State & Bridges'
 description: 'Share reactive state between components using Avenx Bridges.'
----------------------------------------------------------------------------
+---
+
+---
 
 Bridges provide an elegant, lightweight solution for sharing state and business logic across multiple components or pages without prop-drilling.
 
@@ -65,10 +66,7 @@ Bridges are automatically loaded and registered by the compiler. They are expose
 ```html
 <p>Current User: {{ AuthBridge.user.name }}</p>
 
-<action name="login">
-  AuthBridge.isLoggedIn = true;
-  AuthBridge.user.name = "John Doe";
-</action>
+<action name="login"> AuthBridge.isLoggedIn = true; AuthBridge.user.name = "John Doe"; </action>
 
 <button @click="AuthBridge.logout()">Log Out</button>
 ```
@@ -153,9 +151,9 @@ export default class AuthBridge extends AvenxBridge {
 
 When writing `.bridge.js` files:
 
-* Do not rely on variables, constants, or helper functions declared before `export default`.
-* Keep bridge-specific helper methods inside the exported bridge class.
-* Move reusable logic into external utility files.
-* Reference intentionally global utilities through properties on `window`.
+- Do not rely on variables, constants, or helper functions declared before `export default`.
+- Keep bridge-specific helper methods inside the exported bridge class.
+- Move reusable logic into external utility files.
+- Reference intentionally global utilities through properties on `window`.
 
 Understanding these compilation limits helps prevent missing declarations and runtime `ReferenceError` exceptions caused by helper code being removed from the compiled output.

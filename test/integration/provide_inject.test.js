@@ -381,12 +381,14 @@ global.Node = {
 
 global.window = {};
 global.window.getComputedStyle = (el) => {
-  return el.style || {
-    transitionDuration: '0s',
-    animationDuration: '0s',
-    transitionDelay: '0s',
-    animationDelay: '0s',
-  };
+  return (
+    el.style || {
+      transitionDuration: '0s',
+      animationDuration: '0s',
+      transitionDelay: '0s',
+      animationDelay: '0s',
+    }
+  );
 };
 
 global.requestAnimationFrame = (cb) => {
@@ -426,17 +428,15 @@ global.requestAnimationFrame = (cb) => {
           {},
           {},
           bridges,
-          '<div>' +
-          '  <ChildComp data-avenx-comp="ChildComp"></ChildComp>' +
-          '</div>',
+          '<div>' + '  <ChildComp data-avenx-comp="ChildComp"></ChildComp>' + '</div>',
           {},
-          registry
+          registry,
         );
         this.provide = {
           theme: 'dark',
           changeTheme(newTheme) {
             this.theme = newTheme;
-          }
+          },
         };
       }
       runUpdate() {
@@ -450,10 +450,10 @@ global.requestAnimationFrame = (cb) => {
 
     // Reset root element
     testRootElement.innerHTML = '';
-    
+
     const parentPage = new ParentPage({}, registry1);
     parentPage.mount(testRootElement);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Verify initial mount & render values
@@ -471,15 +471,23 @@ global.requestAnimationFrame = (cb) => {
 
     // Mutate parent theme using the injected method
     childInstance.changeTheme('light');
-    
+
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Verify child updated reactively, parent did NOT re-render (Targeted Reactivity)
     assert.strictEqual(parentPage._providedState.theme, 'light', 'Parent theme should update to light');
     assert.strictEqual(childInstance.theme, 'light', 'Child injected theme should update to light');
-    assert.strictEqual(childEl.textContent.trim(), 'Child Theme: light', 'Child template should update rendering to light');
+    assert.strictEqual(
+      childEl.textContent.trim(),
+      'Child Theme: light',
+      'Child template should update rendering to light',
+    );
 
-    assert.strictEqual(parentRenders, 1, 'Parent component should NOT re-render on child injected change (performance updateAll avoided)');
+    assert.strictEqual(
+      parentRenders,
+      1,
+      'Parent component should NOT re-render on child injected change (performance updateAll avoided)',
+    );
     assert.strictEqual(childRenders, 2, 'Child component should re-render on injected value change');
 
     console.log('  ✅ Basic Provide/Inject and Targeted Reactivity tests passed!');
@@ -508,11 +516,9 @@ global.requestAnimationFrame = (cb) => {
           { color: 'blue' },
           {},
           bridges,
-          '<div>' +
-          '  <ArrayChild data-avenx-comp="ArrayChild"></ArrayChild>' +
-          '</div>',
+          '<div>' + '  <ArrayChild data-avenx-comp="ArrayChild"></ArrayChild>' + '</div>',
           {},
-          registry
+          registry,
         );
         this.provide = ['color'];
       }
@@ -541,7 +547,11 @@ global.requestAnimationFrame = (cb) => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     assert.strictEqual(arrayChildInst.color, 'red', 'Array child should react to parent scope change');
-    assert.strictEqual(arrayChildEl.textContent.trim(), 'Color: red', 'Array child template should re-render with new color');
+    assert.strictEqual(
+      arrayChildEl.textContent.trim(),
+      'Color: red',
+      'Array child template should re-render with new color',
+    );
     assert.strictEqual(arrayChildRenders, 2, 'Array child should re-render');
 
     console.log('  ✅ Array-based Provide/Inject tests passed!');
@@ -564,14 +574,12 @@ global.requestAnimationFrame = (cb) => {
           {},
           {},
           bridges,
-          '<div>' +
-          '  <GrandchildComp data-avenx-comp="GrandchildComp"></GrandchildComp>' +
-          '</div>',
+          '<div>' + '  <GrandchildComp data-avenx-comp="GrandchildComp"></GrandchildComp>' + '</div>',
           {},
-          registry
+          registry,
         );
         this.provide = {
-          theme: 'light' // Shadows parent's theme
+          theme: 'light', // Shadows parent's theme
         };
       }
     }
@@ -582,15 +590,13 @@ global.requestAnimationFrame = (cb) => {
           {},
           {},
           bridges,
-          '<div>' +
-          '  <IntermediateComp data-avenx-comp="IntermediateComp"></IntermediateComp>' +
-          '</div>',
+          '<div>' + '  <IntermediateComp data-avenx-comp="IntermediateComp"></IntermediateComp>' + '</div>',
           {},
-          registry
+          registry,
         );
         this.provide = {
           theme: 'dark',
-          api: 'v1'
+          api: 'v1',
         };
       }
     }
@@ -616,11 +622,11 @@ global.requestAnimationFrame = (cb) => {
     assert.strictEqual(
       grandchildEl.textContent.trim(),
       'Shadowed: light, Shared: v1',
-      'Grandchild template should render shadowed and shared values'
+      'Grandchild template should render shadowed and shared values',
     );
 
     console.log('  ✅ Nested scopes and shadowing tests passed!');
-    
+
     console.log('✅ Provide / Inject Integration Tests successfully completed!');
     process.exit(0);
   } catch (error) {

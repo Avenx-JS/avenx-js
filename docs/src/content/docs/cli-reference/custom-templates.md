@@ -28,12 +28,12 @@ The first match found is used. If no local override exists, the CLI falls back t
 Create the directory at your project root, then add subfolders matching the type of file you want to override: `component`, `page`, `bridge`, or `guard`.
 .avenxtemplates/
 ├── component/
-│   ├── component.js.template
-│   └── component.css.template
+│ ├── component.js.template
+│ └── component.css.template
 ├── page/
-│   └── page.js.template
+│ └── page.js.template
 ├── bridge/
-│   └── bridge.js.template
+│ └── bridge.js.template
 └── guard/
 └── guard.js.template
 
@@ -51,8 +51,8 @@ Templates use `{{ name }}` as a placeholder, which the CLI replaces with the par
 <state count="0" />
 
 <div>
-    <@css container />
-    <h1 @css title>{{ name }}</h1>
+  <@css container />
+  <h1 @css title>{{ name }}</h1>
 </div>
 ```
 

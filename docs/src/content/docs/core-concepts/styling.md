@@ -25,7 +25,7 @@ CSS rules defined inside `<@css>` use named blocks without dot prefixes. The com
 
 ```html
 <div @css card>
-    <!-- Component Content -->
+  <!-- Component Content -->
 </div>
 ```
 
@@ -134,7 +134,7 @@ The nested `h1` selector does not contain `&`, so the compiler prepends the gene
 
 ```css
 .generated-hashh1 {
-    color: red;
+  color: red;
 }
 ```
 
@@ -158,7 +158,7 @@ The `&` refers to the generated scoped selector. Conceptually, this compiles to:
 
 ```css
 .generated-hash h1 {
-    color: red;
+  color: red;
 }
 ```
 
@@ -168,7 +168,7 @@ For example:
 
 ```html
 <div @css card>
-    <h1>Card title</h1>
+  <h1>Card title</h1>
 </div>
 ```
 
@@ -198,11 +198,11 @@ Conceptually, these selectors compile to:
 
 ```css
 .generated-hash:hover {
-    border-color: #6366f1;
+  border-color: #6366f1;
 }
 
 .generated-hash:focus {
-    outline: 2px solid #6366f1;
+  outline: 2px solid #6366f1;
 }
 ```
 

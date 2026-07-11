@@ -423,12 +423,14 @@ global.window = {
     },
   },
   getComputedStyle: (el) => {
-    return el.style || {
-      transitionDuration: '0s',
-      animationDuration: '0s',
-      transitionDelay: '0s',
-      animationDelay: '0s',
-    };
+    return (
+      el.style || {
+        transitionDuration: '0s',
+        animationDuration: '0s',
+        transitionDelay: '0s',
+        animationDelay: '0s',
+      }
+    );
   },
 };
 
@@ -452,7 +454,7 @@ global.requestAnimationFrame = (cb) => {
           bridges,
           '<div id="child">Child Param: {{ $route.params.id }}, Hash: {{ $route.hash }}</div>',
           {},
-          props
+          props,
         );
       }
     }
@@ -464,11 +466,11 @@ global.requestAnimationFrame = (cb) => {
           {},
           bridges,
           '<div>' +
-          '  <div id="parent">Parent Param: {{ $route.params.id }}</div>' +
-          '  <ChildComp data-avenx-comp="ChildComp"></ChildComp>' +
-          '</div>',
+            '  <div id="parent">Parent Param: {{ $route.params.id }}</div>' +
+            '  <ChildComp data-avenx-comp="ChildComp"></ChildComp>' +
+            '</div>',
           {},
-          registry
+          registry,
         );
       }
     }
@@ -484,7 +486,7 @@ global.requestAnimationFrame = (cb) => {
 
     // 1. Navigate to route #/user/42
     global.window.location.hash = '#/user/42';
-    
+
     // Wait for the async router handling (hashchange listener fires in a timeout)
     await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -495,14 +497,22 @@ global.requestAnimationFrame = (cb) => {
     assert.ok(childEl, 'Child component should be mounted');
 
     assert.strictEqual(parentEl.textContent.trim(), 'Parent Param: 42', 'Parent page should access route params');
-    assert.strictEqual(childEl.textContent.trim(), 'Child Param: 42, Hash: #/user/42', 'Child component should access route params and hash');
+    assert.strictEqual(
+      childEl.textContent.trim(),
+      'Child Param: 42, Hash: #/user/42',
+      'Child component should access route params and hash',
+    );
 
     // 2. Navigate to route #/user/999
     global.window.location.hash = '#/user/999';
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     assert.strictEqual(parentEl.textContent.trim(), 'Parent Param: 999', 'Parent page should update on navigation');
-    assert.strictEqual(childEl.textContent.trim(), 'Child Param: 999, Hash: #/user/999', 'Child component should update on navigation');
+    assert.strictEqual(
+      childEl.textContent.trim(),
+      'Child Param: 999, Hash: #/user/999',
+      'Child component should update on navigation',
+    );
 
     // Clean up globals
     router.destroy();

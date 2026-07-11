@@ -30,7 +30,7 @@ if (typeof globalThis !== 'undefined') {
 } else if (typeof global !== 'undefined') {
   Object.assign(global, Avenx);
 }
-`
+`,
     },
     target: ['es2020'],
   });

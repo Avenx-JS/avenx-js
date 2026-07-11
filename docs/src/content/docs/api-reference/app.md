@@ -59,4 +59,3 @@ Mounts the initialized application onto the specified DOM element, triggering th
 ```javascript
 app.mount('#app');
 ```
-

@@ -14,10 +14,12 @@ A static utility class providing mocking helpers for bridges, sandboxes, and eve
 Creates a deep proxy around a bridge class or object, tracking method calls and state changes.
 
 **Parameters**
+
 - `bridgeClassOrObject` (function | object): A bridge class (constructor) or an existing bridge instance to wrap.
 - `initialData` (object, optional): Initial state to assign onto the mock instance.
 
 **Returns**
+
 - `object`: A proxied mock bridge with special introspection properties:
   - `$calls` — array of `{ method, args }` for every method call made on the mock.
   - `$stateChanges` — array of `{ prop, value }` for every property set on the mock.
@@ -49,6 +51,7 @@ console.log(mockAuth.$stateChanges);
 Creates and returns a new `AvenxSandbox` instance for mounting components in isolation.
 
 **Returns**
+
 - `AvenxSandbox`: A new sandbox instance.
 
 ```javascript
@@ -62,11 +65,13 @@ const sandbox = AvenxMock.createSandbox();
 Dispatches an event on a DOM element (or a mock element), for simulating user interaction in tests.
 
 **Parameters**
+
 - `element` (Element): The target element to dispatch the event on.
 - `eventName` (string): The event type to trigger (e.g., `'click'`, `'input'`).
 - `eventData` (object, optional): Additional properties merged onto the dispatched event.
 
 **Behavior**
+
 - If a real `Event`/`CustomEvent` and `dispatchEvent` are available, a standard `CustomEvent` is dispatched with `eventData` set as `detail`.
 - If the element exposes a custom `trigger()` method, that is called instead.
 - Otherwise, falls back to manually walking up `parentNode` and invoking matching `listeners[eventName]` handlers, respecting `stopPropagation()`.
@@ -86,10 +91,12 @@ A container for registering components and bridges, then mounting them in isolat
 Registers a component class under a given name in the sandbox.
 
 **Parameters**
+
 - `name` (string): The name to register the component under.
 - `compClass` (typeof AvenxComponent): The component class.
 
 **Returns**
+
 - `AvenxSandbox`: The sandbox instance (chainable).
 
 ### `registerBridge(name, bridgeInstance)`
@@ -97,10 +104,12 @@ Registers a component class under a given name in the sandbox.
 Registers a bridge instance under a given name in the sandbox.
 
 **Parameters**
+
 - `name` (string): The name to register the bridge under.
 - `bridgeInstance` (object): The bridge instance (often created via `AvenxMock.createMockBridge`).
 
 **Returns**
+
 - `AvenxSandbox`: The sandbox instance (chainable).
 
 ### `setRoute(route)`
@@ -108,9 +117,11 @@ Registers a bridge instance under a given name in the sandbox.
 Mocks the current router state, useful for testing route-dependent components without a real router.
 
 **Parameters**
+
 - `route` (object): The route object to set as the current route.
 
 **Returns**
+
 - `AvenxSandbox`: The sandbox instance (chainable).
 
 ### `waitForUpdate()`
@@ -118,6 +129,7 @@ Mocks the current router state, useful for testing route-dependent components wi
 Waits for any pending scheduled component updates to flush, before making assertions.
 
 **Returns**
+
 - `Promise<void>`
 
 ```javascript
@@ -129,11 +141,13 @@ await sandbox.waitForUpdate();
 Mounts a component (or page) class in isolation using the sandbox's registered bridges and components.
 
 **Parameters**
+
 - `compClass` (typeof AvenxComponent): The component or page class to mount.
 - `props` (object, optional): Props to pass into the component.
 - `container` (Element, optional): A DOM element to mount into. If omitted, a `<div>` is created automatically (using `document.createElement` when available, or an internal mock element otherwise).
 
 **Returns**
+
 - `object`: A mount helper with:
   - `instance` — the mounted component instance.
   - `container` — the DOM element the component was mounted into.

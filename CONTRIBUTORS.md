@@ -43,7 +43,7 @@ Every contribution — whether code, documentation, or ideas — helps move the 
 16. [@ychampion](https://github.com/ychampion)
 17. [@luvkumar404](https://github.com/luvkumar404)
 18. [@Nikunjdhakad](https://github.com/Nikunjdhakad)
-19. [@iamdhrv](https://github.com/iamdhrv) 
+19. [@iamdhrv](https://github.com/iamdhrv)
 20. [@aaryaparadkar](https://github.com/aaryaparadkar)
 21. [@rarestpreet](https://github.com/rarestpreet)
 22. [@Khushboo1206](https://github.com/Khushboo1206)

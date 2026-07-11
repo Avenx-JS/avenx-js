@@ -13,7 +13,7 @@ The `<transition>` component does not render an element itself; instead, it inje
 
 ```html
 <transition name="fade">
-    <div class="box">Animate Me!</div>
+  <div class="box">Animate Me!</div>
 </transition>
 ```
 
@@ -23,7 +23,7 @@ If no `name` attribute is given, the transition defaults to `ax`, producing clas
 
 ```html
 <transition>
-    <p>Default name is "ax"</p>
+  <p>Default name is "ax"</p>
 </transition>
 ```
 
@@ -33,7 +33,7 @@ The `name` attribute also accepts a template expression so the transition identi
 
 ```html
 <transition name="{{ state.transitionType }}">
-    <div>Dynamic transition</div>
+  <div>Dynamic transition</div>
 </transition>
 ```
 
@@ -45,11 +45,11 @@ Every transition produces six CSS classes that follow a precise timing sequence.
 
 ### Enter
 
-| Step | Classes on Element | Trigger |
-|------|-------------------|---------|
-| 1 | `fade-enter` `fade-enter-active` | Added synchronously when element is inserted |
-| 2 | `fade-enter-to` added, `fade-enter` removed | After double `requestAnimationFrame` (browser has rendered the initial paint) |
-| 3 | `fade-enter-active` `fade-enter-to` removed | On `transitionend` / `animationend` event or fallback timeout |
+| Step | Classes on Element                          | Trigger                                                                       |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------------------- |
+| 1    | `fade-enter` `fade-enter-active`            | Added synchronously when element is inserted                                  |
+| 2    | `fade-enter-to` added, `fade-enter` removed | After double `requestAnimationFrame` (browser has rendered the initial paint) |
+| 3    | `fade-enter-active` `fade-enter-to` removed | On `transitionend` / `animationend` event or fallback timeout                 |
 
 ```text
 Element inserted
@@ -68,11 +68,11 @@ Remove: -enter-active, -enter-to
 
 ### Leave
 
-| Step | Classes on Element | Trigger |
-|------|-------------------|---------|
-| 1 | `fade-leave` `fade-leave-active` | Added synchronously when element is removed |
-| 2 | `fade-leave-to` added, `fade-leave` removed | After double `requestAnimationFrame` |
-| 3 | `fade-leave-active` `fade-leave-to` removed | On `transitionend` / `animationend` event or fallback timeout, then element is removed from DOM |
+| Step | Classes on Element                          | Trigger                                                                                         |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 1    | `fade-leave` `fade-leave-active`            | Added synchronously when element is removed                                                     |
+| 2    | `fade-leave-to` added, `fade-leave` removed | After double `requestAnimationFrame`                                                            |
+| 3    | `fade-leave-active` `fade-leave-to` removed | On `transitionend` / `animationend` event or fallback timeout, then element is removed from DOM |
 
 ```text
 Element should be removed
@@ -118,17 +118,17 @@ A basic fade transition that changes opacity over 300 ms:
 ```css
 .fade-enter-active,
 .fade-leave-active {
-    transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .fade-enter,
 .fade-leave-to {
-    opacity: 0;
+  opacity: 0;
 }
 
 .fade-enter-to,
 .fade-leave {
-    opacity: 1;
+  opacity: 1;
 }
 ```
 
@@ -137,19 +137,21 @@ A basic fade transition that changes opacity over 300 ms:
 ```css
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-    transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .slide-fade-enter,
 .slide-fade-leave-to {
-    opacity: 0;
-    transform: translateX(20px);
+  opacity: 0;
+  transform: translateX(20px);
 }
 
 .slide-fade-enter-to,
 .slide-fade-leave {
-    opacity: 1;
-    transform: translateX(0);
+  opacity: 1;
+  transform: translateX(0);
 }
 ```
 
@@ -161,15 +163,17 @@ The `<transition>` tag works transparently with `data-ax-show`. When the bound e
 
 ```html
 <transition name="fade">
-    <div data-ax-show="state.isVisible">Toggle Me</div>
+  <div data-ax-show="state.isVisible">Toggle Me</div>
 </transition>
 ```
 
 When `state.isVisible` becomes `false`:
+
 1. Leave classes are applied
 2. After the transition completes, `display: none` is set on the element
 
 When `state.isVisible` becomes `true`:
+
 1. `display` is restored
 2. Enter classes are applied
 
@@ -187,16 +191,16 @@ The transition name can also be defined per route or globally on the router:
 
 ```javascript
 const router = new AvenxRouter(app, {
-    transition: 'fade'
+  transition: 'fade',
 });
 ```
 
 ```javascript
 const router = new AvenxRouter(app, {
-    routes: {
-        'home': { page: 'HomePage', transition: 'slide-fade' },
-        'about': { page: 'AboutPage' }
-    }
+  routes: {
+    home: { page: 'HomePage', transition: 'slide-fade' },
+    about: { page: 'AboutPage' },
+  },
 });
 ```
 
@@ -204,11 +208,11 @@ const router = new AvenxRouter(app, {
 
 ## Summary
 
-| Concept | Behaviour |
-|---------|-----------|
-| Default name | `ax` when `name` is omitted |
-| Dynamic name | `name="{{ expr }}"` for runtime resolution |
-| Runtime fallback | Any `<transition>` elements surviving compile time are flattened by `DomPatcher` |
-| Cleanup trigger | `transitionend` / `animationend` events or computed duration + 50 ms timeout |
-| Class sequence | `-enter` → `-enter-active` → `-enter-to` (enter); `-leave` → `-leave-active` → `-leave-to` (leave) |
-| Rapid toggle | In-progress transitions are cancelled immediately via `_cleanupTransition` |
+| Concept          | Behaviour                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| Default name     | `ax` when `name` is omitted                                                                        |
+| Dynamic name     | `name="{{ expr }}"` for runtime resolution                                                         |
+| Runtime fallback | Any `<transition>` elements surviving compile time are flattened by `DomPatcher`                   |
+| Cleanup trigger  | `transitionend` / `animationend` events or computed duration + 50 ms timeout                       |
+| Class sequence   | `-enter` → `-enter-active` → `-enter-to` (enter); `-leave` → `-leave-active` → `-leave-to` (leave) |
+| Rapid toggle     | In-progress transitions are cancelled immediately via `_cleanupTransition`                         |

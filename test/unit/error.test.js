@@ -52,8 +52,6 @@ function testAppErrorHandling() {
     },
   };
 
-
-
   // Test missing mount target throws AVX_R01
   assert.throws(
     () => {
@@ -126,8 +124,6 @@ function testCircularComputedWarning() {
     }
   };
   global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
-
-
 
   // Mock console.warn to capture circular computed warning
   const warnings = [];

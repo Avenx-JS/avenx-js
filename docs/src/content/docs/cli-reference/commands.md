@@ -39,14 +39,17 @@ Starts a local hot-reloading development server (default port: 3000). It watches
 
 ### 5. `avenx check` (alias: `lint`)
 
-Validates your project's templates without triggering a full production build. 
+Validates your project's templates without triggering a full production build.
 
 #### Description
+
 The `check` command parses all local templates to catch potential runtime errors early. It analyzes the template structure to detect:
-* Undeclared or missing variables
-* Incorrectly referenced computed properties
-* Unregistered or malformed actions
+
+- Undeclared or missing variables
+- Incorrectly referenced computed properties
+- Unregistered or malformed actions
 
 #### Exit Codes
-* **`0`**: Success. All templates successfully parsed with no validation errors or warnings.
-* **`1`**: Validation Failure. The command will exit with code 1 if any template warnings or errors are detected, making it ideal for CI/CD linting pipelines.
+
+- **`0`**: Success. All templates successfully parsed with no validation errors or warnings.
+- **`1`**: Validation Failure. The command will exit with code 1 if any template warnings or errors are detected, making it ideal for CI/CD linting pipelines.

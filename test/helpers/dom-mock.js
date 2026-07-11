@@ -43,7 +43,7 @@ class MockDOMElement {
 
     this.classList = {
       add: (...classes) => {
-        classes.forEach(cls => {
+        classes.forEach((cls) => {
           const current = self.getAttribute('class') ? self.getAttribute('class').split(/\s+/) : [];
           if (!current.includes(cls)) {
             current.push(cls);
@@ -52,7 +52,7 @@ class MockDOMElement {
         });
       },
       remove: (...classes) => {
-        classes.forEach(cls => {
+        classes.forEach((cls) => {
           const current = self.getAttribute('class') ? self.getAttribute('class').split(/\s+/) : [];
           const idx = current.indexOf(cls);
           if (idx !== -1) {
@@ -64,7 +64,7 @@ class MockDOMElement {
       contains: (cls) => {
         const current = self.getAttribute('class') ? self.getAttribute('class').split(/\s+/) : [];
         return current.includes(cls);
-      }
+      },
     };
 
     // Verhaltensaufzeichnung (Interaction Logging)
@@ -277,12 +277,14 @@ function setupDOMMock() {
 
   global.window = global.window || {};
   global.window.getComputedStyle = (el) => {
-    return el.style || {
-      transitionDuration: '0s',
-      animationDuration: '0s',
-      transitionDelay: '0s',
-      animationDelay: '0s',
-    };
+    return (
+      el.style || {
+        transitionDuration: '0s',
+        animationDuration: '0s',
+        transitionDelay: '0s',
+        animationDelay: '0s',
+      }
+    );
   };
   global.requestAnimationFrame = (cb) => {
     return setTimeout(() => cb(Date.now()), 0);
@@ -343,8 +345,4 @@ function teardownDOMMock() {
   delete global.requestAnimationFrame;
 }
 
-export {
-  MockDOMElement,
-  setupDOMMock,
-  teardownDOMMock,
-};
+export { MockDOMElement, setupDOMMock, teardownDOMMock };

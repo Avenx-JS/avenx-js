@@ -8,7 +8,7 @@ class SampleBridge {
   constructor() {
     this.value = 10;
     this.nested = {
-      key: 'initial'
+      key: 'initial',
     };
   }
 
@@ -31,9 +31,9 @@ class CounterComponent extends AvenxComponent {
       '<div>Count: {{state.count}}, Prop: {{props.title}}, Bridge: {{SampleBridge.value}}, Nested: {{SampleBridge.nested.key}}</div>',
       {
         increment: 'this.state.count++',
-        doubleBridgeValue: 'SampleBridge.multiply(2)'
+        doubleBridgeValue: 'SampleBridge.multiply(2)',
       }, // methods
-      props
+      props,
     );
   }
 }
@@ -49,7 +49,7 @@ class CounterComponent extends AvenxComponent {
     // 1. Mock Bridge State Interception & Spy Tests
     // ==========================================
     console.log('  Testing Mock Bridge creation & state tracking...');
-    
+
     const mockBridge = AvenxMock.createMockBridge(SampleBridge, { value: 15 });
 
     // Verify initial data overrides
@@ -66,7 +66,7 @@ class CounterComponent extends AvenxComponent {
     // Verify deep state changes
     mockBridge.nested.key = 'updated';
     assert.strictEqual(mockBridge.nested.key, 'updated');
-    assert.ok(mockBridge.$stateChanges.some(change => change.prop === 'nested.key' && change.value === 'updated'));
+    assert.ok(mockBridge.$stateChanges.some((change) => change.prop === 'nested.key' && change.value === 'updated'));
 
     // Verify method calls and their inner state changes are intercepted
     mockBridge.$reset();
@@ -78,7 +78,7 @@ class CounterComponent extends AvenxComponent {
     assert.strictEqual(mockBridge.$calls.length, 1);
     assert.strictEqual(mockBridge.$calls[0].method, 'multiply');
     assert.deepStrictEqual(mockBridge.$calls[0].args, [3]);
-    assert.ok(mockBridge.$stateChanges.some(change => change.prop === 'value' && change.value === 60));
+    assert.ok(mockBridge.$stateChanges.some((change) => change.prop === 'value' && change.value === 60));
 
     // Verify callback hooks
     let stateChangedProp = null;
@@ -105,7 +105,7 @@ class CounterComponent extends AvenxComponent {
 
     unsubscribeState();
     unsubscribeCall();
-    
+
     stateChangedProp = null;
     calledMethod = null;
     mockBridge.value = 500;
@@ -140,7 +140,7 @@ class CounterComponent extends AvenxComponent {
     // Test bridge trigger from component action
     mounted.instance.doubleBridgeValue();
     assert.strictEqual(mockSampleBridge.value, 14);
-    assert.ok(mockSampleBridge.$calls.some(c => c.method === 'multiply'));
+    assert.ok(mockSampleBridge.$calls.some((c) => c.method === 'multiply'));
 
     // Test route mocking
     sandbox.setRoute({ hash: '#/users', page: 'users', params: { id: '99' } });

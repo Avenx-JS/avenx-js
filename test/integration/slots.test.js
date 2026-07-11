@@ -437,9 +437,7 @@ global.Node = {
           },
           {},
           bridges,
-          '<div class="dynamic-slot">' +
-            '<slot name="{{ state.slotName }}">Dynamic Slot Fallback</slot>' +
-            '</div>',
+          '<div class="dynamic-slot">' + '<slot name="{{ state.slotName }}">Dynamic Slot Fallback</slot>' + '</div>',
           {},
           props,
         );
@@ -517,15 +515,9 @@ global.Node = {
 
     assert.ok(cardBody, 'Card body should exist');
 
-    assert.ok(
-      cardBody.textContent.includes('Body content 1'),
-      'Default slot should contain paragraph 1',
-    );
+    assert.ok(cardBody.textContent.includes('Body content 1'), 'Default slot should contain paragraph 1');
 
-    assert.ok(
-      cardBody.textContent.includes('Body content 2'),
-      'Default slot should contain conditional paragraph 2',
-    );
+    assert.ok(cardBody.textContent.includes('Body content 2'), 'Default slot should contain conditional paragraph 2');
 
     // 3. Verify fallback content
     console.log('  Testing card 2 fallback content when empty...');
@@ -537,17 +529,9 @@ global.Node = {
     const card2Header = card2.querySelector('.card-header');
     const card2Body = card2.querySelector('.card-body');
 
-    assert.strictEqual(
-      card2Header.textContent.trim(),
-      'Default Title',
-      'Should display default slot title',
-    );
+    assert.strictEqual(card2Header.textContent.trim(), 'Default Title', 'Should display default slot title');
 
-    assert.strictEqual(
-      card2Body.textContent.trim(),
-      'Default Body Content',
-      'Should display default slot body',
-    );
+    assert.strictEqual(card2Body.textContent.trim(), 'Default Body Content', 'Should display default slot body');
 
     // 4. Verify parent state reactivity
     console.log('  Testing parent state reactivity propagation...');
@@ -563,25 +547,16 @@ global.Node = {
       'Header should update reactively',
     );
 
-    assert.ok(
-      cardBody.textContent.includes('Body content 1'),
-      'Body should retain static content',
-    );
+    assert.ok(cardBody.textContent.includes('Body content 1'), 'Body should retain static content');
 
-    assert.ok(
-      !cardBody.textContent.includes('Body content 2'),
-      'Body should hide conditional paragraph',
-    );
+    assert.ok(!cardBody.textContent.includes('Body content 2'), 'Body should hide conditional paragraph');
 
     // 5. Verify dynamic slot name initial resolution
     console.log('  Testing dynamic slot name resolution...');
 
     const dynamicSlotContainer = testRootElement.querySelector('.dynamic-slot');
 
-    assert.ok(
-      dynamicSlotContainer,
-      'Dynamic slot component should render',
-    );
+    assert.ok(dynamicSlotContainer, 'Dynamic slot component should render');
 
     assert.strictEqual(
       dynamicSlotContainer.textContent.trim(),
@@ -593,10 +568,7 @@ global.Node = {
     const dynamicComponentHost = dynamicSlotContainer.parentNode;
     const dynamicComponent = dynamicComponentHost.__avenx_comp_instance;
 
-    assert.ok(
-      dynamicComponent,
-      'Dynamic slot component instance should be available',
-    );
+    assert.ok(dynamicComponent, 'Dynamic slot component instance should be available');
 
     // 6. Verify reactive dynamic slot name updates
     console.log('  Testing reactive dynamic slot name updates...');
