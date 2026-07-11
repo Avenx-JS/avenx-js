@@ -34,6 +34,11 @@ export class AvenxComponent {
     props: Record<string, any>;
 
     /**
+     * The component instance that mounted this component, or null for root components.
+     */
+    readonly $parent: AvenxComponent | null;
+
+    /**
      * The active route details.
      */
     readonly $route: { hash: string; page: string; params: Record<string, any> };
@@ -534,4 +539,3 @@ export class AvenxSandbox {
         trigger(selectorOrElement: any, eventName: string, eventData?: Record<string, any>): void;
     };
 }
-
