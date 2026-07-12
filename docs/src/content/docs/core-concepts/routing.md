@@ -88,6 +88,7 @@ Only named routes count when checking whether another router "owns" a hash — w
 Because routers coordinate through a shared global registry, always call `router.destroy()` when tearing down a router instance (for example, when unmounting a micro-frontend). A router left in `window.__avenx_routers` after it's no longer in use keeps its `hashchange` listener attached and continues to be consulted by other routers' fallback checks.
 :::
 ## 6. Route Guards
+## 5. Route Guards
 Guards decide whether a transition to a page is allowed. Create a guard using the CLI:
 ```bash
 npx avenx g guard auth
