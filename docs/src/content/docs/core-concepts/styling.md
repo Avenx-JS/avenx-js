@@ -29,7 +29,55 @@ CSS rules defined inside `<@css>` use named blocks without dot prefixes. The com
 </div>
 ```
 
-## 2. Scoping Limitations and Nesting Rules
+## 2. Tag-based Scoped CSS (`<@css />`)
+
+Besides the attribute syntax shown above, the compiler also recognizes a self-closing **tag** form of `@css` inside HTML templates: `<@css blockName />`. It applies the same generated scoped class as the attribute syntax, but where the class ends up depends on where you place the tag.
+
+### Scoping the host tag
+
+When `<@css blockName />` appears as the first thing inside an element, the scoped class is merged onto that host element:
+
+```html
+<div>
+  <@css card />
+  <h1>Card title</h1>
+</div>
+```
+
+This is equivalent to writing:
+
+```html
+<div @css card>
+  <h1>Card title</h1>
+</div>
+```
+
+### Scoping the preceding sibling
+
+When `<@css blockName />` appears immediately **after** an element (as its next sibling), the scoped class is applied to that preceding element instead:
+
+```html
+<div>Card content</div>
+<@css card />
+```
+
+This is equivalent to writing:
+
+```html
+<div @css card>Card content</div>
+```
+
+### Attribute vs. tag syntax
+
+| | Attribute syntax | Tag syntax |
+|---|---|---|
+| Form | `<div @css card>` | `<@css card />` |
+| Placement | On the element itself | As a child or sibling of the element |
+| Best for | Static, hand-written templates | Templates where the target element is generated or you don't want to touch its opening tag directly |
+
+Both forms produce the same scoped class and can be used interchangeably; choose whichever fits your template's structure better.
+
+## 3. Scoping Limitations and Nesting Rules
 
 Nested selectors are scoped by prefixing the generated component class. Selectors that do not use the `&` nesting reference are scoped directly and are **not** interpreted as descendant selectors.
 
@@ -87,7 +135,7 @@ The `&` nesting reference behaves the same way inside nested at-rules such as `@
 </@css>
 ```
 
-## 3. Global CSS & Custom Variables (`<@global>`)
+## 4. Global CSS & Custom Variables (`<@global>`)
 
 Declare global styles or design token variables using the `<@global>` block. Use the `@def` directive to define custom color codes or measurements. The compiler replaces these variables statically at build time.
 
@@ -110,7 +158,7 @@ Declare global styles or design token variables using the `<@global>` block. Use
 </@css>
 ```
 
-## 3. Scoping Limitations and Nesting Rules
+## 5. Scoping Limitations and Nesting Rules
 
 The `StyleProcessor` scopes selectors declared inside `<@css>` blocks by prepending the generated component hash to nested selectors that do not contain the nesting reference character `&`.
 
