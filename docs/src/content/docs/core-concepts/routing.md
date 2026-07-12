@@ -38,6 +38,22 @@ Route segments starting with `:` are dynamic variables. The values parsed from t
   <h1>Viewing Profile ID: {{ id }}</h1>
 </div>
 ```
+### Wildcard Path Matchers
+A `*` inside a route pattern acts as a catch-all wildcard, matching any subpath at that position — including nested segments separated by `/`. This is distinct from a route whose *entire* pattern is `*`, which is a router-wide fallback (see [Configuring the Router](#2-configuring-the-router)); a pattern like `/docs/*` still only matches paths that start with `/docs/`:
+```javascript
+app.initRouter({
+  '/docs/*': 'Docs',
+});
+```
+The matched subpath is exposed as `state.wildcard`, just like a `:param` value:
+```html
+<!-- src/pages/docs.page.js -->
+<!-- /docs/intro                -> state.wildcard === 'intro' -->
+<!-- /docs/concepts/reactivity  -> state.wildcard === 'concepts/reactivity' -->
+<div class="docs">
+  <h1>Viewing: {{ wildcard }}</h1>
+</div>
+```
 
 ## 4. In-Place Parameter Updates
 
