@@ -130,9 +130,38 @@ Only named routes count when checking whether another router "owns" a hash — w
 Because routers coordinate through a shared global registry, always call `router.destroy()` when tearing down a router instance (for example, when unmounting a micro-frontend). A router left in `window.__avenx_routers` after it's no longer in use keeps its `hashchange` listener attached and continues to be consulted by other routers' fallback checks.
 :::
 
-## 6. Route Guards
+## 6. Page Titles
 
-## 5. Route Guards
+When a route is resolved, the router can automatically update `document.title`. Add a `title` property to any route definition — either a static string or a dynamic function that receives the parsed route parameters:
+
+```javascript
+app.initRouter({
+  '/':            { page: 'Home',    title: 'Home' },
+  '/profile/:id': { page: 'Profile', title: (params) => `Profile ${params.id}` },
+  '*':            { page: 'NotFound', title: 'Page Not Found' },
+});
+```
+
+### Title Prefix & Suffix
+
+To avoid repeating your app name in every route, pass `titlePrefix` or `titleSuffix` in the router options. They are prepended / appended to every resolved title automatically:
+
+```javascript
+app.initRouter(
+  {
+    '/':      { page: 'Home',    title: 'Home' },
+    '/about': { page: 'About',  title: 'About Us' },
+  },
+  { titleSuffix: ' — MyApp' },
+);
+// Results in "Home — MyApp", "About Us — MyApp"
+```
+
+:::note
+Routes that do not declare a `title` property leave `document.title` unchanged. This lets you opt individual routes out of automatic title management.
+:::
+
+## 7. Route Guards
 
 Guards decide whether a transition to a page is allowed. Create a guard using the CLI:
 

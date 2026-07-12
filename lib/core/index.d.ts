@@ -192,6 +192,42 @@ export interface AvenxRouterOptions {
      * The target hash path to redirect to if a route guard times out (e.g. '#/').
      */
     guardTimeoutRedirect?: string;
+
+    /**
+     * A string prepended to every resolved route title.
+     */
+    titlePrefix?: string;
+
+    /**
+     * A string appended to every resolved route title (e.g. ' — MyApp').
+     */
+    titleSuffix?: string;
+}
+
+/**
+ * Definition object for a single route entry.
+ */
+export interface AvenxRouteDefinition {
+    /**
+     * The registered page name to mount for this route.
+     */
+    page: string;
+
+    /**
+     * Optional guards to evaluate before activating this route.
+     */
+    guards?: Array<typeof AvenxGuard | AvenxGuard>;
+
+    /**
+     * Optional page title. Can be a static string or a function receiving
+     * the parsed route params and returning a string.
+     */
+    title?: string | ((params: Record<string, any>) => string);
+
+    /**
+     * Optional transition name for page enter/leave animations.
+     */
+    transition?: string;
 }
 
 /**
@@ -207,7 +243,7 @@ export class AvenxRouter {
     /**
      * Map of route pattern strings to Page names or route config definitions.
      */
-    routes: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>;
+    routes: Record<string, string | AvenxRouteDefinition>;
 
     /**
      * Info about the currently loaded route.
@@ -221,7 +257,7 @@ export class AvenxRouter {
      */
     constructor(
         app: AvenxApp,
-        routes?: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>,
+        routes?: Record<string, string | AvenxRouteDefinition>,
         options?: AvenxRouterOptions
     );
 
@@ -318,7 +354,7 @@ export class AvenxApp {
      * @param options Router options.
      */
     initRouter(
-        routes: Record<string, string | { page: string; guards?: Array<typeof AvenxGuard | AvenxGuard> }>,
+        routes: Record<string, string | AvenxRouteDefinition>,
         options?: AvenxRouterOptions
     ): AvenxRouter;
 }
