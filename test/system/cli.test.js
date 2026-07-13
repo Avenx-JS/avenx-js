@@ -373,6 +373,100 @@ function runTest() {
     assert.match(cleanAgainOutput, /does not exist\. Nothing to clean/, 'should handle non-existent directory');
 
     console.log('✅ Clean command tests passed!');
+
+    console.log('🧪 Testing avenx destroy component (dry-run & actual)...');
+
+    // 1. Dry run of destroying the default-box component
+    const defaultBoxDir = path.join(TEST_DIR, 'src/components/default-box');
+    assert.ok(fs.existsSync(defaultBoxDir), 'default-box dir should exist before destroy test');
+
+    const destroyDryRunOutput = execSync(`node ${BIN_PATH} destroy component default-box --dry-run`, {
+      cwd: TEST_DIR,
+      encoding: 'utf8',
+    });
+
+    assert.ok(fs.existsSync(defaultBoxDir), 'default-box dir should still exist after dry-run');
+    assert.match(destroyDryRunOutput, /🧪 \[Dry Run\] Component 'default-box' files would be deleted/, 'should print dry run message');
+    assert.match(destroyDryRunOutput, /No files were deleted or modified/, 'should report no modifications');
+
+    // Make sure main.app.js still contains the registration
+    let mainAppJsContent = fs.readFileSync(path.join(TEST_DIR, 'src/main.app.js'), 'utf-8');
+    assert.ok(mainAppJsContent.includes('DefaultBox'), 'DefaultBox registration should still exist in main.app.js');
+
+    // 2. Actual destroy
+    const destroyOutput = execSync(`node ${BIN_PATH} destroy component default-box`, {
+      cwd: TEST_DIR,
+      encoding: 'utf8',
+    });
+
+    assert.ok(!fs.existsSync(defaultBoxDir), 'default-box dir should be deleted');
+    assert.match(destroyOutput, /✅ Component 'default-box' directory deleted/, 'should log deletion message');
+    assert.match(destroyOutput, /Cleaned up imports and registrations/, 'should log clean up message');
+
+    mainAppJsContent = fs.readFileSync(path.join(TEST_DIR, 'src/main.app.js'), 'utf-8');
+    assert.ok(!mainAppJsContent.includes('DefaultBox'), 'DefaultBox registration should be removed from main.app.js');
+
+    // 3. Test destroying non-existent component handles gracefully
+    const destroyNonExistentOutput = execSync(`node ${BIN_PATH} d component default-box`, {
+      cwd: TEST_DIR,
+      encoding: 'utf8',
+    });
+    assert.match(destroyNonExistentOutput, /ℹ️ Component 'default-box' directory was not found/, 'should handle gracefully');
+
+    // 4. Test page generation & destroy
+    console.log('🧪 Testing avenx destroy page...');
+    // Create page first
+    execSync(`node ${BIN_PATH} generate page reports-test`, { cwd: TEST_DIR });
+    const reportsPageJs = path.join(TEST_DIR, 'src/pages/reports-test.page.js');
+    const reportsPageCss = path.join(TEST_DIR, 'src/pages/reports-test.page.css');
+    assert.ok(fs.existsSync(reportsPageJs), 'reports-test JS page should exist');
+    assert.ok(fs.existsSync(reportsPageCss), 'reports-test CSS page should exist');
+
+    // Add manual import to main.app.js to test cleanup
+    fs.appendFileSync(
+      path.join(TEST_DIR, 'src/main.app.js'),
+      "\nimport ReportsTest from './pages/reports-test.page.js';\n"
+    );
+
+    // Destroy page
+    const pageDestroyOutput = execSync(`node ${BIN_PATH} d p reports-test`, {
+      cwd: TEST_DIR,
+      encoding: 'utf8',
+    });
+    assert.ok(!fs.existsSync(reportsPageJs), 'reports-test JS page should be deleted');
+    assert.ok(!fs.existsSync(reportsPageCss), 'reports-test CSS page should be deleted');
+    assert.match(pageDestroyOutput, /✅ Page 'ReportsTest' files deleted/, 'should log page deletion');
+
+    mainAppJsContent = fs.readFileSync(path.join(TEST_DIR, 'src/main.app.js'), 'utf-8');
+    assert.ok(!mainAppJsContent.includes('ReportsTest'), 'ReportsTest import should be cleaned up');
+
+    // 5. Test bridge generation & destroy
+    console.log('🧪 Testing avenx destroy bridge...');
+    execSync(`node ${BIN_PATH} generate bridge auth-test`, { cwd: TEST_DIR });
+    const authBridgePath = path.join(TEST_DIR, 'src/global/auth-test.bridge.js');
+    assert.ok(fs.existsSync(authBridgePath), 'auth-test bridge should exist');
+
+    const bridgeDestroyOutput = execSync(`node ${BIN_PATH} d bridge auth-test`, {
+      cwd: TEST_DIR,
+      encoding: 'utf8',
+    });
+    assert.ok(!fs.existsSync(authBridgePath), 'auth-test bridge should be deleted');
+    assert.match(bridgeDestroyOutput, /✅ Bridge 'AuthTestBridge' file deleted/, 'should log bridge deletion');
+
+    // 6. Test guard generation & destroy
+    console.log('🧪 Testing avenx destroy guard...');
+    execSync(`node ${BIN_PATH} generate guard auth-test`, { cwd: TEST_DIR });
+    const authGuardPath = path.join(TEST_DIR, 'src/guards/auth-test.guard.js');
+    assert.ok(fs.existsSync(authGuardPath), 'auth-test guard should exist');
+
+    const guardDestroyOutput = execSync(`node ${BIN_PATH} d guard auth-test`, {
+      cwd: TEST_DIR,
+      encoding: 'utf8',
+    });
+    assert.ok(!fs.existsSync(authGuardPath), 'auth-test guard should be deleted');
+    assert.match(guardDestroyOutput, /✅ Guard 'AuthTestGuard' file deleted/, 'should log guard deletion');
+
+    console.log('✅ Destroy command tests passed!');
   } catch (error) {
     console.error('❌ Test failed!');
     console.error(error);

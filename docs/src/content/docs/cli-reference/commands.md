@@ -29,15 +29,27 @@ Generates boilerplate code for components, pages, bridges, and guards.
 
 - **Guard**: `npx avenx g guard admin` Creates a routing guard at `src/guards/admin.guard.js`.
 
-### 3. `avenx build` (alias: `b`)
+### 3. `avenx destroy` (alias: `d`)
+
+Removes scaffolded files and cleans up their imports and registrations inside `src/main.app.js`.
+
+- **Component**: `npx avenx d counter` Deletes `src/components/counter/` and removes its registration and import from `src/main.app.js`.
+
+- **Page**: `npx avenx d p dashboard` Deletes `src/pages/dashboard.page.js` and `.css`, and cleans up its imports.
+
+- **Bridge**: `npx avenx d bridge settings` Deletes the global state bridge file at `src/global/settings.bridge.js`.
+
+- **Guard**: `npx avenx d guard admin` Deletes the routing guard file at `src/guards/admin.guard.js`.
+
+### 4. `avenx build` (alias: `b`)
 
 Compiles all components, styles, pages, and bridges into `dist/bundle.js` and `dist/bundle.css`. It strips out runtime imports/exports to create a clean, single-file bundle that can be loaded in browsers directly.
 
-### 4. `avenx serve [port]`
+### 5. `avenx serve [port]`
 
 Starts a local hot-reloading development server (default port: 3000). It watches the `src/` directory for changes, automatically triggers a rebuild, and sends a live reload event to connected browser instances via a Server-Sent Events (SSE) bridge.
 
-### 5. `avenx check` (alias: `lint`)
+### 6. `avenx check` (alias: `lint`)
 
 Validates your project's templates without triggering a full production build.
 
