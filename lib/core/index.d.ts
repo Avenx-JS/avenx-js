@@ -149,6 +149,12 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
      * @protected
      */
     _getBridges(): Record<string, any>;
+
+    /**
+     * Retrieves the transcluded groups for this component.
+     * @protected
+     */
+    _getTranscludedGroups(): Record<string, any>;
 }
 
 /**
@@ -171,6 +177,16 @@ export class AvenxPage<S extends Record<string, any> = Record<string, any>> exte
         template?: string,
         methods?: Record<string, string | Function>,
         componentRegistry?: Map<string, typeof AvenxComponent>,
+        props?: Record<string, any>
+    );
+}
+
+/**
+ * Built-in component for high-performance virtualized list rendering.
+ */
+export class VirtualList extends AvenxComponent<any> {
+    constructor(
+        bridges?: Record<string, any>,
         props?: Record<string, any>
     );
 }
