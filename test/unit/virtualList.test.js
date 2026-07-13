@@ -13,7 +13,7 @@ if (typeof global.ResizeObserver === 'undefined') {
     observe(target) {
       this.target = target;
     }
-    unobserve(target) {}
+    unobserve() {}
     disconnect() {}
     trigger(entry) {
       this.callback([entry]);
@@ -145,7 +145,6 @@ async function runTests() {
       // Wait for layout update requestAnimationFrame
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      const updatedSpacerPaddingTop = parseFloat(spacer.style.paddingTop);
       const updatedTotalHeight = parseFloat(spacer.style.minHeight);
       
       console.log(`  Total height after resizing one item: ${updatedTotalHeight}`);
