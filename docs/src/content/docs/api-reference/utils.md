@@ -88,7 +88,7 @@ The core reactivity APIs include `StateFactory`, `AvenxWatcher`, and the `AvenxC
 ### Constructor
 
 ```javascript
-import { StateFactory } from 'avenx-core';
+import { StateFactory } from 'avenx-core/runtime';
 
 const stateFactory = new StateFactory();
 ```
@@ -123,7 +123,7 @@ If `initialState` is already an Avenx reactive proxy, `create()` returns the exi
 **Example**
 
 ```javascript
-import { StateFactory } from 'avenx-core';
+import { StateFactory } from 'avenx-core/runtime';
 
 const stateFactory = new StateFactory();
 
@@ -160,7 +160,7 @@ const state = stateFactory.create(
 ### Constructor
 
 ```javascript
-import { AvenxWatcher } from 'avenx-core';
+import { AvenxWatcher } from 'avenx-core/runtime';
 
 const watcher = new AvenxWatcher(getter, callback, options);
 ```
@@ -267,7 +267,7 @@ Watchers registered with `this.watch()` are stored by the component and automati
 The getter function determines which reactive state properties should be tracked.
 
 ```javascript
-import { AvenxComponent } from 'avenx-core';
+import { AvenxComponent } from 'avenx-core/runtime';
 
 class CounterComponent extends AvenxComponent {
   constructor() {

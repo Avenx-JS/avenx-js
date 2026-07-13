@@ -31,7 +31,7 @@ Creates a deep proxy around a bridge class or object, tracking method calls and 
 **Example**
 
 ```javascript
-import { AvenxMock } from 'avenx-core';
+import { AvenxMock } from 'avenx-core/runtime';
 import AuthBridge from '../src/global/auth.bridge.js';
 
 const mockAuth = AvenxMock.createMockBridge(AuthBridge, { isLoggedIn: false });
@@ -55,7 +55,7 @@ Creates and returns a new `AvenxSandbox` instance for mounting components in iso
 - `AvenxSandbox`: A new sandbox instance.
 
 ```javascript
-import { AvenxMock } from 'avenx-core';
+import { AvenxMock } from 'avenx-core/runtime';
 
 const sandbox = AvenxMock.createSandbox();
 ```
@@ -77,7 +77,7 @@ Dispatches an event on a DOM element (or a mock element), for simulating user in
 - Otherwise, falls back to manually walking up `parentNode` and invoking matching `listeners[eventName]` handlers, respecting `stopPropagation()`.
 
 ```javascript
-import { AvenxMock } from 'avenx-core';
+import { AvenxMock } from 'avenx-core/runtime';
 
 AvenxMock.trigger(buttonElement, 'click');
 ```
@@ -158,7 +158,7 @@ Mounts a component (or page) class in isolation using the sandbox's registered b
 **Example**
 
 ```javascript
-import { AvenxMock } from 'avenx-core';
+import { AvenxMock } from 'avenx-core/runtime';
 import Counter from '../src/components/counter/counter.component.js';
 
 const sandbox = AvenxMock.createSandbox();
@@ -178,7 +178,7 @@ console.log(wrapper.html);
 ### Full Example: Testing a Component with a Mocked Bridge
 
 ```javascript
-import { AvenxMock } from 'avenx-core';
+import { AvenxMock } from 'avenx-core/runtime';
 import ProfileCard from '../src/components/profile-card/profile-card.component.js';
 import UserBridge from '../src/global/user.bridge.js';
 
