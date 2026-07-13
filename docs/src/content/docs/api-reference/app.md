@@ -54,8 +54,13 @@ app.registerBridge('AuthBridge', { isLoggedIn: false });
 
 ### `mount(name, targetSelector)`
 
-Mounts the initialized application onto the specified DOM element, triggering the component lifecycle and bootstrapping the template rendering.
+Mounts a registered component onto the specified DOM element, triggering the component lifecycle and bootstrapping the template rendering. If `targetSelector` is omitted, it falls back to the `config.target` selector provided in the constructor.
+
+| Param              | Type     | Default                                        | Description                                                                                                    |
+| ------------------ | -------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `name`             | `string` | —                                              | Name of the registered component to mount. Throws `[AVX_R03]` if the component is not registered.              |
+| `targetSelector`   | `string` | `null` (falls back to `config.target`)         | A valid DOM selector (e.g., `'#app'`) pointing to the mount container. Falls back to the constructor's `target` if not provided. Throws `[AVX_R01]` if not found. |
 
 ```javascript
-app.mount('#app');
+app.mount('MyRootComponent', '#app');
 ```
