@@ -323,6 +323,52 @@ function testDoubleWrappingPrevention() {
   console.log('  ✅ Double wrapping prevention tests passed!');
 }
 
+/**
+ * Verifies that registerBridge throws an AvenxError when constructor throws an exception.
+ */
+function testBridgeConstructorFailure() {
+  console.log('🧪 Testing bridge constructor failure propagation...');
+
+  const app = new AvenxApp({ target: '#app' });
+
+  // 1. A class constructor that throws
+  class BadBridge {
+    constructor() {
+      throw new Error('Database initialization failed');
+    }
+  }
+
+  assert.throws(
+    () => {
+      app.registerBridge('BadBridge', BadBridge);
+    },
+    (err) => {
+      assert.strictEqual(err.name, 'AvenxError');
+      assert.ok(err.message.includes('[AVX_R17]'));
+      assert.ok(err.message.includes('Database initialization failed'));
+      return true;
+    },
+    'Should propagate the constructor failure as an AvenxError'
+  );
+
+  // 2. An arrow function (which is not a constructor and throws TypeError when used with new)
+  const arrowFuncBridge = () => {};
+  assert.throws(
+    () => {
+      app.registerBridge('ArrowBridge', arrowFuncBridge);
+    },
+    (err) => {
+      assert.strictEqual(err.name, 'AvenxError');
+      assert.ok(err.message.includes('[AVX_R17]'));
+      assert.ok(err.message.includes('is not a constructor'));
+      return true;
+    },
+    'Should throw AvenxError for arrow function bridge registrations'
+  );
+
+  console.log('  ✅ Bridge constructor failure propagation tests passed!');
+}
+
 (async () => {
   try {
     testIsReactiveTarget();
@@ -334,6 +380,7 @@ function testDoubleWrappingPrevention() {
     await testBridgeDeepReactivity();
     testBuiltinsAreNotProxied();
     testDoubleWrappingPrevention();
+    testBridgeConstructorFailure();
     console.log('✅ All reactivity tests passed!');
   } catch (error) {
     console.error('❌ Reactivity tests failed!');
