@@ -102,7 +102,43 @@ The matched subpath is exposed as `state.wildcard`, just like a `:param` value:
   <h1>Viewing: {{ wildcard }}</h1>
 </div>
 ```
+## Accessing Active Route Data
 
+Components can access information about the currently active route using the reactive `$route` getter provided by `AvenxComponent`.
+
+The `$route` object exposes the following properties:
+
+| Property | Description |
+| -------- | ----------- |
+| `$route.params` | Contains the dynamic route parameters extracted from the current URL. |
+| `$route.hash` | Returns the current route hash. |
+| `$route.page` | Returns the active page associated with the current route. |
+
+### Example
+
+The following example shows how to access a route parameter inside a component:
+
+```javascript
+import { AvenxComponent } from "avenx-core/runtime";
+
+export default class UserProfile extends AvenxComponent {
+  onMount() {
+    console.log(this.$route.params.id);
+  }
+}
+```
+
+If the current route is:
+
+```text
+#/profile/42
+```
+
+Then:
+
+```javascript
+this.$route.params.id; // "42"
+```
 ## 4. In-Place Parameter Updates
 
 :::caution
