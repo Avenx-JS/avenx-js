@@ -29,6 +29,19 @@ Generates boilerplate code for components, pages, bridges, and guards.
 
 - **Guard**: `npx avenx g guard admin` Creates a routing guard at `src/guards/admin.guard.js`.
 
+#### Command Options
+
+- **`--dry-run`** (alias: **`-d`**)  
+  Preview the files and changes that would be created without writing anything to disk.
+
+**Example:**
+
+```bash
+npx avenx g counter --dry-run
+```
+
+This command previews the generated files without actually creating them.
+
 ### 3. `avenx destroy` (alias: `d`)
 
 Removes scaffolded files and cleans up their imports and registrations inside `src/main.app.js`.
@@ -40,6 +53,19 @@ Removes scaffolded files and cleans up their imports and registrations inside `s
 - **Bridge**: `npx avenx d bridge settings` Deletes the global state bridge file at `src/global/settings.bridge.js`.
 
 - **Guard**: `npx avenx d guard admin` Deletes the routing guard file at `src/guards/admin.guard.js`.
+
+#### Command Options
+
+- **`--dry-run`** (alias: **`-d`**)  
+  Preview the files and changes that would be removed without deleting anything.
+
+**Example:**
+
+```bash
+npx avenx d counter --dry-run
+```
+
+This command previews which files would be removed without actually deleting them.
 
 ### 4. `avenx build` (alias: `b`)
 
