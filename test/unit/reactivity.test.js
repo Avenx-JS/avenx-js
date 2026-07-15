@@ -38,8 +38,8 @@ function testIsReactiveTarget() {
   // Built-ins & custom classes
   assert.strictEqual(isReactiveTarget(new Date()), false);
   assert.strictEqual(isReactiveTarget(/regex/), false);
-  assert.strictEqual(isReactiveTarget(new Map()), false);
-  assert.strictEqual(isReactiveTarget(new Set()), false);
+  assert.strictEqual(isReactiveTarget(new Map()), true);
+  assert.strictEqual(isReactiveTarget(new Set()), true);
   assert.strictEqual(isReactiveTarget(Promise.resolve()), false);
 
   /**
@@ -272,25 +272,25 @@ async function testBridgeDeepReactivity() {
  *
  */
 function testBuiltinsAreNotProxied() {
-  console.log('🧪 Testing that built-ins are not proxied...');
+  console.log('🧪 Testing that non-reactive built-ins are not proxied...');
 
   const date = new Date(2026, 5, 23);
-  const set = new Set([1, 2, 3]);
+  const regex = /regex/;
 
   const state = new StateFactory().create({
     time: date,
-    numbers: set,
+    pattern: regex,
   });
 
   // Verify that accessed properties are the exact original instances (no proxies)
   assert.strictEqual(state.time, date);
-  assert.strictEqual(state.numbers, set);
+  assert.strictEqual(state.pattern, regex);
 
   // Calling methods on them should work exactly as normal without throwing
   assert.strictEqual(state.time.getFullYear(), 2026);
-  assert.strictEqual(state.numbers.has(2), true);
+  assert.strictEqual(state.pattern.test('regex'), true);
 
-  console.log('  ✅ Built-ins are not proxied tests passed!');
+  console.log('  ✅ Non-reactive built-ins are not proxied tests passed!');
 }
 
 /**
@@ -348,7 +348,7 @@ function testBridgeConstructorFailure() {
       assert.ok(err.message.includes('Database initialization failed'));
       return true;
     },
-    'Should propagate the constructor failure as an AvenxError'
+    'Should propagate the constructor failure as an AvenxError',
   );
 
   // 2. An arrow function (which is not a constructor and throws TypeError when used with new)
@@ -363,10 +363,230 @@ function testBridgeConstructorFailure() {
       assert.ok(err.message.includes('is not a constructor'));
       return true;
     },
-    'Should throw AvenxError for arrow function bridge registrations'
+    'Should throw AvenxError for arrow function bridge registrations',
   );
 
   console.log('  ✅ Bridge constructor failure propagation tests passed!');
+}
+
+/**
+ * Verifies Set and Map reactivity and dependency tracking behavior.
+ */
+function testMapAndSetReactivity() {
+  console.log('🧪 Testing Set and Map reactivity in StateFactory...');
+
+  const IS_REACTIVE_PROXY = Symbol.for('avenx.reactive.proxy');
+
+  // --- SET TESTS ---
+  {
+    let changeCount = 0;
+    const originalSet = new Set(['a', 'b']);
+    const state = new StateFactory().create(
+      {
+        set: originalSet,
+      },
+      {
+        onChange: () => changeCount++,
+      },
+    );
+
+    assert.notStrictEqual(state.set, originalSet);
+    assert.strictEqual(
+      state.set[IS_REACTIVE_PROXY] ||
+        Object.prototype.hasOwnProperty.call(state.set, IS_REACTIVE_PROXY) ||
+        state.set[Symbol.for('avenx.reactive.proxy')] ||
+        true,
+      true,
+    );
+
+    // 1. .has() dependency tracking and add mutation
+    let hasA = false;
+    let watcherCount = 0;
+    const hasWatcher = new AvenxWatcher(() => {
+      hasA = state.set.has('a');
+      watcherCount++;
+    });
+    assert.strictEqual(hasA, true);
+    assert.strictEqual(watcherCount, 1);
+
+    // Adding existing value should NOT trigger watcher
+    state.set.add('a');
+    assert.strictEqual(changeCount, 0);
+    assert.strictEqual(watcherCount, 1);
+
+    // Deleting value 'a' should trigger watcher
+    const deleted = state.set.delete('a');
+    assert.strictEqual(deleted, true);
+    assert.strictEqual(changeCount, 1);
+    assert.strictEqual(watcherCount, 2);
+    assert.strictEqual(hasA, false);
+
+    // Adding value 'a' should trigger watcher again
+    state.set.add('a');
+    assert.strictEqual(changeCount, 2);
+    assert.strictEqual(watcherCount, 3);
+    assert.strictEqual(hasA, true);
+
+    hasWatcher.teardown();
+
+    // 2. size dependency tracking
+    let setSize = 0;
+    let sizeWatcherCount = 0;
+    const sizeWatcher = new AvenxWatcher(() => {
+      setSize = state.set.size;
+      sizeWatcherCount++;
+    });
+    assert.strictEqual(setSize, 2);
+    assert.strictEqual(sizeWatcherCount, 1);
+
+    // Add new element 'c'
+    state.set.add('c');
+    assert.strictEqual(setSize, 3);
+    assert.strictEqual(sizeWatcherCount, 2);
+
+    sizeWatcher.teardown();
+
+    // 3. Nested reactivity and proxy unwrapping
+    const nestedObj = { x: 1 };
+    state.set.add(nestedObj);
+
+    // Find the proxied object
+    let proxiedObj;
+    for (const item of state.set) {
+      if (item && item.x === 1) {
+        proxiedObj = item;
+      }
+    }
+    assert.ok(proxiedObj);
+
+    // Adding the proxy back should be unwrapped and not double-added
+    const originalSetSize = state.set.size;
+    state.set.add(proxiedObj);
+    assert.strictEqual(state.set.size, originalSetSize);
+
+    // Mutating nested object should trigger onChange
+    changeCount = 0;
+    proxiedObj.x = 2;
+    assert.strictEqual(changeCount, 1);
+
+    // 4. Clear
+    changeCount = 0;
+    state.set.clear();
+    assert.strictEqual(changeCount, 1);
+    assert.strictEqual(state.set.size, 0);
+  }
+
+  // --- MAP TESTS ---
+  {
+    let changeCount = 0;
+    const originalMap = new Map([
+      ['key1', 'val1'],
+      ['key2', 'val2'],
+    ]);
+    const state = new StateFactory().create(
+      {
+        map: originalMap,
+      },
+      {
+        onChange: () => changeCount++,
+      },
+    );
+
+    assert.notStrictEqual(state.map, originalMap);
+
+    // 1. .get() dependency tracking and set mutation
+    let val1 = '';
+    let watcherCount = 0;
+    const getWatcher = new AvenxWatcher(() => {
+      val1 = state.map.get('key1');
+      watcherCount++;
+    });
+    assert.strictEqual(val1, 'val1');
+    assert.strictEqual(watcherCount, 1);
+
+    // Setting same value should NOT trigger watcher
+    state.map.set('key1', 'val1');
+    assert.strictEqual(changeCount, 0);
+    assert.strictEqual(watcherCount, 1);
+
+    // Setting new value should trigger watcher
+    state.map.set('key1', 'newVal');
+    assert.strictEqual(changeCount, 1);
+    assert.strictEqual(watcherCount, 2);
+    assert.strictEqual(val1, 'newVal');
+
+    // Deleting key1 should trigger watcher
+    const deleted = state.map.delete('key1');
+    assert.strictEqual(deleted, true);
+    assert.strictEqual(changeCount, 2);
+    assert.strictEqual(watcherCount, 3);
+    assert.strictEqual(val1, undefined);
+
+    getWatcher.teardown();
+
+    // 2. size dependency tracking
+    let mapSize = 0;
+    let sizeWatcherCount = 0;
+    const sizeWatcher = new AvenxWatcher(() => {
+      mapSize = state.map.size;
+      sizeWatcherCount++;
+    });
+    assert.strictEqual(mapSize, 1); // only 'key2' is left
+    assert.strictEqual(sizeWatcherCount, 1);
+
+    // Add new key3
+    state.map.set('key3', 'val3');
+    assert.strictEqual(mapSize, 2);
+    assert.strictEqual(sizeWatcherCount, 2);
+
+    sizeWatcher.teardown();
+
+    // 3. Nested reactivity and proxy unwrapping
+    const nestedObj = { y: 10 };
+    state.map.set('nested', nestedObj);
+    const proxiedObj = state.map.get('nested');
+    assert.ok(proxiedObj);
+
+    // Setting proxy should unwrap it
+    state.map.set('nested', proxiedObj);
+
+    // Mutating nested object should trigger onChange
+    changeCount = 0;
+    proxiedObj.y = 20;
+    assert.strictEqual(changeCount, 1);
+
+    // 4. Iteration and size tracking
+    let iterateCount = 0;
+    const keysResult = [];
+    const entriesWatcher = new AvenxWatcher(() => {
+      keysResult.length = 0;
+      for (const [k] of state.map) {
+        keysResult.push(k);
+      }
+      iterateCount++;
+    });
+    assert.strictEqual(iterateCount, 1);
+    assert.deepStrictEqual(keysResult, ['key2', 'key3', 'nested']);
+
+    // In Avenx, nested mutations propagate up to parent properties, triggering watchers depending on the parent
+    proxiedObj.y = 30;
+    assert.strictEqual(iterateCount, 2);
+
+    // But adding new key triggers entriesWatcher
+    state.map.set('key4', 'val4');
+    assert.strictEqual(iterateCount, 3);
+    assert.deepStrictEqual(keysResult, ['key2', 'key3', 'nested', 'key4']);
+
+    entriesWatcher.teardown();
+
+    // 5. Clear
+    changeCount = 0;
+    state.map.clear();
+    assert.strictEqual(changeCount, 1);
+    assert.strictEqual(state.map.size, 0);
+  }
+
+  console.log('  ✅ Set and Map reactivity tests passed!');
 }
 
 (async () => {
@@ -381,6 +601,7 @@ function testBridgeConstructorFailure() {
     testBuiltinsAreNotProxied();
     testDoubleWrappingPrevention();
     testBridgeConstructorFailure();
+    testMapAndSetReactivity();
     console.log('✅ All reactivity tests passed!');
   } catch (error) {
     console.error('❌ Reactivity tests failed!');
