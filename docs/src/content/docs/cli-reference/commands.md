@@ -65,3 +65,19 @@ The `check` command parses all local templates to catch potential runtime errors
 
 - **`0`**: Success. All templates successfully parsed with no validation errors or warnings.
 - **`1`**: Validation Failure. The command will exit with code 1 if any template warnings or errors are detected, making it ideal for CI/CD linting pipelines.
+
+### 7. `avenx clean`
+
+Clears out compiled distribution outputs to prepare for a fresh build.
+
+#### Description
+
+The `clean` command deletes the compiled distribution directory to ensure no stale files persist in your build environment. This is highly useful for CI/CD build pipelines to guarantee a clean state before executing production builds.
+
+#### Default Behavior
+
+Upon execution, it securely deletes the default distribution directory (typically `dist/`).
+
+#### Configuration
+
+The target folder deleted by this command is determined by the output directories specified in your `avenx.config.json` file.
