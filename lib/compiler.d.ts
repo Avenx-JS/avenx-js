@@ -35,6 +35,15 @@ declare class AvenxCompiler {
      * components, pages, bridges, and styles into dist/bundle.js and dist/bundle.css.
      */
     build(): void;
+    /**
+    * Compiles a single component file.
+    */
+    compileComponent(filePath: string): string;
+
+    /**
+     * Compiles a single page file.
+     */
+compilePage(filePath: string): string;
 }
 
 export = AvenxCompiler;

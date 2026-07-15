@@ -1,0 +1,22 @@
+h1 {
+    color: red;
+}
+
+button {
+    background: black;
+    color: white;
+    padding: 8px 16px;
+}
+
+.container {
+    padding: 20px;
+}
+
+.title {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.text {
+    margin-bottom: 12px;
+}

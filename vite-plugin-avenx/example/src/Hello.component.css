@@ -1,0 +1,6 @@
+import "./components/Hello.component.css";
+@css {
+    h1 {
+        color: red;
+    }
+}
