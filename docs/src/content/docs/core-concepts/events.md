@@ -61,4 +61,36 @@ Avenx does not attach event listeners to every single DOM node. Instead, the run
 
 ## Custom Component Events
 
-Components can communicate with their parent containers by dispatching native or custom events. The container can capture them using standard listeners or lifecycle bindings.
+Components can communicate with their parent containers by dispatching custom events. Avenx provides a built-in helper method, `$emit(eventName, detail)`, on the base `AvenxComponent` class to clean up component interactions.
+
+### Emitting Events
+
+To emit an event from a child component, call `$emit` inside actions or component methods. The second parameter is an optional payload (`detail`) passed to the parent handler:
+
+```html
+<!-- src/components/child/child.component.js -->
+<state count="0" />
+<action name="increment">
+  state.count++;
+  $emit('change', { count: state.count });
+</action>
+
+<button @click="increment()">Click me</button>
+```
+
+### Listening to Custom Events
+
+Parent components can bind listeners to these custom events using the standard `@eventName="handler"` syntax on the child component tag. You can access the event payload via `event.detail`:
+
+```html
+<!-- src/pages/home/home.page.js -->
+<state currentCount="0" />
+<action name="handleChildChange">
+  state.currentCount = event.detail.count;
+</action>
+
+<div class="home-page">
+  <p>Child count is: {{ currentCount }}</p>
+  <Child @change="handleChildChange()" />
+</div>
+```
