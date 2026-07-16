@@ -295,6 +295,14 @@ This project is currently a proof-of-concept framework and actively evolving.
 
 ---
 
+## 🤝 Contributing
+
+We are actively looking for contributors! Avenx-JS is PR and first-time open-source friendly. Whether you are fixing a typo, updating documentation, or adding features, we welcome your help.
+
+Check out our [CONTRIBUTING.md](CONTRIBUTING.md) to get started!
+
+---
+
 ## 📄 License
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
