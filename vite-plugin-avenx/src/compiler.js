@@ -9,7 +9,7 @@ import ComponentParser from '../../lib/compiler/ComponentParser.js';
  * @returns {object} Compiler API.
  */
 export function createCompiler(options = {}) {
-  const parser = new ComponentParser(new StyleProcessor());
+  const parser = new ComponentParser(new StyleProcessor(options.style || {}));
   const debug = options.debug ?? false;
 
   /**
