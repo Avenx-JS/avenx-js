@@ -116,6 +116,50 @@ This typically happens for a few common reasons:
 
 This validation exists purely to help catch mistakes early — it will not prevent your app from compiling or running, but an undeclared reference will typically resolve to `undefined` at runtime, so it's best to address the warning rather than ignore it.
 
+### AVX_W20 — RENDER_LIST_DUPLICATE_KEY
+
+```text
+[Avenx Validation Warning] Duplicate key "{0}" detected in list expression "{1}". Appending index suffix to prevent node reuse conflict.
+```
+
+**Cause:** This warning is emitted when multiple items rendered from the same list evaluate to the same key. Avenx uses keys to uniquely identify list elements during updates. When duplicate keys exist, the renderer cannot reliably determine which DOM node belongs to which item.
+
+**Impact:** Duplicate keys can cause incorrect DOM node reuse, stale UI updates, or unexpected rendering behavior because the renderer can no longer reliably associate DOM nodes with their corresponding data items.
+
+**Resolution:** To resolve this warning:
+
+1. Use a property that is guaranteed to be unique for every item (for example, a database ID or UUID).
+2. Ensure your source data does not contain duplicate identifiers.
+3. Avoid using values that may repeat across list items.
+
+**Incorrect**
+
+```js
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 1, name: 'Bob' }
+];
+
+users.map(user => (
+  <UserCard key={user.id} />
+));
+```
+
+**Correct**
+
+```js
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+];
+
+users.map(user => (
+  <UserCard key={user.id} />
+));
+```
+
+> **Note:** When duplicate keys are detected, Avenx automatically appends the item's index to the duplicate key so rendering can continue. This is a fallback mechanism and should not be relied upon as a substitute for stable, unique keys.
+
 ## Runtime Codes (`AVX_R*`)
 
 | Code        | Default Message                                                                         | Cause & Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
