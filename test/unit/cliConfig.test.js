@@ -7,6 +7,7 @@ process.env.NODE_ENV = 'test';
 
 import loadConfig from '../../lib/config.js';
 import AvenxCompiler from '../../lib/compiler.js';
+import { logger } from '../../lib/core/runtime/AvenxLogger.js';
 
 try {
   console.log('🧪 Testing Avenx Config and Custom Directory CLI Options...');
@@ -99,6 +100,80 @@ try {
     assertThrows(() => loadConfig(), 'server.host must be a non-empty string');
 
     cleanupTestConfig();
+
+    // ----------------------------------------------------
+    // Test 3: Warnings for unknown options
+    // ----------------------------------------------------
+    console.log('  Testing warnings for unknown configuration options...');
+    const warnings = [];
+    const originalWarn = logger.warn;
+    logger.warn = (...args) => {
+      warnings.push(args.join(' '));
+    };
+
+    try {
+      // 1. Unknown top-level option with a close match suggestion
+      writeTestConfig({ srcdir: 'app-src' });
+      loadConfig();
+      assert.ok(warnings.length > 0, 'Expected warnings to be emitted');
+      assert.ok(
+        warnings[0].includes('Unknown configuration option "srcdir" in avenx.config.json. Did you mean "srcDir"?'),
+        `Unexpected warning: ${warnings[0]}`
+      );
+      assert.ok(
+        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, server, style, outputName, logging.'),
+        `Unexpected warning: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+      // 2. Unknown top-level option without a suggestion
+      writeTestConfig({ randomFieldXYZ: 123 });
+      loadConfig();
+      assert.ok(warnings.length > 0, 'Expected warnings to be emitted');
+      assert.ok(
+        warnings[0].includes('Unknown configuration option "randomFieldXYZ" in avenx.config.json.'),
+        `Unexpected warning: ${warnings[0]}`
+      );
+      assert.ok(
+        !warnings[0].includes('Did you mean'),
+        `Warning should not have suggestions: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+      // 3. Unknown nested server option with a suggestion
+      writeTestConfig({ server: { portt: 3000 } });
+      loadConfig();
+      assert.ok(warnings.length > 0, 'Expected warnings to be emitted');
+      assert.ok(
+        warnings[0].includes('Unknown configuration option "server.portt" in avenx.config.json. Did you mean "server.port"?'),
+        `Unexpected warning: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+      // 4. Unknown nested style option with a suggestion
+      writeTestConfig({ style: { preprocessorr: 'sass' } });
+      loadConfig();
+      assert.ok(warnings.length > 0, 'Expected warnings to be emitted');
+      assert.ok(
+        warnings[0].includes('Unknown configuration option "style.preprocessorr" in avenx.config.json. Did you mean "style.preprocessor"?'),
+        `Unexpected warning: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+      // 5. Unknown nested logging option with a suggestion
+      writeTestConfig({ logging: { levels: 'debug' } });
+      loadConfig();
+      assert.ok(warnings.length > 0, 'Expected warnings to be emitted');
+      assert.ok(
+        warnings[0].includes('Unknown configuration option "logging.levels" in avenx.config.json. Did you mean "logging.level"?'),
+        `Unexpected warning: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+    } finally {
+      logger.warn = originalWarn;
+      cleanupTestConfig();
+    }
 
     // ----------------------------------------------------
     // Test 2: Compiler overrides
