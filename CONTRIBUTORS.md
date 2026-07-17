@@ -77,6 +77,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/komacoder"><img src="https://avatars.githubusercontent.com/komacoder?s=100" width="100px;" alt="komacoder"/><br /><sub><b>komacoder</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=komacoder" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/BenjaminAyivoh1"><img src="https://avatars.githubusercontent.com/BenjaminAyivoh1?s=100" width="100px;" alt="BenjaminAyivoh1"/><br /><sub><b>BenjaminAyivoh1</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=BenjaminAyivoh1" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/singhisha40"><img src="https://avatars.githubusercontent.com/singhisha40?s=100" width="100px;" alt="singhisha40"/><br /><sub><b>singhisha40</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=singhisha40" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://siddhant-gahlot.vercel.app/"><img src="https://avatars.githubusercontent.com/u/140417576?v=4?s=100" width="100px;" alt="Sid"/><br /><sub><b>Sid</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=sid0229" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
