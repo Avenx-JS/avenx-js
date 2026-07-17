@@ -115,6 +115,72 @@ This typically happens for a few common reasons:
 3. If the identifier is intentionally dynamic (e.g. supplied only at runtime through a bridge that isn't statically known to the parser), you can safely ignore the warning, though most cases indicate a genuine bug.
 
 This validation exists purely to help catch mistakes early — it will not prevent your app from compiling or running, but an undeclared reference will typically resolve to `undefined` at runtime, so it's best to address the warning rather than ignore it.
+
+### AVX_W16 — SECURITY_SANITIZED_TAG
+
+**Warning Message**
+Sanitized tag "<{0}>" when stripping content.
+
+**Cause:** This warning is emitted when Avenx-JS's HTML sanitizer detects a forbidden or potentially dangerous tag inside dynamic content being rendered (for example, through `data-ax-html`) and strips it before injecting the content into the DOM. This is a security safeguard against cross-site scripting (XSS) attacks, since dynamic HTML from user input, API responses, or other untrusted sources could otherwise execute arbitrary scripts or embed malicious content.
+
+By default, Avenx-JS forbids the following tags when sanitizing dynamic HTML:
+
+- `<script>`
+- `<object>`
+- `<embed>`
+- `<iframe>`
+- `<link>`
+- `<style>`
+- `<form>`
+
+Any of these tags found in dynamic content are stripped out, and this warning is logged so developers are aware the sanitizer intervened.
+
+**Why these tags are flagged:** Each of these tags can be used to execute or load unauthorized code or content:
+
+- `<script>` can run arbitrary JavaScript.
+- `<object>`, `<embed>`, and `<iframe>` can load external content or plugins outside the app's control.
+- `<link>` and `<style>` can be used for CSS-based attacks or to exfiltrate data via crafted stylesheets.
+- `<form>` can be used to construct unauthorized submissions, including phishing-style attacks.
+
+**Resolution:** This warning does not indicate a bug to "fix" in the traditional sense — it means the sanitizer is working as intended. However, if you're seeing it unexpectedly:
+
+1. Confirm the dynamic content actually needs to include the flagged tag. In most cases it doesn't, and the warning can be safely ignored.
+2. If you legitimately need to render rich content (e.g. embedding a video), use a dedicated, purpose-built component instead of raw HTML injection — this keeps the source of the embed under your control rather than passing through arbitrary untrusted markup.
+3. Never bypass or disable the sanitizer to "fix" this warning. If you find yourself needing to allow a forbidden tag, treat that as a sign the approach needs to change, not the sanitizer.
+
+**Example**
+
+```javascript
+const state = {
+  userBio: '<p>Hello!</p><script>alert("xss")</script>'
+};
+```
+
+```html
+<div data-ax-html="state.userBio"></div>
+```
+
+When rendered, the sanitizer strips the `<script>` tag and logs:
+[Avenx Validation Warning] Sanitized tag "<script>" when stripping content.
+
+The safe portion of the markup (`<p>Hello!</p>`) still renders normally.
+
+**Safe Alternative**
+
+```javascript
+const computed = {
+  safeBio() {
+    return sanitizeUserContent(state.userBio); // pre-sanitized on the server, or use a trusted markdown renderer
+  }
+};
+```
+
+```html
+<div data-ax-html="computed.safeBio"></div>
+```
+
+Sanitizing or escaping dynamic content at the source — before it ever reaches `data-ax-html` — avoids relying on the framework's sanitizer as a last line of defense.
+
 ### AVX_W17 — SECURITY_SANITIZED_ATTRIBUTE
 
 ```text
