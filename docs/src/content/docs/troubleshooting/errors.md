@@ -571,7 +571,9 @@ Deriving the condition through a guarded `computed` property ensures `data-ax-sh
 ### AVX_W20 — RENDER_LIST_DUPLICATE_KEY
 
 ...
+### AVX_W02 — COMPILER_EMPTY_TEMPLATE
 
+...your documentation...
 ### AVX_W23 — DIRECTIVE_CLASS_EVALUATION_FAILED
 
 (new content here)
