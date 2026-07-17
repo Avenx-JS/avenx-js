@@ -116,6 +116,58 @@ This typically happens for a few common reasons:
 
 This validation exists purely to help catch mistakes early — it will not prevent your app from compiling or running, but an undeclared reference will typically resolve to `undefined` at runtime, so it's best to address the warning rather than ignore it.
 
+### AVX_W11 — ROUTE_TITLE_EVALUATION_FAILED
+
+**Warning Message**
+
+```
+title() threw an error: {0}
+```
+
+**Cause:** This warning is emitted when the `title()` callback defined in a route configuration throws an unhandled exception while the router is evaluating the page title during navigation.This can occur when the callback accesses undefined properties, assumes route data is always available, or performs operations that result in a runtime exception.
+
+**Resolution:** To resolve this warning:
+
+1. Ensure the `title()` callback safely handles missing or undefined values.
+2. Use optional chaining when accessing nested properties.
+3. Provide a fallback title when the required data is unavailable.
+
+**Incorrect**
+
+```js
+export default {
+  path: '/users/:id',
+  title: (route) => route.data.user.name,
+};
+```
+
+If `route.data` or `route.data.user` is undefined, the callback throws an exception and AVX_W11 is emitted.
+
+**Correct**
+
+```js
+export default {
+  path: '/users/:id',
+  title: (route) => route.data?.user?.name ?? 'Users',
+};
+```
+
+The callback safely accesses nested properties and returns a fallback title if the expected data is unavailable.
+
+**Defensive Example**
+
+```js
+export default {
+  path: '/users/:id',
+  title: (route) => {
+    const user = route.data?.user;
+    return user?.name ?? 'Users';
+  },
+};
+```
+
+Using optional chaining and fallback values helps prevent runtime exceptions during route title evaluation.
+
 ### AVX_W15 — COMPONENT_INJECT_KEY_NOT_FOUND
 
 **Warning Message**
@@ -140,7 +192,7 @@ The Provide/Inject API enables parent components to share data or methods with a
 // ChildComponent
 export default {
   inject: ['theme'],
-  template: `<p>Theme: {{ theme }}</p>`
+  template: `<p>Theme: {{ theme }}</p>`,
 };
 ```
 
@@ -152,7 +204,7 @@ No ancestor provides a `theme` key, so accessing `theme` triggers AVX_W15 and re
 // ParentComponent
 export default {
   provide: {
-    theme: 'dark'
+    theme: 'dark',
   },
   // ...
 };
@@ -162,7 +214,7 @@ export default {
 // ChildComponent
 export default {
   inject: ['theme'],
-  template: `<p>Theme: {{ theme }}</p>`
+  template: `<p>Theme: {{ theme }}</p>`,
 };
 ```
 
@@ -171,7 +223,7 @@ The `provide` option accepts an object mapping keys to values, or an array of ke
 ```js
 export default {
   inject: { currentTheme: 'theme' },
-  template: `<p>Theme: {{ currentTheme }}</p>`
+  template: `<p>Theme: {{ currentTheme }}</p>`,
 };
 ```
 
@@ -184,8 +236,8 @@ export default {
   computed: {
     safeTheme() {
       return this.currentTheme || 'light';
-    }
-  }
+    },
+  },
 };
 ```
 
@@ -227,7 +279,7 @@ Any of these tags found in dynamic content are stripped out, and this warning is
 
 ```javascript
 const state = {
-  userBio: '<p>Hello!</p><script>alert("xss")</script>'
+  userBio: '<p>Hello!</p><script>alert("xss")</script>',
 };
 ```
 
@@ -246,7 +298,7 @@ The safe portion of the markup (`<p>Hello!</p>`) still renders normally.
 const computed = {
   safeBio() {
     return sanitizeUserContent(state.userBio); // pre-sanitized on the server, or use a trusted markdown renderer
-  }
+  },
 };
 ```
 
@@ -276,7 +328,7 @@ Sanitizing or escaping dynamic content at the source — before it ever reaches 
 **Incorrect**
 
 ```html
-<img src="image.png" onerror="alert('XSS')">
+<img src="image.png" onerror="alert('XSS')" />
 
 <a href="javascript:alert('Hello')">Click me</a>
 ```
@@ -284,7 +336,7 @@ Sanitizing or escaping dynamic content at the source — before it ever reaches 
 **Correct**
 
 ```js
-button.addEventListener("click", handleClick);
+button.addEventListener('click', handleClick);
 ```
 
 ```html
@@ -329,7 +381,7 @@ Since `state.users` is `undefined`, the renderer cannot evaluate the list expres
 
 ```javascript
 const state = {
-  users: []
+  users: [],
 };
 ```
 
@@ -342,13 +394,10 @@ const state = {
 **Defensive Example**
 
 ```javascript
-const users = Array.isArray(state.users)
-  ? state.users
-  : [];
+const users = Array.isArray(state.users) ? state.users : [];
 ```
 
 Using a default empty array ensures that the renderer always receives a valid iterable and prevents evaluation failures.
-
 
 ### AVX_W20 — RENDER_LIST_DUPLICATE_KEY
 
@@ -371,12 +420,10 @@ Using a default empty array ensures that the renderer always receives a valid it
 ```js
 const users = [
   { id: 1, name: 'Alice' },
-  { id: 1, name: 'Bob' }
+  { id: 1, name: 'Bob' },
 ];
 
-users.map(user => (
-  <UserCard key={user.id} />
-));
+users.map((user) => <UserCard key={user.id} />);
 ```
 
 **Correct**
@@ -384,12 +431,10 @@ users.map(user => (
 ```js
 const users = [
   { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
+  { id: 2, name: 'Bob' },
 ];
 
-users.map(user => (
-  <UserCard key={user.id} />
-));
+users.map((user) => <UserCard key={user.id} />);
 ```
 
 > **Note:** When duplicate keys are detected, Avenx automatically appends the item's index to the duplicate key so rendering can continue. This is a fallback mechanism and should not be relied upon as a substitute for stable, unique keys.
@@ -432,7 +477,7 @@ Since `state.description` is `undefined`, calling `.toUpperCase()` on it throws,
 
 ```javascript
 const state = {
-  description: ''
+  description: '',
 };
 ```
 
@@ -446,7 +491,7 @@ const state = {
 const computed = {
   safeDescription() {
     return typeof state.description === 'string' ? state.description : '';
-  }
+  },
 };
 ```
 
@@ -493,7 +538,7 @@ Since `state.user` is `undefined`, accessing `.isActive` throws, and the directi
 
 ```javascript
 const state = {
-  user: null
+  user: null,
 };
 ```
 
@@ -507,7 +552,7 @@ const state = {
 const computed = {
   isUserActive() {
     return Boolean(state.user && state.user.isActive);
-  }
+  },
 };
 ```
 
@@ -517,16 +562,18 @@ const computed = {
 
 Deriving the condition through a guarded `computed` property ensures `data-ax-show` always receives a safe boolean and prevents evaluation failures.
 
-
 ## Compiler Warnings
 
 ### Undeclared Variable or Method Warning
+
 ...
 
 ### AVX_W20 — RENDER_LIST_DUPLICATE_KEY
+
 ...
 
 ### AVX_W23 — DIRECTIVE_CLASS_EVALUATION_FAILED
+
 (new content here)
 
 ## Runtime Codes (`AVX_R*`)
@@ -548,4 +595,4 @@ Deriving the condition through a guarded `computed` property ensures `data-ax-sh
 | `[AVX_R13]` | DOM parsing failed due to malformed HTML. Parser error: {error}. HTML context: "{html}" | **Cause:** DOM parsing failed due to malformed HTML in component templates or dynamically rendered content (e.g., unclosed tags or mismatched elements).<br />**Resolution:** Verify your template HTML is well-formed. Ensure all elements are properly nested and all tags are closed.                                                                                                                                                                                                                                     |
 | `[AVX_R14]` | ROUTER_GUARD_TIMEOUT: A route guard exceeded the configured timeout duration.           | **Cause:** One or more sequential route guards returned promises that failed to resolve within the configured timeout period, causing navigation transitions to stall.<br />**Resolution:** Inspect route guard logic for unresolved or hanging promises. Optimize long-running asynchronous operations, ensure all promises properly resolve or reject, or adjust the `guardTimeout` configuration if longer execution times are expected.                                                                                  |
 | `[AVX_R15]` | SANDBOX_VIOLATION: A sandbox security violation occurred.                               | **Cause:** Template or runtime expressions attempted to access restricted properties such as `__proto__`, `constructor`, or `prototype`, or unauthorized global variables. This restriction prevents prototype pollution, template injection, and unauthorized global scope access.<br />**Resolution:** Restrict expressions to authorized variables only. Avoid accessing or modifying prototype-related properties and unauthorized globals. If necessary, wrap values securely before exposing them to expressions.      |
-| `[AVX_R16]` | Cannot reassign component state directly.                                               | **Cause:** Assigning a new object to `this.state`, such as `this.state = { count: 1 }`, replaces the reactive Proxy and breaks change detection.<br />**Resolution:** Mutate properties on the existing state object instead, such as `this.state.count = 1`, or update several properties with `Object.assign(this.state, { count: 1 })`.                                                                                                                    |
+| `[AVX_R16]` | Cannot reassign component state directly.                                               | **Cause:** Assigning a new object to `this.state`, such as `this.state = { count: 1 }`, replaces the reactive Proxy and breaks change detection.<br />**Resolution:** Mutate properties on the existing state object instead, such as `this.state.count = 1`, or update several properties with `Object.assign(this.state, { count: 1 })`.                                                                                                                                                                                   |
