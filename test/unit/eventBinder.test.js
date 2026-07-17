@@ -1,5 +1,7 @@
 import assert from 'assert';
+import '../helpers/register-happy-dom.js';
 import { EventBinder } from '../../lib/core/events/bindEvents.js';
+import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 
 try {
   console.log('🧪 Testing EventBinder...');
@@ -143,6 +145,40 @@ try {
   executedSource = null;
   unbindEl.trigger('click', { type: 'click' });
   assert.strictEqual(executedSource, null, 'Event listener should be removed after unbind()');
+
+  // 5. Test emit and event payload details transmission
+  console.log('  Testing custom event emit payload details...');
+  let customEventReceived = false;
+  let customEventDetail = null;
+
+  const childComponent = new AvenxComponent(
+    { name: 'Avenx' },
+    {},
+    {},
+    '<button data-ax-ref="btn" @click="triggerCustom()">Emit</button>',
+    {
+      triggerCustom() {
+        this.emit('my-custom-event', { user: this.state.name });
+      }
+    }
+  );
+
+  const container = document.createElement('div');
+  container.addEventListener('my-custom-event', (e) => {
+    customEventReceived = true;
+    customEventDetail = e.detail;
+  });
+
+  childComponent.__setMountTarget(container);
+  childComponent.runUpdate();
+
+  // Trigger click on button inside child component
+  const btn = childComponent.$refs.btn;
+  assert.ok(btn, 'Emit button should exist');
+  btn.click();
+
+  assert.strictEqual(customEventReceived, true, 'my-custom-event should bubble to container');
+  assert.deepStrictEqual(customEventDetail, { user: 'Avenx' }, 'Event detail payload should be preserved');
 
   console.log('  ✅ EventBinder tests passed!');
 } catch (error) {
