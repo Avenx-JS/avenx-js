@@ -75,7 +75,7 @@ function benchmark() {
   console.log(`Average time per operation: ${avgTime.toFixed(4)}ms`);
   console.log(`Ops/sec: ${Math.round(1000 / avgTime)}`);
   console.log(`  - State Creation: ${createTime.toFixed(2)}ms`);
-  console.log(`  - Mutation & Watchers: ${mutateTime.toFixed(2)}ms`);
+  console.log(`  - Mutation & Watchers: ${mutateTime.toFixed(2)}ms (triggered: ${watcherTriggerCount})`);
   console.log(`  - Cached reads: ${cachedReadTime.toFixed(2)}ms`);
   console.log(`  - Invalidation + reads: ${dirtyReadTime.toFixed(2)}ms`);
 }

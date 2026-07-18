@@ -5,12 +5,27 @@ import { VirtualList } from '../lib/core/runtime/VirtualList.js';
 
 // Setup Mock ResizeObserver if not natively present in happy-dom environment
 if (typeof global.ResizeObserver === 'undefined') {
+  /**
+   * Mock ResizeObserver for happy-dom environment.
+   */
   global.ResizeObserver = class MockResizeObserver {
+    /**
+     * @param {Function} callback - Callback function.
+     */
     constructor(callback) {
       this.callback = callback;
     }
+    /**
+     * Observe a target.
+     */
     observe() {}
+    /**
+     * Unobserve a target.
+     */
     unobserve() {}
+    /**
+     * Disconnect observer.
+     */
     disconnect() {}
   };
 }
@@ -19,6 +34,9 @@ if (typeof global.ResizeObserver === 'undefined') {
  * Page component wrapper to host the VirtualList for benchmarking.
  */
 class BenchPage extends AvenxPage {
+  /**
+   * @param {Array<object>} items - Benchmark list items.
+   */
   constructor(items) {
     super(
       {
