@@ -14,6 +14,27 @@ The base class from which all standard UI components inherit. It manages reactiv
 
 Implement these functions in your component logic to execute code at specific points in the component's lifespan:
 
+Lifecycle hooks can also be defined as class methods when creating a component by extending `AvenxComponent`.
+
+```javascript
+class MyComponent extends AvenxComponent {
+  onMount() {
+    console.log('Component mounted');
+  }
+
+  onUpdate() {
+    console.log('Component updated');
+  }
+
+  onUnmount() {
+    console.log('Component unmounted');
+  }
+}
+```
+
+When lifecycle hooks are provided through both the constructor `methods` object and class methods, the constructor `methods` object takes priority.
+
+
 | Method Name        | Description                                                                                                    |
 | ------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `onMount()`        | Called immediately after the component's element is attached to the DOM. Place your initial data fetches here. |

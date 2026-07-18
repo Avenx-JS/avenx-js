@@ -158,6 +158,62 @@ compose them directly in the Page template:
 
 This structure ensures that each custom component can be correctly resolved, instantiated, and mounted by the Page runtime.
 
+## Lifecycle Hooks
+
+Avenx components support lifecycle hooks that allow you to run logic at different stages of a component's lifecycle.
+
+Lifecycle hooks can be defined in two ways:
+
+1. Through the `methods` object.
+2. By defining lifecycle methods directly in a class that extends `AvenxComponent`.
+
+### Defining Lifecycle Hooks with Methods Object
+
+Lifecycle hooks can be provided through the component's methods configuration:
+
+```javascript
+methods: {
+  onMount() {
+    console.log('Component mounted');
+  },
+
+  onUpdate() {
+    console.log('Component updated');
+  },
+
+  onUnmount() {
+    console.log('Component unmounted');
+  }
+}
+```
+### Defining Lifecycle Hooks as Class Methods
+
+When using class-based components, lifecycle hooks can be defined directly as methods on a subclass of `AvenxComponent`.
+
+```javascript
+class MyComponent extends AvenxComponent {
+  onMount() {
+    console.log('Component mounted');
+  }
+
+  onUpdate() {
+    console.log('Component updated');
+  }
+
+  onUnmount() {
+    console.log('Component unmounted');
+  }
+}
+```
+
+If a lifecycle hook is defined in both the `methods` object and the subclass, the `methods` object takes priority.
+
+Available lifecycle hooks:
+
+- `onMount()` — Runs when the component is mounted.
+- `onUpdate()` — Runs when the component updates.
+- `onUnmount()` — Runs when the component is removed.
+
 ## Compilation Lifecycle & Limits
 
 The Avenx compiler processes `.component.js` files by scanning for supported configuration tags and template content. During compilation, only `<state>`, `<computed>`, `<action>`, and template content are preserved and transformed into the generated component output.
