@@ -370,6 +370,70 @@ For a subtree to qualify as static and be successfully optimized, it must:
 
 Subtrees that meet these requirements are hoisted out of the render function and reused across updates without re-evaluation, improving performance for components with large amounts of unchanging markup.
 
+### AVX_W07 — PAGE_ALREADY_REGISTERED
+
+**Warning Message**
+
+```text
+Page "{0}" is already registered and will be overwritten.
+```
+
+**Cause:** This warning is emitted when a page is registered more than once using the same registration name. During application initialization, Avenx-JS stores registered pages in its page registry. If another page is later registered with an existing name, the previous entry is overwritten and this warning is emitted.
+
+This typically happens for a few common reasons:
+
+- The same page is registered multiple times.
+- Two different page components use the same registration name.
+- Duplicate imports or repeated initialization logic register the same page more than once.
+- Copying and modifying route configuration without updating the registration name.
+
+**Resolution:** To resolve this warning:
+
+1. Ensure each page is registered only once during application startup.
+2. Use unique registration names for every page.
+3. Check for duplicate imports or repeated initialization code.
+4. Keep page registration centralized to avoid accidental overwrites.
+
+**Incorrect**
+
+```javascript
+import HomePage from "./pages/home.page.js";
+import DashboardPage from "./pages/dashboard.page.js";
+
+const app = new AvenxApp({ target: "#app" });
+
+app.registerPage("Home", HomePage);
+app.registerPage("Home", DashboardPage);
+```
+
+Both registrations use the name `"Home"`, so the second registration overwrites the first and Avenx-JS emits **AVX_W07**.
+
+**Correct**
+
+```javascript
+import HomePage from "./pages/home.page.js";
+import DashboardPage from "./pages/dashboard.page.js";
+
+const app = new AvenxApp({ target: "#app" });
+
+app.registerPage("Home", HomePage);
+app.registerPage("Dashboard", DashboardPage);
+```
+
+Using unique registration names ensures each page can be resolved correctly by the router.
+
+**Defensive Example**
+
+```javascript
+const app = new AvenxApp({ target: "#app" });
+
+app.registerPage("Home", HomePage);
+app.registerPage("Profile", ProfilePage);
+app.registerPage("Settings", SettingsPage);
+```
+
+Register all pages once during application initialization and assign each page a unique registration name to avoid accidental collisions.
+
 ### AVX_W08 — ROUTE_PATH_MISSING_LEADING_SLASH
 
 **Warning Message**
