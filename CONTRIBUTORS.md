@@ -83,6 +83,7 @@ If you have questions or want to contribute, feel free to reach out.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/KaizokuHam"><img src="https://avatars.githubusercontent.com/u/304468983?v=4?s=100" width="100px;" alt="KaizokuHam"/><br /><sub><b>KaizokuHam</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=KaizokuHam" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ankitb798"><img src="https://avatars.githubusercontent.com/u/181209760?v=4?s=100" width="100px;" alt="ankitb798"/><br /><sub><b>ankitb798</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=ankitb798" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/amna-sehgal"><img src="https://avatars.githubusercontent.com/u/217070670?v=4?s=100" width="100px;" alt="amna-sehgal"/><br /><sub><b>amna-sehgal</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=amna-sehgal" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
