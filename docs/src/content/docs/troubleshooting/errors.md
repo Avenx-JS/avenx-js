@@ -243,6 +243,63 @@ The loop block is properly opened and closed, allowing the compiler to parse the
 
 When nesting loop blocks, always close the innermost loop before closing the outer loop. Proper nesting helps the compiler validate the template structure correctly.
 
+### AVX_W06 — COMPILER_STATIC_SUBTREE_OPTIMIZATION_FAILED
+
+**Warning Message**
+Failed to optimize static subtrees: {0}
+
+**Cause:** As part of its build-time optimizations, the Avenx-JS compiler analyzes each component's element tree to identify **static subtrees** — sections of markup that contain no dynamic bindings, interpolations, or directives, and therefore never change after the initial render. Marking these subtrees as static lets the runtime skip re-evaluating and re-diffing them on every update, improving render performance. This warning is emitted when the compiler attempts this analysis but fails, typically because it encounters a malformed tree node or a parser error while walking the template.
+
+This typically happens for a few common reasons:
+
+- Unclosed or mismatched HTML tags within a section the compiler is trying to statically analyze.
+- Templates that mix static and dynamic content in ways that produce an inconsistent or invalid node structure (e.g. a directive attribute left incomplete or malformed).
+- Deeply nested or unusually structured markup that the tree walker cannot resolve cleanly during the optimization pass.
+- Custom or non-standard elements/attributes that the compiler's static analyzer doesn't recognize and cannot safely classify as static or dynamic.
+
+**Impact:** This is a build-time optimization warning, not a runtime error — it does not stop compilation or break your app's functionality. However, when a subtree fails static optimization, the runtime is forced to treat it as dynamic and re-evaluate it on every update, which can measurably impact rendering performance in larger or frequently-updating components.
+
+**Resolution:** To resolve this warning:
+
+1. Verify that all HTML tags in the affected template are properly closed and correctly nested.
+2. Check that directive attributes (`data-ax-*`) and interpolations (`{{ }}`) are complete and well-formed — an incomplete directive can confuse the tree walker.
+3. Simplify unusually deep or complex nesting where possible, particularly in sections you intend to be purely static.
+4. If you're using custom elements, ensure they follow standard HTML structure so the compiler can correctly classify their contents.
+
+**Incorrect**
+
+```html
+<div class="card">
+  <p>Static header text</p>
+  <span>Unclosed span
+  <p>More static text</p>
+</div>
+```
+
+The unclosed `<span>` produces a malformed node structure, so the compiler cannot reliably determine which parts of this subtree are static.
+
+**Correct**
+
+```html
+<div class="card">
+  <p>Static header text</p>
+  <span>Properly closed span</span>
+  <p>More static text</p>
+</div>
+```
+
+With well-formed markup, the compiler can confidently identify this entire subtree as static (since it contains no bindings or directives) and optimize it accordingly.
+
+**Subtree Evaluation Requirements**
+
+For a subtree to qualify as static and be successfully optimized, it must:
+
+- Contain no interpolations (`{{ }}`), directive bindings (`data-ax-*`), or event handlers.
+- Be well-formed HTML with properly closed and nested tags.
+- Not contain `<@for>` or other structural directives that produce dynamic output.
+
+Subtrees that meet these requirements are hoisted out of the render function and reused across updates without re-evaluation, improving performance for components with large amounts of unchanging markup.
+
 ### AVX_W11 — ROUTE_TITLE_EVALUATION_FAILED
 
 **Warning Message**
