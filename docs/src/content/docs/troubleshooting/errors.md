@@ -116,6 +116,75 @@ This typically happens for a few common reasons:
 
 This validation exists purely to help catch mistakes early — it will not prevent your app from compiling or running, but an undeclared reference will typically resolve to `undefined` at runtime, so it's best to address the warning rather than ignore it.
 
+### AVX_W03 — COMPILER_UNDECLARED_REFERENCE
+
+**Warning Message**
+
+```text
+Undeclared variable or method "{0}" referenced in template of {1}.
+```
+
+**Cause:** This warning is emitted during template validation when the compiler encounters a variable, method, or binding that cannot be resolved from the component's declared members. During compilation, `validateTemplate` checks template interpolations, bindings, directives, and event handlers against the component's `state`, `computed`, `actions`, and `bridges`. If a referenced identifier cannot be resolved statically, Avenx-JS emits this warning.
+
+This typically happens for a few common reasons:
+
+- A typo in a variable or method name.
+- Referencing a property that was never declared in `state`.
+- Calling an action that was never added to `actions`.
+- Using a computed property that does not exist.
+- Referencing a bridge that has not been registered.
+
+**Resolution:** To resolve this warning:
+
+1. Verify the spelling of the referenced identifier.
+2. Ensure the property exists in `state`, `computed`, `actions`, or `bridges`.
+3. Check that renamed variables have been updated throughout the template.
+4. If the reference is intentionally resolved only at runtime (for example, through dynamic properties that cannot be statically analysed), the warning can usually be ignored after confirming the behaviour is expected.
+
+**Incorrect**
+
+```html
+<state username="John" />
+
+<p>{{ usernmae }}</p>
+
+<button @click="saveProfile()">Save</button>
+```
+
+```javascript
+<action name="submit">
+  console.log("Saving...");
+</action>
+```
+
+The template references `usernmae` instead of `username`, and calls `saveProfile()` even though only `submit` is declared.
+
+**Correct**
+
+```html
+<state username="John" />
+
+<p>{{ username }}</p>
+
+<button @click="submit()">Save</button>
+```
+
+```javascript
+<action name="submit">
+  console.log("Saving...");
+</action>
+```
+
+The template references only declared state and actions, allowing the compiler to resolve every identifier successfully.
+
+**Defensive Example**
+
+```html
+<p>{{ DynamicBridge.currentUser?.name }}</p>
+```
+
+If a value is supplied dynamically at runtime and cannot always be determined during static analysis, the compiler may emit this warning even though the application behaves correctly. Verify the behaviour before deciding to ignore the warning.
+
 ### AVX_W11 — ROUTE_TITLE_EVALUATION_FAILED
 
 **Warning Message**
