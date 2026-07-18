@@ -63,6 +63,59 @@ Because updates are queued and processed asynchronously, multiple synchronous st
 
 ### Troubleshooting `AVX_R11`
 
+#### Troubleshooting `AVX_W09`
+
+The `AVX_W09` (`ROUTE_PARAM_DECODE_FAILED`) warning occurs when Avenx-JS cannot decode a route parameter because it contains malformed percent-encoding.
+
+This warning is typically raised during route changes when parameters are extracted from the URL and decoded using JavaScript's `decodeURIComponent()`. If decoding fails because the URI is malformed, Avenx-JS logs the warning instead of crashing the application.
+
+For example, the following route parameter contains invalid percent-encoding:
+
+```text
+#/profile/John%2
+```
+
+The `%2` sequence is incomplete and cannot be decoded.
+
+A correctly encoded route would be:
+
+```text
+#/profile/John%20Doe
+```
+
+where `%20` represents a space.
+
+To prevent this warning:
+
+- Always encode route parameters using `encodeURIComponent()` before constructing URLs.
+- Ensure every `%` is followed by exactly two hexadecimal digits (`0-9`, `A-F`, or `a-f`).
+- Avoid manually writing encoded URL values whenever possible.
+
+Example:
+
+```javascript
+const userName = "John Doe";
+const url = `/profile/${encodeURIComponent(userName)}`;
+```
+
+Common examples of percent encoding:
+
+**Valid**
+
+```text
+%20
+%2F
+%3A
+```
+
+**Invalid**
+
+```text
+%
+%2
+%ZZ
+```
+
 #### Troubleshooting `AVX_W11`
 
 The `AVX_W11` (`ROUTE_TITLE_EVALUATION_FAILED`) warning occurs when a dynamic route `title` function throws an error while evaluating the route parameters.
