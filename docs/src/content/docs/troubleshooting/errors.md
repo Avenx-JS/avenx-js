@@ -243,6 +243,71 @@ The loop block is properly opened and closed, allowing the compiler to parse the
 
 When nesting loop blocks, always close the innermost loop before closing the outer loop. Proper nesting helps the compiler validate the template structure correctly.
 
+### AVX_W08 — ROUTE_PATH_MISSING_LEADING_SLASH
+
+**Warning Message**
+
+```text
+Route path "{0}" lacks a leading slash. This may prevent hash paths from resolving properly.
+```
+
+**Cause:** This warning is emitted during router initialization when a route is configured with a path that does not begin with a leading `/`. Avenx-JS expects all route paths to use an absolute, slash-prefixed format so they can be matched correctly during hash-based navigation. If a path is defined without the leading slash, the router may fail to resolve the route as expected.
+
+This typically happens for a few common reasons:
+
+- The leading `/` was accidentally omitted when defining a route.
+- A route path was copied or renamed without preserving the correct format.
+- Route configurations were generated dynamically without normalizing the path.
+
+**Resolution:** To resolve this warning:
+
+1. Ensure every route path begins with a leading `/`.
+2. Review route definitions for typos or inconsistent path formatting.
+3. Normalize dynamically generated paths before registering them with the router.
+4. Keep route definitions consistent throughout the application.
+
+**Incorrect**
+
+```javascript
+const routes = [
+  {
+    path: "dashboard",
+    component: DashboardPage,
+  },
+];
+```
+
+Since the route path does not begin with `/`, Avenx-JS emits **AVX_W08** and the route may not match incoming hash navigation correctly.
+
+**Correct**
+
+```javascript
+const routes = [
+  {
+    path: "/dashboard",
+    component: DashboardPage,
+  },
+];
+```
+
+Using a leading slash ensures the router can correctly match and resolve the route.
+
+**Defensive Example**
+
+```javascript
+const normalizePath = (path) =>
+  path.startsWith("/") ? path : `/${path}`;
+
+const routes = [
+  {
+    path: normalizePath("dashboard"),
+    component: DashboardPage,
+  },
+];
+```
+
+Normalizing route paths before registration helps prevent configuration mistakes and ensures all routes follow the expected format.
+
 ### AVX_W11 — ROUTE_TITLE_EVALUATION_FAILED
 
 **Warning Message**
