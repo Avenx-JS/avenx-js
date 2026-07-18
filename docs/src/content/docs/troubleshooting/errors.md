@@ -519,6 +519,75 @@ const users = Array.isArray(state.users) ? state.users : [];
 
 Using a default empty array ensures that the renderer always receives a valid iterable and prevents evaluation failures.
 
+### AVX_W19 — RENDER_KEY_EVALUATION_FAILED
+
+**Warning Message**
+
+```text
+Failed to evaluate list key expression: {0}. Error: {1}
+```
+
+**Cause:** This warning is emitted at runtime when Avenx-JS attempts to evaluate the expression provided to `data-ax-key`, but the expression throws an exception. This commonly happens when the expression references an undefined property, calls a method that throws, or contains an invalid expression.
+
+**Impact:** The list continues to render, but Avenx-JS falls back to using the item's index as the key for the affected item. While rendering can continue, using index-based keys may reduce the effectiveness of keyed DOM updates if the list is reordered or modified.
+
+**Resolution:** To resolve this warning:
+
+1. Ensure the expression used in `data-ax-key` references properties that exist for every item.
+2. Check for typographical errors in property or method names.
+3. Avoid calling methods that can throw exceptions while computing the key.
+4. Prefer stable, unique values such as database IDs or UUIDs.
+
+**Incorrect**
+
+```javascript
+const state = {
+  users: [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' }
+  ]
+};
+```
+
+```html
+<li
+  data-ax-for="user in state.users"
+  data-ax-key="user.profile.id"
+>
+  {{ user.name }}
+</li>
+```
+
+Since the `profile` property does not exist on every user object, evaluating the key expression throws and this warning is emitted.
+
+**Correct**
+
+```html
+<li
+  data-ax-for="user in state.users"
+  data-ax-key="user.id"
+>
+  {{ user.name }}
+</li>
+```
+
+Each item provides a stable, unique key that can be evaluated successfully.
+
+**Defensive Example**
+
+```html
+<li
+  data-ax-for="user in state.users"
+  data-ax-key="user?.id ?? index"
+>
+  {{ user.name }}
+</li>
+```
+
+Using a fallback expression ensures every item can produce a valid key, even when some objects are missing the preferred identifier.
+
+**Note:** When a key expression cannot be evaluated, Avenx-JS logs this warning and falls back to using the item's index as the key so rendering can continue.
+
 ### AVX_W20 — RENDER_LIST_DUPLICATE_KEY
 
 ```text
@@ -681,22 +750,6 @@ const computed = {
 ```
 
 Deriving the condition through a guarded `computed` property ensures `data-ax-show` always receives a safe boolean and prevents evaluation failures.
-
-## Compiler Warnings
-
-### Undeclared Variable or Method Warning
-
-...
-
-### AVX_W20 — RENDER_LIST_DUPLICATE_KEY
-
-...
-### AVX_W02 — COMPILER_EMPTY_TEMPLATE
-
-...your documentation...
-### AVX_W23 — DIRECTIVE_CLASS_EVALUATION_FAILED
-
-(new content here)
 
 ## Runtime Codes (`AVX_R*`)
 
