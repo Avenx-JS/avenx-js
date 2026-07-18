@@ -243,6 +243,76 @@ The loop block is properly opened and closed, allowing the compiler to parse the
 
 When nesting loop blocks, always close the innermost loop before closing the outer loop. Proper nesting helps the compiler validate the template structure correctly.
 
+### AVX_W05 — COMPILER_TRANSITION_PARSE_FAILED
+
+**Warning Message**
+Failed to parse transition tags: {0}
+
+**Cause:** This warning is emitted at compile time when Avenx-JS extracts and parses transition wrapper attributes (used to animate elements entering/leaving the DOM) but the parser fails to read the class configuration or duration parameters correctly. This typically happens when the transition attribute's value doesn't match the format the compiler expects — for example, an invalid duration value, malformed class name syntax, or a missing required parameter.
+
+**Expected Format**
+
+A transition block is typically declared with an attribute such as `data-ax-transition`, taking a configuration string with named class and duration parameters:
+
+```html
+<div data-ax-transition="name: fade; duration: 300">
+  Content
+</div>
+```
+
+- `name` — a string identifying the transition, used to derive the CSS class names applied during enter/leave (e.g. `fade-enter`, `fade-leave`).
+- `duration` — a numeric value in milliseconds specifying how long the transition classes remain applied before being removed.
+
+This typically fails for a few common reasons:
+
+- The `duration` value is not a valid number (e.g. `duration: 300ms` instead of `duration: 300`).
+- The configuration string is missing a required `;` separator between parameters.
+- The `name` value contains characters that can't be safely used to construct CSS class names (spaces, quotes, or special characters).
+- A parameter key is misspelled (e.g. `duraton` instead of `duration`).
+
+**Resolution:** To resolve this warning:
+
+1. Ensure `duration` is specified as a plain number representing milliseconds, without units.
+2. Separate multiple parameters with a semicolon (`;`), matching the `key: value; key: value` format.
+3. Keep `name` limited to characters valid in CSS class names (letters, numbers, hyphens, underscores).
+4. Double-check parameter key spelling against the supported keys (`name`, `duration`).
+
+**Incorrect**
+
+```html
+<div data-ax-transition="name: fade, duration: 300ms">
+  Content
+</div>
+```
+
+This fails because a comma is used instead of a semicolon between parameters, and `duration` includes the `ms` unit instead of a plain number.
+
+**Correct**
+
+```html
+<div data-ax-transition="name: fade; duration: 300">
+  Content
+</div>
+```
+
+This produces `fade-enter`/`fade-leave` classes applied for 300 milliseconds during the respective transition phase.
+
+**Specifying Transition Classes and Durations**
+
+You can also override the generated class names directly instead of relying on the `name`-derived defaults:
+
+```html
+<div data-ax-transition="enterClass: slide-in; leaveClass: slide-out; duration: 250">
+  Content
+</div>
+```
+
+- `enterClass` — the CSS class applied while the element is entering.
+- `leaveClass` — the CSS class applied while the element is leaving.
+- `duration` — shared duration in milliseconds for both phases, unless overridden separately with `enterDuration`/`leaveDuration`.
+
+Ensuring these parameters follow the expected `key: value` pairs, separated by semicolons, with numeric-only duration values, allows the compiler to parse the transition block successfully.
+
 ### AVX_W11 — ROUTE_TITLE_EVALUATION_FAILED
 
 **Warning Message**
