@@ -168,6 +168,71 @@ export default {
 
 Using optional chaining and fallback values helps prevent runtime exceptions during route title evaluation.
 
+### AVX_W12 — PAGE_PROP_EVALUATION_FAILED
+
+**Warning Message**
+Failed to evaluate prop expression: {0}. Error: {1}
+
+**Cause:** This warning is emitted during the mounting lifecycle of a routed page when a property mapped to that route — via a route parameter, query mapping, or resolver — fails to resolve or throws an exception during evaluation. Since page props are typically evaluated before the page component fully mounts, an error here can prevent the page from receiving the data it expects.
+
+This typically happens for a few common reasons:
+
+- A resolver function tied to the route throws an exception (e.g. it depends on data that hasn't loaded, or accesses a property on `null`/`undefined`).
+- A prop expression references a route parameter or query value that doesn't exist for the current navigation.
+- An asynchronous resolver rejects instead of resolving, and the rejection isn't handled.
+- A typo or syntax error in the prop mapping expression itself.
+
+**Resolution:** To resolve this warning:
+
+1. Ensure resolver functions handle missing or `undefined` route parameters gracefully, with a sensible fallback value instead of throwing.
+2. Wrap resolver logic in a `try...catch` (or handle promise rejections) so failures produce a controlled fallback rather than an unhandled error.
+3. Double-check that prop expressions reference route parameters and query keys that actually exist for every route the page can be reached from.
+4. If a prop depends on asynchronous data (e.g. an API call), provide a default/loading value so the page can mount safely while data resolves.
+
+**Incorrect**
+
+```javascript
+const pageProps = {
+  userId: (route) => route.params.user.id
+};
+```
+
+```html
+<!-- Route: /profile (no "user" param defined) -->
+```
+
+Since `route.params.user` is `undefined` for this route, accessing `.id` throws, and the prop expression fails to evaluate.
+
+**Correct**
+
+```javascript
+const pageProps = {
+  userId: (route) => route.params.userId || null
+};
+```
+
+```html
+<!-- Route: /profile/:userId -->
+```
+
+**Defensive Example**
+
+```javascript
+const pageProps = {
+  userId: (route) => {
+    try {
+      return route.params.userId ?? null;
+    } catch (err) {
+      console.warn('Failed to resolve userId prop:', err);
+      return null;
+    }
+  }
+};
+```
+
+Wrapping the resolver and falling back to a safe default ensures the page can still mount even if the expected route data is missing, rather than failing the prop evaluation entirely.
+
+
 ### AVX_W15 — COMPONENT_INJECT_KEY_NOT_FOUND
 
 **Warning Message**
