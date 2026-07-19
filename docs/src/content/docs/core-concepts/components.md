@@ -343,3 +343,118 @@ When writing `.component.js` files:
 - Reference intentionally global utilities through properties on `window`.
 
 Understanding these compilation limits helps prevent missing imports, undefined helpers, and runtime `ReferenceError` exceptions caused by code being removed from the compiled output.
+
+## Slot Fallbacks
+
+Slots can define fallback content that is rendered when a parent component does not provide any content for that slot.
+
+This allows components to display sensible default content while still supporting customization through composition.
+
+### Basic Syntax
+
+Define fallback content by placing it between the opening and closing `<slot>` tags.
+
+```html
+<div class="card">
+  <slot>
+    No content provided.
+  </slot>
+</div>
+```
+
+If a parent component does not supply any child content, the text inside the `<slot>` element is rendered automatically.
+
+### Parent Provides Content
+
+Child component:
+
+```html
+<div class="card">
+  <slot>
+    No content provided.
+  </slot>
+</div>
+```
+
+Parent component:
+
+```html
+<Card>
+  <p>Welcome to Avenx-JS!</p>
+</Card>
+```
+
+Rendered output:
+
+```html
+<div class="card">
+  <p>Welcome to Avenx-JS!</p>
+</div>
+```
+
+The fallback content is ignored because the parent supplied slot content.
+
+### Parent Does Not Provide Content
+
+Child component:
+
+```html
+<div class="card">
+  <slot>
+    No content provided.
+  </slot>
+</div>
+```
+
+Parent component:
+
+```html
+<Card />
+```
+
+Rendered output:
+
+```html
+<div class="card">
+  No content provided.
+</div>
+```
+
+Since no slot content was passed from the parent, the fallback content is rendered instead.
+
+---
+
+## Multiple Slots with Fallbacks
+
+Each `<slot>` element manages its own fallback content independently.
+
+```html
+<header>
+  <slot>
+    Default Header
+  </slot>
+</header>
+
+<main>
+  <slot>
+    Default Body
+  </slot>
+</main>
+
+<footer>
+  <slot>
+    Default Footer
+  </slot>
+</footer>
+```
+
+If content is not supplied for a particular slot, that slot renders its own fallback while other slots continue to render the content they receive.
+
+---
+
+## Best Practices
+
+- Provide meaningful fallback content whenever a slot is optional.
+- Use concise placeholders such as loading states, default messages, or instructional text.
+- Keep fallback content relevant to the component's purpose.
+- Avoid relying on fallback content for required information that should always be supplied by the parent component.
