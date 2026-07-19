@@ -379,6 +379,12 @@ export class AvenxApp {
         routes: Record<string, string | AvenxRouteDefinition>,
         options?: AvenxRouterOptions
     ): AvenxRouter;
+
+    /**
+     * Registers an application-wide error handler callback.
+     * @param callback Callback triggered when an unhandled lifecycle or event handler error occurs.
+     */
+    onError(callback: (error: Error, component: AvenxComponent, origin: string) => void): this;
 }
 
 /**
