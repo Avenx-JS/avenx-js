@@ -3,7 +3,8 @@
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
+import readline from 'node:readline';
 import { fileURLToPath } from 'url';
 import AvenxCompiler from '../lib/compiler.js';
 import loadConfig from '../lib/config.js';
@@ -49,6 +50,44 @@ function parseName(inputName) {
   const capitalizedName = parts.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join('');
   const folderFileName = parts.map((part) => part.toLowerCase()).join('-');
   return { capitalizedName, folderFileName };
+}
+
+function checkGitStatus() {
+  try {
+    const output = execSync('git status --porcelain', {
+      encoding: 'utf8',
+    });
+
+    if (!output.trim()) {
+      return true;
+    }
+
+    console.warn('⚠️ You have unstaged changes in your repository.');
+
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      return true;
+    }
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+      rl.question('Do you want to proceed? (y/N) ', (answer) => {
+        rl.close();
+
+        if (answer.trim().toLowerCase() === 'y') {
+          resolve(true);
+        } else {
+          console.log('Operation cancelled.');
+          resolve(false);
+        }
+      });
+    });
+  } catch {
+    return true;
+  }
 }
 
 /**
@@ -124,18 +163,31 @@ class AvenxCLI {
    * @param {string} command - The command to run (e.g., 'init', 'generate', 'build', 'serve', 'help').
    * @param {string[]} args - Additional arguments for the command.
    */
-  run(command, args) {
+  async run(command, args) {
     const dryRun = args.includes('--dry-run') || args.includes('-d');
+    const force = args.includes('--force') || args.includes('-f');
     const filteredArgs = args.filter((arg) => arg !== '--dry-run' && arg !== '-d');
     const type = filteredArgs[0];
     const name = filteredArgs[1];
 
     switch (command) {
       case 'init':
+        if (!force) {
+          const proceed = await checkGitStatus();
+          if (!proceed) {
+            return;
+          }
+        }
         this.initProject();
         break;
       case 'generate':
       case 'g':
+        if (!force) {
+          const proceed = await checkGitStatus();
+          if (!proceed) {
+            return;
+          }
+        }
         if (type === 'bridge') {
           this.generateBridge(name, dryRun);
         } else if (type === 'guard') {
@@ -149,6 +201,12 @@ class AvenxCLI {
         break;
       case 'destroy':
       case 'd':
+        if (!force) {
+          const proceed = await checkGitStatus();
+          if (!proceed) {
+            return;
+          }
+        }
         if (type === 'bridge') {
           this.destroyBridge(name, dryRun);
         } else if (type === 'guard') {
@@ -164,6 +222,12 @@ class AvenxCLI {
         break;
       case 'build':
       case 'b':
+        if (!force) {
+          const proceed = await checkGitStatus();
+          if (!proceed) {
+            return;
+          }
+        }
         this.buildProject();
         break;
       case 'clean':
