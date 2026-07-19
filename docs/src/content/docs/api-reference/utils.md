@@ -338,3 +338,190 @@ const watcher = new AvenxWatcher(
 
 watcher.teardown();
 ```
+
+## AvenxLogger
+
+The `AvenxLogger` class provides Avenx-JS's built-in logging system. It supports configurable log levels, custom formatting, and custom transports, making it suitable for both development and production environments.
+
+A shared logger instance is also exported from the runtime for convenient use throughout your application.
+
+### Importing
+
+```js
+import { AvenxLogger, logger } from "avenx-core/runtime";
+```
+
+- `AvenxLogger` creates a new logger instance with custom configuration.
+- `logger` is the default global logger instance provided by Avenx-JS.
+
+---
+
+## Constructor
+
+```js
+const logger = new AvenxLogger(config);
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+| ------- | ---- | ------- | ----------- |
+| `level` | `string` | `"info"` | Minimum log level to output. |
+| `silent` | `boolean` | `false` | Disables all logging when enabled. |
+| `formatter` | `Function` | `defaultFormatter` | Formats log messages before they are passed to transports. |
+| `transports` | `Array` | `[consoleTransport]` | Collection of custom transport targets. |
+
+---
+
+## Log Levels
+
+Supported log levels are listed below in ascending order of severity.
+
+| Level | Description |
+| ------- | ----------- |
+| `trace` | Detailed diagnostic information. |
+| `debug` | Development and debugging messages. |
+| `info` | General application information. |
+| `warn` | Warning messages. |
+| `error` | Error messages. |
+| `fatal` | Critical failures. |
+| `off` | Disables logging. |
+| `silent` | Alias for `off`. |
+
+The logger only outputs messages whose severity is greater than or equal to the configured log level.
+
+---
+
+## Logging Methods
+
+Every logger instance provides the following methods.
+
+| Method | Description |
+| ------- | ----------- |
+| `trace(...args)` | Logs a trace message. |
+| `debug(...args)` | Logs a debug message. |
+| `info(...args)` | Logs an informational message. |
+| `log(...args)` | Alias for `info()`. |
+| `warn(...args)` | Logs a warning. |
+| `error(...args)` | Logs an error. |
+| `fatal(...args)` | Logs a fatal error. |
+
+---
+
+## Using the Global Logger
+
+The runtime exports a shared logger instance that can be used anywhere in your application.
+
+```js
+import { logger } from "avenx-core/runtime";
+
+logger.info("Application started.");
+logger.warn("Cache miss.");
+logger.error("Failed to load configuration.");
+```
+
+---
+
+## Creating a Custom Logger
+
+Create a separate logger instance with its own configuration.
+
+```js
+import { AvenxLogger } from "avenx-core/runtime";
+
+const logger = new AvenxLogger({
+  level: "debug"
+});
+
+logger.debug("Debug logging enabled.");
+```
+
+---
+
+## Updating Logger Configuration
+
+Logger instances can be reconfigured at runtime.
+
+```js
+import { logger } from "avenx-core/runtime";
+
+logger.configure({
+  level: "trace"
+});
+
+logger.trace("Verbose logging is now enabled.");
+```
+
+You can update one or more configuration options at any time using `configure()`.
+
+---
+
+## Custom Formatter
+
+A formatter receives the log level and the original arguments, then returns the formatted arguments passed to each transport.
+
+```js
+const formatter = (level, args) => [
+  `[MyApp] [${level.toUpperCase()}]`,
+  ...args
+];
+
+const logger = new AvenxLogger({
+  formatter
+});
+```
+
+---
+
+## Custom Transport
+
+Custom transports allow log messages to be forwarded to destinations other than the browser console.
+
+A transport may be either:
+
+- an object exposing a `log()` method
+- a function
+
+### Object Transport
+
+```js
+const transport = {
+  log(level, formattedArgs, rawArgs) {
+    console.log("Sending log:", formattedArgs);
+  }
+};
+
+const logger = new AvenxLogger({
+  transports: [transport]
+});
+```
+
+### Function Transport
+
+```js
+const transport = (level, formattedArgs, rawArgs) => {
+  console.log(level, formattedArgs);
+};
+
+const logger = new AvenxLogger({
+  transports: [transport]
+});
+```
+
+---
+
+## Example
+
+```js
+import { logger } from "avenx-core/runtime";
+
+logger.info("Application initialized.");
+
+logger.debug("Loaded configuration.");
+
+logger.warn("Using default settings.");
+
+logger.error("Unable to connect to the server.");
+
+logger.fatal("Unexpected unrecoverable error.");
+```

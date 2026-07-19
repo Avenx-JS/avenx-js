@@ -59,3 +59,62 @@ Tags written with an explicit self-closing slash, like `<my-video />`, are alrea
 ```
 
 The configuration is merged with the defaults, so you can override only the settings your project needs.
+
+## Logging Options
+
+Avenx-JS includes a configurable logging system that can be customized globally through the `logging` section in `avenx.config.json`.
+
+### Configuration
+
+```json
+{
+  "logging": {
+    "level": "info",
+    "silent": false
+  }
+}
+```
+
+### Available Options
+
+| Option | Type | Default | Description |
+| ------- | ---- | ------- | ----------- |
+| `level` | `string` | `"info"` | Sets the minimum log level that will be displayed. |
+| `silent` | `boolean` | `false` | Disables all logging output when set to `true`. |
+
+### Supported Log Levels
+
+Log levels are ordered by severity. Messages below the configured level are ignored.
+
+| Level | Description |
+| ------- | ----------- |
+| `trace` | Very detailed diagnostic information. |
+| `debug` | Debugging information useful during development. |
+| `info` | General informational messages. |
+| `warn` | Warning messages that do not stop execution. |
+| `error` | Errors encountered during execution. |
+| `fatal` | Critical errors requiring immediate attention. |
+| `off` | Disables all logging. |
+| `silent` | Alias for `off`. |
+
+### Example: Enable Debug Logging
+
+```json
+{
+  "logging": {
+    "level": "debug"
+  }
+}
+```
+
+### Example: Disable All Logging
+
+```json
+{
+  "logging": {
+    "silent": true
+  }
+}
+```
+
+When both `silent` and `level` are provided, setting `silent` to `true` suppresses all log output regardless of the configured log level.
