@@ -87,6 +87,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Priyesi02"><img src="https://avatars.githubusercontent.com/u/222841378?v=4?s=100" width="100px;" alt="Priyesi"/><br /><sub><b>Priyesi</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Priyesi02" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ronitchiluka06"><img src="https://avatars.githubusercontent.com/u/254728360?v=4?s=100" width="100px;" alt="ronitchiluka06"/><br /><sub><b>ronitchiluka06</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=ronitchiluka06" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ANONYMOUSZED-beep"><img src="https://avatars.githubusercontent.com/u/72853699?v=4?s=100" width="100px;" alt="Arun"/><br /><sub><b>Arun</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=ANONYMOUSZED-beep" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/chetankumawat13"><img src="https://avatars.githubusercontent.com/u/193734870?v=4?s=100" width="100px;" alt="Chetan Kumawat"/><br /><sub><b>Chetan Kumawat</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=chetankumawat13" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

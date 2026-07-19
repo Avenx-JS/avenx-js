@@ -449,6 +449,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "chetankumawat13",
+      "name": "Chetan Kumawat",
+      "avatar_url": "https://avatars.githubusercontent.com/u/193734870?v=4",
+      "profile": "https://github.com/chetankumawat13",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
