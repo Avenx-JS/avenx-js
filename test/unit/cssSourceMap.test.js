@@ -60,14 +60,21 @@ button {
   // 2. Add global CSS from global section
   processor.addGlobalCSS('.global-class {\n  color: #ff0000;\n}', componentCssPath, 3);
 
-  // 3. Extract scoped rules
+  // 3. Extract scoped rules using string primitives and _sourceMapInfo metadata
   const desBlocks = {
-    button: {
-      body: 'background: #ff0000;\nborder: none;',
-      startLine: 10,
-      sourceFile: componentCssPath
-    }
+    button: 'background: #ff0000;\nborder: none;'
   };
+  Object.defineProperty(desBlocks, '_sourceMapInfo', {
+    value: {
+      button: {
+        startLine: 10,
+        sourceFile: componentCssPath
+      }
+    },
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
 
   // Process a template that matches the block
   const html = '<button @css button>Click me</button>';
