@@ -78,7 +78,11 @@ When the matched route hash includes query parameters,both `to.params.query` and
 ```
 :::
 
-#### Sample Guard Implementation
+### Navigation Redirects
+
+A route guard can return a hash path instead of a boolean to redirect the user to another route. This is useful for authentication, authorization, or onboarding flows where navigation should continue to a different page instead of simply being allowed or blocked.
+
+For example, an authentication guard can redirect unauthenticated users to the login page:
 
 ```javascript
 import { AvenxGuard } from 'avenx';
@@ -88,11 +92,30 @@ export class AuthGuard extends AvenxGuard {
     const isAuthenticated = await checkUserSession();
 
     if (!isAuthenticated) {
-      // Redirect unauthenticated users to the login hash
       return '#/login';
     }
 
-    return true; // Allow navigation
+    return true;
+  }
+}
+```
+
+When a guard returns a redirect path:
+
+- The current navigation is cancelled.
+- The router immediately starts a new navigation to the returned hash path.
+- Route matching is performed again for the redirected destination.
+- Any resolvers associated with the original route are **not executed** because that navigation never completes.
+- Resolvers for the redirected route execute normally as part of the new navigation lifecycle.
+
+#### Sample Guard Implementation
+
+```javascript
+import { AvenxGuard } from 'avenx';
+
+export class AdminGuard extends AvenxGuard {
+  canActivate() {
+    return window.currentUser?.isAdmin === true;
   }
 }
 ```
