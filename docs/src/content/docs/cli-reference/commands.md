@@ -77,7 +77,7 @@ Compiles the project once and then continues running in the background, watching
 
 Whenever a file in the `src/` directory changes, Avenx automatically rebuilds the project and updates the generated files in the `dist/` directory. This keeps your compiled output up to date without manually running `avenx build` after every change.
 
-Unlike `avenx serve`, the `watch` command does not start a local development server or provide browser hot reloading. It only watches for file changes and continuously rebuilds the project in the background.
+Unlike `avenx serve`, the `watch` command does not start a local development server or provide browser live reloading. It only watches for file changes and continuously rebuilds the project in the background.
 
 **Example:**
 
@@ -89,7 +89,13 @@ Press **Ctrl + C** to stop watching.
 
 ### 6. `avenx serve [port]`
 
-Starts a local hot-reloading development server (default port: 3000). It watches the `src/` directory for changes, automatically triggers a rebuild, and sends a live reload event to connected browser instances via a Server-Sent Events (SSE) bridge.
+Starts a local live-reloading development server (default port: 3000). 
+
+#### Description
+
+The development server watches the `src/` directory for code modifications and automatically triggers a project rebuild. It utilizes a Server-Sent Events (SSE) bridge to instantly dispatch a reload event to all connected browser instances upon a successful compilation.
+
+> **Note on Reloading Behavior:** When a code change is detected, the development server triggers a full page refresh (`window.location.reload()`) in the connected browsers to apply the updates. This is a **Live Reloading** mechanism rather than Hot Module Replacement (HMR); as a result, transient local application state will be reset when the page refreshes.
 
 ### 7. `avenx check` (alias: `lint`)
 
