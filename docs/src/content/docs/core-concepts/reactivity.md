@@ -240,3 +240,95 @@ Only the **nearest** ancestor providing a given key is used. If multiple ancesto
 :::caution
 If no ancestor in the tree provides an injected key, the property resolves to `undefined` and a warning is logged to the console — it does not throw. Double-check ancestor/descendant `provide`/`inject` key names match if an injected value is unexpectedly `undefined`.
 :::
+
+## Reactivity Exclusions and Limitations
+
+Avenx-JS uses JavaScript `Proxy` objects to track changes to reactive state. While this works well for plain JavaScript objects and arrays, some values are intentionally excluded from reactive tracking to preserve native behavior and avoid prototype-related issues.
+
+### Untracked Types
+
+The following values are **not** automatically tracked by the reactivity system:
+
+| Type | Reason |
+|------|--------|
+| `Symbol` properties | Symbol keys are ignored during reactive tracking. |
+| `Date` instances | Native class instances are not proxied. |
+| `RegExp` instances | Regular expression objects are excluded from tracking. |
+| `Map` | Internal mutations (`set`, `delete`, `clear`) are not observed. |
+| `Set` | Internal mutations (`add`, `delete`, `clear`) are not observed. |
+| Frozen objects (`Object.freeze`) | Frozen objects cannot be wrapped or mutated reactively. |
+| Other built-in class instances | Native objects are intentionally excluded to preserve their original behavior. |
+
+### Why These Types Are Excluded
+
+These exclusions help:
+
+- preserve the behavior of native JavaScript objects
+- avoid prototype pollution
+- prevent unexpected side effects when wrapping built-in objects
+- keep the reactivity system predictable
+
+### Recommended Alternatives
+
+When possible, store plain JavaScript values inside reactive state instead of native class instances.
+
+For example, instead of storing a `Date` object directly:
+
+```js
+state.createdAt = new Date();
+```
+
+store a primitive representation:
+
+```js
+state.createdAt = Date.now();
+```
+
+or
+
+```js
+state.createdAt = new Date().toISOString();
+```
+
+Instead of storing a `Map`:
+
+```js
+state.users = new Map();
+```
+
+consider using a plain object:
+
+```js
+state.users = {
+  alice: {
+    role: "admin"
+  },
+  bob: {
+    role: "editor"
+  }
+};
+```
+
+or an array of entries:
+
+```js
+state.users = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" }
+];
+```
+
+### Working with Non-Reactive Objects
+
+If your application needs to use native objects such as `Map`, `Set`, or custom class instances, consider storing a primitive representation in reactive state and recreating the object when needed.
+
+For scenarios where external objects change independently of reactive state, update a tracked state property or use your application's refresh mechanism to trigger a UI update after modifying the object.
+
+### Summary
+
+For the best reactive experience:
+
+- ✅ Prefer plain objects and arrays.
+- ✅ Store primitive values such as strings, numbers, and booleans.
+- ✅ Convert native objects to serializable formats when appropriate.
+- ❌ Do not rely on mutations of `Date`, `Map`, `Set`, `RegExp`, `Symbol` properties, or frozen objects to trigger UI updates.
