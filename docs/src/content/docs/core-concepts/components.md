@@ -158,6 +158,96 @@ compose them directly in the Page template:
 
 This structure ensures that each custom component can be correctly resolved, instantiated, and mounted by the Page runtime.
 
+## Slot Fallback Content
+
+Avenx components support **fallback content** inside `<slot>` elements. Fallback content is rendered automatically whenever the parent component does not provide content for that slot.
+
+This allows component authors to define sensible defaults while still allowing consumers to override them when needed.
+
+### Basic Example
+
+Child component:
+
+```html
+<div class="card">
+  <slot>
+    <p>No content provided.</p>
+  </slot>
+</div>
+```
+
+Parent without slot content:
+
+```html
+<Card />
+```
+
+Output:
+
+```html
+<div class="card">
+  <p>No content provided.</p>
+</div>
+```
+
+Since no slot content is passed from the parent, the fallback markup inside `<slot>` is rendered.
+
+### Overriding the Fallback
+
+When the parent provides slot content, the fallback is ignored.
+
+Child component:
+
+```html
+<div class="card">
+  <slot>
+    <p>No content provided.</p>
+  </slot>
+</div>
+```
+
+Parent:
+
+```html
+<Card>
+  <p>Welcome back!</p>
+</Card>
+```
+
+Output:
+
+```html
+<div class="card">
+  <p>Welcome back!</p>
+</div>
+```
+
+The provided slot content replaces the fallback defined inside the child component.
+
+### Multiple Slots
+
+Each slot can define its own fallback content independently.
+
+```html
+<header>
+  <slot name="title">
+    <h2>Untitled</h2>
+  </slot>
+</header>
+
+<main>
+  <slot>
+    <p>No content available.</p>
+  </slot>
+</main>
+```
+
+If the parent omits either slot, only that slot's fallback content is rendered.
+
+:::tip
+Fallback content should provide meaningful defaults so components remain usable even when slot content is omitted.
+:::
+
 ## Lifecycle Hooks
 
 Avenx components support lifecycle hooks that allow you to run logic at different stages of a component's lifecycle.
