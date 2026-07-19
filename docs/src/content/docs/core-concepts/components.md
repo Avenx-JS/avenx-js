@@ -458,3 +458,60 @@ If content is not supplied for a particular slot, that slot renders its own fall
 - Use concise placeholders such as loading states, default messages, or instructional text.
 - Keep fallback content relevant to the component's purpose.
 - Avoid relying on fallback content for required information that should always be supplied by the parent component.
+
+### Passing Arguments to Actions
+
+Actions can be invoked with arguments directly from template event bindings.
+
+```html
+<button @click="greet(state.username, 'morning')">
+  Greet
+</button>
+```
+
+Arguments passed to an action are automatically exposed inside the action block through an implicit `args` array.
+
+The values are available in the same order they are passed.
+
+```html
+<action name="greet">
+  const username = args[0];
+  const timeOfDay = args[1];
+
+  console.log(`Good ${timeOfDay}, ${username}!`);
+</action>
+```
+
+In this example:
+
+- `args[0]` contains `state.username`
+- `args[1]` contains `"morning"`
+
+This makes it easy to pass dynamic values from the template without defining additional component state.
+
+### Passing Multiple Values
+
+Any number of arguments can be supplied.
+
+```html
+<button
+  @click="updateUser(state.id, state.name, state.role)">
+  Update User
+</button>
+
+<action name="updateUser">
+  const id = args[0];
+  const name = args[1];
+  const role = args[2];
+
+  console.log(id, name, role);
+</action>
+```
+
+Arguments are always available through the `args` array in the order they were passed.
+
+### Notes
+
+- `args` is automatically available inside `<action>` blocks.
+- Arguments are zero-indexed (`args[0]`, `args[1]`, `args[2]`, ...).
+- If an argument is omitted when the action is called, its corresponding entry in `args` will be `undefined`.
