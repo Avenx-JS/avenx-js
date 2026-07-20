@@ -45,6 +45,7 @@ export default [
         requestAnimationFrame: "readonly",
         cancelAnimationFrame: "readonly",
         DOMParser: "readonly",
+        performance: "readonly",
 
         // Node / Common JS / ES Module / Test globals
         process: "readonly",
@@ -72,7 +73,7 @@ export default [
       "no-var": "error",
       "prefer-const": "error",
       "prefer-arrow-callback": "error",
-      "camelcase": ["error", { "properties": "always", "allow": ["__avenx_comp_instance", "__avenx_routers"] }],
+      "camelcase": ["error", { "properties": "always", "allow": ["__avenx_comp_instance", "__avenx_routers", "__avenx_enable_profiling"] }],
       "jsdoc/require-jsdoc": ["error", {
         "require": {
           "MethodDefinition": true,

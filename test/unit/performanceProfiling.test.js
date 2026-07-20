@@ -24,7 +24,7 @@ async function testPerformanceProfiling() {
     measure(name, start, end) {
       measures.push({ name, start, end });
     },
-    clearMarks(name) {
+    clearMarks() {
       // Mock clearing
     }
   };
