@@ -328,7 +328,7 @@ export class AvenxApp {
     /**
      * @param config Main app configurations.
      */
-    constructor(config: { target: string });
+    constructor(config: { target: string; logging?: any; enableProfiling?: boolean });
 
     /**
      * Registers a reusable component class.
