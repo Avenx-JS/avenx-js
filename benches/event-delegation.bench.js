@@ -8,14 +8,14 @@ console.log('Running event delegation benchmark...');
 const div = document.createElement('div');
 let targetProto = Object.getPrototypeOf(div);
 while (targetProto) {
-  if (targetProto.hasOwnProperty('addEventListener')) {
+  if (Object.prototype.hasOwnProperty.call(targetProto, 'addEventListener')) {
     break;
   }
   targetProto = Object.getPrototypeOf(targetProto);
 }
 
 if (!targetProto) {
-  targetProto = EventTarget.prototype;
+  targetProto = typeof globalThis.EventTarget !== 'undefined' ? globalThis.EventTarget.prototype : null;
 }
 
 let listenerAllocations = 0;
@@ -28,7 +28,13 @@ targetProto.addEventListener = function (type, listener, options) {
 const itemCount = 1000;
 const items = Array.from({ length: itemCount }, (_, i) => ({ id: i, name: `Item ${i}` }));
 
+/**
+ * Component displaying a list of items to benchmark event delegation.
+ */
 class ListComponent extends AvenxComponent {
+  /**
+   * Instantiates ListComponent and renders list items with event handlers.
+   */
   constructor() {
     super(
       { items },
@@ -53,6 +59,9 @@ class ListComponent extends AvenxComponent {
   }
 }
 
+/**
+ * Runs the event delegation benchmark.
+ */
 function runBenchmark() {
   const container = document.createElement('div');
   document.body.appendChild(container);
