@@ -178,7 +178,8 @@ class AvenxCLI {
             return;
           }
         }
-        this.initProject();
+        await this.initProject(args);
+        process.exit(0);
         break;
       case 'generate':
       case 'g':
@@ -269,10 +270,105 @@ class AvenxCLI {
   }
 
   /**
-   * Initializes a new Avenx project structure.
+   * Prompts the user with a question on the command line.
+   * @param {string} query - The question query.
+   * @param {string} defaultValue - The default response.
+   * @param {function(string): (boolean|string)} [validator] - Optional function validating input.
+   * @returns {Promise<string>}
    */
-  initProject() {
-    console.log('🚀 Initializing new Avenx-JS project...');
+  promptQuestion(query, defaultValue, validator = null) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+      const ask = () => {
+        rl.question(query, (answer) => {
+          let trimmed = answer.trim();
+          if (trimmed === '' && defaultValue !== undefined) {
+            trimmed = defaultValue;
+          }
+          if (validator) {
+            const valid = validator(trimmed);
+            if (valid === true) {
+              rl.close();
+              resolve(trimmed);
+            } else {
+              console.log(`\x1b[31m❌ ${valid}\x1b[0m`);
+              ask();
+            }
+          } else {
+            rl.close();
+            resolve(trimmed);
+          }
+        });
+      };
+      ask();
+    });
+  }
+
+  /**
+   * Initializes a new Avenx project structure.
+   * @param {string[]} [args] - CLI arguments.
+   */
+  async initProject(args = []) {
+    const isInteractive =
+      (process.stdin.isTTY && process.stdout.isTTY && !args.includes('-y') && !args.includes('--yes')) ||
+      args.includes('--interactive') ||
+      args.includes('-i') ||
+      process.env.AVENX_FORCE_INTERACTIVE === 'true';
+
+    let stylePreprocessor = 'none';
+    let layoutTemplate = 'blank';
+
+    if (isInteractive) {
+      console.log('\n\x1b[36m--- Avenx-JS Project Wizard ---\x1b[0m\n');
+
+      const preprocessorInput = await this.promptQuestion(
+        'Select style preprocessor:\n' +
+          '  1. None (Vanilla CSS)\n' +
+          '  2. Sass (SCSS)\n' +
+          '  3. Less\n' +
+          '  4. PostCSS\n' +
+          'Choose an option (1-4, default: 1): ',
+        '1',
+        (val) => (['1', '2', '3', '4'].includes(val) ? true : 'Please enter a number between 1 and 4'),
+      );
+
+      const mapping = {
+        1: 'none',
+        2: 'sass',
+        3: 'less',
+        4: 'postcss',
+      };
+      stylePreprocessor = mapping[preprocessorInput];
+
+      const layoutInput = await this.promptQuestion(
+        'Select layout template:\n' +
+          '  1. Blank (Minimal setup)\n' +
+          '  2. Routing (Basic navigation with Navbar, Home and About pages)\n' +
+          'Choose an option (1-2, default: 1): ',
+        '1',
+        (val) => (['1', '2'].includes(val) ? true : 'Please enter 1 or 2'),
+      );
+      layoutTemplate = layoutInput === '2' ? 'routing' : 'blank';
+    }
+
+    console.log(`🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`);
+
+    // Write avenx.config.json if preprocessor option is configured
+    const configPath = path.join(this.baseDir, 'avenx.config.json');
+    if (!fs.existsSync(configPath)) {
+      const userConfig = {
+        style: {
+          preprocessor: stylePreprocessor,
+        },
+      };
+      fs.writeFileSync(configPath, JSON.stringify(userConfig, null, 2) + '\n');
+      console.log('  Created: avenx.config.json');
+      this.config = { ...this.config, ...userConfig };
+    }
     const dirs = [
       `${this.config.srcDir}/components`,
       `${this.config.srcDir}/pages`,
@@ -315,11 +411,140 @@ class AvenxCLI {
     // Create initial main.app.js
     const mainAppPath = path.join(this.baseDir, this.config.srcDir, 'main.app.js');
     if (!fs.existsSync(mainAppPath)) {
-      fs.writeFileSync(
-        mainAppPath,
-        "import { AvenxApp } from 'avenx-core/runtime';\n\nconst app = new AvenxApp({ target: '#app' });\n",
-      );
+      if (layoutTemplate === 'routing') {
+        fs.writeFileSync(
+          mainAppPath,
+          "import { AvenxApp } from 'avenx-core/runtime';\n" +
+            "import Navbar from './components/navbar/navbar.component.js';\n\n" +
+            "const app = new AvenxApp({ target: '#app' });\n\n" +
+            "app.register('Navbar', Navbar);\n\n" +
+            'app.initRouter({\n' +
+            "  '': 'Home',\n" +
+            "  '#/': 'Home',\n" +
+            "  '#/about': 'About',\n" +
+            '});\n',
+        );
+      } else {
+        fs.writeFileSync(
+          mainAppPath,
+          "import { AvenxApp } from 'avenx-core/runtime';\n\nconst app = new AvenxApp({ target: '#app' });\n",
+        );
+      }
       console.log(`  Created: ${this.config.srcDir}/main.app.js`);
+    }
+
+    if (layoutTemplate === 'routing') {
+      const homePageJsPath = path.join(this.baseDir, this.config.srcDir, 'pages', 'home.page.js');
+      const homePageCssPath = path.join(this.baseDir, this.config.srcDir, 'pages', 'home.page.css');
+      const aboutPageJsPath = path.join(this.baseDir, this.config.srcDir, 'pages', 'about.page.js');
+      const aboutPageCssPath = path.join(this.baseDir, this.config.srcDir, 'pages', 'about.page.css');
+
+      const navbarDir = path.join(this.baseDir, this.config.srcDir, 'components', 'navbar');
+      if (!fs.existsSync(navbarDir)) {
+        fs.mkdirSync(navbarDir, { recursive: true });
+      }
+      const navbarJsPath = path.join(navbarDir, 'navbar.component.js');
+      const navbarCssPath = path.join(navbarDir, 'navbar.component.css');
+
+      // Write Home page
+      if (!fs.existsSync(homePageJsPath)) {
+        fs.writeFileSync(
+          homePageJsPath,
+          '<state title="Home" />\n\n' +
+            '<Navbar />\n\n' +
+            '<div class="page-container">\n' +
+            '    <h1>Home Page</h1>\n' +
+            '    <p>Welcome to the home page of your new Avenx application!</p>\n' +
+            '    <p>This layout template demonstrates hash-based routing using AvenxRouter.</p>\n' +
+            '</div>\n',
+        );
+        console.log(`  Created: ${this.config.srcDir}/pages/home.page.js`);
+      }
+      if (!fs.existsSync(homePageCssPath)) {
+        fs.writeFileSync(
+          homePageCssPath,
+          '<@css>\n' +
+            '.page-container {\n' +
+            '    padding: 20px;\n' +
+            '    font-family: sans-serif;\n' +
+            '    max-width: 800px;\n' +
+            '    margin: 0 auto;\n' +
+            '}\n' +
+            '</ @css>\n',
+        );
+        console.log(`  Created: ${this.config.srcDir}/pages/home.page.css`);
+      }
+
+      // Write About page
+      if (!fs.existsSync(aboutPageJsPath)) {
+        fs.writeFileSync(
+          aboutPageJsPath,
+          '<state title="About" />\n\n' +
+            '<Navbar />\n\n' +
+            '<div class="page-container">\n' +
+            '    <h1>About Page</h1>\n' +
+            '    <p>Welcome to the about page.</p>\n' +
+            '</div>\n',
+        );
+        console.log(`  Created: ${this.config.srcDir}/pages/about.page.js`);
+      }
+      if (!fs.existsSync(aboutPageCssPath)) {
+        fs.writeFileSync(
+          aboutPageCssPath,
+          '<@css>\n' +
+            '.page-container {\n' +
+            '    padding: 20px;\n' +
+            '    font-family: sans-serif;\n' +
+            '    max-width: 800px;\n' +
+            '    margin: 0 auto;\n' +
+            '}\n' +
+            '</ @css>\n',
+        );
+        console.log(`  Created: ${this.config.srcDir}/pages/about.page.css`);
+      }
+
+      // Write Navbar component
+      if (!fs.existsSync(navbarJsPath)) {
+        fs.writeFileSync(
+          navbarJsPath,
+          '<state activeRoute="" />\n\n' +
+            '<nav>\n' +
+            '    <@css container />\n' +
+            '    <a @css link href="#/">Home</a>\n' +
+            '    <a @css link href="#/about">About</a>\n' +
+            '</nav>\n',
+        );
+        console.log(`  Created: ${this.config.srcDir}/components/navbar/navbar.component.js`);
+      }
+      if (!fs.existsSync(navbarCssPath)) {
+        fs.writeFileSync(
+          navbarCssPath,
+          '<@global>\n' +
+            '    @def primary #6366f1;\n' +
+            '    @def dark #1e1b4b;\n' +
+            '    @def gray #e2e8f0;\n' +
+            '</ @global>\n\n' +
+            '<@css>\n' +
+            '    container {\n' +
+            '        display: flex;\n' +
+            '        gap: 1.5rem;\n' +
+            '        padding: 1rem 2rem;\n' +
+            '        background: @dark;\n' +
+            '        border-bottom: 2px solid @primary;\n' +
+            '    }\n\n' +
+            '    link {\n' +
+            '        color: white;\n' +
+            '        text-decoration: none;\n' +
+            '        font-weight: 500;\n' +
+            '        font-family: sans-serif;\n' +
+            '    }\n\n' +
+            '    link:hover {\n' +
+            '        color: @primary;\n' +
+            '    }\n' +
+            '</ @css>\n',
+        );
+        console.log(`  Created: ${this.config.srcDir}/components/navbar/navbar.component.css`);
+      }
     }
 
     // Create initial package.json
@@ -355,6 +580,9 @@ class AvenxCLI {
       console.log('  Created: .gitignore');
     }
     console.log('✅ Project initialized successfully!');
+    if (isInteractive) {
+      process.stdin.pause();
+    }
   }
 
   /**

@@ -9,6 +9,7 @@ import assert from 'assert';
 import { execSync, spawnSync, spawn } from 'child_process';
 
 const TEST_DIR = path.join(__dirname, 'test-project');
+const INTERACTIVE_TEST_DIR = path.join(__dirname, 'interactive-test-project');
 const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 
 /**
@@ -39,6 +40,9 @@ function setup() {
 function cleanup() {
   if (fs.existsSync(TEST_DIR)) {
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
+  }
+  if (fs.existsSync(INTERACTIVE_TEST_DIR)) {
+    fs.rmSync(INTERACTIVE_TEST_DIR, { recursive: true, force: true });
   }
 }
 
@@ -547,6 +551,82 @@ async function runTest() {
     console.log('  ✅ watch command exited gracefully on SIGINT.');
 
     console.log('✅ All watch command tests passed!');
+
+    // 8. Test interactive wizard for avenx init
+    console.log('🧪 Testing avenx init interactive wizard...');
+    if (fs.existsSync(INTERACTIVE_TEST_DIR)) {
+      fs.rmSync(INTERACTIVE_TEST_DIR, { recursive: true, force: true });
+    }
+    fs.mkdirSync(INTERACTIVE_TEST_DIR);
+
+    const initProc = spawn(process.execPath, [BIN_PATH, 'init', '--interactive'], {
+      cwd: INTERACTIVE_TEST_DIR,
+    });
+
+    let initOutput = '';
+    initProc.stdout.on('data', (data) => {
+      const chunk = data.toString('utf8');
+      initOutput += chunk;
+      if (initOutput.includes('Select style preprocessor:') && !initOutput.includes('[Sent Preprocessor]')) {
+        initOutput += '[Sent Preprocessor]';
+        // Send choice '2' (Sass)
+        initProc.stdin.write('2\n');
+      }
+      if (initOutput.includes('Select layout template:') && !initOutput.includes('[Sent Layout]')) {
+        initOutput += '[Sent Layout]';
+        // Send choice '2' (Routing)
+        initProc.stdin.write('2\n');
+      }
+    });
+
+    const initExitPromise = new Promise((resolve, reject) => {
+      initProc.on('close', (code) => {
+        resolve(code);
+      });
+      initProc.on('error', (err) => {
+        reject(err);
+      });
+    });
+
+    const initExitCode = await initExitPromise;
+    assert.strictEqual(initExitCode, 0, `Interactive wizard should exit with 0, got ${initExitCode}`);
+
+    // Verify correct files generated matching selection options
+    // 1. avenx.config.json
+    const configPath = path.join(INTERACTIVE_TEST_DIR, 'avenx.config.json');
+    assert.ok(fs.existsSync(configPath), 'avenx.config.json should be created');
+    const userConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.strictEqual(userConfig.style?.preprocessor, 'sass', 'preprocessor should be sass');
+
+    // 2. routing templates
+    const homePageJs = path.join(INTERACTIVE_TEST_DIR, 'src/pages/home.page.js');
+    const homePageCss = path.join(INTERACTIVE_TEST_DIR, 'src/pages/home.page.css');
+    const aboutPageJs = path.join(INTERACTIVE_TEST_DIR, 'src/pages/about.page.js');
+    const aboutPageCss = path.join(INTERACTIVE_TEST_DIR, 'src/pages/about.page.css');
+    const navbarJs = path.join(INTERACTIVE_TEST_DIR, 'src/components/navbar/navbar.component.js');
+    const navbarCss = path.join(INTERACTIVE_TEST_DIR, 'src/components/navbar/navbar.component.css');
+    const mainAppJs = path.join(INTERACTIVE_TEST_DIR, 'src/main.app.js');
+
+    assert.ok(fs.existsSync(homePageJs), 'home.page.js should exist');
+    assert.ok(fs.existsSync(homePageCss), 'home.page.css should exist');
+    assert.ok(fs.existsSync(aboutPageJs), 'about.page.js should exist');
+    assert.ok(fs.existsSync(aboutPageCss), 'about.page.css should exist');
+    assert.ok(fs.existsSync(navbarJs), 'navbar.component.js should exist');
+    assert.ok(fs.existsSync(navbarCss), 'navbar.component.css should exist');
+    assert.ok(fs.existsSync(mainAppJs), 'main.app.js should exist');
+
+    // Verify mainAppJs contains routing layout registration
+    const interactiveMainAppContent = fs.readFileSync(mainAppJs, 'utf-8');
+    assert.ok(interactiveMainAppContent.includes("app.register('Navbar', Navbar)"), 'navbar component should be registered');
+    assert.ok(interactiveMainAppContent.includes("'': 'Home'"), 'routing should include home path');
+    assert.ok(interactiveMainAppContent.includes("'#/about': 'About'"), 'routing should include about path');
+
+    // Clean up interactive directory
+    if (fs.existsSync(INTERACTIVE_TEST_DIR)) {
+      fs.rmSync(INTERACTIVE_TEST_DIR, { recursive: true, force: true });
+    }
+    console.log('  ✅ Interactive wizard test passed!');
+
   } catch (error) {
     console.error('❌ Test failed!');
     console.error(error);
