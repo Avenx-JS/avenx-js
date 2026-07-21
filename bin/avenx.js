@@ -319,6 +319,7 @@ class AvenxCLI {
       !args.includes('--yes');
 
     let stylePreprocessor = 'none';
+    let layoutTemplate = 'blank';
 
     if (isInteractive) {
       console.log('\n\x1b[36m--- Avenx-JS Project Wizard ---\x1b[0m\n');
@@ -341,6 +342,16 @@ class AvenxCLI {
         '4': 'postcss',
       };
       stylePreprocessor = mapping[preprocessorInput];
+
+      const layoutInput = await this.promptQuestion(
+        'Select layout template:\n' +
+          '  1. Blank (Minimal setup)\n' +
+          '  2. Routing (Basic navigation with Navbar, Home and About pages)\n' +
+          'Choose an option (1-2, default: 1): ',
+        '1',
+        (val) => (['1', '2'].includes(val) ? true : 'Please enter 1 or 2'),
+      );
+      layoutTemplate = layoutInput === '2' ? 'routing' : 'blank';
     }
 
     console.log('🚀 Initializing new Avenx-JS project...');
