@@ -242,7 +242,7 @@ try {
     </div>
   `;
   const template = cp.extractTemplate(content, {}, 'TestComp');
-  assert.ok(template.includes('@click.prevent.once="handleClick"'), 'Template should compile click.prevent.once');
+  assert.ok(template.includes('data-ax-event="{&quot;click.prevent.once&quot;:&quot;handleClick&quot;}"'), 'Template should compile click.prevent.once to data-ax-event');
   assert.ok(template.includes('@keyup.enter="handleEnter"'), 'Template should compile keyup.enter');
 
   console.log('  ✅ Event Modifiers tests passed!');

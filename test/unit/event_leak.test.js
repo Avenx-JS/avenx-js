@@ -49,8 +49,8 @@ try {
   // 2. Initial binding
   binder.bind(mockElement, dispatcher);
 
-  assert.strictEqual(boundListeners.length, 1, 'Should add exactly one event listener');
-  assert.strictEqual(boundListeners[0].event, 'click');
+  assert.strictEqual(boundListeners.length, 4, 'Should add exactly 4 common event listeners');
+  assert.ok(boundListeners.some(l => l.event === 'click'), 'Should have click listener');
 
   // 3. Trigger event & verify it executes the initial handler expression
   mockElement.trigger('click', { type: 'click' });
@@ -64,7 +64,7 @@ try {
   binder.bind(mockElement, dispatcher);
 
   // Verify that NO duplicate listener was added
-  assert.strictEqual(boundListeners.length, 1, 'Should NOT add a new event listener on update');
+  assert.strictEqual(boundListeners.length, 4, 'Should NOT add new event listeners on update');
 
   // 6. Trigger event again & verify it executes the LATEST handler expression exactly once
   executionCalls.length = 0; // reset calls tracking
