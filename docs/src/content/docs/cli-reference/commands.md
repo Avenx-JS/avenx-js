@@ -130,3 +130,10 @@ Upon execution, it securely deletes the default distribution directory (typicall
 
 The target folder deleted by this command is determined by the output directories specified in your `avenx.config.json` file.
 
+## Global Options
+
+The following flags can be used globally with the `avenx` CLI:
+
+- **`--version`** (alias: **`-v`**)  
+  Output the current version of the Avenx-JS CLI package.
+
