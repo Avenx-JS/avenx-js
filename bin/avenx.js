@@ -179,6 +179,7 @@ class AvenxCLI {
           }
         }
         await this.initProject(args);
+        process.exit(0);
         break;
       case 'generate':
       case 'g':
@@ -582,6 +583,9 @@ class AvenxCLI {
       console.log('  Created: .gitignore');
     }
     console.log('✅ Project initialized successfully!');
+    if (isInteractive) {
+      process.stdin.pause();
+    }
   }
 
   /**
