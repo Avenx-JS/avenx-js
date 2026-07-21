@@ -91,6 +91,7 @@ If you have questions or want to contribute, feel free to reach out.
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jahnavi-Patel-C"><img src="https://avatars.githubusercontent.com/u/226483976?v=4?s=100" width="100px;" alt="Jahnavi Patel C"/><br /><sub><b>Jahnavi Patel C</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Jahnavi-Patel-C" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Dingding-leo"><img src="https://avatars.githubusercontent.com/u/193228693?v=4?s=100" width="100px;" alt="Austin Liu"/><br /><sub><b>Austin Liu</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Dingding-leo" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
