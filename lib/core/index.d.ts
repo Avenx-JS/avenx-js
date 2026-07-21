@@ -603,3 +603,6 @@ export class AvenxSandbox {
         trigger(selectorOrElement: any, eventName: string, eventData?: Record<string, any>): void;
     };
 }
+
+export function initInspector(app: AvenxApp): void;
+
