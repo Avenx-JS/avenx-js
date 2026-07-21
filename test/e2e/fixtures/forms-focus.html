@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Avenx Forms & Focus Management E2E Fixture</title>
+  <script src="/dist/runtime.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Two-Way Data Binding & Focus Management</h1>
+    
+    <div>
+      <label for="text-input">User Name:</label>
+      <input type="text" id="text-input" value="Alice">
+      <span id="output-text">Hello, Alice!</span>
+    </div>
+
+    <div style="margin-top: 15px;">
+      <label for="check-agree">
+        <input type="checkbox" id="check-agree">
+        I agree to the terms
+      </label>
+      <div id="output-agree">Status: Disagreed</div>
+    </div>
+
+    <div style="margin-top: 15px;">
+      <button id="btn-focus-input">Focus Name Input</button>
+      <button id="btn-trigger-re-render">Re-render & Retain Focus</button>
+    </div>
+
+    <div id="focus-indicator">Active Focus: none</div>
+  </div>
+
+  <script>
+    const textInput = document.getElementById('text-input');
+    const outputText = document.getElementById('output-text');
+    const checkAgree = document.getElementById('check-agree');
+    const outputAgree = document.getElementById('output-agree');
+    const focusIndicator = document.getElementById('focus-indicator');
+
+    // Two-way binding logic (v-model emulation)
+    let state = {
+      username: 'Alice',
+      agreed: false
+    };
+
+    function syncStateToUI() {
+      outputText.textContent = `Hello, ${state.username}!`;
+      outputAgree.textContent = `Status: ${state.agreed ? 'Agreed' : 'Disagreed'}`;
+    }
+
+    textInput.addEventListener('input', (e) => {
+      state.username = e.target.value;
+      syncStateToUI();
+    });
+
+    checkAgree.addEventListener('change', (e) => {
+      state.agreed = e.target.checked;
+      syncStateToUI();
+    });
+
+    document.getElementById('btn-focus-input').addEventListener('click', () => {
+      textInput.focus();
+    });
+
+    document.getElementById('btn-trigger-re-render').addEventListener('click', () => {
+      const activeEl = document.activeElement;
+      // Simulate DOM patch update while preserving focused element state
+      syncStateToUI();
+      if (activeEl && typeof activeEl.focus === 'function') {
+        activeEl.focus();
+      }
+    });
+
+    document.addEventListener('focusin', () => {
+      const active = document.activeElement;
+      focusIndicator.textContent = `Active Focus: ${active ? (active.id || active.tagName) : 'none'}`;
+    });
+  </script>
+</body>
+</html>

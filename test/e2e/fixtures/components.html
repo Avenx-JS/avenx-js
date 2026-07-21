@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Avenx Components & Event Modifiers E2E Fixture</title>
+  <script src="/dist/runtime.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Form with event modifiers test -->
+    <form id="test-form">
+      <input type="text" id="form-input" value="Sample text">
+      <button type="submit" id="btn-submit">Submit Form</button>
+    </form>
+    <div id="form-submit-count">Submissions: 0</div>
+
+    <!-- Event propagation test -->
+    <div id="parent-box" style="padding: 20px; background: #eee;">
+      Parent Box
+      <button id="btn-stop-propagation">Child Stop Propagation</button>
+      <button id="btn-normal">Child Normal</button>
+    </div>
+    <div id="parent-click-count">Parent Clicks: 0</div>
+    <div id="child-click-count">Child Clicks: 0</div>
+
+    <!-- Nested Component & Slot test -->
+    <div id="card-container"></div>
+  </div>
+
+  <script>
+    let submitCount = 0;
+    let parentClicks = 0;
+    let childClicks = 0;
+
+    const form = document.getElementById('test-form');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault(); // Event modifier .prevent simulation
+      submitCount++;
+      document.getElementById('form-submit-count').textContent = `Submissions: ${submitCount}`;
+    });
+
+    const parentBox = document.getElementById('parent-box');
+    parentBox.addEventListener('click', () => {
+      parentClicks++;
+      document.getElementById('parent-click-count').textContent = `Parent Clicks: ${parentClicks}`;
+    });
+
+    document.getElementById('btn-stop-propagation').addEventListener('click', (e) => {
+      e.stopPropagation(); // Event modifier .stop simulation
+      childClicks++;
+      document.getElementById('child-click-count').textContent = `Child Clicks: ${childClicks}`;
+    });
+
+    document.getElementById('btn-normal').addEventListener('click', () => {
+      childClicks++;
+      document.getElementById('child-click-count').textContent = `Child Clicks: ${childClicks}`;
+    });
+
+    // Component & Slot rendering helper
+    function createCard({ title, headerContent, bodyContent, footerContent }) {
+      const card = document.createElement('div');
+      card.className = 'avenx-card';
+      card.style.border = '1px solid #ccc';
+      card.style.margin = '10px 0';
+
+      const header = document.createElement('header');
+      header.className = 'card-header';
+      header.innerHTML = headerContent || `<h2>${title}</h2>`;
+
+      const body = document.createElement('div');
+      body.className = 'card-body';
+      body.innerHTML = bodyContent || '<p>Default slot content</p>';
+
+      const footer = document.createElement('footer');
+      footer.className = 'card-footer';
+      footer.innerHTML = footerContent || '<small>Default footer</small>';
+
+      card.appendChild(header);
+      card.appendChild(body);
+      card.appendChild(footer);
+      return card;
+    }
+
+    const container = document.getElementById('card-container');
+    const card1 = createCard({
+      title: 'Custom Card Title',
+      bodyContent: '<p id="slot-body">Custom Body Content injected into slot</p>',
+      footerContent: '<p id="slot-footer">Custom Footer Content</p>'
+    });
+    container.appendChild(card1);
+  </script>
+</body>
+</html>
