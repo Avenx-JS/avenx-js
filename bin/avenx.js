@@ -178,7 +178,7 @@ class AvenxCLI {
             return;
           }
         }
-        this.initProject();
+        await this.initProject(args);
         break;
       case 'generate':
       case 'g':
@@ -270,8 +270,15 @@ class AvenxCLI {
 
   /**
    * Initializes a new Avenx project structure.
+   * @param {string[]} [args] - CLI arguments.
    */
-  initProject() {
+  async initProject(args = []) {
+    const isInteractive =
+      process.stdin.isTTY &&
+      process.stdout.isTTY &&
+      !args.includes('-y') &&
+      !args.includes('--yes');
+
     console.log('🚀 Initializing new Avenx-JS project...');
     const dirs = [
       `${this.config.srcDir}/components`,
