@@ -269,6 +269,45 @@ class AvenxCLI {
   }
 
   /**
+   * Prompts the user with a question on the command line.
+   * @param {string} query - The question query.
+   * @param {string} defaultValue - The default response.
+   * @param {function(string): (boolean|string)} [validator] - Optional function validating input.
+   * @returns {Promise<string>}
+   */
+  promptQuestion(query, defaultValue, validator = null) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+      const ask = () => {
+        rl.question(query, (answer) => {
+          let trimmed = answer.trim();
+          if (trimmed === '' && defaultValue !== undefined) {
+            trimmed = defaultValue;
+          }
+          if (validator) {
+            const valid = validator(trimmed);
+            if (valid === true) {
+              rl.close();
+              resolve(trimmed);
+            } else {
+              console.log(`\x1b[31m❌ ${valid}\x1b[0m`);
+              ask();
+            }
+          } else {
+            rl.close();
+            resolve(trimmed);
+          }
+        });
+      };
+      ask();
+    });
+  }
+
+  /**
    * Initializes a new Avenx project structure.
    * @param {string[]} [args] - CLI arguments.
    */
