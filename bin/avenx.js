@@ -1,4 +1,4 @@
-f#!/usr/bin/env node
+#!/usr/bin/env node
 
 import fs from 'fs';
 import path from 'path';
