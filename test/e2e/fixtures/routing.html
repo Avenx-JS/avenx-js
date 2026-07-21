@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Avenx Routing E2E Fixture</title>
+  <script src="/dist/runtime.js"></script>
+</head>
+<body>
+  <div id="app">
+    <nav>
+      <a id="nav-home" href="/">Home</a> |
+      <a id="nav-user-42" href="/user/42">User 42</a> |
+      <a id="nav-user-99" href="/user/99">User 99</a> |
+      <a id="nav-admin" href="/protected">Admin Panel</a>
+    </nav>
+    <div id="route-outlet"></div>
+    <div id="auth-status">Logged Out</div>
+    <button id="btn-toggle-auth">Log In</button>
+  </div>
+
+  <script>
+    const { AvenxRouter } = window;
+
+    let isAuthenticated = false;
+
+    const router = new AvenxRouter({
+      routes: [
+        {
+          path: '/',
+          name: 'Home',
+          component: () => {
+            const div = document.createElement('div');
+            div.id = 'page-home';
+            div.innerHTML = '<h1>Home Page</h1><p>Welcome to Avenx Router</p>';
+            return div;
+          }
+        },
+        {
+          path: '/user/:id',
+          name: 'UserProfile',
+          component: (params) => {
+            const div = document.createElement('div');
+            div.id = 'page-user';
+            div.innerHTML = `<h1>User Profile</h1><p id="user-id">User ID: ${params.id}</p>`;
+            return div;
+          }
+        },
+        {
+          path: '/protected',
+          name: 'Protected',
+          guard: () => {
+            if (!isAuthenticated) {
+              return { redirect: '/login-required' };
+            }
+            return true;
+          },
+          component: () => {
+            const div = document.createElement('div');
+            div.id = 'page-protected';
+            div.innerHTML = '<h1>Secret Admin Area</h1>';
+            return div;
+          }
+        },
+        {
+          path: '/login-required',
+          name: 'LoginRequired',
+          component: () => {
+            const div = document.createElement('div');
+            div.id = 'page-login-required';
+            div.innerHTML = '<h1>Access Denied</h1><p>Please log in first.</p>';
+            return div;
+          }
+        }
+      ]
+    });
+
+    const outlet = document.getElementById('route-outlet');
+
+    function updateView() {
+      const match = router.match(window.location.pathname);
+      outlet.innerHTML = '';
+
+      if (match) {
+        if (match.route.guard) {
+          const guardResult = match.route.guard();
+          if (guardResult && guardResult.redirect) {
+            window.history.pushState({}, '', guardResult.redirect);
+            updateView();
+            return;
+          }
+        }
+        outlet.appendChild(match.route.component(match.params));
+      } else {
+        outlet.innerHTML = '<h1 id="page-404">404 Page Not Found</h1>';
+      }
+    }
+
+    document.querySelectorAll('nav a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = link.getAttribute('href');
+        window.history.pushState({}, '', href);
+        updateView();
+      });
+    });
+
+    document.getElementById('btn-toggle-auth').addEventListener('click', () => {
+      isAuthenticated = !isAuthenticated;
+      document.getElementById('auth-status').textContent = isAuthenticated ? 'Logged In' : 'Logged Out';
+    });
+
+    window.addEventListener('popstate', updateView);
+    updateView();
+  </script>
+</body>
+</html>

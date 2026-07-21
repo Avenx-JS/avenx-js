@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { fork } from 'child_process';
+import { fork, spawnSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -12,6 +12,12 @@ const isWatchMode = args.includes('--watch') || args.includes('-w');
 const filterArgs = args.filter((arg) => arg !== '--watch' && arg !== '-w');
 const filter = filterArgs[0] || '';
 const baseDir = path.join(__dirname, filter);
+
+if (filter === 'e2e') {
+  console.log('🎭 Delegating E2E testing to Playwright...\n');
+  const res = spawnSync('npx', ['playwright', 'test'], { stdio: 'inherit', shell: true });
+  process.exit(res.status ?? 0);
+}
 
 let isRunning = false;
 let isPendingRerun = false;

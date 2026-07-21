@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Avenx Counter E2E Fixture</title>
+  <script src="/dist/runtime.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    const { reactive, mount } = window;
+
+    const state = reactive({
+      count: 0,
+      heading: 'Avenx E2E Counter'
+    });
+
+    const App = {
+      render() {
+        const container = document.createElement('div');
+        container.id = 'counter-root';
+
+        const h1 = document.createElement('h1');
+        h1.id = 'heading';
+        h1.textContent = state.heading;
+
+        const countDisplay = document.createElement('p');
+        countDisplay.id = 'count-display';
+        countDisplay.textContent = `Count: ${state.count}`;
+
+        const incBtn = document.createElement('button');
+        incBtn.id = 'btn-increment';
+        incBtn.textContent = 'Increment';
+        incBtn.addEventListener('click', () => {
+          state.count++;
+          countDisplay.textContent = `Count: ${state.count}`;
+        });
+
+        const decBtn = document.createElement('button');
+        decBtn.id = 'btn-decrement';
+        decBtn.textContent = 'Decrement';
+        decBtn.addEventListener('click', () => {
+          state.count--;
+          countDisplay.textContent = `Count: ${state.count}`;
+        });
+
+        const resetBtn = document.createElement('button');
+        resetBtn.id = 'btn-reset';
+        resetBtn.textContent = 'Reset';
+        resetBtn.addEventListener('click', () => {
+          state.count = 0;
+          countDisplay.textContent = `Count: ${state.count}`;
+        });
+
+        container.appendChild(h1);
+        container.appendChild(countDisplay);
+        container.appendChild(incBtn);
+        container.appendChild(decBtn);
+        container.appendChild(resetBtn);
+
+        return container;
+      }
+    };
+
+    const root = document.getElementById('app');
+    root.appendChild(App.render());
+  </script>
+</body>
+</html>
