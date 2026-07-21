@@ -911,6 +911,7 @@ class AvenxCLI {
           if (contentType === 'text/html') {
             const script = `
 <script>
+    window.__avenx_inspect_enabled = true;
     if ('EventSource' in window) {
         const source = new EventSource('/__avenx_live_reload__');
         source.onmessage = (e) => {
