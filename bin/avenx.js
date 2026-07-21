@@ -318,7 +318,45 @@ class AvenxCLI {
       !args.includes('-y') &&
       !args.includes('--yes');
 
+    let stylePreprocessor = 'none';
+
+    if (isInteractive) {
+      console.log('\n\x1b[36m--- Avenx-JS Project Wizard ---\x1b[0m\n');
+
+      const preprocessorInput = await this.promptQuestion(
+        'Select style preprocessor:\n' +
+          '  1. None (Vanilla CSS)\n' +
+          '  2. Sass (SCSS)\n' +
+          '  3. Less\n' +
+          '  4. PostCSS\n' +
+          'Choose an option (1-4, default: 1): ',
+        '1',
+        (val) => (['1', '2', '3', '4'].includes(val) ? true : 'Please enter a number between 1 and 4'),
+      );
+
+      const mapping = {
+        '1': 'none',
+        '2': 'sass',
+        '3': 'less',
+        '4': 'postcss',
+      };
+      stylePreprocessor = mapping[preprocessorInput];
+    }
+
     console.log('🚀 Initializing new Avenx-JS project...');
+
+    // Write avenx.config.json if preprocessor option is configured
+    const configPath = path.join(this.baseDir, 'avenx.config.json');
+    if (!fs.existsSync(configPath)) {
+      const userConfig = {
+        style: {
+          preprocessor: stylePreprocessor,
+        },
+      };
+      fs.writeFileSync(configPath, JSON.stringify(userConfig, null, 2) + '\n');
+      console.log('  Created: avenx.config.json');
+      this.config = { ...this.config, ...userConfig };
+    }
     const dirs = [
       `${this.config.srcDir}/components`,
       `${this.config.srcDir}/pages`,
