@@ -289,6 +289,20 @@ my-avenx-app/
 
 ---
 
+## 🧪 Testing
+
+Avenx-JS provides comprehensive testing support, from fast unit tests to full browser E2E test suites:
+
+- **Unit Tests:** `npm run test:unit`
+- **Integration Tests:** `npm run test:integration`
+- **System Benchmarks & CLI Tests:** `npm run test:system`
+- **Playwright End-to-End (E2E) Browser Tests:** `npm run test:e2e`
+- **Full Test Suite:** `npm test`
+
+Playwright E2E tests run against **Chromium**, **Firefox**, and **WebKit** in headless mode. See [test/e2e/README.md](test/e2e/README.md) for detailed configuration and usage guides.
+
+---
+
 ## 📌 Status
 
 This project is currently a proof-of-concept framework and actively evolving.
