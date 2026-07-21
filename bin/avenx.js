@@ -1015,14 +1015,71 @@ class AvenxCLI {
    * @returns {string} The dashboard HTML content.
    */
   getInspectorHtml() {
+    const configJson = JSON.stringify(this.config);
     return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Avenx Inspection Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Placeholder for CSS styling */
+    </style>
 </head>
 <body>
-    <h1>Avenx Dev Server Dashboard</h1>
+    <div class="dashboard-wrapper">
+        <header class="app-header">
+            <div class="brand">
+                <span class="logo">▲</span>
+                <span class="title">Avenx Inspector</span>
+            </div>
+            <div class="status-indicator">
+                <span class="badge" id="statusBadge">Connecting...</span>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <!-- Sidebar for Config Info -->
+            <aside class="sidebar">
+                <div class="card config-card">
+                    <h3>Dev Server Config</h3>
+                    <div class="config-item"><strong>Port:</strong> <span id="confPort">-</span></div>
+                    <div class="config-item"><strong>Host:</strong> <span id="confHost">-</span></div>
+                    <div class="config-item"><strong>Src Dir:</strong> <span id="confSrc">-</span></div>
+                    <div class="config-item"><strong>Dist Dir:</strong> <span id="confDist">-</span></div>
+                </div>
+            </aside>
+
+            <!-- Dashboard Grid Content -->
+            <section class="dashboard-grid">
+                <!-- Routing Section -->
+                <div class="card grid-card routing-card">
+                    <h3>Active Routing Table</h3>
+                    <div id="routingList" class="info-list"></div>
+                    <hr />
+                    <h4>Current Route</h4>
+                    <div id="currentRouteInfo" class="route-info">-</div>
+                </div>
+
+                <!-- Components Section -->
+                <div class="card grid-card components-card">
+                    <h3>Active Component Tree</h3>
+                    <div id="componentsList" class="info-list"></div>
+                </div>
+
+                <!-- Bridges Section -->
+                <div class="card grid-card bridges-card">
+                    <h3>Bridges & Reactive State</h3>
+                    <div id="bridgesList" class="info-list"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        window.__avenx_config = ${configJson};
+        /* Placeholder for scripts */
+    </script>
 </body>
 </html>`;
   }
