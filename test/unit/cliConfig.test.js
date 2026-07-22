@@ -57,12 +57,13 @@ try {
     assert.strictEqual(defaults.distDir, 'dist');
     assert.strictEqual(defaults.templatesDir, '.avenxtemplates');
     assert.strictEqual(defaults.server.port, 3000);
+    assert.strictEqual(defaults.server.liveReload, true);
 
     console.log('  Testing valid custom config merge...');
     writeTestConfig({
       srcDir: 'app-src',
       distDir: 'public-out',
-      server: { port: 8080 },
+      server: { port: 8080, liveReload: false },
     });
     const customConfig = loadConfig();
     assert.strictEqual(customConfig.srcDir, 'app-src');
@@ -70,6 +71,7 @@ try {
     assert.strictEqual(customConfig.templatesDir, '.avenxtemplates');
     assert.strictEqual(customConfig.server.port, 8080);
     assert.strictEqual(customConfig.server.host, 'localhost');
+    assert.strictEqual(customConfig.server.liveReload, false);
 
     console.log('  Testing invalid config schema validations...');
     writeTestConfig({ srcDir: '' });
@@ -98,6 +100,9 @@ try {
 
     writeTestConfig({ server: { host: '' } });
     assertThrows(() => loadConfig(), 'server.host must be a non-empty string');
+
+    writeTestConfig({ server: { liveReload: 'false' } });
+    assertThrows(() => loadConfig(), 'server.liveReload must be a boolean');
 
     writeTestConfig({ voidTags: 'not-an-array' });
     assertThrows(() => loadConfig(), 'voidTags must be an array of non-empty strings');
