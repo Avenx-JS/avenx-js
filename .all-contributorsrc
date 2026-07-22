@@ -487,6 +487,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "himanshu231204",
+      "name": "Himanshu Kumar ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/145797211?v=4",
+      "profile": "https://himanshu231204.vercel.app/",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
