@@ -1347,6 +1347,64 @@ const computed = {
 
 Deriving the condition through a guarded `computed` property ensures `data-ax-show` always receives a safe boolean and prevents evaluation failures.
 
+### AVX_W24 — COMPILER_PREPROCESSOR_MISSING
+
+**Warning Message**
+
+```text
+WARNING: Preprocessor module "{0}" is not installed. Falling back to raw CSS.
+```
+
+**Cause:** This warning is emitted during compilation when a style preprocessor package (such as `sass`, `less`, or `postcss`) is configured in `avenx.config.json` but is not installed in the project's `node_modules`. Avenx-JS attempts to load the specified preprocessor to compile stylesheets (`.scss`, `.sass`, `.less`, or PostCSS files), but if the required package is missing, the compiler gracefully falls back to processing the raw CSS content without transformation.
+
+This typically happens for a few common reasons:
+
+- The preprocessor package was never installed (e.g. `npm install sass` was not run).
+- The package was removed from `node_modules` (e.g. after running `npm prune`).
+- A lock file mismatch caused the preprocessor to not be installed during `npm install`.
+- The preprocessor is listed in `avenx.config.json` but the project only needs vanilla CSS.
+
+**Resolution:** To resolve this warning:
+
+1. Install the required preprocessor package using your package manager (e.g. `npm install sass` for Sass/SCSS, `npm install less` for Less, or `npm install postcss postcss-cli` for PostCSS).
+2. Verify the `preprocessor` value in your `avenx.config.json` matches the installed package.
+3. If you do not need a preprocessor, remove the `preprocessor` field from the configuration or set it to `none`.
+4. After installing, re-run the build to confirm the warning no longer appears.
+
+**Incorrect**
+
+```json
+{
+  "compiler": {
+    "preprocessor": "sass"
+  }
+}
+```
+
+If the `sass` package is not installed, Avenx-JS emits **AVX_W24** and falls back to raw CSS.
+
+**Correct**
+
+```bash
+npm install sass
+```
+
+Installing the preprocessor package resolves the missing module issue.
+
+**Defensive Example**
+
+If your project does not use a preprocessor, omit the field entirely or set it explicitly:
+
+```json
+{
+  "compiler": {
+    "preprocessor": "none"
+  }
+}
+```
+
+This avoids the warning and ensures stylesheets are processed as vanilla CSS.
+
 ## Runtime Codes (`AVX_R*`)
 
 | Code        | Default Message                                                                         | Cause & Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
