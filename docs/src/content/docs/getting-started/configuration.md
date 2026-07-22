@@ -45,6 +45,35 @@ If your templates use custom or web-component tags that are always self-closing 
 
 Tags written with an explicit self-closing slash, like `<my-video />`, are already parsed correctly without any configuration — `voidTags` is only needed for the no-slash convention.
 
+## CSS Preprocessor Settings
+
+Avenx-JS supports configuring a CSS preprocessor through the `style` object in `avenx.config.json`.
+
+### Configuration
+
+```json
+{
+  "style": {
+    "preprocessor": "scss"
+  }
+}
+```
+
+### Supported Preprocessors
+
+The `preprocessor` option accepts one of the following values:
+
+| Value | Description |
+| ------ | ----------- |
+| `sass` | Uses the Sass indented syntax. |
+| `scss` | Uses the SCSS syntax for Sass. |
+| `postcss` | Uses PostCSS for CSS transformations. |
+| `less` | Uses the Less CSS preprocessor. |
+
+### Fallback Behavior
+
+If the configured preprocessor package is not installed, Avenx-JS falls back to raw CSS processing and emits the `AVX_W24` (`COMPILER_PREPROCESSOR_MISSING`) warning.
+
 ## Example
 
 ```json
