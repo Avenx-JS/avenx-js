@@ -12,7 +12,8 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
   "templatesDir": ".avenxtemplates",
   "server": {
     "port": 3000,
-    "host": "localhost"
+    "host": "localhost",
+    "liveReload": true
   },
   "voidTags": []
 }
@@ -27,6 +28,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `templatesDir` | `string`   | `".avenxtemplates"`  | Non-empty relative path for local generator template overrides.       |
 | `server.port`  | `number`   | `3000`                | Valid TCP port from `0` to `65535`.                                    |
 | `server.host`  | `string`   | `"localhost"`         | Non-empty host name or address for the local dev server.              |
+| `server.liveReload` | `boolean` | `true`              | Enables file watching, automatic browser reloads, and inspection script injection. |
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
@@ -52,13 +54,16 @@ Tags written with an explicit self-closing slash, like `<my-video />`, are alrea
   "templatesDir": ".avenxtemplates",
   "server": {
     "port": 5173,
-    "host": "0.0.0.0"
+    "host": "0.0.0.0",
+    "liveReload": false
   },
   "voidTags": ["my-video"]
 }
 ```
 
 The configuration is merged with the defaults, so you can override only the settings your project needs.
+
+Set `server.liveReload` to `false` when the dev server should serve HTML without watching for changes or injecting the live-reload and inspection client script.
 
 ## Logging Options
 

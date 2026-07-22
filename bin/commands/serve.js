@@ -519,12 +519,15 @@ export function watchProject(cli) {
  * @param {string} [host]
  */
 export function serveProject(cli, port, host = 'localhost') {
-  cli.liveReloadClients = [];
   buildProject(cli);
-  watchProject(cli);
+
+  if (cli.config.server.liveReload) {
+    cli.liveReloadClients = [];
+    watchProject(cli);
+  }
 
   const server = http.createServer((req, res) => {
-    if (req.url === '/__avenx_live_reload__') {
+    if (cli.config.server.liveReload && req.url === '/__avenx_live_reload__') {
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -576,7 +579,7 @@ export function serveProject(cli, port, host = 'localhost') {
         }
       } else {
         let responseContent = content;
-        if (contentType === 'text/html') {
+        if (cli.config.server.liveReload && contentType === 'text/html') {
           const script = `
 <script>
     window.__avenx_inspect_enabled = true;
@@ -618,7 +621,9 @@ export function serveProject(cli, port, host = 'localhost') {
   server.listen(port, host, () => {
     const url = `http://${host}:${port}`;
     console.log(`\n🚀 Dev-Server running at ${url}`);
-    console.log(`👀 Watching for changes in ${cli.config.srcDir}/...\n`);
+    if (cli.config.server.liveReload) {
+      console.log(`👀 Watching for changes in ${cli.config.srcDir}/...\n`);
+    }
     openBrowser(url);
   });
 }
