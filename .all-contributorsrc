@@ -477,6 +477,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "AysajanE",
+      "name": "Aysajan Eziz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/47014605?v=4",
+      "profile": "https://www.aysajaneziz.com",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
