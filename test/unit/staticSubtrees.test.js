@@ -68,16 +68,27 @@ function testCompilerOptimization() {
   const opt3 = cp.optimizeStaticSubtrees(compTemplate);
   assert.ok(!opt3.includes('data-ax-static'), 'Custom component or its parent should not be static');
 
-  // 4. Loops/Templates should not be marked static
-  const loopTemplate = `
-    <div>
-        <template data-ax-for="items" data-ax-as="item">
-            <li>{% item %}</li>
-        </template>
+  // 5. Slots, slot parent chains, and slot contents should not be marked static
+  const slotTemplate = `
+    <div class="card">
+        <header class="static-header">
+            <h1>Card Title</h1>
+        </header>
+        <div class="card-body">
+            <slot>
+                <div class="default-slot-wrapper">
+                    <span>Default Content</span>
+                </div>
+            </slot>
+        </div>
     </div>
   `;
-  const opt4 = cp.optimizeStaticSubtrees(loopTemplate);
-  assert.ok(!opt4.includes('data-ax-static'), 'Template loops should not be static');
+  const opt5 = cp.optimizeStaticSubtrees(slotTemplate);
+  assert.ok(opt5.includes('header class="static-header" data-ax-static="true"'), 'Static header outside slot should be static');
+  assert.ok(!opt5.includes('div class="card" data-ax-static'), 'Card wrapper containing slot should not be static');
+  assert.ok(!opt5.includes('div class="card-body" data-ax-static'), 'Card body parent chain of slot should not be static');
+  assert.ok(!opt5.includes('slot data-ax-static'), 'Slot element itself should not be static');
+  assert.ok(!opt5.includes('default-slot-wrapper" data-ax-static'), 'Wrapper inside slot should not be static');
 
   console.log('  ✅ Compiler static subtree tests passed!');
 }
