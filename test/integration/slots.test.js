@@ -596,6 +596,27 @@ global.Node = {
       'Dynamic slot should render fallback content when no transclusion matches',
     );
 
+    // 8. Verify reactive condition toggle inside slot with static optimizer
+    console.log('  Testing reactive condition toggle inside slot contents...');
+
+    page.state.showSubContent = false;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.ok(cardBody.textContent.includes('Body content 1'), 'Default slot should retain static paragraph 1');
+    assert.strictEqual(
+      cardBody.textContent.includes('Body content 2'),
+      false,
+      'Conditional content inside slot should be removed when state toggles',
+    );
+
+    page.state.showSubContent = true;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.ok(
+      cardBody.textContent.includes('Body content 2'),
+      'Conditional content inside slot should reappear when state toggles back',
+    );
+
     console.log('  ✅ HTML Slots and Content Transclusion tests passed!');
   } catch (error) {
     console.error('❌ HTML Slots and Content Transclusion tests failed!');
