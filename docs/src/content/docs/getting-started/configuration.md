@@ -29,6 +29,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `server.port`  | `number`   | `3000`                | Valid TCP port from `0` to `65535`.                                    |
 | `server.host`  | `string`   | `"localhost"`         | Non-empty host name or address for the local dev server.              |
 | `server.liveReload` | `boolean` | `true`              | Enables file watching, automatic browser reloads, and inspection script injection. |
+| `enableProfiling` | `boolean` | `false` | Enables performance profiling by wrapping lifecycle hooks, rendering, and DOM patching with browser Performance API marks and measures. |
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
@@ -93,6 +94,31 @@ If the configured preprocessor package is not installed, Avenx-JS falls back to 
 The configuration is merged with the defaults, so you can override only the settings your project needs.
 
 Set `server.liveReload` to `false` when the dev server should serve HTML without watching for changes or injecting the live-reload and inspection client script.
+
+## Performance Profiling
+
+Avenx-JS can generate browser performance timings for debugging rendering behavior.
+
+### Configuration
+
+Enable profiling by setting `enableProfiling` to `true` in `avenx.config.json`:
+
+```json
+{
+  "enableProfiling": true
+}
+```md
+### Analyzing Performance Traces
+
+To analyze Avenx-JS performance timings:
+
+1. Open your application in Chrome or Firefox.
+2. Open Developer Tools.
+3. Navigate to the **Performance** panel.
+4. Start recording.
+5. Perform actions that trigger component updates.
+6. Stop the recording.
+7. Inspect the recorded user timing marks and measures for Avenx-JS operations.
 
 ## Logging Options
 
