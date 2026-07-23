@@ -299,6 +299,76 @@ try {
 
   console.log('  ✅ Test 6 passed: Components without styles work normally');
 
+  // --- Test 7: Rapid/concurrent mount and unmount cleans up dangling style elements ---
+  console.log('  Test 7: Rapid/concurrent mount/unmount cleans up styles...');
+
+  class RapidComponent extends AvenxComponent {
+    static styles = '.rapid { color: green; }';
+    constructor(bridges, props) {
+      super({}, {}, bridges || {}, '<div class="rapid">Rapid</div>', {}, props || {});
+    }
+  }
+
+  const targets = [createMockElement('div'), createMockElement('div'), createMockElement('div')];
+  const instances = targets.map((t) => new RapidComponent());
+
+  // Rapidly mount instances concurrently
+  instances.forEach((inst, idx) => inst.mount(targets[idx]));
+
+  const styleElementsDuringMount = headChildren.filter(
+    (el) => el._attrs['data-avenx-style'] === 'avenx-style-RapidComponent',
+  );
+  assert.strictEqual(styleElementsDuringMount.length, 1, 'Only 1 style element should exist during rapid mounts');
+
+  // Rapidly unmount all instances concurrently
+  instances.forEach((inst) => inst.unmount());
+
+  const styleElementsAfterRapidUnmount = headChildren.filter(
+    (el) => el._attrs['data-avenx-style'] === 'avenx-style-RapidComponent',
+  );
+  assert.strictEqual(
+    styleElementsAfterRapidUnmount.length,
+    0,
+    'Style element should be completely removed after all rapid unmounts',
+  );
+  assert.strictEqual(
+    styleMountManager.getRefCount(RapidComponent),
+    0,
+    'Ref count should be 0 after all rapid unmounts',
+  );
+
+  console.log('  ✅ Test 7 passed: Rapid/concurrent mount/unmount clean up styles correctly');
+
+  // --- Test 8: Unmount cleans up dangling <style> nodes from DOM head even if registry is empty ---
+  console.log('  Test 8: Unmount cleans up dangling style nodes...');
+
+  class DanglingComponent extends AvenxComponent {
+    static styles = '.dangling { display: none; }';
+    constructor(bridges, props) {
+      super({}, {}, bridges || {}, '<div class="dangling"></div>', {}, props || {});
+    }
+  }
+
+  // Manually inject a dangling style element into document head
+  const danglingEl = createMockElement('style');
+  danglingEl.setAttribute('data-avenx-style', 'avenx-style-DanglingComponent');
+  document.head.appendChild(danglingEl);
+
+  assert.ok(
+    headChildren.some((el) => el._attrs['data-avenx-style'] === 'avenx-style-DanglingComponent'),
+    'Dangling style should exist in head initially',
+  );
+
+  // Calling unmount on the class should detect no active DOM instances and clean up the dangling style
+  styleMountManager.unmount(DanglingComponent);
+
+  assert.ok(
+    !headChildren.some((el) => el._attrs['data-avenx-style'] === 'avenx-style-DanglingComponent'),
+    'Dangling style element should be removed from head on unmount',
+  );
+
+  console.log('  ✅ Test 8 passed: Dangling style nodes cleaned up on unmount');
+
   // --- Cleanup ---
   delete global.Node;
   delete global.document;
