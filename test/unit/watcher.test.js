@@ -253,6 +253,29 @@ async function testBridgeTargetedUpdates() {
 
   console.log('  ✅ Targeted bridge updates tests passed!');
 }
+function testFunctionBasedComputedProperty() {
+  console.log('🧪 Testing function-based computed properties...');
+
+  const comp = new AvenxComponent(
+    {
+      firstName: 'John',
+      lastName: 'Doe',
+    },
+    {
+      fullName() {
+        return `${this.state.firstName} ${this.state.lastName}`;
+      },
+    },
+  );
+
+  assert.strictEqual(comp.state.fullName, 'John Doe');
+
+  comp.state.firstName = 'Jane';
+
+  assert.strictEqual(comp.state.fullName, 'Jane Doe');
+
+  console.log('  ✅ Function-based computed property is reactive!');
+}
 
 async function runTests() {
   try {
@@ -260,6 +283,7 @@ async function runTests() {
     testImmediateWatcher();
     testWatcherTeardown();
     testComponentWatchAPI();
+    testFunctionBasedComputedProperty();
     await testBridgeTargetedUpdates();
     console.log('✅ All AvenxWatcher tests passed successfully!');
   } catch (error) {
