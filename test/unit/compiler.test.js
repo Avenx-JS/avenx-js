@@ -91,15 +91,8 @@ try {
                 const app = new AvenxApp({ target: '#app' });
             `,
       registrations: "app.registerPage('Home', Home);",
-      expectedContains: [
-        "const app = new AvenxApp({ target: '#app' });",
-        "app.registerPage('Home', Home);"
-      ],
-      expectedNotContains: [
-        'import {',
-        'AvenxComponent',
-        '} from'
-      ]
+      expectedContains: ["const app = new AvenxApp({ target: '#app' });", "app.registerPage('Home', Home);"],
+      expectedNotContains: ['import {', 'AvenxComponent', '} from'],
     },
     {
       name: 'CSS-only / side-effect import',
@@ -109,14 +102,8 @@ try {
                 const app = new AvenxApp({ target: '#app' });
             `,
       registrations: "app.registerPage('Home', Home);",
-      expectedContains: [
-        "const app = new AvenxApp({ target: '#app' });",
-        "app.registerPage('Home', Home);"
-      ],
-      expectedNotContains: [
-        './global.css',
-        'theme.css'
-      ]
+      expectedContains: ["const app = new AvenxApp({ target: '#app' });", "app.registerPage('Home', Home);"],
+      expectedNotContains: ['./global.css', 'theme.css'],
     },
     {
       name: 'Dynamic import expression (should not be stripped)',
@@ -128,8 +115,8 @@ try {
       expectedContains: [
         "import('./dynamic-module.js')",
         "const app = new AvenxApp({ target: '#app' });",
-        "app.registerPage('Home', Home);"
-      ]
+        "app.registerPage('Home', Home);",
+      ],
     },
   ];
 
@@ -155,14 +142,14 @@ try {
   fs.rmdirSync(tempDir);
 
   console.log('🧪 Testing AvenxCompiler processGuards...');
-  
+
   // Create temporary guard directories
   const tempGuardsDir = path.join(__dirname, 'temp_compiler_guards_test_src');
   const tempGuardsSubDir = path.join(tempGuardsDir, 'guards');
   if (!fs.existsSync(tempGuardsSubDir)) {
     fs.mkdirSync(tempGuardsSubDir, { recursive: true });
   }
-  
+
   const guardsCompiler = new AvenxCompiler();
   guardsCompiler.srcDir = tempGuardsDir;
 
@@ -199,9 +186,39 @@ try {
   fs.unlinkSync(path.join(tempGuardsSubDir, 'custom.guard.js'));
   fs.rmdirSync(tempGuardsSubDir);
   fs.rmdirSync(tempGuardsDir);
-  
+
   console.log('  ✅ processGuards tests passed!');
 
+  console.log('🧪 Testing AvenxCompiler processPages...');
+
+  const tempPagesDir = path.join(__dirname, 'temp_compiler_pages_test');
+  const pagesDir = path.join(tempPagesDir, 'pages');
+
+  if (!fs.existsSync(pagesDir)) {
+    fs.mkdirSync(pagesDir, { recursive: true });
+  }
+  const pageContent = `<MyCard />`;
+
+  const pagePath = path.join(pagesDir, 'home.page.js');
+
+  fs.writeFileSync(pagePath, pageContent);
+  const pagesCompiler = new AvenxCompiler();
+  pagesCompiler.srcDir = tempPagesDir;
+
+  const pagesResult = pagesCompiler.processPages();
+  assert.ok(
+  pagesResult.pagesJs.includes('<div data-avenx-comp="MyCard"></div>'),
+  'Self-closing component tag should be converted to a standard component element'
+);
+
+assert.ok(
+  pagesResult.registrations.includes("app.registerPage('Home', Home);"),
+  'Home page should be registered'
+);
+fs.unlinkSync(pagePath);
+fs.rmdirSync(pagesDir);
+fs.rmdirSync(tempPagesDir);
+console.log('  ✅ processPages tests passed!');
   console.log('  ✅ AvenxCompiler tests passed!');
 } catch (error) {
   console.error('❌ AvenxCompiler tests failed!');
