@@ -190,35 +190,35 @@ try {
   console.log('  ✅ processGuards tests passed!');
 
   console.log('🧪 Testing AvenxCompiler processPages...');
-
   const tempPagesDir = path.join(__dirname, 'temp_compiler_pages_test');
   const pagesDir = path.join(tempPagesDir, 'pages');
 
   if (!fs.existsSync(pagesDir)) {
     fs.mkdirSync(pagesDir, { recursive: true });
   }
-  const pageContent = `<MyCard />`;
 
+  const pageContent = `<MyCard />`;
   const pagePath = path.join(pagesDir, 'home.page.js');
 
   fs.writeFileSync(pagePath, pageContent);
+
   const pagesCompiler = new AvenxCompiler();
   pagesCompiler.srcDir = tempPagesDir;
 
   const pagesResult = pagesCompiler.processPages();
   assert.ok(
-  pagesResult.pagesJs.includes('<div data-avenx-comp="MyCard"></div>'),
-  'Self-closing component tag should be converted to a standard component element'
-);
+    pagesResult.pagesJs.includes('<div data-avenx-comp="MyCard"></div>'),
+    'Self-closing component tag should be converted to a standard component element'
+  );
 
-assert.ok(
-  pagesResult.registrations.includes("app.registerPage('Home', Home);"),
-  'Home page should be registered'
-);
-fs.unlinkSync(pagePath);
-fs.rmdirSync(pagesDir);
-fs.rmdirSync(tempPagesDir);
-console.log('  ✅ processPages tests passed!');
+  assert.ok(
+    pagesResult.registrations.includes("app.registerPage('Home', Home);"),
+    'Home page should be registered'
+  );
+  fs.unlinkSync(pagePath);
+  fs.rmdirSync(pagesDir);
+  fs.rmdirSync(tempPagesDir);
+  console.log('  ✅ processPages tests passed!');
   console.log('  ✅ AvenxCompiler tests passed!');
 } catch (error) {
   console.error('❌ AvenxCompiler tests failed!');
