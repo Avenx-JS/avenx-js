@@ -94,6 +94,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Dingding-leo"><img src="https://avatars.githubusercontent.com/u/193228693?v=4?s=100" width="100px;" alt="Austin Liu"/><br /><sub><b>Austin Liu</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Dingding-leo" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.aysajaneziz.com"><img src="https://avatars.githubusercontent.com/u/47014605?v=4?s=100" width="100px;" alt="Aysajan Eziz"/><br /><sub><b>Aysajan Eziz</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=AysajanE" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://himanshu231204.vercel.app/"><img src="https://avatars.githubusercontent.com/u/145797211?v=4?s=100" width="100px;" alt="Himanshu Kumar "/><br /><sub><b>Himanshu Kumar </b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=himanshu231204" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/DinithiPiyathilaka"><img src="https://avatars.githubusercontent.com/u/156614578?v=4?s=100" width="100px;" alt="dp_."/><br /><sub><b>dp_.</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=DinithiPiyathilaka" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
