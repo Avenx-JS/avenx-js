@@ -310,7 +310,7 @@ try {
   }
 
   const targets = [createMockElement('div'), createMockElement('div'), createMockElement('div')];
-  const instances = targets.map((t) => new RapidComponent());
+  const instances = targets.map(() => new RapidComponent());
 
   // Rapidly mount instances concurrently
   instances.forEach((inst, idx) => inst.mount(targets[idx]));
