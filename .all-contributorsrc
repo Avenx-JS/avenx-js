@@ -506,6 +506,15 @@
         "doc",
         "code"
       ]
+    },
+    {
+      "login": "Ap-0007",
+      "name": "vanta.nox",
+      "avatar_url": "https://avatars.githubusercontent.com/u/200978133?v=4",
+      "profile": "https://elmoak.co.in",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
