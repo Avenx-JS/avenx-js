@@ -133,6 +133,7 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
         page: 'TestPage',
         guards: [MockGuard],
       },
+      '#/profile/:name': 'TestPage',
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -493,6 +494,15 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     assert.strictEqual(window.location.hash, '#/login?existing=1&extra=true', 'Should merge query parameters correctly');
+
+    // Test E: Encoded route path parameters
+    mountedPageName = null;
+    mountedParams = null;
+    window.location.hash = '#/profile/nathan%20schmid';
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.strictEqual(mountedPageName, 'TestPage', 'Should mount TestPage for encoded path parameter route');
+    assert.strictEqual(mountedParams.name, 'nathan schmid', 'Should correctly parse and decode path parameters containing %20');
 
     console.log('  ✅ Router and Guards tests passed!');
   } catch (error) {
