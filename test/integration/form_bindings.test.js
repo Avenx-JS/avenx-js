@@ -575,7 +575,6 @@ async function testDynamicSelectBinding() {
   const selectEl = rootEl.querySelector('#select-city');
   assert.ok(selectEl, 'Select element should render');
 
-  console.log('SELECT OUTER HTML:', selectEl.outerHTML);
   const options = selectEl.querySelectorAll('option');
   assert.strictEqual(options.length, 3, 'Options should be populated dynamically');
 
