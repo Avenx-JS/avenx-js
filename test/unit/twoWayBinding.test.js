@@ -257,7 +257,7 @@ async function testRuntimeNestedTwoWayBinding() {
 
   // 1. Update state
   comp.state.user.profile.age = '30';
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await comp.nextTick();
   assert.strictEqual(inputEl.value, '30');
 
   // 2. Update input DOM value

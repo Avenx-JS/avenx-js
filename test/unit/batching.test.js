@@ -139,10 +139,103 @@ async function testBridgeAndStateCombinedBatching() {
   console.log('  ✅ Bridge and state combined batching tests passed!');
 }
 
+/**
+ *
+ */
+async function testConsecutiveTicksBatching() {
+  console.log('🧪 Testing batching of updates across consecutive microtask ticks...');
+
+  let updateCount = 0;
+  const comp = new AvenxComponent(
+    { x: 0 },
+    {},
+    {},
+    '<div>{{ x }}</div>',
+    {
+      onUpdate: () => {
+        updateCount++;
+      },
+    },
+  );
+
+  comp.__setMountTarget(mockElement);
+  comp.__afterMount();
+
+  // Trigger state mutation in consecutive microtasks
+  comp.state.x = 1;
+  await Promise.resolve(); // Wait one microtask (consecutive tick)
+  comp.state.x = 2;
+
+  // Wait for the full scheduler flush
+  await comp.nextTick();
+
+  // The component should have updated exactly once because consecutive updates are grouped!
+  assert.strictEqual(updateCount, 1, 'Double updates in consecutive ticks should be grouped into a single DOM patch');
+
+  console.log('  ✅ Consecutive ticks batching tests passed!');
+}
+
+/**
+ *
+ */
+async function testParentChildUpdateOrdering() {
+  console.log('🧪 Testing parent-child update ordering...');
+
+  const updateOrder = [];
+
+  const parentComp = new AvenxComponent(
+    { val: 0 },
+    {},
+    {},
+    '<div>Parent</div>',
+    {
+      onUpdate: () => {
+        updateOrder.push('parent');
+      },
+    },
+  );
+
+  const childComp = new AvenxComponent(
+    { val: 0 },
+    {},
+    {},
+    '<div>Child</div>',
+    {
+      onUpdate: () => {
+        updateOrder.push('child');
+      },
+    },
+  );
+
+  // Establish parent-child relationship
+  childComp.$parent = parentComp;
+
+  // Mount them
+  parentComp.__setMountTarget(mockElement);
+  parentComp.__afterMount();
+  childComp.__setMountTarget(mockElement);
+  childComp.__afterMount();
+
+  // Trigger updates on both parent and child components
+  // Parent UID is smaller than child UID because parent is created first
+  childComp.scheduleUpdate();
+  parentComp.scheduleUpdate();
+
+  // Wait for the scheduler flush
+  await parentComp.nextTick();
+
+  // Assert that parent updated BEFORE child, even though child update was queued first
+  assert.deepStrictEqual(updateOrder, ['parent', 'child'], 'Parent component should update before child component');
+
+  console.log('  ✅ Parent-child update ordering tests passed!');
+}
+
 (async () => {
   try {
     await testStateUpdateBatching();
     await testBridgeAndStateCombinedBatching();
+    await testConsecutiveTicksBatching();
+    await testParentChildUpdateOrdering();
     console.log('✅ All batching tests passed!');
   } catch (error) {
     console.error('❌ Batching tests failed!');

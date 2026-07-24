@@ -103,7 +103,7 @@ const waitForRaf = () => new Promise((resolve) => requestAnimationFrame(() => re
     // Toggle state to false (triggers leave transition)
     const componentInstance = appContainer.__avenx_comp_instance;
     componentInstance.state.isVisible = false;
-    await Promise.resolve(); // Wait for update microtask to run patchNode
+    await componentInstance.nextTick(); // Wait for update microtask to run patchNode
 
     // Target should have leave classes active immediately after patch
     assert.ok(targetDiv.classList.contains('fade-leave-active'), 'Should start leave transition');
