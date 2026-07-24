@@ -162,11 +162,24 @@ class MockElementNode extends MockNode {
   }
 
   get value() {
+    if (this.tagName === 'SELECT') {
+      return this._selectedValue || '';
+    }
     return this.getAttribute('value') || '';
   }
 
   set value(val) {
-    this.setAttribute('value', val);
+    if (this.tagName === 'SELECT') {
+      const options = this.querySelectorAll('option');
+      const matched = options.find((opt) => opt.value === val);
+      if (matched) {
+        this._selectedValue = val;
+      } else {
+        this._selectedValue = '';
+      }
+    } else {
+      this.setAttribute('value', val);
+    }
   }
 
   get textContent() {
@@ -248,7 +261,9 @@ class MockElementNode extends MockNode {
           if (match) {
             results.push(child);
           }
-          traverse(child);
+          if (child.tagName !== 'TEMPLATE') {
+            traverse(child);
+          }
         }
       });
     };
@@ -538,11 +553,43 @@ async function testRadioGroupBinding() {
   console.log('  ✅ Radio group integration tests passed!');
 }
 
+async function testDynamicSelectBinding() {
+  console.log('🧪 Testing dynamic option binding on select elements...');
+
+  const comp = new AvenxComponent(
+    { selectedCity: 'Berlin', cities: ['Paris', 'Berlin', 'London'] },
+    {},
+    {},
+    `<select id="select-city" data-ax-bind="selectedCity">
+       <template data-ax-for="cities" data-ax-as="city">
+         <option value="{% city %}">{% city %}</option>
+       </template>
+     </select>`,
+    {},
+  );
+
+  const rootEl = createMockElementNode('div');
+  comp.__setMountTarget(rootEl);
+  comp.update();
+
+  const selectEl = rootEl.querySelector('#select-city');
+  assert.ok(selectEl, 'Select element should render');
+
+  const options = selectEl.querySelectorAll('option');
+  assert.strictEqual(options.length, 3, 'Options should be populated dynamically');
+
+  // Verify initial selection matches state
+  assert.strictEqual(selectEl.value, 'Berlin', 'Select initial value should sync with state');
+
+  console.log('  ✅ Dynamic select element integration tests passed!');
+}
+
 (async () => {
   try {
     await testCheckboxGroupBinding();
     await testSingleCheckboxBinding();
     await testRadioGroupBinding();
+    await testDynamicSelectBinding();
     console.log('✅ Form bindings integration tests passed successfully!');
   } catch (error) {
     console.error('❌ Form bindings integration tests failed!');
