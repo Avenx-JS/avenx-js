@@ -3,52 +3,6 @@ import { EventBinder } from '../../lib/core/events/bindEvents.js';
 import { EventExecutor } from '../../lib/core/events/eventExecutor.js';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 
-// Setup Mock DOM Elements
-class MockElement {
-  constructor(nodeType = 1, tagName = 'DIV') {
-    this.nodeType = nodeType;
-    this.tagName = tagName;
-    this.childNodes = [];
-    this.attrs = {};
-    this.listeners = {};
-  }
-
-  getAttribute(name) {
-    return this.attrs[name] || null;
-  }
-
-  setAttribute(name, val) {
-    this.attrs[name] = val;
-  }
-
-  removeAttribute(name) {
-    delete this.attrs[name];
-  }
-
-  hasAttribute(name) {
-    return name in this.attrs;
-  }
-
-  get attributes() {
-    return Object.entries(this.attrs).map(([name, value]) => ({ name, value }));
-  }
-
-  addEventListener(event, callback) {
-    if (!this.listeners[event]) this.listeners[event] = [];
-    this.listeners[event].push(callback);
-  }
-
-  removeEventListener(event, callback) {
-    if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
-    }
-  }
-
-  appendChild(child) {
-    this.childNodes.push(child);
-  }
-}
-
 // Override WeakMap to track active keys
 const originalWeakMap = global.WeakMap;
 const trackedWeakMaps = [];
@@ -91,7 +45,9 @@ try {
   // 2. Test EventBinder teardown
   console.log('  Testing EventBinder.teardown()...');
   const binder = new EventBinder();
-  const el = new MockElement();
+  
+  // Create a real DOM element
+  const el = document.createElement('button');
   el.setAttribute('@click', 'doSomething');
   binder.bind(el, executor);
 
@@ -120,16 +76,8 @@ try {
     {},
   );
   
-  // Set up a mock target element
-  const target = new MockElement();
-  
-  // Mock global document if not set
-  if (!global.document) {
-    global.document = {
-      createElement: (tag) => new MockElement(1, tag),
-      createElementNS: (ns, tag) => new MockElement(1, tag),
-    };
-  }
+  // Set up a real target element
+  const target = document.createElement('div');
 
   comp.__setMountTarget(target);
   comp.update();
