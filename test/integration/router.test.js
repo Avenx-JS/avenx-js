@@ -496,8 +496,14 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     assert.strictEqual(window.location.hash, '#/login?existing=1&extra=true', 'Should merge query parameters correctly');
 
     // Test E: Encoded route path parameters
+    if (app.router) {
+      app.router.destroy();
+    }
     mountedPageName = null;
     mountedParams = null;
+    app.initRouter({
+      '#/profile/:name': 'TestPage',
+    });
     window.location.hash = '#/profile/nathan%20schmid';
     await new Promise((resolve) => setTimeout(resolve, 0));
 
