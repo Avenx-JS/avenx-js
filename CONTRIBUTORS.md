@@ -144,7 +144,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Akanshagore"><img src="https://avatars.githubusercontent.com/u/271256844?v=4?s=100" width="100px;" alt="Akansha Gore"/><br /><sub><b>Akansha Gore</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Akanshagore" title="Code">💻</a></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/PrathamSalotra"><img src="https://avatars.githubusercontent.com/u/101120035?v=4?s=100" width="100px;" alt="Heliux_sus"/><br /><sub><b>Heliux_sus</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=PrathamSalotra" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/PrathamSalotra"><img src="https://avatars.githubusercontent.com/u/101120035?v=4?s=100" width="100px;" alt="Heliux_sus"/><br /><sub><b>Heliux_sus</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=PrathamSalotra" title="Tests">⚠️</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=PrathamSalotra" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
