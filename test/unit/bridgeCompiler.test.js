@@ -526,6 +526,37 @@ export default bridge({ state: { value: helper() } });`,
 }
 
 /**
+ * Bridges that import each other in a cycle stop the build.
+ *
+ * Regression: emission orders dependencies first, so a cycle previously
+ * produced a bundle whose IIFE referenced a `const` declared later — a
+ * temporal dead zone error at load, with a clean build log.
+ */
+function testCircularBridgeImportIsFatal() {
+  console.log('🧪 Testing circular bridge imports...');
+
+  const { error } = build({
+    'src/bridges/a.bridge.js': `import { bridge } from 'avenx-core/runtime';
+import b from './b.bridge.js';
+export default bridge({ state: { x: 1 }, peek() { return b.y; } });`,
+    'src/bridges/b.bridge.js': `import { bridge } from 'avenx-core/runtime';
+import a from './a.bridge.js';
+export default bridge({ state: { y: 2 }, peek() { return a.x; } });`,
+    'src/components/c.component.js': `import a from '../bridges/a.bridge.js';
+
+<div>{{ a.x }}</div>`,
+    'src/pages/home.page.js': `<div><C /></div>`,
+    'src/main.app.js': `const app = new AvenxApp({ target: '#app' });`,
+  });
+
+  assert.ok(error, 'the build fails instead of emitting a broken bundle');
+  assert.strictEqual(error.code, AvenxErrorCodes.COMPILER_BRIDGE_CIRCULAR_IMPORT, 'with the right code');
+  assert.ok(/a -> b -> a/.test(error.message), 'the message shows the cycle');
+
+  console.log('  ✅ A bridge import cycle is a build error.');
+}
+
+/**
  * An isolated component may not import a bridge.
  */
 function testIsolatedImportIsFatal() {
@@ -676,6 +707,7 @@ async function run() {
   testMissingBridgeIsFatal();
   testDuplicateNameIsFatal();
   testUnsupportedImportIsFatal();
+  testCircularBridgeImportIsFatal();
   testIsolatedImportIsFatal();
   testLegacyCompatibility();
   testStandaloneParsing();

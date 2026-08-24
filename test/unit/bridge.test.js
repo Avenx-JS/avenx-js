@@ -595,6 +595,44 @@ function testDispose() {
 }
 
 /**
+ * Disposal resets state in place, so consumers are notified and keep working.
+ *
+ * Regression: an earlier implementation replaced the reactive state object,
+ * which stranded every watcher that had already tracked the old one — the
+ * bridge kept updating while its consumers silently froze.
+ */
+function testDisposeKeepsConsumersLive() {
+  console.log('🧪 Testing that disposal does not strand consumers...');
+
+  const counter = bridge({
+    state: { n: 0 },
+    bump() { this.n++; },
+    addKey() { this.extra = 'x'; },
+  });
+
+  let runs = 0;
+  let seen = null;
+  const watcher = new AvenxWatcher(() => { runs++; seen = counter.n; return seen; }, null, { isEffect: true });
+
+  counter.bump();
+  counter.bump();
+  assert.strictEqual(seen, 2, 'the watcher tracked the bridge');
+
+  counter.addKey();
+  counter.$dispose();
+
+  assert.strictEqual(seen, 0, 'disposal notified the watcher that state reverted');
+  assert.strictEqual(counter.extra, undefined, 'keys added after creation are removed');
+
+  counter.bump();
+  assert.strictEqual(seen, 1, 'the watcher is still subscribed after disposal');
+  assert.strictEqual(seen, counter.n, 'the consumer and the bridge agree');
+
+  watcher.teardown();
+  console.log('  ✅ Disposal resets in place and keeps subscriptions valid.');
+}
+
+/**
  * A setup() that throws is reported with the bridge name and does not retry forever.
  */
 function testSetupFailure() {
@@ -950,6 +988,7 @@ async function run() {
   testLazySetup();
   testSetupIsDetached();
   testDispose();
+  testDisposeKeepsConsumersLive();
   testSetupFailure();
   testScopeOwnedSubscriptions();
   testScopeEdgeCases();

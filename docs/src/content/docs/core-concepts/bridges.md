@@ -445,7 +445,7 @@ export default bridge({
 });
 ```
 
-To share logic between bridges, put it in a bridge and import that.
+To share logic between bridges, put it in a bridge and import that. Bridges initialise in dependency order, so the imports must form a chain rather than a loop: two bridges that import each other fail the build with `AVX_C11`. Move whatever they share into a third bridge that both import.
 
 ## Best practices
 
