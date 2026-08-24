@@ -856,10 +856,114 @@ export class AvenxApp {
 
 /**
  * Base class for global reactive bridges.
+ * @deprecated Use the `bridge()` factory instead. Class bridges register
+ * ambiently under a global template name; `bridge()` bridges are imported,
+ * which is what lets the compiler see who consumes them.
  */
 export class AvenxBridge {
     constructor();
 }
+
+/** Releases a bridge subscription. Safe to call more than once. */
+export type BridgeUnsubscribe = () => void;
+
+/** Keys of a bridge definition that name an action. */
+type BridgeActionKeys<D> = {
+    [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? K : never;
+}[keyof D];
+
+/** Keys of a bridge definition that name a derived (getter) value. */
+type BridgeDerivedKeys<D> = {
+    [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? never : K;
+}[keyof D];
+
+/** The shared state object declared by a bridge definition. */
+type BridgeStateOf<D> = D extends { state: infer S } ? S : Record<never, never>;
+
+/** The actions declared by a bridge definition. */
+type BridgeActionsOf<D> = Pick<D, BridgeActionKeys<D>>;
+
+/** The derived values declared by a bridge definition. */
+type BridgeDerivedOf<D> = Pick<D, BridgeDerivedKeys<D>>;
+
+/**
+ * The value bound to `this` inside actions, getters and `setup()`.
+ * State is writable here and `emit` is available; both are withheld from
+ * consumers so that every mutation and every event has one origin.
+ */
+export type BridgeSelf<D> = BridgeStateOf<D> &
+    Readonly<BridgeDerivedOf<D>> &
+    BridgeActionsOf<D> & {
+        /** Broadcasts an event to every subscriber. */
+        emit(event: string, payload?: unknown): void;
+    };
+
+/**
+ * The bridge instance a module exports and components import.
+ * State and derived values are read-only; mutation goes through actions.
+ */
+export type Bridge<D> = Readonly<BridgeStateOf<D>> &
+    Readonly<BridgeDerivedOf<D>> &
+    BridgeActionsOf<D> & {
+        /**
+         * Subscribes to an event emitted by this bridge.
+         * Called from a component lifecycle hook or event handler, the
+         * subscription is released automatically when that component unmounts.
+         * @returns A function that unsubscribes early.
+         */
+        on<P = any>(event: string, handler: (payload: P) => void): BridgeUnsubscribe;
+        /** Runs the cleanup from `setup()`, drops listeners and restores initial state. */
+        $dispose(): void;
+        /** Diagnostic name, derived from the file name by the compiler. */
+        readonly $name: string;
+    };
+
+/**
+ * Creates a Bridge: a reactive unit of shared state and behaviour that
+ * components consume by importing it.
+ * @example
+ * export default bridge({
+ *   state: { user: null as User | null },
+ *   get isLoggedIn() { return this.user !== null; },
+ *   login(user: User) { this.user = user; this.emit('login', user); },
+ * });
+ */
+export function bridge<D extends object>(definition: D & ThisType<BridgeSelf<D>>): Bridge<D>;
+
+/** Reports whether a value is a bridge instance created by `bridge()`. */
+export function isBridge(value: unknown): boolean;
+
+/** Assigns a bridge its diagnostic name. Emitted by the compiler. */
+export function defineBridgeName<T>(name: string, instance: T): T;
+
+/** Brand symbol identifying bridge instances. */
+export const IS_BRIDGE: symbol;
+
+/** Suggests the closest known name for a mistyped one. Used in diagnostics. */
+export function suggestName(name: string, known: string[]): string;
+
+/**
+ * Collects teardown callbacks and releases them together. Components own one
+ * and dispose it on unmount, which is how bridge subscriptions are released.
+ */
+export class DisposalScope {
+    constructor(name?: string);
+    readonly name: string;
+    readonly disposed: boolean;
+    /** Registers a teardown callback; returns a run-once release function. */
+    add(disposer: () => void): () => void;
+    /** Runs every registered teardown callback. */
+    dispose(): void;
+}
+
+/** Returns the scope that currently owns new teardown callbacks. */
+export function getScope(): DisposalScope | null;
+
+/** Runs a function with the given scope active. Pass null to detach ownership. */
+export function runInScope<T>(scope: DisposalScope | null, fn: () => T): T;
+
+/** Registers a teardown callback with the active scope, if there is one. */
+export function onScopeDispose(disposer: () => void): () => void;
 
 /**
  * Factory for creating reactive state proxies.
