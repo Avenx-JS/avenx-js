@@ -619,8 +619,10 @@ function testDisposeKeepsConsumersLive() {
   assert.strictEqual(seen, 2, 'the watcher tracked the bridge');
 
   counter.addKey();
+  const runsBeforeDispose = runs;
   counter.$dispose();
 
+  assert.ok(runs > runsBeforeDispose, 'disposal re-ran the dependent watcher');
   assert.strictEqual(seen, 0, 'disposal notified the watcher that state reverted');
   assert.strictEqual(counter.extra, undefined, 'keys added after creation are removed');
 
