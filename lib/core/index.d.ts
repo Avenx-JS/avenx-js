@@ -936,12 +936,6 @@ export function isBridge(value: unknown): boolean;
 /** Assigns a bridge its diagnostic name. Emitted by the compiler. */
 export function defineBridgeName<T>(name: string, instance: T): T;
 
-/** Brand symbol identifying bridge instances. */
-export const IS_BRIDGE: symbol;
-
-/** Suggests the closest known name for a mistyped one. Used in diagnostics. */
-export function suggestName(name: string, known: string[]): string;
-
 /**
  * Collects teardown callbacks and releases them together. Components own one
  * and dispose it on unmount, which is how bridge subscriptions are released.

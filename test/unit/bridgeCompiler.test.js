@@ -601,9 +601,64 @@ function testStandaloneParsing() {
 }
 
 /**
+ * The definitive check: run the compiled bundle and drive the UI through it.
+ *
+ * This exercises the whole chain at once — the bridge IIFE executing against
+ * the bundled runtime, defineBridgeName labelling it, module-level constants
+ * surviving compilation, the component receiving its binding, and a template
+ * handler calling an action that re-renders the DOM.
+ */
+async function testCompiledBundleRuns() {
+  console.log('🧪 Testing that the compiled bundle actually runs...');
+
+  const { bundle, error } = build({
+    'src/bridges/counter.bridge.js': `import { bridge } from 'avenx-core/runtime';
+
+const STEP = 2;
+
+export default bridge({
+  state: { count: 0 },
+  get doubled() { return this.count * STEP; },
+  increment() { this.count++; },
+});`,
+    'src/components/display.component.js': `import counter from '../bridges/counter.bridge.js';
+
+<div>[{{ counter.count }}/{{ counter.doubled }}]<button id="inc" @click="counter.increment()">+</button></div>`,
+    'src/pages/home.page.js': `<div><Display /></div>`,
+    'src/main.app.js': `const app = new AvenxApp({ target: '#app' });`,
+  });
+
+  assert.strictEqual(error, null, 'the build should succeed');
+
+  // The bundle's entry point constructs an AvenxApp against '#app'.
+  document.body.innerHTML = '<div id="app"></div><div id="bundle-root"></div>';
+  const exported = new Function(`${bundle}\n; return { Display, counter: __avx_bridge_counter };`)();
+
+  assert.strictEqual(exported.counter.$name, 'counter', 'the bridge is labelled at runtime');
+  assert.strictEqual(exported.counter.doubled, 0, 'the module-level constant survived compilation');
+
+  const component = new exported.Display({});
+  component.mount(document.querySelector('#bundle-root'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  const text = () => document.querySelector('#bundle-root').textContent;
+  assert.ok(text().includes('[0/0]'), `the initial render reads the bridge, got "${text()}"`);
+
+  document.querySelector('#inc').click();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.ok(text().includes('[1/2]'), `the action updated the DOM reactively, got "${text()}"`);
+  assert.strictEqual(exported.counter.count, 1, 'the bridge holds the new state');
+  assert.strictEqual(exported.counter.doubled, 2, 'the getter recomputed');
+
+  component.unmount();
+  console.log('  ✅ The compiled bundle runs and updates the DOM.');
+}
+
+/**
  * Runs the suite.
  */
-function run() {
+async function run() {
   console.log('=== Bridge compiler tests ===\n');
   testAnalysis();
   testLegacyDetection();
@@ -624,12 +679,11 @@ function run() {
   testIsolatedImportIsFatal();
   testLegacyCompatibility();
   testStandaloneParsing();
+  await testCompiledBundleRuns();
   console.log('\n✅ All bridge compiler tests passed!');
 }
 
-try {
-  run();
-} catch (error) {
+run().catch((error) => {
   console.error('❌ Bridge compiler tests failed:', error);
   process.exit(1);
-}
+});
