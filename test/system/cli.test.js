@@ -380,7 +380,7 @@ async function runTest() {
     );
 
     assert.ok(
-      forcedForceBridgeJs.includes('ForceAuthBridge extends AvenxBridge'),
+      forcedForceBridgeJs.includes('bridge({'),
       'Force generation should overwrite the modified Bridge',
     );
 

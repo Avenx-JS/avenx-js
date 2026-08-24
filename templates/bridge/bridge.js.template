@@ -1,22 +1,35 @@
-import { AvenxBridge } from 'avenx-core/runtime';
+import { bridge } from 'avenx-core/runtime';
 
 /**
- * {{ name }} provides shared reactive state and logic.
+ * The "{{ name }}" bridge holds shared state and the actions that change it.
+ *
+ * Import it wherever you need it. The import is what connects a component to
+ * this bridge, and what lets the compiler see the connection:
+ *
+ *   import {{ name }} from '../global/{{ file }}.bridge.js';
+ *
+ * Then read it straight from the template, e.g. "{{ name }}.value".
+ * State is read-only outside this file: changes go through the actions below.
  */
-export default class {{ name }} extends AvenxBridge {
-    constructor() {
-        super();
-        /**
-         * Initial state properties
-         */
-        this.value = '';
-    }
+export default bridge({
+  state: {
+    value: '',
+  },
 
-    /**
-     * Example method to update state.
-     * Changes to 'this' properties will trigger automatic re-renders in components.
-     */
-    updateValue(newValue) {
-        this.value = newValue;
-    }
-}
+  /**
+   * Derived values are plain getters. They re-evaluate when what they read changes.
+   * @returns {boolean} True while no value has been set.
+   */
+  get isEmpty() {
+    return this.value === '';
+  },
+
+  /**
+   * Actions are the only place state changes. `this` can read, write and emit.
+   * @param {string} newValue - The value to store.
+   */
+  setValue(newValue) {
+    this.value = newValue;
+    this.emit('change', newValue);
+  },
+});

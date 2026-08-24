@@ -56,7 +56,7 @@ export function registerInMainApp(cli, className, folderName) {
 }
 
 /**
- * Generates a new Bridge class and template file.
+ * Generates a new Bridge module.
  * @param {object} cli
  * @param {string} name
  * @param {boolean} [dryRun]
@@ -69,8 +69,14 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
     return;
   }
 
-  const { capitalizedName: baseName, folderFileName: lowerName } = parseName(name);
-  const capitalizedName = baseName + 'Bridge';
+  const { folderFileName: lowerName } = parseName(name);
+  // A bridge is identified by its module, so its name is simply the file name
+  // in camelCase — the same identifier you would import it under.
+  const bridgeName = lowerName
+    .split(/[-_.]/)
+    .filter(Boolean)
+    .map((part, index) => (index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join('');
 
   const globalDir = path.join(cli.baseDir, cli.config.srcDir, 'global');
   const bridgePath = path.join(globalDir, `${lowerName}.bridge.js`);
@@ -85,7 +91,7 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
 
   if (dryRun) {
     console.log(
-      cyan(`🧪 [Dry Run] Bridge '${capitalizedName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`),
+      cyan(`🧪 [Dry Run] Bridge '${bridgeName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`),
     );
     console.log(cyan('🧪 [Dry Run] No files were written.'));
     return;
@@ -97,10 +103,15 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
 
   const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'bridge', 'bridge.js.template', templateName);
 
-  fs.writeFileSync(bridgePath, template.replace(/{{ name }}/g, capitalizedName));
+  fs.writeFileSync(
+    bridgePath,
+    template.replace(/{{ name }}/g, bridgeName).replace(/{{ file }}/g, lowerName),
+  );
 
-  console.log(green(`✅ Bridge '${capitalizedName}' generated at ${cli.config.srcDir}/global/${lowerName}.bridge.js`));
-  console.log(gray(`ℹ️ It will be automatically registered as '${capitalizedName}' on the next build.`));
+  console.log(green(`✅ Bridge '${bridgeName}' generated at ${cli.config.srcDir}/global/${lowerName}.bridge.js`));
+  console.log(
+    gray(`ℹ️ Import it where you need it: import ${bridgeName} from '<path>/global/${lowerName}.bridge.js';`),
+  );
 }
 
 /**
