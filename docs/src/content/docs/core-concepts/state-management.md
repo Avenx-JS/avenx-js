@@ -104,7 +104,9 @@ Avenx-JS offers three tiers of state management depending on data scope:
 | :--- | :--- | :--- |
 | **Local Component State (`<state>`)** | Single Component | Form inputs, modal visibility, UI toggles, local counters. |
 | **Provide / Inject (`provide`/`inject`)** | Component Subtree | Theme preferences, active tab context, localized form groups. |
-| **Global State Bridges (`AvenxBridge`)** | Application-wide | User authentication, shopping cart, global notification queues. |
+| **Bridges (`bridge()`)** | Application-wide | User authentication, shopping cart, global notification queues, connections to external systems. |
+
+A Bridge is a module you import where you need it, so the compiler can see every consumer. See the [Bridges guide](/core-concepts/bridges/).
 
 ---
 

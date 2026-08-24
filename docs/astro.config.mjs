@@ -41,7 +41,7 @@ export default defineConfig({
 						{ label: 'Transition Animations', slug: 'core-concepts/transitions' },
 						{ label: 'Scoped & Global CSS', slug: 'core-concepts/styling' },
 						{ label: 'State Management', slug: 'core-concepts/state-management' },
-						{ label: 'Shared State & Bridges', slug: 'core-concepts/bridges' },
+						{ label: 'Bridges (Shared State)', slug: 'core-concepts/bridges' },
 						{ label: 'Provide & Inject', slug: 'core-concepts/provide-inject' },
 						{ label: 'Plugins & Global Mixins', slug: 'core-concepts/plugins-and-mixins' },
 						{ label: 'Custom Directives', slug: 'core-concepts/directives' },

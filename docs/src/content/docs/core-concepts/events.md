@@ -276,6 +276,10 @@ When two components do not share a direct parent-child relationship (for example
 
 Avenx-JS supports two primary patterns for cross-component communication across unrelated components:
 
+:::tip
+For most cross-component communication, reach for a [Bridge](/core-concepts/bridges/) rather than a hand-written bus. A bridge already carries both shared state and events, releases subscriptions when the subscribing component unmounts, and lets the compiler check event names. The hand-rolled bus below remains valid if you want full control over the mechanism.
+:::
+
 ### 1. Global Event Bus Utility
 
 You can create a standalone Event Bus module that implements `on`, `off`, and `emit` methods to publish and subscribe to application-wide events:

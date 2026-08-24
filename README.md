@@ -32,9 +32,9 @@ Define your UI using standard HTML with added superpowers. Components support `s
 
 Styles defined in `.component.css` are automatically scoped to that specific component. Use the `<@global>` tag for global variables and the `<@css>` tag for component-specific styles.
 
-### 🌐 Reactive Bridges (Shared State)
+### 🌐 Bridges (Shared State)
 
-Shared state across multiple components is handled via **Bridges**. These are global reactive objects that any component can subscribe to and update.
+Shared state lives in **Bridges** — small modules created with `bridge()` and consumed by importing them. Because the import is the connection, the compiler can see every consumer: it drops unused bridges from the bundle and catches mistyped members before you run the app.
 
 ### 🌊 Declarative Async Data, Suspense & Error Boundaries
 
@@ -164,9 +164,9 @@ An Avenx component consists of two files: `<name>.component.js` and `<name>.comp
 </@css>
 ```
 
-### 2. Reactive Bridges (Shared State)
+### 2. Bridges (Shared State)
 
-Bridges allow you to share reactive state between components without complex prop drilling. They are defined in the `src/global/` directory.
+A **Bridge** holds state that several components need, plus the actions that change it. You create one with `bridge()` and use it by importing it.
 
 #### Creation
 
@@ -177,29 +177,39 @@ npx avenx g bridge auth
 #### Definition (`src/global/auth.bridge.js`)
 
 ```javascript
-import { AvenxBridge } from 'avenx-core/runtime';
+import { bridge } from 'avenx-core/runtime';
 
-export default class AuthBridge extends AvenxBridge {
-  constructor() {
-    super();
-    this.isLoggedIn = false;
-    this.user = {
-      name: 'Guest',
-      role: 'visitor',
-    };
-  }
-}
+export default bridge({
+  state: {
+    user: null,
+    status: 'anonymous',
+  },
+
+  get displayName() {
+    return this.user ? this.user.name : 'Guest';
+  },
+
+  login(user) {
+    this.user = user;
+    this.status = 'authenticated';
+    this.emit('login', user);
+  },
+});
 ```
 
 #### Usage in Component
 
-Bridges are automatically available in your component templates and actions.
+Import the bridge, then read it straight from the template. Reads are tracked, so the component re-renders when the data it uses changes — no subscription to write, and none to clean up.
 
 ```html
-<p>Welcome, {{ AuthBridge.user.name }}</p>
+import auth from '../global/auth.bridge.js';
 
-<action name="login"> AuthBridge.isLoggedIn = true; AuthBridge.user.name = 'John Doe'; </action>
+<p>Welcome, {{ auth.displayName }}</p>
+
+<action name="signIn"> auth.login({ name: 'John Doe' }); </action>
 ```
+
+Because a bridge is reached through an import, the compiler knows exactly which components use it: unused bridges are left out of the bundle, mistyped members and unknown event names are reported at build time, and the whole surface is typed in TypeScript. State is read-only outside the bridge, so every mutation has one traceable origin.
 
 ---
 
