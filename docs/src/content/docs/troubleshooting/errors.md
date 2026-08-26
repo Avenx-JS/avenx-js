@@ -410,6 +410,7 @@ const app = new AvenxApp({
 | `[AVX_C12]` | "{0}" is not a bridge module. | **Cause:** A `*.bridge.js` file does not import the `bridge()` factory from the Avenx runtime and export the definition it returns. Class-based bridges were removed, so a class or plain-object default export no longer compiles.<br />**Resolution:** Convert the module to `export default bridge({ ... })` — see [Converting a class bridge](/core-concepts/bridges#converting-a-class-bridge) — or rename the file if it is not meant to be a bridge. |
 | `[AVX_C13]` | The Avenx runtime bundle "dist/{0}" is missing. | **Cause:** The prebuilt runtime that every application bundles is not present in the installed package.<br />**Resolution:** Reinstall `avenx-core`. When working inside the framework repository, run `npm run build` to produce it. |
 | `[AVX_C14]` | The {0} hook failed: {1} | **Cause:** A `prebuild` or `postbuild` command configured under `hooks` in `avenx.config.json` exited non-zero. A hook is part of the build, so its failure fails the build.<br />**Resolution:** Run the hook command yourself to see its output. Remove it from `hooks` if it is not meant to gate the build. |
+| `[AVX_W35]` | COMPILER_DEADLOCK_PARSE_FAILED: Failed to parse <@deadlock> boundary tag in {0}: {1} | **Cause:** Malformed attributes, unclosed tag, or invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlocks/). |
 | `[AVX_W37]` | Bridge "{0}" has no member "{1}". | **Cause:** A template or action reads a property the bridge does not declare — usually a typo. At runtime this would silently read `undefined`.<br />**Resolution:** Use one of the declared members. The warning lists them and suggests the closest match. |
 | `[AVX_W38]` | Bridge "{0}" never emits the event "{1}". | **Cause:** Code subscribes with `on()` to an event name that no `emit()` call in the bridge produces, so the handler would never run.<br />**Resolution:** Subscribe to an emitted event, or emit the one you meant. The warning lists the emitted events and suggests the closest match. |
 | `[AVX_R19]` | bridge() expects a definition object, received {0}. | **Cause:** `bridge()` was called with no argument, or with something that is not a plain object.<br />**Resolution:** Pass a definition object, e.g. `bridge({ state: { count: 0 } })`. |
@@ -529,6 +530,56 @@ The validator reports a child declaration when a stricter parent already enforce
 ```
 
 Remove the child declaration unless it communicates a genuinely different boundary. See the [compiler contracts guide](/core-concepts/compiler-contracts/).
+
+### AVX_W35 — COMPILER_DEADLOCK_PARSE_FAILED
+
+**Warning Message**
+
+```text
+[AVX_W35] Failed to parse <@deadlock> boundary tag in "{0}": {1}
+```
+
+**Cause:** This warning is emitted during template compilation when the component parser (`ComponentParser.js`) encounters a malformed `<@deadlock>` reactive boundary tag.
+
+**Parser Syntax Expectations:**
+A `<@deadlock>` block expects the following configuration attributes and nested structure:
+- `name`: String identifier for the boundary.
+- `maxDepth`: Positive integer specifying the recursion threshold before triggering deadlock recovery (e.g. `maxDepth="50"`).
+- `action`: Recovery strategy (`"fallback"`, `"abort"`, or `"reset"`).
+- `<@fallback as="err">...</@fallback>`: Optional nested fallback slot to render when a deadlock occurs.
+
+**Compiler Fallback Behavior:**
+When syntax validation fails (such as an unclosed tag, non-numeric `maxDepth`, or malformed attributes), **the compiler skips the `<@deadlock>` block entirely**. As a result, the protective boundary silently does not exist at runtime, and any circular update loop inside the subtree will bubble directly to the global scheduler.
+
+**Resolution:** To resolve this warning:
+
+1. Ensure the `<@deadlock>` block has valid attribute values and a numeric `maxDepth`.
+2. Verify that nested `<@fallback>` tags are properly closed with `</@fallback>` and declare a valid `as="..."` identifier.
+3. Check for syntax typos in tag names.
+4. See the [<@deadlock> guide](/core-concepts/deadlocks/) for full syntax specifications.
+
+**Incorrect**
+
+```html
+<!-- ❌ Invalid non-numeric maxDepth, missing closing fallback tag, and malformed boundary -->
+<@deadlock name="userSync" maxDepth="invalid-limit" action="fallback">
+  <UserProfile/>
+  <@fallback as="err">
+    <p>Failed to sync user profile: {{ err.message }}</p>
+  <!-- Missing </@fallback> and </@deadlock> -->
+```
+
+**Correct**
+
+```html
+<!-- ✅ Properly configured deadlock boundary with fallback slot -->
+<@deadlock name="userSync" maxDepth="25" action="fallback">
+  <UserProfile/>
+  <@fallback as="err">
+    <p>Failed to sync user profile: {{ err.message }}</p>
+  </@fallback>
+</@deadlock>
+```
 
 ### AVX_C01 — COMPILER_DIST_CREATION_FAILED
 
@@ -2806,6 +2857,7 @@ Use `class` or `data-*` attributes for repeated elements:
 | `[AVX_R14]` | ROUTER_GUARD_TIMEOUT: A route guard exceeded the configured timeout duration.           | **Cause:** One or more sequential route guards returned promises that failed to resolve within the configured timeout period, causing navigation transitions to stall.<br />**Resolution:** Inspect route guard logic for unresolved or hanging promises. Optimize long-running asynchronous operations, ensure all promises properly resolve or reject, or adjust the `guardTimeout` configuration if longer execution times are expected.                                                                                  |
 | `[AVX_R15]` | SANDBOX_VIOLATION: A sandbox security violation occurred.                               | **Cause:** Template or runtime expressions attempted to access restricted properties such as `__proto__`, `constructor`, or `prototype`, or unauthorized global variables. This restriction prevents prototype pollution, template injection, and unauthorized global scope access.<br />**Resolution:** Restrict expressions to authorized variables only. Avoid accessing or modifying prototype-related properties and unauthorized globals. If necessary, wrap values securely before exposing them to expressions.      |
 | `[AVX_R16]` | Cannot reassign component state directly.                                               | **Cause:** Assigning a new object to `this.state`, such as `this.state = { count: 1 }`, replaces the reactive Proxy and breaks change detection.<br />**Resolution:** Mutate properties on the existing state object instead, such as `this.state.count = 1`, or update several properties with `Object.assign(this.state, { count: 1 })`.                                                                                                                                                                                   |
+| `[AVX_R18]` | REACTIVE_DEADLOCK_DETECTED: Circular reactive update cycle detected: {0} | **Cause:** Scheduler exceeded `maxFlushCount` passes or a `<@deadlock>` boundary exceeded `maxDepth` due to a circular reactive update loop.<br />**Resolution:** Break the circular dependency chain indicated in the causation trace, or configure fallback handling via `<@deadlock>`. See the [<@deadlock> guide](/core-concepts/deadlocks/). |
 
 ### AVX_R01 — MOUNT_TARGET_NOT_FOUND
 
@@ -3523,5 +3575,93 @@ Handling asynchronous operations and capturing user feedback in action handlers:
   <button type="submit" :disabled="isLoading">Submit</button>
   <p class="error" data-ax-show="Boolean(errorMessage)">{{ errorMessage }}</p>
 </form>
+
+### AVX_R18 — REACTIVE_DEADLOCK_DETECTED
+
+**Error Message**
+
+```text
+[AVX_R18] Circular reactive update cycle detected: {0}
 ```
 
+**Diagnostic Output Example (CLI / Browser Console)**
+
+```text
+❌ [AVX_R18] Circular reactive update cycle detected: Counter -> StatsBridge -> Counter
+   at Scheduler.flush (scheduler.js:142)
+```
+
+**Cause:** This error is thrown at runtime by the reactivity scheduler (`lib/core/reactive/scheduler.js`) or the deadlock manager (`lib/core/renderer/deadlockManager.js`) when a circular reactive update chain (A -> B -> A) is detected before the browser main thread freezes.
+
+This is triggered when:
+- The global reactive update scheduler exceeds its configured maximum flush passes (`maxFlushCount`, default `100`).
+- A scoped `<@deadlock>` boundary exceeds its configured `maxDepth` recursion threshold.
+
+**Reading the Causation Trace:**
+The diagnostic message includes an execution hops trace (e.g. `{0}` = `Counter -> StatsBridge -> Counter`). Each hop indicates a component, bridge, or watcher mutating a dependency that triggers the next link in the cycle.
+
+**Common Root Causes:**
+- **Cross-Bridge Ping-Pong:** Two components or bridges modifying each other's state synchronously within reactive watchers or bridge listeners.
+- **Self-Mutating Watchers:** A `$watch` handler directly mutating the reactive source property it is listening to.
+- **Computed Property Side Effects:** A computed property containing a hidden write side-effect to a reactive state source.
+
+**Resolution & Recovery:** To resolve this error:
+
+1. **Inspect Causation Trace:** Map each hop back to the originating watcher, bridge action, or computed property and remove synchronous mutations.
+2. **Break Synchronous Update Chains:** Defer secondary mutations using `queueMicrotask()` or `setTimeout()`, or derive calculated values via pure `<computed>` properties instead of watchers.
+3. **Configure `<@deadlock>` Boundaries:** Wrap fragile or dynamic component subtrees with `<@deadlock action="fallback">` to catch update deadlocks locally and render fallback UI.
+4. **Tune Scheduler Limits:** For legitimate deep recursive graphs, adjust thresholds via `setSchedulerMaxFlushCount(n)` or hook into recovery using `onSchedulerDeadlock()`.
+5. **Enable Verbose Debugging:** Set `debug.debugReactivity = true` in `avenx.config.json` to log granular dependency-tracking traces in the console.
+6. See the [<@deadlock> guide](/core-concepts/deadlocks/) for boundary details and best practices.
+
+**Incorrect**
+
+```javascript
+// Component causing immediate circular cycle A -> A
+export default {
+  watch: {
+    count(newVal) {
+      // ❌ Mutating the watched property synchronously inside its own watcher
+      this.state.count = newVal + 1;
+    }
+  }
+};
+```
+
+**Correct**
+
+```javascript
+// ✅ Using a computed property instead of self-mutating watcher
+export default {
+  computed: {
+    displayCount() {
+      return this.state.count + 1;
+    }
+  }
+};
+```
+
+**Defensive Example with `<@deadlock>` and Global Hooks**
+
+```html
+<!-- ✅ Scoped boundary catches cycle and renders fallback instead of halting application -->
+<@deadlock name="realtimeMetrics" maxDepth="50" action="fallback">
+  <RealtimeMetricsChart/>
+  <@fallback as="error">
+    <div class="metrics-error">
+      <p>Metrics loop intercepted: {{ error.message }}</p>
+    </div>
+  </@fallback>
+</@deadlock>
+```
+
+```javascript
+import { onSchedulerDeadlock, setSchedulerMaxFlushCount } from 'avenx-core/runtime';
+
+// Configure higher threshold and global deadlock telemetry listener
+setSchedulerMaxFlushCount(150);
+
+onSchedulerDeadlock((causationChain, componentInstance) => {
+  console.error(`[Deadlock Telemetry] Cycle detected: ${causationChain}`, componentInstance);
+});
+```
