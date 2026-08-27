@@ -5,6 +5,7 @@ import { spawn } from 'child_process';
 import { buildProject } from './build.js';
 import { reportRebuildFailure } from '../fatal.js';
 import { cyan, green, yellow, red } from '../colors.js';
+import { watchDirectory } from '../utils.js';
 
 /**
  * Checks whether a resolved path is the project root itself or sits beneath it.
@@ -615,9 +616,9 @@ export function watchProject(cli) {
   let timeout;
   const srcPath = path.join(cli.baseDir, cli.config.srcDir);
 
-  if (!fs.existsSync(srcPath)) return;
+  if (!fs.existsSync(srcPath)) return null;
 
-  fs.watch(srcPath, { recursive: true }, (eventType, filename) => {
+  const watcher = watchDirectory(srcPath, (eventType, filename) => {
     if (filename) {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
@@ -641,6 +642,11 @@ export function watchProject(cli) {
       }, 100);
     }
   });
+
+  if (cli) {
+    cli._watcher = watcher;
+  }
+  return watcher;
 }
 
 /**

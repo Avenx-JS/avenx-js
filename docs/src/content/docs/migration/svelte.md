@@ -149,13 +149,15 @@ Svelte uses labeled statements (`$:`) for reactive computations. Avenx-JS uses `
 
 ### List Rendering: `{#each}` → `<@for>`
 
-Svelte uses block-level `{#each}` tags. Avenx-JS uses `<@for>` with an implicit `index` variable:
+Svelte uses block-level `{#each}` tags and supports `{:else}` for empty lists. Avenx-JS uses `<@for>` with an implicit `index` variable, and `<@empty>` for empty states. Avenx also supports direct iteration over Maps, Sets, Objects (via `[key, value]` destructuring), and numeric ranges:
 
 ```html
 <!-- Svelte -->
 <ul>
   {#each items as item, i (item.id)}
     <li>{i + 1}. {item.name}</li>
+  {:else}
+    <li>No items found.</li>
   {/each}
 </ul>
 
@@ -163,6 +165,9 @@ Svelte uses block-level `{#each}` tags. Avenx-JS uses `<@for>` with an implicit 
 <ul>
   <@for item in state.items key="item.id">
     <li>{{ index + 1 }}. {{ item.name }}</li>
+    <@empty>
+      <li>No items found.</li>
+    </@empty>
   </@for>
 </ul>
 ```

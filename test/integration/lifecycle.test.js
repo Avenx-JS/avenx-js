@@ -31,6 +31,18 @@ try {
     }
   };
   global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+  if (typeof global.CustomEvent === 'undefined') {
+    global.CustomEvent = class CustomEvent {
+      /**
+       * @param {string} type
+       * @param {object} [eventInitDict]
+       */
+      constructor(type, eventInitDict = {}) {
+        this.type = type;
+        this.detail = eventInitDict.detail || null;
+      }
+    };
+  }
 
   let mountCalled = false;
   let updateCalled = false;

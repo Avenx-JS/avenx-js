@@ -961,6 +961,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "yagyaXsen",
+      "name": "Alok kumar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/290249403?v=4",
+      "profile": "https://github.com/yagyaXsen",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",

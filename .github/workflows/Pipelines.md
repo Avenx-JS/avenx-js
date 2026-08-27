@@ -6,14 +6,14 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 
 ## 📊 Overview
 
-| Workflow                        | File                                         | Trigger                                                                   | Purpose                            | Output / Target                                                                                                                      |
-| :------------------------------ | :------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| **Development Docs Publishing** | [`dev-docs.yml`](dev-docs.yml)               | Push to `main`, `workflow_dispatch`                                       | Generates JSDoc documentation      | [`avenx-js/dev-docs`](https://github.com/avenx-js/dev-docs)                                                                          |
+| Workflow                         | File                                         | Trigger                                                                   | Purpose                            | Output / Target                                                                                                                        |
+| :------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| **Development Docs Publishing** | [`dev-docs.yml`](dev-docs.yml)               | Push to `main`, `workflow_dispatch`                                       | Generates JSDoc documentation      | [`avenx-js/dev-docs`](https://github.com/avenx-js/dev-docs)                                                                            |
 | **Quality & Benchmarks**        | [`quality-results.yml`](quality-results.yml) | Schedule (Saturdays 12:00 Swiss time / `0 10 * * 6`), `workflow_dispatch` | Generates coverage & benchmarks    | [`avenx-js/test-cov`](https://github.com/avenx-js/test-cov)<br>[`avenx-js/bench-results`](https://github.com/avenx-js/bench-results) |
-| **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                           | Push/PR to `main`, Release creation                                       | Runs test suite and linter         | Build verification                                                                                                                   |
-| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)         | Release creation                                                          | Publishes `avenx-core` to npm      | npm registry                                                                                                                         |
-| **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)           | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
-| **GitHub Pages Docs**           | [`static.yml`](static.yml)                   | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                         |
+| **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                           | Push/PR to `main`, Release creation                                       | Runs test suite and linter         | Build & multi-version compatibility verification                                                                                       |
+| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)         | Release creation                                                          | Publishes `avenx-core` to npm      | npm registry                                                                                                                           |
+| **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)           | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                      |
+| **GitHub Pages Docs**           | [`static.yml`](static.yml)                   | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                           |
 
 ---
 
@@ -49,12 +49,27 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 ### 3. CI/CD Pipeline (`ci.yml`)
 
 - **Triggers**: Push or Pull Request to `main`, or Release creation.
-- **Steps**: Runs `npm ci`, executes unit/integration/system tests (`npm test`), and runs ESLint (`npm run lint`).
+- **Node.js Compatibility Matrix**:
+  To guarantee full compatibility with the declared `engines` field (`>=18`), the `test` job executes in parallel across all supported Node.js major versions using `strategy.matrix`:
+  - **Node.js 18** (Lowest supported version floor)
+  - **Node.js 20**
+  - **Node.js 22**
+  - **Configuration**: Uses `fail-fast: false` to ensure test results across all versions complete even if one fails.
+- **Steps**:
+  1. Checks out code.
+  2. Configures Node.js (`actions/setup-node@v4`) with `cache: npm` enabled.
+  3. Installs dependencies (`npm ci`).
+  4. Runs complete test suite (`npm test`).
+  5. Executes ESLint (`npm run lint`, executed on Node 20 & 22; skipped on Node 18 as ESLint 10 requires Node >= 20).
 
 ### 4. NPM Package Release (`npm-publish.yml`)
 
 - **Triggers**: Release creation (`types: [created]`).
-- **Steps**: Runs build and test suite, then publishes `avenx-core` to the npm registry with provenance tracking (`npm publish --provenance`).
+- **Pre-Publish & Release Runtime**:
+  - Executes build verification (`build` job) and publication (`publish-npm` job) using **Node.js 18** (the minimum supported version requirement) with `cache: npm`.
+- **Steps**:
+  1. **Build Job**: Validates the codebase on Node.js 18 by installing dependencies (`npm ci`) and executing the test suite (`npm test`).
+  2. **Publish Job**: Sets up Node.js 18 with npm registry credentials, reinstalls dependencies, and publishes `avenx-core` to the npm registry with provenance tracking (`npm publish --provenance`).
 
 ### 5. Bundle Size Monitor (`size-check.yml`)
 
@@ -101,3 +116,4 @@ GitHub Actions schedules natively use **Coordinated Universal Time (UTC)** and d
 - **Cron Definition**: `0 10 * * 6` (Saturdays at 10:00 UTC).
   - During **CEST (Summer)**: 10:00 UTC = **12:00 CEST** (Exact noon execution).
   - During **CET (Winter)**: 10:00 UTC = **11:00 CET** (11:00 AM execution).
+  

@@ -1,10 +1,10 @@
-import { getDiagnostic, suggestCodes, normalizeCode } from '../../lib/core/diagnostics/catalogue.js';
+import { getDiagnostic, suggestCodes } from '../../lib/core/diagnostics/catalogue.js';
 
 /**
  * Executes the `avenx explain <CODE>` command.
  * @param {object} cli
  * @param {string} rawCode
- * @param {boolean} [asJson=false]
+ * @param {boolean} [asJson]
  */
 export function explainDiagnostic(cli, rawCode, asJson = false) {
   if (!rawCode) {

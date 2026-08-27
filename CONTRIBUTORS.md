@@ -159,6 +159,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ayc43210-ops"><img src="https://avatars.githubusercontent.com/u/229576079?v=4?s=100" width="100px;" alt="ayc43210-ops"/><br /><sub><b>ayc43210-ops</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=ayc43210-ops" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/BineetKeshari2005"><img src="https://avatars.githubusercontent.com/u/190685125?v=4?s=100" width="100px;" alt="Bineet Keshari"/><br /><sub><b>Bineet Keshari</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=BineetKeshari2005" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Piyush-13090"><img src="https://avatars.githubusercontent.com/u/198256714?v=4?s=100" width="100px;" alt="Piyush Sharma "/><br /><sub><b>Piyush Sharma </b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Piyush-13090" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/yagyaXsen"><img src="https://avatars.githubusercontent.com/u/290249403?v=4?s=100" width="100px;" alt="Alok kumar"/><br /><sub><b>Alok kumar</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=yagyaXsen" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

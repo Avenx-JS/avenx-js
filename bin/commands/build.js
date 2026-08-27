@@ -5,6 +5,7 @@ import AvenxCompiler from '../../lib/compiler.js';
 import { cyan, gray, green, red } from '../colors.js';
 import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
+import { watchDirectory } from '../utils.js';
 
 /**
  * Runs a configured lifecycle hook.
@@ -273,7 +274,7 @@ export function checkProject(cli, args = []) {
     }
 
     let timeout;
-    const watcher = fs.watch(srcPath, { recursive: true }, (eventType, filename) => {
+    const watcher = watchDirectory(srcPath, (eventType, filename) => {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         const fileMsg = filename ? ` in ${filename}` : '';

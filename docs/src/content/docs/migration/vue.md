@@ -95,16 +95,21 @@ Note the three changes that matter:
 
 ### Loops: `v-for` → `<@for>`
 
-Vue's `v-for` is an element directive; Avenx's `<@for>` is a **compiler tag** that wraps the repeated block. Loop blocks are translated to `<template>` tags and managed by the `ListManager` for efficient DOM list updates.
+Vue's `v-for` is an element directive; Avenx's `<@for>` is a **compiler tag** that wraps the repeated block. Loop blocks are translated to `<template>` tags and managed by the `ListManager` for efficient DOM list updates. Avenx also supports Map, Set, and Object iteration via destructuring, and fallback blocks via `<@empty>` (which replaces Vue's `v-if="items.length"` empty-state pattern).
 
 #### Before — Vue `v-for`
 
 ```html
-<ul>
+<ul v-if="items.length">
   <li v-for="(item, idx) in items" :key="item.id">
     <span>{{ idx + 1 }}. {{ item.name }}</span>
   </li>
 </ul>
+<p v-else>No items found.</p>
+
+<div v-for="(value, key) in myObject">
+  {{ key }}: {{ value }}
+</div>
 ```
 
 #### After — Avenx `<@for>`
@@ -115,8 +120,15 @@ Vue's `v-for` is an element directive; Avenx's `<@for>` is a **compiler tag** th
     <li>
       <span>{{ index + 1 }}. {{ item.name }}</span>
     </li>
+    <@empty>
+      <p>No items found.</p>
+    </@empty>
   </@for>
 </ul>
+
+<@for [key, value] in state.myObject key="key">
+  <div>{{ key }}: {{ value }}</div>
+</@for>
 ```
 
 ### The Implicit `index` Variable
@@ -130,7 +142,7 @@ Every `<@for>` loop automatically injects a **zero-indexed `index` variable** in
 ```
 
 :::caution
-Do **not** write `(item, index) in list` inside `<@for>` like you would in Vue. `<@for>` takes exactly one item variable; the index is implicit and starts at `0`, so add `1` (as above) for a human-readable 1-based count.
+Do **not** write `(item, index) in list` inside `<@for>` like you would in Vue. `<@for>` takes exactly one item variable (or a `[key, value]` pair for objects/maps); the index is implicit and starts at `0`, so add `1` (as above) for a human-readable 1-based count.
 :::
 
 ### Slots: Default and Named
@@ -280,18 +292,26 @@ Avenx-JS deliberately does **not** include a `v-if` or `<@if>` directive tag. Co
    ```
 2. **`data-ax-show` Directive:** If the DOM element should remain mounted in the DOM tree while toggling visibility, use `data-ax-show="state.isVisible"`.
 
-#### 2. Checkbox & Radio Two-Way Binding (`data-ax-bind` Limitation)
+#### 2. Checkbox & Radio Two-Way Binding
 
-In Vue, `v-model` automatically detects if an input is a checkbox and binds to its `checked` boolean property. In Avenx-JS, `data-ax-bind` specifically targets input `value` string properties.
+`data-ax-bind` maps onto `v-model` directly here. Like Vue, it detects the control and binds a checkbox or radio through `checked` rather than `value`:
 
-:::caution
-Do **not** use `data-ax-bind="state.acceptedTerms"` on `<input type="checkbox">` if `acceptedTerms` is a boolean. `data-ax-bind` assigns to `input.value`, not `input.checked`.
-:::
-
-For checkboxes and radio buttons, write a manual binding:
 ```html
-<input type="checkbox" checked="{{ state.acceptedTerms }}" @change="state.acceptedTerms = event.target.checked" />
+<!-- Vue -->
+<input type="checkbox" v-model="acceptedTerms" />
+
+<!-- Avenx-JS -->
+<input type="checkbox" data-ax-bind="state.acceptedTerms" />
 ```
+
+Checkbox groups backed by an array and radio groups sharing one value work the same way as in Vue:
+
+```html
+<input type="checkbox" value="apple" data-ax-bind="state.fruits" />
+<input type="radio" name="color" value="red" data-ax-bind="state.selectedColor" />
+```
+
+The one difference worth knowing: a `checked` attribute written by hand on a bound input is dropped, because the binding owns that state. Set the initial value in `<state>` instead of on the element. See [Two-Way Bindings](/core-concepts/templates/#2-two-way-bindings-data-ax-bind) for the full reference.
 
 #### 3. Event Handler Invocation Syntax (`@click="logout()"`)
 
