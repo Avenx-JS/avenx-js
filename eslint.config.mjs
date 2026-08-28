@@ -73,6 +73,8 @@ export default [
         DOMParser: "readonly",
         performance: "readonly",
         Blob: "readonly",
+        AbortController: "readonly",
+        AbortSignal: "readonly",
 
         // Node / Common JS / ES Module / Test globals
         process: "readonly",

@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import path from 'node:path';
 import { encodeVLQ, generateTemplateSourceMap, composeBundleSourceMap } from '../../lib/compiler/sourcemap.js';
 
 console.log('🧪 Testing CLI Bundle Source Maps & VLQ encoding...');
