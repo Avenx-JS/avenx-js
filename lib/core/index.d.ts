@@ -483,6 +483,23 @@ export class VirtualList extends AvenxComponent<any> {
     prevPage(): void;
 }
 
+export interface RouterA11yOptions {
+    /**
+     * Whether to shift focus to the new page or target after navigation (default is true).
+     */
+    focusOnNavigate?: boolean;
+
+    /**
+     * Whether to announce the route title change to screen readers via a live region (default is true).
+     */
+    announceRouteChanges?: boolean;
+
+    /**
+     * Optional CSS selector to target for focus (default is '[data-ax-page-heading]').
+     */
+    focusTarget?: string;
+}
+
 /**
  * Configuration options for the AvenxRouter.
  */
@@ -534,6 +551,11 @@ export interface AvenxRouterOptions {
      * - `'manual'`: do not change scroll position
      */
     scrollRestoration?: 'top' | 'auto' | 'manual';
+    
+    /**
+     * Accessibility options for focus management and route announcements.
+     */
+    a11y?: RouterA11yOptions;
 }
 
 /**
