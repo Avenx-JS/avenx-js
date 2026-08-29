@@ -1,0 +1,35 @@
+import { bridge } from 'avenx-core/runtime';
+
+/**
+ * The "inspectAuth" bridge holds shared state and the actions that change it.
+ *
+ * Import it wherever you need it. The import is what connects a component to
+ * this bridge, and what lets the compiler see the connection:
+ *
+ *   import inspectAuth from '../global/inspect-auth.bridge.js';
+ *
+ * Then read it straight from the template, e.g. "inspectAuth.value".
+ * State is read-only outside this file: changes go through the actions below.
+ */
+export default bridge({
+  state: {
+    value: '',
+  },
+
+  /**
+   * Derived values are plain getters. They re-evaluate when what they read changes.
+   * @returns {boolean} True while no value has been set.
+   */
+  get isEmpty() {
+    return this.value === '';
+  },
+
+  /**
+   * Actions are the only place state changes. `this` can read, write and emit.
+   * @param {string} newValue - The value to store.
+   */
+  setValue(newValue) {
+    this.value = newValue;
+    this.emit('change', newValue);
+  },
+});

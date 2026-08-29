@@ -1,0 +1,1097 @@
+{
+  "atlasVersion": 1,
+  "summary": {
+    "nodes": 43,
+    "edges": 74,
+    "unresolved": 0,
+    "counts": {
+      "component": 3,
+      "page": 2,
+      "bridge": 1,
+      "state": 10,
+      "computed": 1,
+      "action": 6,
+      "resource": 0,
+      "getter": 2,
+      "event": 1,
+      "binding": 10,
+      "handler": 3,
+      "route": 3,
+      "guard": 1
+    }
+  },
+  "nodes": [
+    {
+      "id": "action:bridge:cart.addQty",
+      "kind": "action",
+      "name": "addQty",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 18
+      }
+    },
+    {
+      "id": "action:bridge:cart.applyCoupon",
+      "kind": "action",
+      "name": "applyCoupon",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 26
+      }
+    },
+    {
+      "id": "action:component:CartItem.incQty",
+      "kind": "action",
+      "name": "incQty",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 7
+      }
+    },
+    {
+      "id": "action:component:CartItem.reset",
+      "kind": "action",
+      "name": "reset",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 11
+      }
+    },
+    {
+      "id": "action:component:CartSummary.neverCalled",
+      "kind": "action",
+      "name": "neverCalled",
+      "owner": "component:CartSummary",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 9
+      }
+    },
+    {
+      "id": "action:component:CartSummary.toggle",
+      "kind": "action",
+      "name": "toggle",
+      "owner": "component:CartSummary",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 5
+      }
+    },
+    {
+      "id": "binding:component:CartItem@16:20",
+      "kind": "binding",
+      "owner": "component:CartItem",
+      "binding": "text",
+      "expression": "label",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 16,
+        "column": 20
+      }
+    },
+    {
+      "id": "binding:component:CartItem@17:18",
+      "kind": "binding",
+      "owner": "component:CartItem",
+      "binding": "text",
+      "expression": "qty",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 17,
+        "column": 18
+      }
+    },
+    {
+      "id": "binding:component:CartItem@18:19",
+      "kind": "binding",
+      "owner": "component:CartItem",
+      "binding": "text",
+      "expression": "lineTotal",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 18,
+        "column": 19
+      }
+    },
+    {
+      "id": "binding:component:CartList@4:3",
+      "kind": "binding",
+      "owner": "component:CartList",
+      "binding": "for",
+      "expression": "cart.items",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 4,
+        "column": 3
+      }
+    },
+    {
+      "id": "binding:component:CartList@5:18",
+      "kind": "binding",
+      "owner": "component:CartList",
+      "binding": "text",
+      "expression": "item.qty",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 5,
+        "column": 18
+      }
+    },
+    {
+      "id": "binding:component:CartList@5:35",
+      "kind": "binding",
+      "owner": "component:CartList",
+      "binding": "text",
+      "expression": "item.price",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 5,
+        "column": 35
+      }
+    },
+    {
+      "id": "binding:component:CartSummary@14:22",
+      "kind": "binding",
+      "owner": "component:CartSummary",
+      "binding": "text",
+      "expression": "cart.total",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 14,
+        "column": 22
+      }
+    },
+    {
+      "id": "binding:component:CartSummary@15:20",
+      "kind": "binding",
+      "owner": "component:CartSummary",
+      "binding": "text",
+      "expression": "cart.count",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 15,
+        "column": 20
+      }
+    },
+    {
+      "id": "binding:page:Checkout@7:19",
+      "kind": "binding",
+      "owner": "page:Checkout",
+      "binding": "text",
+      "expression": "cart.total",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 7,
+        "column": 19
+      }
+    },
+    {
+      "id": "binding:page:Checkout@8:10",
+      "kind": "binding",
+      "owner": "page:Checkout",
+      "binding": "data-ax-bind",
+      "expression": "note",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 8,
+        "column": 10
+      }
+    },
+    {
+      "id": "bridge:cart",
+      "kind": "bridge",
+      "name": "cart",
+      "file": "src/bridges/cart.bridge.js"
+    },
+    {
+      "id": "component:CartItem",
+      "kind": "component",
+      "name": "CartItem",
+      "file": "src/components/cart-item/cart-item.component.js"
+    },
+    {
+      "id": "component:CartList",
+      "kind": "component",
+      "name": "CartList",
+      "file": "src/components/cart-list/cart-list.component.js"
+    },
+    {
+      "id": "component:CartSummary",
+      "kind": "component",
+      "name": "CartSummary",
+      "file": "src/components/cart-summary/cart-summary.component.js"
+    },
+    {
+      "id": "computed:component:CartItem.lineTotal",
+      "kind": "computed",
+      "name": "lineTotal",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 5
+      },
+      "expression": "qty * price"
+    },
+    {
+      "id": "event:bridge:cart.changed",
+      "kind": "event",
+      "name": "changed",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js"
+      }
+    },
+    {
+      "id": "getter:bridge:cart.count",
+      "kind": "getter",
+      "name": "count",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 14
+      }
+    },
+    {
+      "id": "getter:bridge:cart.total",
+      "kind": "getter",
+      "name": "total",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 10
+      }
+    },
+    {
+      "id": "guard:AuthGuard",
+      "kind": "guard",
+      "name": "AuthGuard",
+      "file": "src/guards/auth.guard.js",
+      "loc": {
+        "file": "src/guards/auth.guard.js"
+      }
+    },
+    {
+      "id": "handler:component:CartItem@19:20",
+      "kind": "handler",
+      "owner": "component:CartItem",
+      "event": "click",
+      "expression": "incQty()",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 19,
+        "column": 20
+      }
+    },
+    {
+      "id": "handler:component:CartItem@20:20",
+      "kind": "handler",
+      "owner": "component:CartItem",
+      "event": "click",
+      "expression": "reset()",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 20,
+        "column": 20
+      }
+    },
+    {
+      "id": "handler:component:CartSummary@16:18",
+      "kind": "handler",
+      "owner": "component:CartSummary",
+      "event": "click",
+      "expression": "toggle()",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 16,
+        "column": 18
+      }
+    },
+    {
+      "id": "page:Cart",
+      "kind": "page",
+      "name": "Cart",
+      "file": "src/pages/cart.page.js"
+    },
+    {
+      "id": "page:Checkout",
+      "kind": "page",
+      "name": "Checkout",
+      "file": "src/pages/checkout.page.js"
+    },
+    {
+      "id": "route:/",
+      "kind": "route",
+      "name": "/",
+      "pattern": "",
+      "file": "src/main.app.js",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 7
+      }
+    },
+    {
+      "id": "route:/cart",
+      "kind": "route",
+      "name": "/cart",
+      "pattern": "#/cart",
+      "file": "src/main.app.js",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 8
+      }
+    },
+    {
+      "id": "route:/checkout",
+      "kind": "route",
+      "name": "/checkout",
+      "pattern": "#/checkout",
+      "file": "src/main.app.js",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 9
+      }
+    },
+    {
+      "id": "state:bridge:cart.coupon",
+      "kind": "state",
+      "name": "coupon",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 6
+      }
+    },
+    {
+      "id": "state:bridge:cart.discount",
+      "kind": "state",
+      "name": "discount",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 7
+      }
+    },
+    {
+      "id": "state:bridge:cart.items",
+      "kind": "state",
+      "name": "items",
+      "owner": "bridge:cart",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 5
+      }
+    },
+    {
+      "id": "state:component:CartItem.draft",
+      "kind": "state",
+      "name": "draft",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 3
+      },
+      "initial": ""
+    },
+    {
+      "id": "state:component:CartItem.id",
+      "kind": "state",
+      "name": "id",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 3
+      },
+      "initial": "a"
+    },
+    {
+      "id": "state:component:CartItem.label",
+      "kind": "state",
+      "name": "label",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 3
+      },
+      "initial": "Item"
+    },
+    {
+      "id": "state:component:CartItem.price",
+      "kind": "state",
+      "name": "price",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 3
+      },
+      "initial": 12
+    },
+    {
+      "id": "state:component:CartItem.qty",
+      "kind": "state",
+      "name": "qty",
+      "owner": "component:CartItem",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 3
+      },
+      "initial": 1
+    },
+    {
+      "id": "state:component:CartSummary.open",
+      "kind": "state",
+      "name": "open",
+      "owner": "component:CartSummary",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 3
+      },
+      "initial": false
+    },
+    {
+      "id": "state:page:Checkout.note",
+      "kind": "state",
+      "name": "note",
+      "owner": "page:Checkout",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 3
+      },
+      "initial": ""
+    }
+  ],
+  "edges": [
+    {
+      "from": "action:bridge:cart.addQty",
+      "to": "bridge:cart",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 18
+      }
+    },
+    {
+      "from": "action:bridge:cart.addQty",
+      "to": "event:bridge:cart.changed",
+      "kind": "emits",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 23
+      }
+    },
+    {
+      "from": "action:bridge:cart.addQty",
+      "to": "state:bridge:cart.items",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 18
+      },
+      "path": "find"
+    },
+    {
+      "from": "action:bridge:cart.addQty",
+      "to": "state:bridge:cart.items",
+      "kind": "writes",
+      "confidence": "possible",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 18
+      },
+      "path": "[].qty"
+    },
+    {
+      "from": "action:bridge:cart.applyCoupon",
+      "to": "state:bridge:cart.coupon",
+      "kind": "writes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 26
+      }
+    },
+    {
+      "from": "action:bridge:cart.applyCoupon",
+      "to": "state:bridge:cart.discount",
+      "kind": "writes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 26
+      }
+    },
+    {
+      "from": "action:component:CartItem.incQty",
+      "to": "action:bridge:cart.addQty",
+      "kind": "invokes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 7
+      }
+    },
+    {
+      "from": "action:component:CartItem.incQty",
+      "to": "state:component:CartItem.id",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 7
+      }
+    },
+    {
+      "from": "action:component:CartItem.reset",
+      "to": "state:component:CartItem.qty",
+      "kind": "writes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 11
+      }
+    },
+    {
+      "from": "action:component:CartSummary.neverCalled",
+      "to": "state:component:CartSummary.open",
+      "kind": "writes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 9
+      }
+    },
+    {
+      "from": "action:component:CartSummary.toggle",
+      "to": "state:component:CartSummary.open",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 5
+      }
+    },
+    {
+      "from": "action:component:CartSummary.toggle",
+      "to": "state:component:CartSummary.open",
+      "kind": "writes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 5
+      }
+    },
+    {
+      "from": "binding:component:CartItem@16:20",
+      "to": "state:component:CartItem.label",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 16,
+        "column": 20
+      }
+    },
+    {
+      "from": "binding:component:CartItem@17:18",
+      "to": "state:component:CartItem.qty",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 17,
+        "column": 18
+      }
+    },
+    {
+      "from": "binding:component:CartItem@18:19",
+      "to": "computed:component:CartItem.lineTotal",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 18,
+        "column": 19
+      }
+    },
+    {
+      "from": "binding:component:CartList@4:3",
+      "to": "state:bridge:cart.items",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 4,
+        "column": 3
+      }
+    },
+    {
+      "from": "binding:component:CartList@5:18",
+      "to": "state:bridge:cart.items",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 5,
+        "column": 18
+      },
+      "path": "[].qty"
+    },
+    {
+      "from": "binding:component:CartList@5:35",
+      "to": "state:bridge:cart.items",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 5,
+        "column": 35
+      },
+      "path": "[].price"
+    },
+    {
+      "from": "binding:component:CartSummary@14:22",
+      "to": "getter:bridge:cart.total",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 14,
+        "column": 22
+      }
+    },
+    {
+      "from": "binding:component:CartSummary@15:20",
+      "to": "getter:bridge:cart.count",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 15,
+        "column": 20
+      }
+    },
+    {
+      "from": "binding:page:Checkout@7:19",
+      "to": "getter:bridge:cart.total",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 7,
+        "column": 19
+      }
+    },
+    {
+      "from": "binding:page:Checkout@8:10",
+      "to": "state:page:Checkout.note",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 8,
+        "column": 10
+      }
+    },
+    {
+      "from": "binding:page:Checkout@8:10",
+      "to": "state:page:Checkout.note",
+      "kind": "writes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 8,
+        "column": 10
+      }
+    },
+    {
+      "from": "bridge:cart",
+      "to": "action:bridge:cart.addQty",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "action:bridge:cart.applyCoupon",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "event:bridge:cart.changed",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "getter:bridge:cart.count",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "getter:bridge:cart.total",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "state:bridge:cart.coupon",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "state:bridge:cart.discount",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "bridge:cart",
+      "to": "state:bridge:cart.items",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "action:component:CartItem.incQty",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "action:component:CartItem.reset",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "binding:component:CartItem@16:20",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "binding:component:CartItem@17:18",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "binding:component:CartItem@18:19",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "bridge:cart",
+      "kind": "imports",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 1
+      }
+    },
+    {
+      "from": "component:CartItem",
+      "to": "computed:component:CartItem.lineTotal",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "handler:component:CartItem@19:20",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "handler:component:CartItem@20:20",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "state:component:CartItem.draft",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "state:component:CartItem.id",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "state:component:CartItem.label",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "state:component:CartItem.price",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartItem",
+      "to": "state:component:CartItem.qty",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartList",
+      "to": "binding:component:CartList@4:3",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartList",
+      "to": "binding:component:CartList@5:18",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartList",
+      "to": "binding:component:CartList@5:35",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartList",
+      "to": "bridge:cart",
+      "kind": "imports",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 1
+      }
+    },
+    {
+      "from": "component:CartList",
+      "to": "component:CartItem",
+      "kind": "renders",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 7
+      }
+    },
+    {
+      "from": "component:CartList",
+      "to": "component:CartSummary",
+      "kind": "renders",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-list/cart-list.component.js",
+        "line": 8
+      }
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "action:component:CartSummary.neverCalled",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "action:component:CartSummary.toggle",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "binding:component:CartSummary@14:22",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "binding:component:CartSummary@15:20",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "bridge:cart",
+      "kind": "imports",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 1
+      }
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "handler:component:CartSummary@16:18",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "component:CartSummary",
+      "to": "state:component:CartSummary.open",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "computed:component:CartItem.lineTotal",
+      "to": "state:component:CartItem.price",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 5
+      }
+    },
+    {
+      "from": "computed:component:CartItem.lineTotal",
+      "to": "state:component:CartItem.qty",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 5
+      }
+    },
+    {
+      "from": "getter:bridge:cart.count",
+      "to": "state:bridge:cart.items",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 14
+      },
+      "path": "length"
+    },
+    {
+      "from": "getter:bridge:cart.total",
+      "to": "state:bridge:cart.items",
+      "kind": "reads",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/bridges/cart.bridge.js",
+        "line": 10
+      },
+      "path": "reduce"
+    },
+    {
+      "from": "handler:component:CartItem@19:20",
+      "to": "action:component:CartItem.incQty",
+      "kind": "invokes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 19,
+        "column": 20
+      }
+    },
+    {
+      "from": "handler:component:CartItem@20:20",
+      "to": "action:component:CartItem.reset",
+      "kind": "invokes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-item/cart-item.component.js",
+        "line": 20,
+        "column": 20
+      }
+    },
+    {
+      "from": "handler:component:CartSummary@16:18",
+      "to": "action:component:CartSummary.toggle",
+      "kind": "invokes",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/components/cart-summary/cart-summary.component.js",
+        "line": 16,
+        "column": 18
+      }
+    },
+    {
+      "from": "page:Cart",
+      "to": "component:CartList",
+      "kind": "renders",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/pages/cart.page.js",
+        "line": 2
+      }
+    },
+    {
+      "from": "page:Checkout",
+      "to": "binding:page:Checkout@7:19",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "page:Checkout",
+      "to": "binding:page:Checkout@8:10",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "page:Checkout",
+      "to": "bridge:cart",
+      "kind": "imports",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/pages/checkout.page.js",
+        "line": 1
+      }
+    },
+    {
+      "from": "page:Checkout",
+      "to": "state:page:Checkout.note",
+      "kind": "declares",
+      "confidence": "certain"
+    },
+    {
+      "from": "route:/",
+      "to": "page:Cart",
+      "kind": "routes-to",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 7
+      }
+    },
+    {
+      "from": "route:/cart",
+      "to": "page:Cart",
+      "kind": "routes-to",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 8
+      }
+    },
+    {
+      "from": "route:/checkout",
+      "to": "guard:AuthGuard",
+      "kind": "guarded-by",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 9
+      }
+    },
+    {
+      "from": "route:/checkout",
+      "to": "page:Checkout",
+      "kind": "routes-to",
+      "confidence": "certain",
+      "loc": {
+        "file": "src/main.app.js",
+        "line": 9
+      }
+    }
+  ],
+  "unresolved": []
+}

@@ -168,6 +168,15 @@ export function runAtlas(cli, args = []) {
 
   const counts = model.counts();
   console.log(bold(cyan('🗺  Avenx Atlas')));
+  if (model.errors.length > 0) {
+    // A partial model must announce itself. An absence in it is not evidence
+    // of an absence in the application.
+    console.log(yellow(`   ⚠ ${model.errors.length} part${model.errors.length === 1 ? '' : 's'} of this project could not be analysed:`));
+    for (const failure of model.errors) {
+      console.log(yellow(`     [${failure.code}] ${failure.message.split('\n')[0]}`));
+    }
+    console.log(gray('   Everything below is what Atlas could still see.'));
+  }
   console.log(gray(`   ${model.nodes.size} nodes · ${model.edges.length} relationships · ${model.unresolved.length} unresolved\n`));
 
   const rows = [
