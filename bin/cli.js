@@ -16,6 +16,7 @@ import { runStats } from './commands/stats.js';
 import { runEnv } from './commands/env.js';
 import { explainDiagnostic } from './commands/explain.js';
 import { runTrace } from './commands/trace.js';
+import { runAtlas, runQuery } from './commands/atlas.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -247,6 +248,15 @@ export class AvenxCLI {
         break;
       case 'trace':
         runTrace(this, args);
+        break;
+      case 'atlas':
+        runAtlas(this, args);
+        break;
+      case 'impact':
+        runQuery(this, args, 'in');
+        break;
+      case 'why':
+        runQuery(this, args, 'out');
         break;
       case 'explain': {
         const asJson = args.includes('--json');

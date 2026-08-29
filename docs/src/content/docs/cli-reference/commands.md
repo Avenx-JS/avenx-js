@@ -3,7 +3,7 @@ title: 'CLI Commands'
 description: 'Explore the command-line interface of Avenx-JS to create, compile, run, and watch projects.'
 ---
 
-The `avenx` command line interface streamlines your development workflow. It handles application scaffolding, code generation, destruction, building, watching, serving, project architecture inspection, template validation, environment health diagnostics, environment inspection/configuration, and offline diagnostic code explanation.
+The `avenx` command line interface streamlines your development workflow. It handles application scaffolding, code generation, destruction, building, watching, serving, project architecture inspection, template validation, environment health diagnostics, environment inspection/configuration, offline diagnostic code explanation, and semantic data-flow queries.
 
 ## Command Syntax
 
@@ -23,6 +23,8 @@ The following flags can be passed globally to `avenx` commands:
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. | `init`, `generate`, `destroy`, `build` |
 | `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
 | `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
+| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
+| `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--version` | `-v` | Displays the installed version of the Avenx-JS CLI package. | Global |
 
@@ -867,3 +869,95 @@ The same unknown-code case in `--json` form returns an `error` field and a `sugg
   "suggestions": ["AVX_C01", "AVX_C02", "AVX_C03", "AVX_C04", "AVX_C05", "AVX_C06"]
 }
 ```
+
+---
+
+### 16. `avenx atlas`
+
+Prints the compiler's semantic model of the application: how many components, pages, bridges, state keys, computed values, getters, actions, resources, bindings, handlers, routes and guards it declares, which routes resolve to which pages and what guards them, and a breakdown of anything the analyser could not resolve.
+
+See the [Avenx Atlas guide](/core-concepts/atlas/) for the model itself, its confidence levels, and its limitations.
+
+#### Command Syntax
+
+```bash
+npx avenx atlas
+npx avenx atlas --json    # the whole model
+```
+
+#### Options & Flags
+
+| Flag / Option | Description |
+| :--- | :--- |
+| `--json`, `-j` | Outputs the complete model — nodes, edges, unresolved entries and summary — as structured JSON. |
+
+#### Generated Artifact
+
+`avenx build` writes the same model to `dist/<outputName>.atlas.json`, beside the bundle. It is never referenced by the bundle, so it costs a browser nothing.
+
+---
+
+### 17. `avenx impact`
+
+What can be affected if a symbol changes. Follows relationships *into* it — every computed, action, template binding, handler, component, page and route that depends on it, transitively.
+
+#### Command Syntax
+
+```bash
+npx avenx impact <symbol> [options]
+```
+
+```bash
+npx avenx impact cart.items
+npx avenx impact cart.items --json
+npx avenx impact cart.items --depth=4
+```
+
+#### Options & Flags
+
+| Flag / Option | Description |
+| :--- | :--- |
+| `--json`, `-j` | Outputs the target, everything reached, and the unresolved entries bearing on the answer, as structured JSON. |
+| `--depth=<n>` | How many hops to follow. Defaults to 12. |
+
+#### Naming a Symbol
+
+The symbol argument accepts, in order of precision:
+
+- **Full node id**: `state:bridge:cart.items`
+- **Qualified member**: `cart.items`
+- **Owner**: `CartItem`
+- **Bare member name**, when only one exists: `qty`
+- **Route**: `/checkout`
+
+An ambiguous name lists its candidates rather than picking one.
+
+#### Reading the Answer
+
+Each line names the relationship (`reads`, `writes`, `invokes`, `renders`, `routes-to`, `guarded-by`), what it reached, the member path where one applies, and the file and line. An edge the analyser could not prove is marked `[possible]`.
+
+Every answer ends with the number of unresolved relationships bearing on it, **including when that number is zero**. That line is part of the answer: it says how complete the rest of it is.
+
+#### Exit Codes
+
+* **`0`**: The query was answered.
+* **`1`**: The symbol was not found, or was ambiguous, or none was given.
+
+---
+
+### 18. `avenx why`
+
+Where a value comes from — the same traversal as [`avenx impact`](#17-avenx-impact) in the opposite direction, following relationships *out of* a symbol to everything it is derived from.
+
+#### Command Syntax
+
+```bash
+npx avenx why <symbol> [options]
+```
+
+```bash
+npx avenx why cart.total
+npx avenx why CartSummary.total --json
+```
+
+It takes the same `--json` and `--depth` options, resolves symbols the same way, and uses the same exit codes as `avenx impact`.

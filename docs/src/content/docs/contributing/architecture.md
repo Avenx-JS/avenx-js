@@ -14,6 +14,7 @@ This guide provides a structural breakdown of the Avenx‑JS codebase to help co
 | Directory | Purpose | When You Would Touch It |
 | :--- | :--- | :--- |
 | `lib/compiler/` | Template parsing, AST transformation, style scoping, and bundle packaging. | Adding template syntax, changing bundling, or optimizing CSS hashing. |
+| `lib/compiler/atlas/` | The retained semantic model: nodes, edges, expression resolution, source locations, the fragment cache and the two Atlas diagnostics. | Teaching Atlas about a new template construct, or changing what a query reports. |
 | `lib/core/` | Zero‑dependency client runtime (`reactive/`, `renderer/`, `runtime/`, `events/`, `security/`, `validation/`, `tooling/`, `utils/`). | Modifying reactivity proxies, DOM patcher, component lifecycle, or error codes. |
 | `bin/` | CLI command entry points and dispatch logic (`avenx generate`, `build`, `doctor`, etc.). | Adding or modifying CLI flags, subcommands, or scaffolding behavior. |
 | `plugins/` | Build tool integration plugins (e.g., Vite plugin). | Fixing development server hooks or HMR behaviors in third‑party bundlers. |
@@ -29,10 +30,13 @@ This guide provides a structural breakdown of the Avenx‑JS codebase to help co
 When `avenx build` executes, `lib/compiler/compiler.js` orchestrates the source‑to‑bundle process:
 
 1. **Source Discovery** – Reads component files and companion stylesheets (`.component.js`, `.component.css`).
-2. **ComponentParser** – Extracts `<state>`, `<action>`, `<style>`, and template markup into an intermediate representation (`lib/compiler/parser.js`).
-3. **StyleProcessor** – Parses companion CSS files, generates deterministic scope IDs, and hashes class names for CSS isolation (`lib/compiler/style-processor.js`).
-4. **ContractValidator** – Performs static analysis against declared state variables, action definitions, and template expressions, using `AvenxErrorCodes` for diagnostics (`lib/compiler/contract-validator.js`).
-5. **AvenxCompiler / Bundler** – Resolves component dependencies, tree‑shakes unreferenced elements, and packages compiled classes together with the minimal client runtime into a single IIFE bundle inside `dist/bundle.js`.
+2. **ComponentParser** – Extracts `<state>`, `<computed>`, `<action>`, `<resource>`, `<contract>` and template markup into an intermediate representation (`lib/compiler/ComponentParser.js`).
+3. **StyleProcessor** – Parses companion CSS files, generates deterministic scope IDs, and hashes class names for CSS isolation (`lib/compiler/StyleProcessor.js`).
+4. **ContractValidator** – Performs static analysis against declared state variables, action definitions, and template expressions, using `AvenxErrorCodes` for diagnostics (`lib/compiler/ContractValidator.js`).
+5. **Atlas** – Retains what the parser just produced as a semantic model (`lib/compiler/atlas/`). Nothing is re‑parsed: `addComponentUnit` receives the same objects step 2 produced. The model is emitted as `dist/bundle.atlas.json` and never referenced by the bundle.
+6. **AvenxCompiler / Bundler** – Resolves component dependencies, tree‑shakes unreferenced elements, and packages compiled classes together with the minimal client runtime into a single IIFE bundle inside `dist/bundle.js`.
+
+`AvenxCompiler.analyze()` runs steps 1–5 without emitting anything. `avenx atlas`, `avenx impact`, `avenx why`, `avenx inspect`, `avenx stats` and `avenx check` all use it, which is what keeps them from disagreeing with a build.
 
 ---
 
@@ -53,10 +57,11 @@ State updates follow a predictable microtask‑batched lifecycle:
 
 | I Want To Add... | Primary Target Files / Directories |
 | :--- | :--- |
-| **New template directive / tag** | `lib/compiler/parser.js` and `lib/core/renderer/` |
+| **New template directive / tag** | `lib/compiler/ComponentParser.js`, `lib/compiler/templateEvents.js` (so Atlas sees it too) and `lib/core/renderer/` |
 | **New component instance method / API** | `lib/core/runtime/component.js` and `lib/core/index.d.ts` |
 | **New CLI command or option flag** | `bin/commands/<command>.js`, `bin/cli.js`, and `bin/commands/help.js` |
-| **New diagnostic error / warning code** | `lib/core/utils/AvenxError.js` (or `diagnostics/`), plus `docs/src/content/docs/troubleshooting/errors.md` |
+| **New diagnostic error / warning code** | `lib/core/runtime/AvenxError.js` (code + message template), `lib/core/diagnostics/catalogue.js` (so `avenx explain` answers), plus `docs/src/content/docs/troubleshooting/errors.md` |
+| **A relationship Atlas should record** | `lib/compiler/atlas/resolve.js` (how the expression is read) and `lib/compiler/atlas/build.js` (what edge it becomes). Regenerate the golden model with `UPDATE_ATLAS_GOLDEN=1` and read the diff. |
 | **New template generator boilerplate** | `templates/` and `bin/commands/generate.js` |
 
 ---
@@ -98,3 +103,4 @@ To try your local changes against a scratch project:
 1. **Zero Runtime Dependencies** – Code inside `lib/core/` must remain pure JavaScript without adding external npm dependencies.
 2. **Stable Diagnostic Codes** – Errors must be registered through `AvenxErrorCodes` / `AvenxError` rather than throwing untracked raw `new Error`.
 3. **Strict JSDoc** – Public APIs must be fully annotated with JSDoc to satisfy `eslint-plugin-jsdoc`.
+4. **Atlas Never Guesses** – A relationship the analyser cannot follow is recorded as an `unresolved` entry with its reason and location. It is never dropped silently and never assumed. Any diagnostic that makes an absence claim must first check that record.

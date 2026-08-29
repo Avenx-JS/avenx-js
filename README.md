@@ -15,6 +15,7 @@ Modern frontend development often requires complex build chains and heavy runtim
 - **🎨 Scoped Styling:** CSS is automatically scoped to your component using hashed class generation.
 - **🛠️ Integrated Tooling:** A built-in CLI handles project scaffolding, component generation, and development servers.
 - **📦 Lightweight Core:** Minimal runtime footprint for fast loading and execution.
+- **🗺️ Compiler Semantic Model:** Ask the compiler what depends on a piece of state, before you change it.
 - **🔍 Causal Tracing:** Record why your app did what it did, then export that recording as a regression test.
 
 ---
@@ -86,6 +87,66 @@ Define a named fallback boundary for reactive-cycle recovery:
 - **Explicit Integration:** Use `onSchedulerDeadlock()` when you want to connect global scheduler detection to a particular component boundary.
 
 Detection does not automatically trip the nearest boundary. The compiled `maxDepth`, `action`, and `isolated` attributes are currently metadata rather than active per-boundary controls. See the [reactive deadlock boundary guide](docs/src/content/docs/core-concepts/deadlock.md) for current behavior and limitations.
+
+### 🗺️ Avenx Atlas — ask the compiler what breaks before you break it
+
+The compiler keeps a semantic model of your whole application: components,
+pages, bridges, **individual state keys**, computed values, actions, resources,
+template bindings, event handlers, routes and guards — and the relationships
+between them.
+
+```bash
+npx avenx atlas             # what is in this application
+npx avenx impact cart.items # what can be affected if this changes
+npx avenx why cart.total    # where this value comes from
+```
+
+```text
+What depends on: cart.items
+   state  src/bridges/cart.bridge.js:5
+
+├─ reads cart.total .reduce  src/bridges/cart.bridge.js:10
+│  ├─ reads CartSummary {{ }} "cart.total"  src/components/cart-summary/cart-summary.component.js:14
+│  └─ reads Checkout {{ }} "cart.total"  src/pages/checkout.page.js:7
+│     └─ declares Checkout  src/pages/checkout.page.js
+│        └─ routes-to /checkout  src/main.app.js:9
+├─ reads CartList <@for> "cart.items"  src/components/cart-list/cart-list.component.js:9
+├─ reads CartList {{ }} "item.qty" .[].qty  src/components/cart-list/cart-list.component.js:10
+└─ writes cart.addQty .[].qty [possible]  src/bridges/cart.bridge.js:23
+   └─ invokes CartItem.incQty  src/components/cart-item/cart-item.component.js:7
+      └─ invokes CartItem @click="incQty()"  src/components/cart-item/cart-item.component.js:19
+
+0 unresolved relationships in this answer.
+```
+
+This is a **data-flow** map, not a module graph. The loop variable inside
+`<@for item in cart.items>` resolves back to the state it iterates, so
+`{{ item.qty }}` is reported as a read of `cart.items[].qty`.
+
+Every edge declares how much to trust it — `certain` when it follows from a
+declaration, `possible` when it does not — and everything the analyser could
+**not** follow is listed with its reason and location rather than silently
+dropped. Every answer prints that count, including when it is zero. An
+uncertain answer is better than a confidently wrong one.
+
+Two diagnostics fall out of the model, and both refuse to fire when the
+analysis behind them was incomplete:
+
+```text
+[AVX_W40] cart.discount is written by cart.applyCoupon but read nowhere.
+[AVX_W41] CartSummary.neverCalled is never invoked from a template, action or guard.
+```
+
+Atlas is **compile-time only**. `avenx build` writes `dist/bundle.atlas.json`
+beside the bundle and never references it, so the runtime is byte-for-byte
+unchanged.
+
+Atlas and [Trace](docs/src/content/docs/core-concepts/trace.md) are two sides of
+one model: **Atlas is what can happen, Trace is what did.** A test in this
+repository checks that every causal step in a recorded trace corresponds to an
+edge Atlas predicted.
+
+See the [Avenx Atlas guide](docs/src/content/docs/core-concepts/atlas.md).
 
 ### 🔍 Avenx Trace — reproduce a bug once, get a test forever
 
@@ -406,6 +467,9 @@ my-avenx-app/
 | `avenx check` (or `lint`) | Validates component templates without building.        |
 | `avenx doctor`            | Runs environment and project health diagnostics.       |
 | `avenx serve [port]`      | Starts the dev server with hot-reload (default: 3000). |
+| `avenx atlas`             | Prints the compiler's semantic map of the application. |
+| `avenx impact <symbol>`   | What can be affected if this symbol changes.           |
+| `avenx why <symbol>`      | Where this symbol's value comes from.                  |
 | `avenx trace list`        | Lists recorded causal traces.                          |
 | `avenx trace view <id>`   | Prints a trace as a causal tree.                       |
 | `avenx trace export <id>` | Turns a recorded trace into a regression test.         |
@@ -421,6 +485,8 @@ my-avenx-app/
 | `--host`, `-h <host>` | Configure the host for the development server (default: `localhost`).          |
 | `--trace`             | Record a causal trace while serving. Development only, off by default.         |
 | `--out`, `-o <file>`  | Where `trace export` writes the generated regression test.                     |
+| `--json`, `-j`        | Machine-readable output for `check`, `atlas`, `impact` and `why`.              |
+| `--depth=<n>`         | How many hops `impact` and `why` follow (default: 12).                         |
 
 ---
 

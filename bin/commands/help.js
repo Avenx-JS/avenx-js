@@ -26,6 +26,9 @@ ${bold(cyan('Commands:'))}
   ${green('explain <CODE>')}            ${gray('Explain a compiler/runtime error or warning code')}
   ${green('inspect (i)')}               ${gray('Inspect project route and component hierarchy')}
   ${green('stats (s)')}                 ${gray('Display component & bundle footprint metrics')}
+  ${green('atlas')}                     ${gray('Show the compiler\'s semantic map of the application')}
+  ${green('impact <symbol>')}           ${gray('What can be affected if this changes')}
+  ${green('why <symbol>')}              ${gray('Where this value comes from')}
   ${green('trace list')}                ${gray('List recorded causal traces')}
   ${green('trace view <id|latest>')}    ${gray('Print a trace as a causal tree: event to DOM patch')}
   ${green('trace export <id|latest>')}  ${gray('Turn a recorded trace into a regression test')}
@@ -41,7 +44,8 @@ ${bold(cyan('Options:'))}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
-  ${green('--json, -j')}                ${gray('Output check/lint validation diagnostics in JSON format')}
+  ${green('--json, -j')}                ${gray('Machine-readable output for check, atlas, impact and why')}
+  ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
   ${green('--watch, -w')}               ${gray('Watch project component files for continuous template linting')}
   ${green('--no-color')}                ${gray('Disable colored output (the NO_COLOR variable is honored too)')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
