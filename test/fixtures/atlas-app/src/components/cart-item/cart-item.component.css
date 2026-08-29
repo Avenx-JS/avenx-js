@@ -4,4 +4,5 @@
   qty { width: 2rem; }
   line { width: 4rem; }
   inc { cursor: pointer; }
+  rst { cursor: pointer; }
 </@css>

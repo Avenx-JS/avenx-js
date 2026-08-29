@@ -30,3 +30,6 @@ dist/
 # editors
 .vscode/
 
+
+# Atlas fixture build output
+test/fixtures/*/dist/

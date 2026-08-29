@@ -8,8 +8,8 @@ import cart from '../../bridges/cart.bridge.js';
   cart.addQty(id, 1);
 </action>
 
-<action name="onMount">
-  console.log('mounted');
+<action name="reset">
+  state.qty = 1;
 </action>
 
 <div @css row>
@@ -17,4 +17,5 @@ import cart from '../../bridges/cart.bridge.js';
   <span @css qty>{{ qty }}</span>
   <span @css line>{{ lineTotal }}</span>
   <button @css inc @click="incQty()">+</button>
+  <button @css rst @click="reset()">reset</button>
 </div>
