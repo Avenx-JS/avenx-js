@@ -3,7 +3,7 @@ title: 'CLI Commands'
 description: 'Explore the command-line interface of Avenx-JS to create, compile, run, and watch projects.'
 ---
 
-The `avenx` command line interface streamlines your development workflow. It handles application scaffolding, code generation, destruction, building, watching, serving, project architecture inspection, template validation, environment health diagnostics, and environment inspection/configuration.
+The `avenx` command line interface streamlines your development workflow. It handles application scaffolding, code generation, destruction, building, watching, serving, project architecture inspection, template validation, environment health diagnostics, environment inspection/configuration, and offline diagnostic code explanation.
 
 ## Command Syntax
 
@@ -351,7 +351,7 @@ Launches a local live-reloading development server with automatic file watching 
 - `--port <number>`, `-p <number>` (or positional argument `avenx serve 8080`): Sets the development server TCP port (default: `3000`).
 - `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`).
 - `--no-live-reload` / `--live-reload=false`: Disables file watching, live reload SSE client script injection, and automatic browser refreshes.
-- `--trace`: Records a causal trace of the running application. Off by default. See [`avenx trace`](#13-avenx-trace) and the [Avenx Trace guide](/core-concepts/trace/).
+- `--trace`: Records a causal trace of the running application. Off by default. See [`avenx trace`](#14-avenx-trace) and the [Avenx Trace guide](/core-concepts/trace/).
 
 #### Visual Inspection Dashboard (`/__avenx-inspect`)
 
@@ -656,7 +656,7 @@ System Variables (from .env — values masked)
 
 ---
 
-### 13. `avenx trace`
+### 14. `avenx trace`
 
 Records why your application did what it did, and turns a recording into a regression test.
 
@@ -744,3 +744,126 @@ npx avenx trace prune --all        # remove everything
 
 * **`0`**: The command completed.
 * **`1`**: The named trace does not exist, a trace file could not be read, an output file already exists without `--force`, or an option value was invalid.
+
+---
+
+### 15. `avenx explain`
+
+Explains a compiler error, runtime exception, or warning code offline, printing what triggered the diagnostic, its common causes, how to fix it, and a link to the full troubleshooting guide. It reads from the built-in diagnostic catalogue, so it works with no project and no network connection.
+
+Codes surfaced by `avenx build`, `avenx check`, and the runtime (e.g. `AVX_C01`, `AVX_R18`, `AVX_W29`) can be passed straight to `avenx explain` to understand and resolve them.
+
+#### Command Syntax
+
+```bash
+npx avenx explain <CODE> [options]
+```
+
+#### Code Normalization
+
+The code argument is normalized before lookup, so you can type it however it appeared in your terminal:
+
+- **Full code**: `AVX_W29`
+- **Shorthand prefix**: `W29`
+- **Lowercase**: `w29`
+
+All three resolve to the same diagnostic. Normalization uppercases the input and prepends `AVX_` when it is missing (`w29` → `AVX_W29`, `AVXW29` → `AVX_W29`).
+
+#### Options & Flags
+
+| Flag / Option | Description |
+| :--- | :--- |
+| `--json` | Outputs the full diagnostic metadata as structured JSON. Ideal for IDE plugins, editor tooling, and CI/CD pipelines that consume diagnostics programmatically. |
+
+#### Terminal Color Output
+
+Human-readable output uses ANSI color: the severity badge is red for `[ERROR]` and yellow for `[WARNING]`, the category and documentation URL are cyan, and section labels are bold. Coloring is applied only when writing to an interactive terminal (`process.stdout.isTTY`) and is disabled when `NO_COLOR` is set or when output is piped or redirected. `--json` output is always uncolored and valid JSON regardless of environment.
+
+#### Command Output Breakdown
+
+Without `--json`, the command prints the following sections:
+
+- **Header**: The code, its name, and a severity badge (`[ERROR]` in red or `[WARNING]` in yellow).
+- **Category**: The subsystem the diagnostic belongs to (`compiler`, `runtime`, etc.).
+- **Summary**: A concise explanation of what triggered the diagnostic.
+- **Common Causes**: A bulleted list of the frequent oversights that produce the code.
+- **How to Fix**: Actionable remediation steps.
+- **Documentation**: A direct URL (`docsUrl`) to the full troubleshooting entry.
+
+#### Fuzzy Suggestions & Error Handling
+
+When an unknown code is provided, the command lists close matches from the catalogue prefixed with `Did you mean:` and exits non-zero. Partial inputs match every code sharing that prefix (e.g. `C0` suggests `AVX_C01` through `AVX_C06`).
+
+#### Exit Codes
+
+- `0`: A valid diagnostic was found and printed.
+- `1`: No code was provided, or the code is unknown (suggestions, if any, are still shown).
+
+#### Usage Examples
+
+```bash
+# Explain a warning by full code
+npx avenx explain AVX_W29
+
+# Shorthand and lowercase both resolve to the same code
+npx avenx explain W29
+npx avenx explain w29
+
+# Machine-readable metadata for tooling and CI
+npx avenx explain AVX_R18 --json
+```
+
+**Sample Output (warning):**
+
+```text
+AVX_W29: MissingKeyInLoop [WARNING]
+Category: compiler
+
+Summary:
+  A repeated list item in <@for> does not specify a unique @key attribute.
+
+Common Causes:
+  • <@for ...> rendering dynamic lists without unique tracking keys.
+
+How to Fix:
+  • Add a unique @key attribute to the root repeated item (e.g., @key="item.id").
+
+Documentation:
+  https://avenx.dev/docs/troubleshooting#avx-w29
+```
+
+**Sample Output (`--json`):**
+
+```json
+{
+  "code": "AVX_R18",
+  "name": "ReactivityLoopDetected",
+  "severity": "error",
+  "category": "runtime",
+  "summary": "A circular reactive update loop exceeded the maximum update depth limit.",
+  "causes": [
+    "An action or effect synchronously mutates state that triggers itself continuously."
+  ],
+  "remedies": [
+    "Break recursive mutations or add termination conditions to reactive watchers."
+  ],
+  "docsUrl": "https://avenx.dev/docs/troubleshooting#avx-r18"
+}
+```
+
+**Unknown Code with Suggestions:**
+
+```text
+❌ Unknown diagnostic code: 'C0'
+
+Did you mean: AVX_C01, AVX_C02, AVX_C03, AVX_C04, AVX_C05, AVX_C06?
+```
+
+The same unknown-code case in `--json` form returns an `error` field and a `suggestions` array:
+
+```json
+{
+  "error": "Unknown diagnostic code: 'C0'",
+  "suggestions": ["AVX_C01", "AVX_C02", "AVX_C03", "AVX_C04", "AVX_C05", "AVX_C06"]
+}
+```
