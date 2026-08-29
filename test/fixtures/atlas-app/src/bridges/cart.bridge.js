@@ -15,6 +15,11 @@ export default bridge({
     return this.items.length;
   },
 
+  addItem(id, price) {
+    this.items.push({ id, qty: 1, price });
+    this.emit('changed', id);
+  },
+
   addQty(id, n) {
     const item = this.items.find((entry) => entry.id === id);
     if (item) {

@@ -128,10 +128,21 @@ try {
     assert.ok(payload.reached.length > 5, 'the reached set is returned');
     assert.deepStrictEqual(payload.unresolved, [], 'and what was not resolved');
 
-    const write = payload.reached.find((entry) => entry.via === 'writes');
-    assert.ok(write, 'the writer is in the machine-readable answer');
-    assert.strictEqual(write.confidence, 'possible');
-    assert.ok(Array.isArray(write.path) && write.path.length > 0, 'each entry carries the path it was reached by');
+    const writes = payload.reached.filter((entry) => entry.via === 'writes');
+    assert.ok(writes.length >= 2, 'both writers are in the machine-readable answer');
+
+    // `items.push({...})` mutates the receiver directly, so the relationship is
+    // proven. `items.find(...)` then assigning to the result reaches the same
+    // state through a local whose element is unknowable, so it is not.
+    const byPush = writes.find((entry) => entry.id === 'action:bridge:cart.addItem');
+    const byAlias = writes.find((entry) => entry.id === 'action:bridge:cart.addQty');
+    assert.ok(byPush && byAlias, 'both kinds of write are reported');
+    assert.strictEqual(byPush.confidence, 'certain', 'a direct mutating call is certain');
+    assert.strictEqual(byAlias.confidence, 'possible', 'a write through an aliased element is not');
+
+    for (const entry of writes) {
+      assert.ok(Array.isArray(entry.path) && entry.path.length > 0, 'each entry carries the path it was reached by');
+    }
   }
 
   // ── avenx why ─────────────────────────────────────────────────────────────
