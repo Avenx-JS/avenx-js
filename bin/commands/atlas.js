@@ -20,8 +20,15 @@ import { bold, cyan, gray, green, yellow } from '../colors.js';
  * @param {object} cli - The AvenxCLI instance.
  * @returns {import('../../lib/compiler/atlas/AppModel.js').AppModel} The model.
  */
-function buildModel(cli) {
-  const compiler = new AvenxCompiler({ ...cli.config, logging: { ...cli.config.logging, level: 'warn' } });
+export function buildModel(cli) {
+  const compiler = new AvenxCompiler({
+    ...cli.config,
+    // The CLI resolved the project root already; without passing it on, the
+    // compiler would re-resolve it from process.cwd() and analyse a different
+    // project than the one the command was aimed at.
+    ...(cli.baseDir ? { rootDir: cli.baseDir } : {}),
+    logging: { ...cli.config.logging, level: 'warn' },
+  });
   return compiler.analyze();
 }
 
