@@ -51,6 +51,7 @@ export default defineConfig({
 						{ label: 'Deferred Loading', slug: 'core-concepts/defer' },
 						{ label: 'Compiler Contracts', slug: 'core-concepts/compiler-contracts' },
 						{ label: 'Reactive Deadlock Boundaries', slug: 'core-concepts/deadlock' },
+						{ label: 'Avenx Atlas (impact & why)', slug: 'core-concepts/atlas' },
 						{ label: 'Avenx Trace (record & replay)', slug: 'core-concepts/trace' },
 					],
 				},

@@ -23,6 +23,8 @@ The following flags can be passed globally to `avenx` commands:
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. | `init`, `generate`, `destroy`, `build` |
 | `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
 | `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
+| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
+| `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--version` | `-v` | Displays the installed version of the Avenx-JS CLI package. | Global |
 
@@ -744,3 +746,73 @@ npx avenx trace prune --all        # remove everything
 
 * **`0`**: The command completed.
 * **`1`**: The named trace does not exist, a trace file could not be read, an output file already exists without `--force`, or an option value was invalid.
+
+
+---
+
+## Avenx Atlas
+
+Atlas is the compiler's semantic model of the application. See the
+[Avenx Atlas guide](/core-concepts/atlas/) for the model, its confidence levels
+and its limitations.
+
+### `avenx atlas`
+
+Prints an overview of the model: how many components, pages, bridges, state
+keys, computed values, getters, actions, resources, bindings, handlers, routes
+and guards the application declares, which routes resolve to which pages and
+what guards them, and a breakdown of anything the analyser could not resolve.
+
+```bash
+npx avenx atlas
+npx avenx atlas --json    # the whole model
+```
+
+### `avenx impact <symbol>`
+
+What can be affected if a symbol changes. Follows relationships *into* it —
+every computed, action, template binding, handler, component, page and route
+that depends on it, transitively.
+
+```bash
+npx avenx impact cart.items
+npx avenx impact cart.items --json
+npx avenx impact cart.items --depth=4
+```
+
+### `avenx why <symbol>`
+
+Where a value comes from. The same traversal in the opposite direction.
+
+```bash
+npx avenx why cart.total
+npx avenx why CartSummary.total --json
+```
+
+#### Naming a symbol
+
+Both commands accept a full node id (`state:bridge:cart.items`), a qualified
+member (`cart.items`), an owner (`CartItem`), a bare member name when only one
+exists (`qty`), or a route (`/checkout`). An ambiguous name lists its candidates
+rather than picking one.
+
+#### Reading the answer
+
+Each line names the relationship (`reads`, `writes`, `invokes`, `renders`,
+`routes-to`, `guarded-by`), what it reached, the member path where one applies,
+and the file and line. An edge the analyser could not prove is marked
+`[possible]`.
+
+Every answer ends with the number of unresolved relationships bearing on it,
+**including when that number is zero**. That line is part of the answer: it says
+how complete the rest of it is.
+
+#### Exit Codes
+
+* **`0`**: The query was answered.
+* **`1`**: The symbol was not found, or was ambiguous, or none was given.
+
+### Generated artifact
+
+`avenx build` writes `dist/<outputName>.atlas.json` beside the bundle. It is
+never referenced by the bundle, so it costs a browser nothing.
