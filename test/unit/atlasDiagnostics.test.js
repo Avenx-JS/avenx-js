@@ -296,6 +296,15 @@ export default bridge({
       warnings.some((message) => message.includes('card.component.js')),
       'and points at a file',
     );
+    // Message formatting substitutes each placeholder once, so a template that
+    // repeats {0} leaks the literal into the text. Nothing else would notice.
+    for (const message of warnings) {
+      assert.ok(!/\{\d\}/.test(message), `no placeholder survived into: ${message}`);
+    }
+    assert.ok(
+      warnings.some((message) => message.includes('avenx impact Card.dead')),
+      'the remedy names the symbol it is talking about',
+    );
 
     // Silenced through the same `warnings` config as every other code.
     const silenced = [];
