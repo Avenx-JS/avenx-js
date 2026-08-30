@@ -353,6 +353,94 @@ async function testFixtureAppBuilds() {
 }
 
 /**
+ * Unmounting while a transaction is in flight must not break anything.
+ * @returns {Promise<void>}
+ */
+async function testUnmountDuringTransaction() {
+  console.log('🧪 Testing unmount while a transaction is in flight...');
+
+  let reject = null;
+  const api = bridge({
+    state: {},
+    go() {
+      return new Promise((_resolve, rejectFn) => {
+        reject = rejectFn;
+      });
+    },
+  });
+  defineBridgeName('unmountApi', api);
+
+  const component = new AvenxComponent(
+    { n: 0 },
+    {},
+    { api },
+    `<div><span class="n">{{ n }}</span></div>`,
+    { go: 'state.n = 5; return api.go();' },
+    {},
+    {},
+    {},
+    { atomic: { go: {} } },
+  );
+
+  const root = await mount(component);
+  const inFlight = component.go();
+  await component.nextTick();
+  assert.strictEqual(text(root, '.n'), '5', 'the optimistic write rendered');
+
+  component.destroy();
+  reject(new Error('too late'));
+  await inFlight.catch((error) => assert.strictEqual(error.message, 'too late', 'the rejection still propagates'));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.strictEqual(journal.frames.length, 0, 'the frame is released even though the component is gone');
+  assert.strictEqual(journal.active, false, 'and the journal is idle again');
+  console.log('  ✅ A component can unmount mid-transaction.');
+}
+
+/**
+ * An atomic bridge action inside an atomic component action must undo once.
+ * @returns {Promise<void>}
+ */
+async function testNestedAtomicUndoesOnce() {
+  console.log('🧪 Testing nested atomic actions...');
+
+  const counter = bridge({
+    state: { hits: 0 },
+    bump: atomic(function () {
+      this.hits += 1;
+    }),
+  });
+  defineBridgeName('counter', counter);
+
+  const component = new AvenxComponent(
+    { local: 0 },
+    {},
+    { counter },
+    `<div><span class="hits">{{ counter.hits }}</span><span class="local">{{ local }}</span></div>`,
+    { both: 'state.local = 1; counter.bump(); throw new Error("nope");' },
+    {},
+    {},
+    {},
+    { atomic: { both: {} } },
+  );
+
+  const root = await mount(component);
+  assert.throws(() => component.both(), /nope/, 'the outer action throws');
+  await component.nextTick();
+
+  assert.strictEqual(text(root, '.hits'), '0', 'the inner transaction is undone by the outer frame');
+  assert.strictEqual(text(root, '.local'), '0', 'and so is the outer write');
+  assert.strictEqual(counter.hits, 0, 'exactly once, not twice');
+
+  // The inner action on its own still commits.
+  counter.bump();
+  assert.strictEqual(counter.hits, 1, 'an atomic bridge action called directly still commits');
+
+  component.destroy();
+  console.log('  ✅ A nested transaction undoes exactly once.');
+}
+
+/**
  * Runs every case.
  * @returns {Promise<void>}
  */
@@ -361,6 +449,8 @@ async function run() {
   await testOverlappingUpdatesKeepTheNewerValue();
   await testCommitLeavesEverythingInPlace();
   await testBackwardsCompatibility();
+  await testUnmountDuringTransaction();
+  await testNestedAtomicUndoesOnce();
   await testCompiledComponentRewinds();
   await testFixtureAppBuilds();
   console.log('\n🎉 Avenx Rewind integration tests passed.');
