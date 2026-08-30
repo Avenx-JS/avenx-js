@@ -189,7 +189,7 @@ try {
 
       // 1a. Rewind options are recognised, and their sub-keys validated
       writeTestConfig({ rewind: { onConflict: 'force', maxSnapshotItems: 25 } });
-      let rewindConfig = loadConfig();
+      const rewindConfig = loadConfig();
       assert.strictEqual(warnings.length, 0, `Rewind options should not warn: ${warnings[0]}`);
       assert.strictEqual(rewindConfig.rewind.onConflict, 'force');
       assert.strictEqual(rewindConfig.rewind.maxSnapshotItems, 25);

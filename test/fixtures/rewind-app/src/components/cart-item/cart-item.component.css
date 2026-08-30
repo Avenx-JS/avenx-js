@@ -1,0 +1,33 @@
+<@css>
+    row {
+        display: flex;
+    }
+
+    line {
+        font-weight: 600;
+    }
+
+    err {
+        color: red;
+    }
+
+    busy {
+        opacity: 0.6;
+    }
+
+    inc {
+        cursor: pointer;
+    }
+
+    dec {
+        cursor: pointer;
+    }
+
+    ren {
+        cursor: pointer;
+    }
+
+    saved {
+        color: gray;
+    }
+</@css>
