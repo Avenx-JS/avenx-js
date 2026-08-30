@@ -3,6 +3,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import AvenxCompiler from '../../lib/compiler.js';
 import { reportAtlasDiagnostics } from '../../lib/compiler/atlas/diagnostics.js';
+import { reportRewindDiagnostics } from '../../lib/compiler/rewind/diagnostics.js';
 import { cyan, gray, green, red } from '../colors.js';
 import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
@@ -223,6 +224,7 @@ export function runCheckPass(cli, args = []) {
     }
 
     reportAtlasDiagnostics(model, cli.config);
+    reportRewindDiagnostics(model, cli.config);
   } catch (err) {
     errorCount++;
     if (isJson) {
