@@ -53,6 +53,7 @@ export default defineConfig({
 						{ label: 'Reactive Deadlock Boundaries', slug: 'core-concepts/deadlock' },
 						{ label: 'Avenx Atlas (impact & why)', slug: 'core-concepts/atlas' },
 						{ label: 'Avenx Trace (record & replay)', slug: 'core-concepts/trace' },
+						{ label: 'Avenx Rewind (atomic actions)', slug: 'core-concepts/rewind' },
 					],
 				},
 

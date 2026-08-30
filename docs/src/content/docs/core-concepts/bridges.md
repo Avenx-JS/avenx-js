@@ -241,6 +241,25 @@ An action that returns a value returns it to the caller, and an action that thro
 
 Two rules keep actions predictable: **only actions write state**, and **an action never re-renders anything directly** — it changes state, and Avenx works out what that affects.
 
+### Atomic actions
+
+Wrap an action with `atomic()` and every state write it makes is journaled. If the action throws, or returns a promise that rejects, all of them are undone:
+
+```javascript
+import { bridge, atomic } from 'avenx-core/runtime';
+
+export default bridge({
+  state: { items: [], revision: 0 },
+
+  addQty: atomic(function (id, n) {
+    this.items.find((item) => item.id === id).qty += n;
+    this.revision++;
+  }),
+});
+```
+
+Both writes stand together or neither does — including when a component action calls this one as part of its own transaction, in which case they undo exactly once. See [Avenx Rewind](/core-concepts/rewind).
+
 ## Events
 
 State answers "what is true now". Events answer "something just happened" — a toast to show, an animation to run, a scroll position to reset. Emit them from an action with `this.emit()`:

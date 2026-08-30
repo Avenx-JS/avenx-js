@@ -425,6 +425,31 @@ By setting critical warnings (such as undeclared variables `AVX_W03` or invalid 
 
 ---
 
+## Rewind Configuration (`rewind`)
+
+Project-wide defaults for [Avenx Rewind](/core-concepts/rewind), the transaction
+behaviour behind `atomic` actions. Both keys are optional; an action may
+override `onConflict` for itself.
+
+```json
+{
+  "rewind": {
+    "onConflict": "safe",
+    "maxSnapshotItems": 10000
+  }
+}
+```
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `onConflict` | `"safe" \| "force" \| "abort"` | `"safe"` | What a rewind does when a path no longer holds the value the transaction wrote. `safe` leaves the newer value alone and reports `AVX_R29`; `force` restores regardless; `abort` restores what it can, then throws. |
+| `maxSnapshotItems` | `number` | `10000` | How many entries an array, `Map` or `Set` may hold before the journal stops taking a savepoint of it. A collection past the limit is reported through `AVX_R29` on rewind rather than truncated silently. |
+
+A project that leaves this section alone emits no configuration into the bundle
+at all — the defaults are already in the runtime.
+
+---
+
 ## Environment Variable Interpolation
 
 Avenx-JS supports global environment variable interpolation in `avenx.config.json`. This feature allows developers to parameterize project configurations — such as dev server ports, hostnames, output directories, and bundle budgets — dynamically using environment variables from your shell, `.env` files, or CI/CD pipelines.
