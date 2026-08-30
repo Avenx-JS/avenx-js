@@ -364,6 +364,10 @@ function testConflictPolicies() {
   }
   assert.ok(thrown instanceof AvenxError, '"abort" raises an AvenxError');
   assert.strictEqual(thrown.code, AvenxErrorCodes.TRANSACTION_REWIND_FAILED, 'reported as AVX_R29');
+  assert.ok(
+    thrown.cause instanceof Error && thrown.cause.message === 'rollback',
+    'the failure that started the rewind travels as the cause rather than being lost',
+  );
   console.log('  ✅ safe, force and abort behave as specified.');
 }
 
