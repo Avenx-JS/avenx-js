@@ -15,7 +15,7 @@ const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 /**
  *
  * @param {string[]} args
- * @returns {import('child_process').SpawnSyncReturns<string>}
+ * @returns {object}
  */
 function runCli(args) {
   return spawnSync(process.execPath, [BIN_PATH, ...args], {

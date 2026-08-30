@@ -31,7 +31,7 @@ console.log('🧪 Testing the Atlas model against the fixture application...');
 
 /**
  * Analyses the fixture from a cold cache.
- * @returns {import('../../lib/compiler/atlas/AppModel.js').AppModel} The model.
+ * @returns {AppModel} The model.
  */
 function analyzeFixture() {
   clearAtlasCache();

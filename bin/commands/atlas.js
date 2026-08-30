@@ -18,7 +18,7 @@ import { bold, cyan, gray, green, yellow } from '../colors.js';
  * compiler normally prints would be noise around the answer. Warnings and
  * errors still reach the terminal.
  * @param {object} cli - The AvenxCLI instance.
- * @returns {import('../../lib/compiler/atlas/AppModel.js').AppModel} The model.
+ * @returns {AppModel} The model.
  */
 export function buildModel(cli) {
   const compiler = new AvenxCompiler({
