@@ -26,6 +26,10 @@ export default bridge({
 
   /**
    * Actions are the only place state changes. `this` can read, write and emit.
+   *
+   * An action that makes an optimistic change can be wrapped with `atomic()` —
+   * import it beside `bridge` — and every write it makes is undone if it throws
+   * or returns a promise that rejects. See the Avenx Rewind guide.
    * @param {string} newValue - The value to store.
    */
   setValue(newValue) {

@@ -17,6 +17,7 @@ Modern frontend development often requires complex build chains and heavy runtim
 - **📦 Lightweight Core:** Minimal runtime footprint for fast loading and execution.
 - **🗺️ Compiler Semantic Model:** Ask the compiler what depends on a piece of state, before you change it.
 - **🔍 Causal Tracing:** Record why your app did what it did, then export that recording as a regression test.
+- **↩️ Atomic Actions:** Mark an action `atomic` and every state write it makes is undone if it fails.
 
 ---
 
@@ -87,6 +88,59 @@ Define a named fallback boundary for reactive-cycle recovery:
 - **Explicit Integration:** Use `onSchedulerDeadlock()` when you want to connect global scheduler detection to a particular component boundary.
 
 Detection does not automatically trip the nearest boundary. The compiled `maxDepth`, `action`, and `isolated` attributes are currently metadata rather than active per-boundary controls. See the [reactive deadlock boundary guide](docs/src/content/docs/core-concepts/deadlock.md) for current behavior and limitations.
+
+### ↩️ Avenx Rewind — an optimistic update that undoes itself
+
+Mark an action `atomic` and every state write it makes is journaled. If the
+action throws, or returns a promise that rejects, the journal is played
+backwards and the state is what it was before the action ran.
+
+```html
+<action name="incQty" atomic>
+  busy = true; cart.addQty(props.id, 1);
+  <!-- writes bridge state, through a bridge action -->
+  return api.setQty(props.id, qty);
+  <!-- if this rejects, none of the above stands -->
+</action>
+```
+
+No `catch`, no snapshot, no inverse. Component state, bridge state, nested
+properties, array and `Map`/`Set` mutations, and keys the action created or
+deleted all come back — and because the restore goes through the same reactive
+machinery as an ordinary write, the DOM corrects itself.
+
+Every framework can be made to do that much with a library. What a library
+cannot do is tell you, at build time, **which of the action's effects a rewind
+will not undo**:
+
+```text
+[AVX_W43] session.save is atomic, but 2 effect(s) cannot be rewound:
+  storage localStorage.setItem(  src/bridges/session.bridge.js:14
+  emit emit('saved'  src/bridges/session.bridge.js:15
+
+[AVX_W44] PostCard.like and PostCard.unlike are both atomic and both write
+PostCard.likes — if they can be in flight at once, a rewind may find a value
+it did not write.
+
+[AVX_W42] cart.setField is atomic, but its write set could not be resolved
+completely: dynamic-member "item[field]".
+```
+
+That last one is the house rule again: Avenx reports where its own analysis was
+incomplete rather than concluding from it. The rewind is unaffected — the
+journal watches the reactive proxies, not the prediction — but the two warnings
+above it are not to be trusted for that action.
+
+Two optimistic updates racing on the same value is the case naive rollback gets
+wrong. The default `safe` policy restores a path only if the value there is
+still the one the transaction wrote, so the second click's increment survives
+the first click's rollback, and the conflict is reported rather than hidden.
+
+With no transaction open, a write costs one boolean read — the same guard shape
+tracing uses. Measured over 100,000 writes: 89.24 ms idle, 89.89 ms inside a
+transaction.
+
+See the [Avenx Rewind guide](docs/src/content/docs/core-concepts/rewind.md).
 
 ### 🗺️ Avenx Atlas — ask the compiler what breaks before you break it
 

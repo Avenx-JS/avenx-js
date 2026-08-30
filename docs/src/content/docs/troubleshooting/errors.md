@@ -2838,6 +2838,101 @@ Use `class` or `data-*` attributes for repeated elements:
 </@for>
 ```
 
+### AVX_W42 — COMPILER_TRANSACTION_UNBOUNDED
+
+**Warning Message**
+
+```text
+{0} is atomic, but its write set could not be resolved completely ({1}):
+{2}
+```
+
+**Cause:** An action declared [`atomic`](/core-concepts/rewind) reaches state in a way the compiler could not follow — through a computed key (`item[field]`), an identifier that resolves to nothing, a spread — or it writes state inside a `.then()` continuation, which runs after the transaction has already closed and is therefore never journaled.
+
+**Resolution:**
+
+1. For the first group, nothing is broken: the journal watches the reactive proxies rather than this analysis, so the rewind is complete. What is incomplete is the report — AVX_W44 and AVX_W43 cannot be trusted for that action.
+2. For a write inside a continuation, the rewind genuinely will not see it. Move optimistic writes ahead of the promise the action returns.
+3. Run `avenx why <owner>.<action>` to see which relationships Atlas did resolve.
+4. Silence it for one project with `"warnings": { "AVX_W42": "off" }`.
+
+**Incorrect**
+
+```javascript
+save: atomic(function (id) {
+  return api.load(id).then((row) => {
+    this.row = row; // runs after the transaction closed — never journaled
+  });
+}),
+```
+
+**Correct**
+
+```javascript
+save: atomic(function (id, row) {
+  this.row = row; // inside the transaction
+  return api.save(id, row);
+}),
+```
+
+### AVX_W43 — COMPILER_TRANSACTION_IRREVERSIBLE
+
+**Warning Message**
+
+```text
+{0} is atomic, but {1} effect(s) cannot be rewound:
+{2}
+```
+
+**Cause:** An action declared `atomic` emits a bridge event, writes to `localStorage` or `sessionStorage`, touches the DOM directly, starts a timer, or fires a request whose result it neither returns nor awaits. A rewind restores state; it cannot un-notify a listener or un-write a key.
+
+**Resolution:**
+
+1. Move the effect after the transaction, where it runs only once the writes have committed.
+2. Return the promise whose rejection should trigger the rewind, so it becomes the transaction outcome rather than a loose effect.
+3. Accept it — state is still restored, and the listed effects are what a rewind will leave behind.
+4. Silence it with `"warnings": { "AVX_W43": "off" }`.
+
+**Incorrect**
+
+```javascript
+save: atomic(function (stamp) {
+  this.lastSaved = stamp;
+  localStorage.setItem('lastSaved', String(stamp)); // survives a rewind
+  this.emit('saved', stamp);                        // listeners already ran
+}),
+```
+
+**Correct**
+
+```javascript
+save: atomic(function (stamp) {
+  this.lastSaved = stamp;
+  return api.save(stamp);
+}),
+```
+
+with the emit moved to the caller, after the transaction has committed.
+
+### AVX_W44 — COMPILER_TRANSACTION_OVERLAP
+
+**Warning Message**
+
+```text
+{0} and {1} are both atomic and both write {2} ({3}).
+```
+
+**Cause:** Two atomic actions write the same state. If both can be in flight at once — the double-clicked like button — the first one's rewind will find a value the second one wrote.
+
+**Resolution:**
+
+1. Often nothing is wrong: the default `safe` conflict policy refuses to discard the newer value and reports [AVX_R29](#avx_r29--transaction_rewind_failed) instead.
+2. Guard the second invocation while the first is in flight, e.g. with a busy flag the template disables the control on.
+3. Set `onConflict="force"` when the transaction really is the authority on that value.
+4. Silence it with `"warnings": { "AVX_W44": "off" }`.
+
+The warning does not fire when either write set is unbounded (AVX_W42), or for a caller and its callee — a nested transaction joins the enclosing frame and cannot conflict with it.
+
 ## Runtime Codes (`AVX_R*`)
 
 | Code        | Default Message                                                                         | Cause & Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -3667,3 +3762,31 @@ onSchedulerDeadlock((causationChain, componentInstance) => {
   console.error(`[Deadlock Telemetry] Cycle detected: ${causationChain}`, componentInstance);
 });
 ```
+
+### AVX_R29 — TRANSACTION_REWIND_FAILED
+
+**Error Message**
+
+```text
+Rewind of the atomic action "{0}" left {1} path(s) unrestored:
+{2}
+The "{3}" conflict policy refuses to overwrite a value the transaction did not write. Everything else it journaled was restored.
+```
+
+**Cause:** A rewind could not restore every path it journaled. Usually because another transaction, or ordinary code, wrote the same path after this transaction did — the `safe` policy will not overwrite a value it did not write. Less often: a collection grew past `rewind.maxSnapshotItems`, so no savepoint was kept, or a setter threw while the value was being put back.
+
+**Resolution:**
+
+1. Read the report: it names each path, the value the transaction wrote, and the value found instead.
+2. Check the build output for [AVX_W44](#avx_w44--compiler_transaction_overlap) — an overlap between two atomic actions is the usual cause, and it is reported before you ship.
+3. Raise `rewind.maxSnapshotItems` in `avenx.config.json` if a large collection was the reason.
+4. Set `onConflict="force"` on the action if this transaction should win regardless.
+
+**Example**
+
+```text
+[AVX_R29] Rewind of the atomic action "PostCard.like" left 1 path(s) unrestored:
+  post.likes — wrote 5, found 6
+```
+
+See the [Avenx Rewind guide](/core-concepts/rewind) for the full model.

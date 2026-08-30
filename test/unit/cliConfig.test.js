@@ -182,8 +182,24 @@ try {
         `Unexpected warning: ${warnings[0]}`
       );
       assert.ok(
-        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, mode, server, style, debug, outputName, logging, voidTags, warnings, treeShakeComponents, preprocessors, alias, hooks, trace, expressionCacheCapacity, sourceMap, sourcesContent.'),
+        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, mode, server, style, debug, outputName, logging, voidTags, warnings, treeShakeComponents, preprocessors, alias, hooks, trace, rewind, expressionCacheCapacity, sourceMap, sourcesContent.'),
         `Unexpected warning options list: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+      // 1a. Rewind options are recognised, and their sub-keys validated
+      writeTestConfig({ rewind: { onConflict: 'force', maxSnapshotItems: 25 } });
+      const rewindConfig = loadConfig();
+      assert.strictEqual(warnings.length, 0, `Rewind options should not warn: ${warnings[0]}`);
+      assert.strictEqual(rewindConfig.rewind.onConflict, 'force');
+      assert.strictEqual(rewindConfig.rewind.maxSnapshotItems, 25);
+      warnings.length = 0;
+
+      writeTestConfig({ rewind: { onConflik: 'force' } });
+      loadConfig();
+      assert.ok(
+        warnings.some((w) => w.includes('Unknown configuration option "rewind.onConflik"')),
+        `Expected a warning for an unknown rewind sub-key: ${warnings.join(' | ')}`
       );
       warnings.length = 0;
 

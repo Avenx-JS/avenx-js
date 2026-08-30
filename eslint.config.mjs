@@ -64,6 +64,8 @@ export default [
         IntersectionObserver: "readonly",
         navigator: "readonly",
         location: "readonly",
+        localStorage: "readonly",
+        sessionStorage: "readonly",
         fetch: "readonly",
         Headers: "readonly",
         getSelection: "readonly",

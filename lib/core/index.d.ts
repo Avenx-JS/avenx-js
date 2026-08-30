@@ -949,6 +949,103 @@ export function isBridge(value: unknown): boolean;
 export function defineBridgeName<T>(name: string, instance: T): T;
 
 /**
+ * What a rewind does when it finds a value the transaction did not write.
+ *
+ * - `safe` leaves the newer value alone and reports the conflict (AVX_R29).
+ * - `force` restores regardless, for a transaction that owns the value.
+ * - `abort` restores what it can, then throws.
+ */
+export type RewindConflictPolicy = 'safe' | 'force' | 'abort';
+
+/** The conflict policies, as values. */
+export const ConflictPolicy: {
+    readonly SAFE: 'safe';
+    readonly FORCE: 'force';
+    readonly ABORT: 'abort';
+};
+
+/** How many entries a collection may hold before the journal stops saving it. */
+export const DEFAULT_MAX_SNAPSHOT_ITEMS: number;
+
+/** What a rewind managed to do. */
+export interface RewindOutcome {
+    /** How many paths and collections were put back. */
+    restored: number;
+    /** Paths left alone because they no longer held the value the transaction wrote. */
+    conflicts: Array<{ path: string; expected: unknown; found: unknown }>;
+    /** Collections that were never saved, and why. */
+    unrewindable: string[];
+}
+
+/** One transaction's record of what it changed. */
+export class JournalFrame {
+    constructor(options?: {
+        owner?: string;
+        name?: string;
+        onConflict?: RewindConflictPolicy;
+        maxSnapshotItems?: number;
+    });
+    readonly owner: string;
+    readonly name: string;
+    readonly onConflict: RewindConflictPolicy;
+    /** True when a rewind would have nothing to do. */
+    readonly empty: boolean;
+    /** Plays the frame backwards and reports what it could not restore. */
+    rewind(): RewindOutcome;
+}
+
+/**
+ * The write journal behind Avenx Rewind.
+ *
+ * Applications do not normally reach for this: `<action ... atomic>` and
+ * `atomic()` are the surface. It is exported for tests, for tooling, and for
+ * the rare case that needs a transaction the compiler cannot see.
+ */
+export const journal: {
+    /** True while a transaction is recording. Read once per state write. */
+    readonly active: boolean;
+    /** Applies `rewind` from avenx.config.json. */
+    configure(options?: { onConflict?: RewindConflictPolicy; maxSnapshotItems?: number }): void;
+    /** The innermost open frame, or null. */
+    current(): JournalFrame | null;
+    /**
+     * Runs a function as a transaction. It commits by returning and rewinds by
+     * throwing, or by returning a promise that rejects.
+     */
+    run<T>(
+        spec: { owner?: string; name?: string; onConflict?: RewindConflictPolicy; maxSnapshotItems?: number },
+        fn: () => T,
+    ): T;
+    /** Drops every open frame. */
+    reset(): void;
+};
+
+/**
+ * Declares a bridge action transactional.
+ *
+ * Every state write the action makes — its own and those of anything it calls
+ * — is journaled. If the action throws, or returns a promise that rejects, the
+ * journal is played backwards and the state is what it was before it ran.
+ *
+ * Returns the same function, so its name, arity and identity survive.
+ * @example
+ * export default bridge({
+ *   state: { items: [] as Item[] },
+ *   addQty: atomic(function (id: string, n: number) { ... }),
+ * });
+ */
+export function atomic<T extends (...args: any[]) => any>(
+    fn: T,
+    options?: { onConflict?: RewindConflictPolicy },
+): T;
+
+/** Reports whether a function was declared atomic. */
+export function isAtomic(fn: unknown): boolean;
+
+/** Reads the transaction options off a marked function, or null. */
+export function atomicOptions(fn: unknown): { onConflict?: RewindConflictPolicy } | null;
+
+/**
  * Collects teardown callbacks and releases them together. Components own one
  * and dispose it on unmount, which is how bridge subscriptions are released.
  */

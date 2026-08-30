@@ -53,6 +53,22 @@ The `event` object can be passed directly to component methods together with you
 
 Compiled action handlers expose an implicit `args` array containing the arguments supplied when the handler is invoked. This allows reusable actions to receive values passed from event bindings.
 
+## Atomic Actions
+
+An `<action>` tag accepts an `atomic` modifier. Every state write the action makes is journaled, and undone if the action throws or returns a promise that rejects:
+
+```html
+<action name="incQty" atomic>
+  busy = true;
+  cart.addQty(id, 1);
+  return api.setQty(id, cart.qtyOf(id));
+</action>
+```
+
+`onConflict="safe" | "force" | "abort"` selects what a rewind does when it finds a value the transaction did not write; it defaults to the project's `rewind.onConflict`. See [Avenx Rewind](/core-concepts/rewind).
+
+---
+
 ## Event Modifiers
 
 Event bindings support dot-suffixed **modifiers** that adjust how the underlying DOM event is handled before your expression runs. Modifiers are appended directly to the event name, e.g. `@submit.prevent="save"` or `@keydown.enter="submit"`.
