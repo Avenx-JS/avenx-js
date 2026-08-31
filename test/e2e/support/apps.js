@@ -70,6 +70,10 @@ export const APPS = [
     summary: 'Hash routes, params, query strings, the wildcard fallback and a bridge-backed guard.',
   },
   {
+    name: 'forms',
+    summary: 'Two-way binding across every input type, and focus retention across patches.',
+  },
+  {
     name: 'guard-gaps',
     summary: 'Pins two guard compilation bugs; its bundle is expected not to parse.',
     documentsKnownGaps: true,
