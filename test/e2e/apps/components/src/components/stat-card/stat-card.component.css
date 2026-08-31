@@ -1,0 +1,11 @@
+<@css>
+    card {
+        border-style: solid;
+        border-width: 2px;
+        padding: 12px;
+    }
+
+    label {
+        font-weight: 700;
+    }
+</@css>

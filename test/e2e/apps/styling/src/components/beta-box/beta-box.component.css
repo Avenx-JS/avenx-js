@@ -1,0 +1,10 @@
+<@css>
+    box {
+        padding-left: 33px;
+        border-style: dotted;
+    }
+
+    accent {
+        color: rgb(200, 30, 30);
+    }
+</@css>

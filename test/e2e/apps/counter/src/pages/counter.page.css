@@ -1,0 +1,11 @@
+<@css>
+    panel {
+        display: grid;
+        gap: 8px;
+        padding: 16px;
+    }
+
+    title {
+        font-size: 24px;
+    }
+</@css>

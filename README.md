@@ -554,7 +554,9 @@ Avenx-JS provides comprehensive testing support, from fast unit tests to full br
 - **Playwright End-to-End (E2E) Browser Tests:** `npm run test:e2e`
 - **Full Test Suite:** `npm test`
 
-Playwright E2E tests run against **Chromium**, **Firefox**, and **WebKit** in headless mode. See [test/e2e/README.md](test/e2e/README.md) for detailed configuration and usage guides.
+The E2E suite compiles real Avenx applications with the CLI and drives the compiled bundle in a browser, so a test cannot pass unless the compiler and runtime both ran. Every pull request runs it on **Chromium**; **Firefox** and **WebKit** run nightly.
+
+See [test/e2e/README.md](test/e2e/README.md) for the fixture-app layout, the conventions, what belongs in E2E rather than unit tests, and the framework gaps the suite currently pins.
 
 ---
 

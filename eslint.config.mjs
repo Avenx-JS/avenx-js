@@ -11,6 +11,9 @@ export default [
     ignores: [
       "**/node_modules/",
       "**/dist/",
+      // E2E fixture apps emit a development build here; it is generated
+      // output like dist/, just under a second name.
+      "**/dist-dev/",
       "docs/",
       "dev-docs/",
       "coverage/",
