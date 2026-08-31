@@ -48,6 +48,10 @@ export const APPS = [
     name: 'rendering',
     summary: 'Interpolation, escaping, conditional visibility and keyed lists.',
   },
+  {
+    name: 'components',
+    summary: 'Component nesting, props from parent state, and slot projection.',
+  },
 ];
 
 /**
