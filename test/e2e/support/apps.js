@@ -44,6 +44,10 @@ export const APPS = [
     summary: 'State, computed values, actions and bound boolean attributes.',
     developmentBuild: true,
   },
+  {
+    name: 'rendering',
+    summary: 'Interpolation, escaping, conditional visibility and keyed lists.',
+  },
 ];
 
 /**
