@@ -979,6 +979,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "parthmahajan30",
+      "name": "Parth Mahajan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/233291742?v=4",
+      "profile": "https://github.com/parthmahajan30",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
