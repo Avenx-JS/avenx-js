@@ -74,6 +74,10 @@ export const APPS = [
     summary: 'Two-way binding across every input type, and focus retention across patches.',
   },
   {
+    name: 'defer',
+    summary: 'The <@defer> tag and its interaction, idle, timer and visible triggers.',
+  },
+  {
     name: 'guard-gaps',
     summary: 'Pins two guard compilation bugs; its bundle is expected not to parse.',
     documentsKnownGaps: true,
