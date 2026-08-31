@@ -34,7 +34,7 @@ function report(issues) {
     ...lines,
     '',
     'If a test intends to provoke one, allow it explicitly:',
-    "  runtimeIssues.allow(/expected message/);",
+    '  runtimeIssues.allow(/expected message/);',
   ].join('\n');
 }
 
