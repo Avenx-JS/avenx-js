@@ -28,7 +28,9 @@ test.describe('hash routing', () => {
     await page.getByTestId('nav-profile-42').click();
 
     await expect(page.getByTestId('profile-id')).toHaveText('42');
-    expect(new URL(page.url()).hash).toBe('#/profile/42');
+    // toHaveURL retries: the router settles the hash a beat after it has
+    // swapped the page, so a one-shot page.url() read races that update.
+    await expect(page).toHaveURL(/#\/profile\/42$/);
   });
 
   test('updates the parameter in place when moving between two of the same route', async ({ page }) => {
@@ -39,7 +41,7 @@ test.describe('hash routing', () => {
 
     await page.getByTestId('nav-profile-99').click();
     await expect(page.getByTestId('profile-id')).toHaveText('99');
-    expect(new URL(page.url()).hash).toBe('#/profile/99');
+    await expect(page).toHaveURL(/#\/profile\/99$/);
   });
 
   test('parses the query string into route state', async ({ page }) => {

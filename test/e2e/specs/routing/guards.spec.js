@@ -18,14 +18,17 @@ test.describe('route guards', () => {
 
     await expect(page.getByTestId('page-admin')).toHaveCount(0);
     await expect(page.getByTestId('page-home')).toBeVisible();
-    expect(new URL(page.url()).hash).toBe('#/');
+    // The redirect lands on the hash slightly after the page has been
+    // swapped back, so this needs a retrying assertion rather than a single
+    // page.url() read.
+    await expect(page).toHaveURL(/#\/$/);
   });
 
   test('completes a navigation the guard admits', async ({ page }) => {
     await page.getByTestId('nav-admin-with-token').click();
 
     await expect(page.getByTestId('page-admin')).toBeVisible();
-    expect(new URL(page.url()).hash).toContain('#/admin');
+    await expect(page).toHaveURL(/#\/admin/);
   });
 
   test('guards a cold load of the protected route, not only in-app navigation', async ({ page, app }) => {
