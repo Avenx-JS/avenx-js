@@ -36,7 +36,12 @@ export const APPS_DIR = path.resolve(here, '../apps');
  * `developmentBuild` asks the global setup for a second compilation against the
  * unminified runtime, emitted to `dist-dev/`. Only the app used by the
  * production-parity spec needs one; the extra build is not free, so it is opt-in.
- * @type {Array<{name: string, summary: string, developmentBuild?: boolean}>}
+ *
+ * `documentsKnownGaps` marks an app that is expected not to work, because it
+ * exists to pin a framework bug. Those are excluded from the smoke boot loop,
+ * which would otherwise report a failure the suite already documents on
+ * purpose.
+ * @type {Array<{name: string, summary: string, developmentBuild?: boolean, documentsKnownGaps?: boolean}>}
  */
 export const APPS = [
   {
@@ -60,7 +65,27 @@ export const APPS = [
     name: 'styling',
     summary: 'Scoped CSS, per-component isolation, @def globals and style bindings.',
   },
+  {
+    name: 'routing',
+    summary: 'Hash routes, params, query strings, the wildcard fallback and a bridge-backed guard.',
+  },
+  {
+    name: 'guard-gaps',
+    summary: 'Pins two guard compilation bugs; its bundle is expected not to parse.',
+    documentsKnownGaps: true,
+  },
 ];
+
+/**
+ * The fixture applications that are expected to work.
+ *
+ * Used by the smoke boot loop, which should not report failures the suite
+ * already documents deliberately.
+ * @returns {Array<{name: string, summary: string}>} Healthy applications.
+ */
+export function workingApps() {
+  return APPS.filter((app) => !app.documentsKnownGaps);
+}
 
 /**
  * Builds the URL for a fixture application page.

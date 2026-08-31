@@ -1,5 +1,5 @@
 import { test, expect } from '../../support/fixtures.js';
-import { APPS, appUrl } from '../../support/apps.js';
+import { appUrl, workingApps } from '../../support/apps.js';
 
 /**
  * The suite's foundation: proof that an Avenx project compiled by the real CLI
@@ -31,7 +31,7 @@ test.describe('compiled application boot', () => {
 
   // Grows on its own: adding a fixture app to the registry adds a boot check
   // for it, so a new app cannot join the suite already broken.
-  for (const fixtureApp of APPS) {
+  for (const fixtureApp of workingApps()) {
     test(`boots the ${fixtureApp.name} application without runtime errors`, async ({ page, app }) => {
       await app.open(fixtureApp.name);
 

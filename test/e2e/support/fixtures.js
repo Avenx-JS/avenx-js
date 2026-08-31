@@ -106,6 +106,21 @@ export const test = base.extend({
        */
       async open(name, { hash = '', entry = 'index.html' } = {}) {
         await page.goto(`${appUrl(name, entry)}${hash}`);
+
+        // A bundle that fails to parse leaves the page blank and silent: the
+        // browser reports a SyntaxError that does not reach `pageerror`, and
+        // every later assertion times out on a missing element without naming
+        // the cause. Checking that the runtime published itself turns that
+        // into an immediate, accurate failure. This is not hypothetical -- a
+        // project with two guard files compiles to exactly such a bundle
+        // today; see specs/routing/guard-gaps.spec.js.
+        const runtimeReady = await page.evaluate(() => typeof window.Avenx?.AvenxApp === 'function');
+        if (!runtimeReady) {
+          throw new Error(
+            `The "${name}" application loaded but the Avenx runtime is not on the page. ` +
+              'Its bundle most likely failed to parse -- open the app in a browser and read the console.',
+          );
+        }
       },
     });
   },
