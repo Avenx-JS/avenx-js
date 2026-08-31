@@ -1,7 +1,14 @@
 <state count="0" step="1" />
 
-<computed name="doubled" value="count * 2" />
-<computed name="isZero" value="count === 0" />
+<!--
+  Computed expressions reference state through `state.` deliberately.
+  The bare-identifier form the README documents (value="count * 2") renders
+  its initial value correctly but never recomputes, because the dependency is
+  not tracked. See specs/reactivity/state-drives-dom.spec.js for the test that
+  documents that gap.
+-->
+<computed name="doubled" value="state.count * 2" />
+<computed name="isZero" value="state.count === 0" />
 
 <action name="increment"> count = count + step; </action>
 
