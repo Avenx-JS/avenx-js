@@ -52,6 +52,10 @@ export const APPS = [
     name: 'components',
     summary: 'Component nesting, props from parent state, and slot projection.',
   },
+  {
+    name: 'events',
+    summary: 'Event bindings and the .prevent, .stop, .self, .once and key modifiers.',
+  },
 ];
 
 /**
