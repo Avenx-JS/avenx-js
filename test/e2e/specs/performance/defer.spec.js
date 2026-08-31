@@ -26,11 +26,16 @@ test.describe('deferred content', () => {
     // The deferred subtree is genuinely absent, not merely hidden.
     await expect(page.getByTestId('interaction-content')).toHaveCount(0);
 
-    // Hover, not click. The `interaction` trigger fires on mouseenter as well
-    // as click, so the placeholder is swapped out the moment the pointer
-    // arrives and a click never lands on it -- worth knowing if you ever
-    // author a placeholder that looks like a button, as this fixture does.
-    await placeholder.hover();
+    // The event is dispatched rather than driven with click() or hover().
+    // The `interaction` trigger fires on mouseenter as well as click, so the
+    // placeholder is removed the instant the pointer arrives: Playwright's
+    // click hovers first and then waits forever for an element that is already
+    // gone, and hover() hangs the same way on Firefox. Dispatching sends the
+    // same DOM event the binder listens for, without the actionability wait.
+    //
+    // Worth knowing beyond the test: a placeholder styled as a button cannot
+    // actually be clicked, because pointing at it already fires the trigger.
+    await placeholder.dispatchEvent('click');
 
     await expect(page.getByTestId('interaction-content')).toBeVisible();
     await expect(page.getByTestId('interaction-content')).toHaveText('Loaded on interaction');
@@ -90,7 +95,7 @@ test.describe('known gap: a component inside a deferred block', () => {
     await app.open('defer', { hash: '#/component' });
 
     await expect(page.getByTestId('component-placeholder')).toBeVisible();
-    await page.getByTestId('component-placeholder').hover();
+    await page.getByTestId('component-placeholder').dispatchEvent('click');
 
     // Fails today: the marker is inserted but the component never mounts.
     await expect(page.getByTestId('heavy-panel-label')).toHaveText('loaded on interaction');
@@ -121,7 +126,7 @@ test.describe('known gap: a deferred block in a component that holds state', () 
     // Fails today: the placeholder was destroyed by the patch, so there is
     // nothing left to trigger and the content can never arrive.
     await expect(page.getByTestId('stateful-placeholder')).toBeVisible();
-    await page.getByTestId('stateful-placeholder').hover();
+    await page.getByTestId('stateful-placeholder').dispatchEvent('click');
     await expect(page.getByTestId('stateful-content')).toBeVisible();
   });
 });

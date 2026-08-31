@@ -35,4 +35,39 @@ jobs:
       - name: Run lint
         if: matrix.node-version != 18
         run: npm run lint
-        
+
+  e2e:
+    name: E2E (Chromium)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Only Chromium gates a pull request. A framework regression shows up
+      # there first, and a three-engine fan-out on every push costs more than
+      # it returns pre-v1. Firefox and WebKit run nightly in e2e-nightly.yml.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Compiles every fixture app with the real CLI, then drives the compiled
+      # output in a browser. A compiler failure fails this step.
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
