@@ -91,16 +91,22 @@ try {
 
   // --- list -----------------------------------------------------------------
 
-  saveTrace(workDir, makeTrace('trace-4f2a'));
-  saveTrace(
-    workDir,
-    makeTrace('trace-a91c', {
-      determinism: {
-        status: Determinism.BEST_EFFORT,
-        reasons: [{ reason: NonDeterminismReason.POLLING_RESOURCE, detail: 'ticker polls every 5000ms' }],
-      },
-    }),
-  );
+  const olderTrace = makeTrace('trace-4f2a', {
+    createdAt: new Date(Date.now() - 10000).toISOString(),
+  });
+  const file1 = saveTrace(workDir, olderTrace);
+  const now = Math.floor(Date.now() / 1000);
+  fs.utimesSync(file1, now - 10, now - 10);
+
+  const newerTrace = makeTrace('trace-a91c', {
+    createdAt: new Date(Date.now()).toISOString(),
+    determinism: {
+      status: Determinism.BEST_EFFORT,
+      reasons: [{ reason: NonDeterminismReason.POLLING_RESOURCE, detail: 'ticker polls every 5000ms' }],
+    },
+  });
+  const file2 = saveTrace(workDir, newerTrace);
+  fs.utimesSync(file2, now, now);
 
   run = avenx(['trace', 'list']);
   assert.strictEqual(run.status, 0, run.stderr);
