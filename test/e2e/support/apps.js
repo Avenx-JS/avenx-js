@@ -56,6 +56,10 @@ export const APPS = [
     name: 'events',
     summary: 'Event bindings and the .prevent, .stop, .self, .once and key modifiers.',
   },
+  {
+    name: 'styling',
+    summary: 'Scoped CSS, per-component isolation, @def globals and style bindings.',
+  },
 ];
 
 /**

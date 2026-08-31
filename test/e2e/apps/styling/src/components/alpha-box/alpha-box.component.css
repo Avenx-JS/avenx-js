@@ -1,0 +1,14 @@
+<@global>
+    @def brand-accent rgb(10, 90, 200);
+</@global>
+
+<@css>
+    box {
+        padding-left: 11px;
+        border-style: dashed;
+    }
+
+    accent {
+        color: @brand-accent;
+    }
+</@css>
