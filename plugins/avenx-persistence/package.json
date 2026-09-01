@@ -1,0 +1,47 @@
+{
+  "name": "@avenx/persistence",
+  "version": "0.1.0",
+  "description": "Official state persistence plugin for Avenx.js — bridge state that survives reloads",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "prepare": "npm run build",
+    "test": "node test/persistence.test.js && node test/persistenceResilience.test.js"
+  },
+  "keywords": [
+    "avenx",
+    "persistence",
+    "localstorage",
+    "sessionstorage",
+    "state",
+    "bridge",
+    "reactive",
+    "plugin"
+  ],
+  "author": "Avenx Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avenx-js/avenx-js.git",
+    "directory": "plugins/avenx-persistence"
+  },
+  "bugs": {
+    "url": "https://github.com/avenx-js/avenx-js/issues"
+  },
+  "homepage": "https://avenx-js.com/",
+  "peerDependencies": {
+    "avenx-core": ">=0.4.0"
+  }
+}
