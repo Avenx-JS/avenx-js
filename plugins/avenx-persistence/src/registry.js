@@ -13,7 +13,7 @@
  * @module @avenx/persistence/registry
  */
 
-import { configError, warnOnce } from './diagnostics.js';
+import { warnOnce } from './diagnostics.js';
 
 /**
  * Controllers by persistence key.
@@ -59,18 +59,13 @@ export function getPluginDefaults() {
 /**
  * Registers a controller under its persistence key.
  *
- * Two bridges sharing one key would overwrite each other's stored data on
- * every save, which is a configuration mistake rather than a runtime
- * condition, so it is reported as an error the developer has to resolve.
+ * Whether a key is free is `persist()`'s question to answer, because only it
+ * knows which bridge is asking: a bridge re-initializing after $dispose or a
+ * hot reload legitimately reclaims its own key, while a second bridge doing so
+ * is a configuration mistake. This only records the answer.
  * @param {object} controller - The controller to register.
  */
 export function registerController(controller) {
-  const existing = controllers.get(controller.key);
-  if (existing && existing !== controller) {
-    throw configError(
-      `persistence key "${controller.key}" is already used by another persisted bridge. Give each persisted bridge its own key.`,
-    );
-  }
   controllers.set(controller.key, controller);
 }
 

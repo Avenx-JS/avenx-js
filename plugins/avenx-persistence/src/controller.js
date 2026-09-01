@@ -122,6 +122,10 @@ export class PersistenceController {
     this.keys = keys;
     this.options = options;
     this.#config = null;
+    // What storage last received belonged to the previous life of this bridge.
+    // Forgetting it means the next save is decided by comparing against the
+    // store, not against a value from before the state was reset.
+    this.#lastWritten = null;
   }
 
   /**

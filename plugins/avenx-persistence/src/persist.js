@@ -106,6 +106,17 @@ export function persist(self, options = {}) {
     throw configError('persist() requires a non-empty "key" option naming where this bridge is stored.');
   }
 
+  // Checked before anything else touches the bridge. A controller already
+  // under this key belongs either to this bridge initializing again — after
+  // $dispose, or a hot reload — or to a different one, which would overwrite
+  // this bridge's stored data on every save.
+  let controller = getController(key);
+  if (controller && controller.owner !== self) {
+    throw configError(
+      `persistence key "${key}" is already used by another persisted bridge. Give each persisted bridge its own key.`,
+    );
+  }
+
   const label = `persist({ key: "${key}" })`;
   const settings = normalizeSharedOptions(options, label);
   if (options.migrate !== undefined) {
@@ -119,15 +130,7 @@ export function persist(self, options = {}) {
   const declared = options.include === undefined ? declaredStateKeys(self) : Object.keys(self);
   const keys = resolvePersistedKeys(declared, options, label);
 
-  let controller = getController(key);
-  if (controller && controller.owner !== self) {
-    throw configError(
-      `persistence key "${key}" is already used by another persisted bridge. Give each persisted bridge its own key.`,
-    );
-  }
-
   if (controller) {
-    // The same bridge initializing again, after $dispose or a hot reload.
     controller.reconfigure(keys, settings);
   } else {
     controller = new PersistenceController(key, self, keys, settings);
