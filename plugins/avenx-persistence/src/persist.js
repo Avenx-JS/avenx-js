@@ -60,7 +60,9 @@ export function persist(definition, options = {}) {
   }
 
   if (!isPlainObject(definition.state)) {
-    throw configError(`persist({ key: "${key}" }) expects the definition to declare a "state" object; there is nothing to persist without one.`);
+    throw configError(
+      `persist({ key: "${key}" }) expects the definition to declare a "state" object; there is nothing to persist without one.`,
+    );
   }
   if (definition.setup !== undefined && typeof definition.setup !== 'function') {
     throw configError(`persist({ key: "${key}" }) found a "setup" member that is not a function.`);

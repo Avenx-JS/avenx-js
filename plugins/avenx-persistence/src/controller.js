@@ -144,7 +144,11 @@ export class PersistenceController {
       return null;
     }
     if (typeof text !== 'string') {
-      report(this.#context(), 'serialize', `serialize() returned ${typeof text} instead of a string; nothing was persisted`);
+      report(
+        this.#context(),
+        'serialize',
+        `serialize() returned ${typeof text} instead of a string; nothing was persisted`,
+      );
       return null;
     }
     return text;
@@ -301,11 +305,20 @@ export class PersistenceController {
     try {
       migrated = config.migrate(envelope.state, envelope.version, config.version);
     } catch (error) {
-      report(this.#context(), 'migrate', `migrate() threw while upgrading from version ${envelope.version}; the data was discarded`, error);
+      report(
+        this.#context(),
+        'migrate',
+        `migrate() threw while upgrading from version ${envelope.version}; the data was discarded`,
+        error,
+      );
       return null;
     }
     if (!isPlainObject(migrated)) {
-      report(this.#context(), 'migrate', `migrate() declined to upgrade version ${envelope.version}; the data was discarded`);
+      report(
+        this.#context(),
+        'migrate',
+        `migrate() declined to upgrade version ${envelope.version}; the data was discarded`,
+      );
       return null;
     }
     return migrated;
@@ -337,7 +350,11 @@ export class PersistenceController {
     }
 
     if (unknown > 0) {
-      report(this.#context(), 'malformed', `persisted data held ${unknown} key(s) this bridge no longer declares; they were ignored`);
+      report(
+        this.#context(),
+        'malformed',
+        `persisted data held ${unknown} key(s) this bridge no longer declares; they were ignored`,
+      );
     }
 
     // Whatever storage holds, the state now serializes to this. Recording it

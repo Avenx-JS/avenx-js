@@ -81,7 +81,11 @@ async function testMalformedData() {
     // The application is unharmed: it can still change and persist state.
     instance.increment();
     await nextTick();
-    assert.strictEqual(JSON.parse(storage.getItem('avenx:resilient')).state.count, 1, `${description}: persistence recovers on the next change`);
+    assert.strictEqual(
+      JSON.parse(storage.getItem('avenx:resilient')).state.count,
+      1,
+      `${description}: persistence recovers on the next change`,
+    );
   }
 
   console.log('  ✅ Malformed persisted data passed!');
@@ -96,7 +100,10 @@ async function testUnknownPersistedKeys() {
   reset();
 
   const storage = memoryStorage();
-  storage.setItem('avenx:resilient', JSON.stringify({ avenx: 1, version: 1, state: { count: 4, removedInV2: 'stale' } }));
+  storage.setItem(
+    'avenx:resilient',
+    JSON.stringify({ avenx: 1, version: 1, state: { count: 4, removedInV2: 'stale' } }),
+  );
   const { instance, failures } = makeBridge({ storage });
 
   assert.strictEqual(instance.count, 4, 'the keys that still exist are restored');
@@ -178,7 +185,11 @@ async function testQuotaExceeded() {
   full = false;
   instance.increment();
   await nextTick();
-  assert.strictEqual(JSON.parse(inner.getItem('avenx:resilient')).state.count, 2, 'the write is retried once storage accepts it again');
+  assert.strictEqual(
+    JSON.parse(inner.getItem('avenx:resilient')).state.count,
+    2,
+    'the write is retried once storage accepts it again',
+  );
 
   console.log('  ✅ Quota exhaustion passed!');
 }
@@ -354,12 +365,20 @@ async function testReporting() {
 
   assert.strictEqual(instance.count, 4, 'restoration succeeded despite the broken handler');
   assert.strictEqual(loggedMatching('[avenx-persistence]').length > 0, true, 'the failure reached the logger');
-  assert.strictEqual(loggedMatching('onError callback threw').length, 1, 'a broken handler is reported rather than propagated');
+  assert.strictEqual(
+    loggedMatching('onError callback threw').length,
+    1,
+    'a broken handler is reported rather than propagated',
+  );
   assert.strictEqual(loggedMatching('hunter2').length, 0, 'no persisted value appears in any log line');
 
   instance.increment();
   await nextTick();
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:resilient')).state.count, 5, 'the application is still persisting');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:resilient')).state.count,
+    5,
+    'the application is still persisting',
+  );
 
   console.log('  ✅ Failure reporting passed!');
 }

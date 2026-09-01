@@ -76,16 +76,18 @@ export function memoryStorage() {
  */
 function webStorage(area) {
   const host = typeof globalThis !== 'undefined' ? globalThis : undefined;
-  let storage = null;
+  let storage;
   try {
     storage = host ? host[area] : null;
   } catch {
-    // Accessing the property itself throws when the browser blocks storage.
+    // Reading the property itself throws when the browser blocks storage.
     storage = null;
   }
 
   if (!isStorageAdapter(storage)) {
-    warnOnce(`${area} is unavailable in this environment; falling back to in-memory storage (state will not survive a reload)`);
+    warnOnce(
+      `${area} is unavailable in this environment; falling back to in-memory storage (state will not survive a reload)`,
+    );
     return memoryStorage();
   }
 

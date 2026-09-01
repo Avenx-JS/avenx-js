@@ -104,7 +104,9 @@ export function resolvePersistedKeys(declared, options, label) {
   }
 
   if (keys.length === 0) {
-    throw configError(`${label} would persist no state at all. Declare state on the bridge, or widen "include"/"exclude".`);
+    throw configError(
+      `${label} would persist no state at all. Declare state on the bridge, or widen "include"/"exclude".`,
+    );
   }
   return [...new Set(keys)];
 }

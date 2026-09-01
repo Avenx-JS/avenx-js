@@ -28,7 +28,10 @@ export function captureLogs() {
          * @param {any[]} formatted - The formatted arguments.
          */
         log(level, formatted) {
-          logged.push({ level, text: formatted.map((part) => String(part && part.message ? part.message : part)).join(' ') });
+          logged.push({
+            level,
+            text: formatted.map((part) => String(part && part.message ? part.message : part)).join(' '),
+          });
         },
       },
     ],

@@ -37,7 +37,9 @@ export function setPluginDefaults(defaults) {
   // A controller that already resolved its configuration hydrated before the
   // plugin was installed, and kept the built-in defaults. Saying so is more
   // useful than letting half the application use a different storage key.
-  const alreadyResolved = [...controllers.values()].filter((controller) => controller.resolved).map((controller) => controller.key);
+  const alreadyResolved = [...controllers.values()]
+    .filter((controller) => controller.resolved)
+    .map((controller) => controller.key);
   if (alreadyResolved.length > 0) {
     warnOnce(
       `avenxPersistence was installed after these keys had already hydrated, so application defaults did not reach them: ${alreadyResolved.join(', ')}. ` +

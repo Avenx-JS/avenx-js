@@ -88,8 +88,16 @@ async function testPluginInstallation() {
   secondApp.use(configured);
   assert.ok(secondApp.$persistence, 'the factory form installs too');
 
-  assert.throws(() => avenxPersistence.install(null), /Invalid AvenxApp instance/, 'installing without an app is rejected');
-  assert.throws(() => avenxPersistence.install(createApp(), { version: 'one' }), /"version" that is not a finite number/, 'bad defaults are rejected at install time');
+  assert.throws(
+    () => avenxPersistence.install(null),
+    /Invalid AvenxApp instance/,
+    'installing without an app is rejected',
+  );
+  assert.throws(
+    () => avenxPersistence.install(createApp(), { version: 'one' }),
+    /"version" that is not a finite number/,
+    'bad defaults are rejected at install time',
+  );
 
   console.log('  ✅ Plugin installation and lifecycle passed!');
 }
@@ -140,12 +148,20 @@ async function testPersistingChanges() {
   const stored = JSON.parse(storage.getItem('avenx:counter'));
   assert.strictEqual(stored.avenx, 1, 'the envelope records its own format version');
   assert.strictEqual(stored.version, 3, 'the envelope records the application schema version');
-  assert.deepStrictEqual(stored.state, { count: 1, label: 'idle', session: { token: null } }, 'every persisted key is stored');
+  assert.deepStrictEqual(
+    stored.state,
+    { count: 1, label: 'idle', session: { token: null } },
+    'every persisted key is stored',
+  );
   assert.ok(!('isPristine' in stored.state), 'getters are derived, not persisted');
 
   counter.signIn('abc');
   await nextTick();
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:counter')).state.session.token, 'abc', 'a nested mutation is persisted');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:counter')).state.session.token,
+    'abc',
+    'a nested mutation is persisted',
+  );
 
   console.log('  ✅ Persisting state changes passed!');
 }
@@ -210,7 +226,11 @@ async function testRestoringState() {
 
   counter.increment();
   await nextTick();
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:counter')).state.count, 43, 'the restored value is the base for later changes');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:counter')).state.count,
+    43,
+    'the restored value is the base for later changes',
+  );
 
   console.log('  ✅ Restoring persisted state passed!');
 }
@@ -299,7 +319,17 @@ async function testKeysAndPrefixes() {
   reset();
 
   const storage = memoryStorage();
-  const scoped = bridge(persist({ state: { value: 1 }, bump() { this.value++; } }, { key: 'checkout/step', storage, prefix: 'shop::' }));
+  const scoped = bridge(
+    persist(
+      {
+        state: { value: 1 },
+        bump() {
+          this.value++;
+        },
+      },
+      { key: 'checkout/step', storage, prefix: 'shop::' },
+    ),
+  );
   scoped.bump();
   await nextTick();
   assert.ok(storage.getItem('shop::checkout/step'), 'the per-bridge prefix and key form the storage key');
@@ -363,7 +393,11 @@ async function testStorageAdapters() {
     localCounter.increment();
     await nextTick();
     assert.ok(globalThis.localStorage.getItem('avenx:local-counter'), 'localStorage is the browser default');
-    assert.strictEqual(browserLocalStorage(), globalThis.localStorage, 'the platform object is used as the adapter, unwrapped');
+    assert.strictEqual(
+      browserLocalStorage(),
+      globalThis.localStorage,
+      'the platform object is used as the adapter, unwrapped',
+    );
   } finally {
     restoreGlobals();
   }
@@ -444,13 +478,29 @@ async function testIncludeExclude() {
   assert.deepStrictEqual(excludedState, { count: 1, label: 'idle' }, 'the excluded key never leaves the application');
 
   reset();
-  assert.throws(() => counterBridge({ include: ['typo'] }), /which the bridge does not declare in state/, 'an unknown include key is refused');
+  assert.throws(
+    () => counterBridge({ include: ['typo'] }),
+    /which the bridge does not declare in state/,
+    'an unknown include key is refused',
+  );
   reset();
-  assert.throws(() => counterBridge({ exclude: ['typo'] }), /which the bridge does not declare in state/, 'an unknown exclude key is refused');
+  assert.throws(
+    () => counterBridge({ exclude: ['typo'] }),
+    /which the bridge does not declare in state/,
+    'an unknown exclude key is refused',
+  );
   reset();
-  assert.throws(() => counterBridge({ include: ['count'], exclude: ['label'] }), /both "include" and "exclude"/, 'the two are mutually exclusive');
+  assert.throws(
+    () => counterBridge({ include: ['count'], exclude: ['label'] }),
+    /both "include" and "exclude"/,
+    'the two are mutually exclusive',
+  );
   reset();
-  assert.throws(() => counterBridge({ exclude: ['count', 'label', 'session'] }), /would persist no state at all/, 'excluding everything is a mistake worth naming');
+  assert.throws(
+    () => counterBridge({ exclude: ['count', 'label', 'session'] }),
+    /would persist no state at all/,
+    'excluding everything is a mistake worth naming',
+  );
 
   console.log('  ✅ include and exclude passed!');
 }
@@ -493,7 +543,11 @@ async function testCustomSerialization() {
   counter.increment();
   await nextTick();
 
-  assert.strictEqual(storage.getItem('avenx:counter'), 'v7|{"count":1,"label":"idle","session":{"token":null}}', 'the custom format was stored');
+  assert.strictEqual(
+    storage.getItem('avenx:counter'),
+    'v7|{"count":1,"label":"idle","session":{"token":null}}',
+    'the custom format was stored',
+  );
   assert.strictEqual(seen[0].version, 7, 'the serializer receives the envelope');
   assert.ok(!seen[0].state.__isReactive, 'the serializer receives a plain snapshot');
   seen[0].state.count = 999;
@@ -546,7 +600,11 @@ async function testReactivityIntegration() {
   component.unmount();
   counter.increment();
   await nextTick();
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:counter')).state.count, 7, 'persistence outlives the components that read it');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:counter')).state.count,
+    7,
+    'persistence outlives the components that read it',
+  );
 
   console.log('  ✅ Interaction with Avenx reactivity passed!');
 }
@@ -602,7 +660,11 @@ async function testCleanup() {
   // reset must not be mistaken for a change worth persisting.
   await nextTick();
   assert.strictEqual(storage.counts.writes, writesBeforeDispose, 'the reset performed by $dispose was not persisted');
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:tracked')).state.value, 1, 'the last real value is still stored');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:tracked')).state.value,
+    1,
+    'the last real value is still stored',
+  );
 
   assert.strictEqual(tracked.value, 1, 'the next read restores and re-subscribes');
   assert.strictEqual(setupRuns, 2, 'setup ran again on re-initialization');
@@ -610,7 +672,11 @@ async function testCleanup() {
 
   tracked.bump();
   await nextTick();
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:tracked')).state.value, 2, 'and saving works after the round trip');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:tracked')).state.value,
+    2,
+    'and saving works after the round trip',
+  );
 
   console.log('  ✅ Cleanup and unsubscription passed!');
 }
@@ -631,7 +697,17 @@ async function testPersistenceHandle() {
   app.use(avenxPersistence, { storage });
 
   const counter = counterBridge({});
-  const theme = bridge(persist({ state: { mode: 'light' }, toggle() { this.mode = 'dark'; } }, { key: 'theme' }));
+  const theme = bridge(
+    persist(
+      {
+        state: { mode: 'light' },
+        toggle() {
+          this.mode = 'dark';
+        },
+      },
+      { key: 'theme' },
+    ),
+  );
 
   counter.increment();
   theme.toggle();
@@ -639,7 +715,11 @@ async function testPersistenceHandle() {
   // Before the tick the write is still queued; flush() is what a pagehide
   // handler would call.
   app.$persistence.flush();
-  assert.strictEqual(JSON.parse(storage.getItem('avenx:counter')).state.count, 1, 'flush wrote the counter immediately');
+  assert.strictEqual(
+    JSON.parse(storage.getItem('avenx:counter')).state.count,
+    1,
+    'flush wrote the counter immediately',
+  );
   assert.strictEqual(JSON.parse(storage.getItem('avenx:theme')).state.mode, 'dark', 'flush wrote every key');
 
   await nextTick();
@@ -653,7 +733,11 @@ async function testPersistenceHandle() {
   app.$persistence.clear();
   assert.strictEqual(storage.getItem('avenx:counter'), null, 'clear without a key removes every key');
 
-  assert.throws(() => app.$persistence.clear('nope'), /no persisted bridge uses the key "nope"/, 'an unknown key is named, not ignored');
+  assert.throws(
+    () => app.$persistence.clear('nope'),
+    /no persisted bridge uses the key "nope"/,
+    'an unknown key is named, not ignored',
+  );
 
   console.log('  ✅ app.$persistence passed!');
 }
@@ -669,15 +753,43 @@ async function testValidation() {
   console.log('  14. Testing persist() validation...');
   reset();
 
-  assert.throws(() => persist(null, { key: 'a' }), /expects a bridge definition object/, 'a missing definition is refused');
+  assert.throws(
+    () => persist(null, { key: 'a' }),
+    /expects a bridge definition object/,
+    'a missing definition is refused',
+  );
   assert.throws(() => persist({ state: {} }, {}), /requires a non-empty "key"/, 'a missing key is refused');
   assert.throws(() => persist({ state: {} }, { key: '  ' }), /requires a non-empty "key"/, 'a blank key is refused');
-  assert.throws(() => persist({ count: 0 }, { key: 'a' }), /expects the definition to declare a "state" object/, 'a definition without state is refused');
-  assert.throws(() => persist({ state: { a: 1 }, setup: 3 }, { key: 'a' }), /"setup" member that is not a function/, 'a non-function setup is refused');
-  assert.throws(() => persist({ state: { a: 1 } }, { key: 'a', serialize: 'no' }), /"serialize" that is not a function/, 'a non-function serializer is refused');
-  assert.throws(() => persist({ state: { a: 1 } }, { key: 'a', migrate: 'no' }), /"migrate" that is not a function/, 'a non-function migrate is refused');
-  assert.throws(() => persist({ state: { a: 1 } }, { key: 'a', restore: 'yes' }), /"restore" that is not a boolean/, 'a non-boolean restore is refused');
-  assert.throws(() => persist({ state: { a: 1 } }, { key: 'a', prefix: 5 }), /"prefix" that is not a string/, 'a non-string prefix is refused');
+  assert.throws(
+    () => persist({ count: 0 }, { key: 'a' }),
+    /expects the definition to declare a "state" object/,
+    'a definition without state is refused',
+  );
+  assert.throws(
+    () => persist({ state: { a: 1 }, setup: 3 }, { key: 'a' }),
+    /"setup" member that is not a function/,
+    'a non-function setup is refused',
+  );
+  assert.throws(
+    () => persist({ state: { a: 1 } }, { key: 'a', serialize: 'no' }),
+    /"serialize" that is not a function/,
+    'a non-function serializer is refused',
+  );
+  assert.throws(
+    () => persist({ state: { a: 1 } }, { key: 'a', migrate: 'no' }),
+    /"migrate" that is not a function/,
+    'a non-function migrate is refused',
+  );
+  assert.throws(
+    () => persist({ state: { a: 1 } }, { key: 'a', restore: 'yes' }),
+    /"restore" that is not a boolean/,
+    'a non-boolean restore is refused',
+  );
+  assert.throws(
+    () => persist({ state: { a: 1 } }, { key: 'a', prefix: 5 }),
+    /"prefix" that is not a string/,
+    'a non-string prefix is refused',
+  );
 
   assert.strictEqual(loggedMatching('[avenx-persistence]').length, 0, 'validation errors are thrown, not logged');
 
