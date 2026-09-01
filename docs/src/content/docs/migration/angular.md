@@ -9,13 +9,13 @@ This guide details how to migrate applications built with **Angular** to **Avenx
 
 ## 1. Architectural Overview & Mental Model Shift
 
-Angular applications use TypeScript classes with `@Component` decorators, dependency injection trees, and RxJS/Signals. Avenx-JS provides a lightweight companion file architecture (`.component.js` and `.component.css`) with proxy-based state and global Bridges (`AvenxBridge`).
+Angular applications use TypeScript classes with `@Component` decorators, dependency injection trees, and RxJS/Signals. Avenx-JS provides a lightweight companion file architecture (`.component.js` and `.component.css`) with proxy-based state and imported Bridges (`bridge()`).
 
 | Concept | Angular | Avenx-JS |
 | :--- | :--- | :--- |
 | **Component Definition** | TypeScript `@Component` class + HTML template | `.component.js` (logic/template) + `.component.css` |
 | **Template Loops** | `*ngFor="let item of items"` | `<@for item in state.items key="item.id">` |
-| **Shared State & Services** | `@Injectable({ providedIn: 'root' })` Services | **Bridges** (`AvenxBridge` in `src/global/*.bridge.js`) |
+| **Shared State & Services** | `@Injectable({ providedIn: 'root' })` Services | **Bridges** (`bridge()` in `src/bridges/*.bridge.js`) |
 | **Reactivity** | Signals (`signal()`) / RxJS Observables | Proxy state (`<state />`) and `<computed />` tags |
 | **Route Protection** | Angular `CanActivate` guards | `AvenxGuard` classes with `canActivate(to, from)` |
 
@@ -29,11 +29,11 @@ Angular applications use TypeScript classes with `@Component` decorators, depend
 
 ## 3. Services and Dependency Injection Alternatives
 
-Angular centralizes shared business logic and global state in `@Injectable({ providedIn: 'root' })` services injected into component constructors through its Dependency Injection (DI) framework. Avenx-JS replaces services and DI with **Bridges** — class-based reactive modules in `src/global/*.bridge.js` that extend `AvenxBridge`. See [Shared State & Bridges](/core-concepts/bridges) for the full bridge API and [Migration Overview](/migration/overview) for the high-level conceptual mapping.
+Angular centralizes shared business logic and global state in `@Injectable({ providedIn: 'root' })` services injected into component constructors through its Dependency Injection (DI) framework. Avenx-JS replaces services and DI with **Bridges** — reactive modules in `src/bridges/*.bridge.js` created with the `bridge()` factory and reached by importing them. See [Shared State & Bridges](/core-concepts/bridges) for the full bridge API and [Migration Overview](/migration/overview) for the high-level conceptual mapping.
 
 ### Replacing `@Injectable` Services
 
-A service becomes a bridge class. Where Angular marks the class with `@Injectable({ providedIn: 'root' })`, Avenx declares it in `src/global/<name>.bridge.js` and extends `AvenxBridge`. State the service held as fields becomes reactive properties initialized in the bridge constructor; business logic stays as class methods.
+A service becomes a bridge module. Where Angular marks the class with `@Injectable({ providedIn: 'root' })`, Avenx declares it in `src/bridges/<name>.bridge.js` and passes a definition to `bridge()`. State the service held as fields becomes keys of `state`; business logic becomes actions.
 
 **Before — Angular `@Injectable` Service & Component DI**
 
@@ -64,29 +64,28 @@ export class UserComponent {
 }
 ```
 
-**After — Avenx.js Bridge Class**
+**After — Avenx.js Bridge**
 
 ```javascript
-// src/global/user.bridge.js
-import { AvenxBridge } from 'avenx-core/runtime';
+// src/bridges/user.bridge.js
+import { bridge } from 'avenx-core/runtime';
 
-export default class UserBridge extends AvenxBridge {
-  constructor() {
-    super();
-    this.currentUser = { name: 'Guest', role: 'visitor' };
-    this.isLoggedIn = false;
-  }
+export default bridge({
+  state: {
+    currentUser: { name: 'Guest', role: 'visitor' },
+    isLoggedIn: false,
+  },
 
   setUser(name, role) {
     this.currentUser = { name, role };
     this.isLoggedIn = true;
-  }
-}
+  },
+});
 ```
 
 ### Using a Bridge in a Component Template
 
-Bridges are automatically loaded and registered by the compiler. They are exposed directly to component templates and actions under their capitalized name postfixed with `Bridge` (e.g. `UserBridge`) — no import, provider, or constructor parameter needed.
+A component reaches a bridge by importing it. The import replaces Angular's constructor injection: it is what puts the bridge in template scope, and it is what lets the compiler see every consumer.
 
 **Before — Angular template using the injected service**
 
@@ -96,29 +95,31 @@ Bridges are automatically loaded and registered by the compiler. They are expose
 <button (click)="userService.setUser('Alice', 'Admin')">Set Admin</button>
 ```
 
-**After — Avenx.js template using the bridge singleton**
+**After — Avenx.js template using the imported bridge**
 
 ```html
 <!-- src/components/user/user.component.js -->
+import user from '../../bridges/user.bridge.js';
+
 <div>
-  <p>User: {{ UserBridge.currentUser.name }} ({{ UserBridge.currentUser.role }})</p>
-  <button @click="UserBridge.setUser('Alice', 'Admin')">Set Admin</button>
+  <p>User: {{ user.currentUser.name }} ({{ user.currentUser.role }})</p>
+  <button @click="user.setUser('Alice', 'Admin')">Set Admin</button>
 </div>
 ```
 
 ### Eliminating Constructor Injection
 
-Avenx components do not take constructor parameters. There is no DI container and no provider tree to configure; component constructors only initialize local component state. Shared logic is always reached by referencing the bridge directly in the template or inside `<action>` blocks.
+Avenx components do not take constructor parameters. There is no DI container and no provider tree to configure. Shared logic is reached by importing the bridge and referencing it in the template or inside `<action>` blocks.
 
 ### Global Registration & Singleton Scope
 
-Every bridge in `src/global/` is registered globally at compile time and instantiated once. All components and pages share the same bridge instance, so state written by one component is immediately visible to every other component that references the bridge — the Avenx equivalent of a root-provided singleton service.
+A bridge module is instantiated once, no matter how many modules import it. All components and pages share that one instance, so state written by one component is immediately visible to every other component that imports the bridge — the Avenx equivalent of a root-provided singleton service. A bridge nothing imports is left out of the bundle entirely.
 
 ### Key Conceptual Differences & Pitfalls
 
 - **No DI Hierarchy**: Angular supports hierarchical injectors and scoping services to specific module trees. Avenx Bridges operate as global singletons; there is no per-module or per-route scoping.
-- **No Constructor Parameters**: Component constructors in Avenx do not accept injected services. Simply reference `UserBridge` directly in templates or actions.
-- **Extending `AvenxBridge`**: Ensure bridge classes extend `AvenxBridge` and execute `super()` inside their constructor before defining state properties.
+- **No Constructor Parameters**: Component constructors in Avenx do not accept injected services. Import the bridge and reference it directly in templates or actions.
+- **State is read-only outside the bridge**: A component cannot assign to `user.isLoggedIn`. Every mutation goes through an action, which is what keeps one origin for each change.
 
 ---
 
@@ -224,4 +225,4 @@ RxJS is not needed for asynchronous data that changes over time. Avenx-JS provid
 - **No Execution Parentheses**: Angular Signals require calling the signal getter function (`count()`). Avenx state properties are plain proxy properties (`state.count`).
 - **No Async Pipe Needed**: Templates read reactive properties directly. No subscription unwrapping or `async` pipe operators are necessary.
 - **Simplified State Mutations**: Mutate proxy properties directly (`state.count++`) instead of calling `signal.update()`, `signal.set()`, or `subject.next()`.
-- **Services that push streams**: Angular services often expose `BehaviorSubject`s that components subscribe to. In Avenx, share data through a **Bridge** (`AvenxBridge` in `src/global/*.bridge.js`) whose properties are read reactively in any component that touches them.
+- **Services that push streams**: Angular services often expose `BehaviorSubject`s that components subscribe to. In Avenx, share data through a **Bridge** (`bridge()` in `src/bridges/*.bridge.js`) whose state is read reactively in any component that imports it, with `bridge.on(event, handler)` for one-off notifications.

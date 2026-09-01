@@ -246,11 +246,15 @@ See [Custom Directives](/core-concepts/directives/) for complete guides, modifie
 ### `registerBridge(name, bridgeData)`
 
 
-Registers a global reactive state bridge. The bridge will be initialized and exposed to all components.
+Indexes a bridge on the application under `name`, so devtools and `app.bridges` can enumerate it. `bridgeData` is either a [`bridge()`](/core-concepts/bridges) instance or a plain reactive object.
+
+The compiler emits this call for every bridge an application imports, so a normal project never writes it by hand. Call it directly only to register a plain object as ad-hoc shared state:
 
 ```javascript
-app.registerBridge('AuthBridge', { isLoggedIn: false });
+app.registerBridge('flags', { betaEnabled: false });
 ```
+
+A `bridge()` instance is indexed exactly as it is — it is already reactive and already read-only for consumers, so it is never re-wrapped. Registering the same name twice throws `AVX_R10`.
 
 ### `onError(callback)`
 

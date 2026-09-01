@@ -1,0 +1,569 @@
+{
+  "traceVersion": 1,
+  "id": "atlas-fixture",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "determinism": {
+    "status": "deterministic",
+    "reasons": []
+  },
+  "meta": {},
+  "globals": {
+    "now": [],
+    "random": []
+  },
+  "redactions": [],
+  "dropped": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "parent": null,
+      "seq": 1,
+      "t": 5.748,
+      "type": "dom",
+      "op": "insert",
+      "target": {
+        "selector": "div.avenx-965f7b72",
+        "nth": 0
+      },
+      "component": "CartList",
+      "into": "div"
+    },
+    {
+      "id": 2,
+      "parent": null,
+      "seq": 2,
+      "t": 9.504,
+      "type": "dom",
+      "op": "insert",
+      "target": {
+        "selector": "div.avenx-f88480b7",
+        "nth": 0
+      },
+      "component": "CartItem",
+      "into": "div"
+    },
+    {
+      "id": 3,
+      "parent": null,
+      "seq": 3,
+      "t": 10.454,
+      "type": "dom",
+      "op": "insert",
+      "target": {
+        "selector": "div.avenx-fa281c60",
+        "nth": 0
+      },
+      "component": "CartSummary",
+      "into": "div"
+    },
+    {
+      "id": 4,
+      "parent": null,
+      "seq": 4,
+      "t": 11.285,
+      "type": "event",
+      "eventType": "click",
+      "handler": "seed()",
+      "target": {
+        "selector": "button.avenx-9f79fa07",
+        "nth": 0
+      },
+      "component": "CartList",
+      "uid": 0
+    },
+    {
+      "id": 5,
+      "parent": 4,
+      "seq": 5,
+      "t": 11.405,
+      "type": "action",
+      "name": "seed",
+      "kind": "action",
+      "component": "CartList",
+      "source": "cart.addItem('a', 12);"
+    },
+    {
+      "id": 6,
+      "parent": 5,
+      "seq": 6,
+      "t": 11.599,
+      "type": "bridge-action",
+      "bridge": "cart",
+      "name": "addItem",
+      "args": [
+        "a",
+        12
+      ]
+    },
+    {
+      "id": 7,
+      "parent": 6,
+      "seq": 7,
+      "t": 11.654,
+      "type": "write",
+      "path": "items.length",
+      "op": "push",
+      "size": 1
+    },
+    {
+      "id": 8,
+      "parent": 7,
+      "seq": 8,
+      "t": 11.774,
+      "type": "watcher",
+      "name": "CartList#render",
+      "kind": "render",
+      "component": "CartList"
+    },
+    {
+      "id": 9,
+      "parent": 7,
+      "seq": 9,
+      "t": 11.915,
+      "type": "watcher",
+      "name": "CartSummary#render",
+      "kind": "render",
+      "component": "CartSummary"
+    },
+    {
+      "id": 10,
+      "parent": 6,
+      "seq": 10,
+      "t": 11.993,
+      "type": "bridge-emit",
+      "bridge": "cart",
+      "event": "changed",
+      "listeners": 0,
+      "payload": "a"
+    },
+    {
+      "id": 11,
+      "parent": null,
+      "seq": 11,
+      "t": 12.051,
+      "type": "event",
+      "eventType": "click",
+      "handler": "seed()",
+      "target": {
+        "selector": "button.avenx-9f79fa07",
+        "nth": 0
+      },
+      "component": "CartList",
+      "uid": 0
+    },
+    {
+      "id": 12,
+      "parent": 11,
+      "seq": 12,
+      "t": 12.067,
+      "type": "action",
+      "name": "seed",
+      "kind": "action",
+      "component": "CartList",
+      "source": "cart.addItem('a', 12);"
+    },
+    {
+      "id": 13,
+      "parent": 12,
+      "seq": 13,
+      "t": 12.09,
+      "type": "bridge-action",
+      "bridge": "cart",
+      "name": "addItem",
+      "args": [
+        "a",
+        12
+      ]
+    },
+    {
+      "id": 14,
+      "parent": 13,
+      "seq": 14,
+      "t": 12.099,
+      "type": "write",
+      "path": "items.length",
+      "op": "push",
+      "size": 2
+    },
+    {
+      "id": 15,
+      "parent": 14,
+      "seq": 15,
+      "t": 12.105,
+      "type": "watcher",
+      "name": "CartList#render",
+      "kind": "render",
+      "component": "CartList"
+    },
+    {
+      "id": 16,
+      "parent": 14,
+      "seq": 16,
+      "t": 12.11,
+      "type": "watcher",
+      "name": "CartSummary#render",
+      "kind": "render",
+      "component": "CartSummary"
+    },
+    {
+      "id": 17,
+      "parent": 13,
+      "seq": 17,
+      "t": 12.12,
+      "type": "bridge-emit",
+      "bridge": "cart",
+      "event": "changed",
+      "listeners": 0,
+      "payload": "a"
+    },
+    {
+      "id": 18,
+      "parent": 9,
+      "seq": 18,
+      "t": 13.668,
+      "type": "computed",
+      "name": "total",
+      "kind": "getter",
+      "bridge": "cart",
+      "from": 0,
+      "to": 24
+    },
+    {
+      "id": 19,
+      "parent": 9,
+      "seq": 19,
+      "t": 13.702,
+      "type": "computed",
+      "name": "count",
+      "kind": "getter",
+      "bridge": "cart",
+      "from": 0,
+      "to": 2
+    },
+    {
+      "id": 20,
+      "parent": 9,
+      "seq": 20,
+      "t": 14.004,
+      "type": "dom",
+      "op": "text",
+      "target": {
+        "selector": "strong.avenx-5353da17",
+        "nth": 0
+      },
+      "component": "CartSummary",
+      "from": "0",
+      "to": "24"
+    },
+    {
+      "id": 21,
+      "parent": 9,
+      "seq": 21,
+      "t": 14.063,
+      "type": "dom",
+      "op": "text",
+      "target": {
+        "selector": "span.avenx-5b2993ae",
+        "nth": 0
+      },
+      "component": "CartSummary",
+      "from": "0 items",
+      "to": "2 items"
+    },
+    {
+      "id": 22,
+      "parent": null,
+      "seq": 22,
+      "t": 14.335,
+      "type": "event",
+      "eventType": "click",
+      "handler": "incQty()",
+      "target": {
+        "selector": "button.avenx-efb04723",
+        "nth": 0
+      },
+      "component": "CartItem",
+      "uid": 1
+    },
+    {
+      "id": 23,
+      "parent": 22,
+      "seq": 23,
+      "t": 14.36,
+      "type": "action",
+      "name": "incQty",
+      "kind": "action",
+      "component": "CartItem",
+      "source": "cart.addQty(id, 1);"
+    },
+    {
+      "id": 24,
+      "parent": 23,
+      "seq": 24,
+      "t": 14.397,
+      "type": "bridge-action",
+      "bridge": "cart",
+      "name": "addQty",
+      "args": [
+        "a",
+        1
+      ]
+    },
+    {
+      "id": 25,
+      "parent": 24,
+      "seq": 25,
+      "t": 14.479,
+      "type": "write",
+      "path": "items.0.qty",
+      "from": 1,
+      "to": 2
+    },
+    {
+      "id": 26,
+      "parent": 25,
+      "seq": 26,
+      "t": 14.486,
+      "type": "watcher",
+      "name": "CartList#render",
+      "kind": "render",
+      "component": "CartList"
+    },
+    {
+      "id": 27,
+      "parent": 25,
+      "seq": 27,
+      "t": 14.495,
+      "type": "watcher",
+      "name": "CartSummary#render",
+      "kind": "render",
+      "component": "CartSummary"
+    },
+    {
+      "id": 28,
+      "parent": 24,
+      "seq": 28,
+      "t": 14.517,
+      "type": "bridge-emit",
+      "bridge": "cart",
+      "event": "changed",
+      "listeners": 0,
+      "payload": "a"
+    },
+    {
+      "id": 29,
+      "parent": null,
+      "seq": 29,
+      "t": 14.56,
+      "type": "event",
+      "eventType": "click",
+      "handler": "incQty()",
+      "target": {
+        "selector": "button.avenx-efb04723",
+        "nth": 0
+      },
+      "component": "CartItem",
+      "uid": 1
+    },
+    {
+      "id": 30,
+      "parent": 29,
+      "seq": 30,
+      "t": 14.575,
+      "type": "action",
+      "name": "incQty",
+      "kind": "action",
+      "component": "CartItem",
+      "source": "cart.addQty(id, 1);"
+    },
+    {
+      "id": 31,
+      "parent": 30,
+      "seq": 31,
+      "t": 14.594,
+      "type": "bridge-action",
+      "bridge": "cart",
+      "name": "addQty",
+      "args": [
+        "a",
+        1
+      ]
+    },
+    {
+      "id": 32,
+      "parent": 31,
+      "seq": 32,
+      "t": 14.601,
+      "type": "write",
+      "path": "items.0.qty",
+      "from": 2,
+      "to": 3
+    },
+    {
+      "id": 33,
+      "parent": 32,
+      "seq": 33,
+      "t": 14.607,
+      "type": "watcher",
+      "name": "CartList#render",
+      "kind": "render",
+      "component": "CartList"
+    },
+    {
+      "id": 34,
+      "parent": 32,
+      "seq": 34,
+      "t": 14.612,
+      "type": "watcher",
+      "name": "CartSummary#render",
+      "kind": "render",
+      "component": "CartSummary"
+    },
+    {
+      "id": 35,
+      "parent": 31,
+      "seq": 35,
+      "t": 14.62,
+      "type": "bridge-emit",
+      "bridge": "cart",
+      "event": "changed",
+      "listeners": 0,
+      "payload": "a"
+    },
+    {
+      "id": 36,
+      "parent": 26,
+      "seq": 36,
+      "t": 15.177,
+      "type": "dom",
+      "op": "text",
+      "target": {
+        "selector": "p.avenx-801ff853",
+        "nth": 0
+      },
+      "component": "CartList",
+      "from": "1 x 12",
+      "to": "3 x 12"
+    },
+    {
+      "id": 37,
+      "parent": 27,
+      "seq": 37,
+      "t": 15.433,
+      "type": "computed",
+      "name": "total",
+      "kind": "getter",
+      "bridge": "cart",
+      "from": 24,
+      "to": 48
+    },
+    {
+      "id": 38,
+      "parent": 27,
+      "seq": 38,
+      "t": 15.659,
+      "type": "dom",
+      "op": "text",
+      "target": {
+        "selector": "strong.avenx-5353da17",
+        "nth": 0
+      },
+      "component": "CartSummary",
+      "from": "24",
+      "to": "48"
+    },
+    {
+      "id": 39,
+      "parent": null,
+      "seq": 39,
+      "t": 15.86,
+      "type": "event",
+      "eventType": "click",
+      "handler": "toggle()",
+      "target": {
+        "selector": "button.avenx-3c4516fe",
+        "nth": 0
+      },
+      "component": "CartSummary",
+      "uid": 2
+    },
+    {
+      "id": 40,
+      "parent": 39,
+      "seq": 40,
+      "t": 15.872,
+      "type": "action",
+      "name": "toggle",
+      "kind": "action",
+      "component": "CartSummary",
+      "source": "state.open = !state.open;"
+    },
+    {
+      "id": 41,
+      "parent": 40,
+      "seq": 41,
+      "t": 15.908,
+      "type": "write",
+      "path": "open",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": 42,
+      "parent": 41,
+      "seq": 42,
+      "t": 15.913,
+      "type": "watcher",
+      "name": "CartSummary#render",
+      "kind": "render",
+      "component": "CartSummary"
+    },
+    {
+      "id": 43,
+      "parent": null,
+      "seq": 43,
+      "t": 15.959,
+      "type": "event",
+      "eventType": "click",
+      "handler": "toggle()",
+      "target": {
+        "selector": "button.avenx-3c4516fe",
+        "nth": 0
+      },
+      "component": "CartSummary",
+      "uid": 2
+    },
+    {
+      "id": 44,
+      "parent": 43,
+      "seq": 44,
+      "t": 15.969,
+      "type": "action",
+      "name": "toggle",
+      "kind": "action",
+      "component": "CartSummary",
+      "source": "state.open = !state.open;"
+    },
+    {
+      "id": 45,
+      "parent": 44,
+      "seq": 45,
+      "t": 15.98,
+      "type": "write",
+      "path": "open",
+      "from": true,
+      "to": false
+    },
+    {
+      "id": 46,
+      "parent": 45,
+      "seq": 46,
+      "t": 15.986,
+      "type": "watcher",
+      "name": "CartSummary#render",
+      "kind": "render",
+      "component": "CartSummary"
+    }
+  ],
+  "redacted": false
+}

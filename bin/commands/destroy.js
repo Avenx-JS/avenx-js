@@ -77,6 +77,7 @@ export function destroyComponent(cli, name, dryRun = false) {
 
   const { capitalizedName, folderFileName: lowerName } = parseName(name);
   const compDir = path.join(cli.baseDir, cli.config.srcDir, 'components', lowerName);
+  const testPath = path.join(compDir, `${lowerName}.component.test.js`);
 
   if (dryRun) {
     console.log(cyan(`🧪 [Dry Run] Component '${lowerName}' files would be deleted:`));
@@ -84,6 +85,11 @@ export function destroyComponent(cli, name, dryRun = false) {
     console.log(
       gray(`[DRY-RUN] Would delete: ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.css`),
     );
+    if (fs.existsSync(testPath)) {
+      console.log(
+        gray(`[DRY-RUN] Would delete: ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.test.js`),
+      );
+    }
     console.log(gray(`[DRY-RUN] Would delete: ${cli.config.srcDir}/components/${lowerName}/`));
     console.log(
       cyan(`🧪 [Dry Run] ${cli.config.srcDir}/main.app.js would be updated to remove registrations/imports for '${capitalizedName}'.`),
@@ -180,9 +186,7 @@ export function destroyBridge(cli, name, dryRun = false) {
 
   if (fs.existsSync(bridgePath)) {
     fs.rmSync(bridgePath, { force: true });
-    console.log(
-      green(`✅ Bridge '${capitalizedName}' file deleted at ${cli.config.srcDir}/global/${lowerName}.bridge.js`),
-    );
+    console.log(green(`✅ Bridge '${capitalizedName}' file deleted at ${cli.config.srcDir}/global/${lowerName}.bridge.js`));
   } else {
     console.log(gray(`ℹ️ Bridge '${capitalizedName}' file was not found.`));
   }
@@ -219,9 +223,7 @@ export function destroyGuard(cli, name, dryRun = false) {
 
   if (fs.existsSync(guardPath)) {
     fs.rmSync(guardPath, { force: true });
-    console.log(
-      green(`✅ Guard '${capitalizedName}' file deleted at ${cli.config.srcDir}/guards/${lowerName}.guard.js`),
-    );
+    console.log(green(`✅ Guard '${capitalizedName}' file deleted at ${cli.config.srcDir}/guards/${lowerName}.guard.js`));
   } else {
     console.log(gray(`ℹ️ Guard '${capitalizedName}' file was not found.`));
   }

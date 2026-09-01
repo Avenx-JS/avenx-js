@@ -3,7 +3,7 @@ title: 'CLI Commands'
 description: 'Explore the command-line interface of Avenx-JS to create, compile, run, and watch projects.'
 ---
 
-The `avenx` command line interface streamlines your development workflow. It handles application scaffolding, code generation, destruction, building, watching, serving, project architecture inspection, template validation, and environment health diagnostics.
+The `avenx` command line interface streamlines your development workflow. It handles application scaffolding, code generation, destruction, building, watching, serving, project architecture inspection, template validation, environment health diagnostics, environment inspection/configuration, offline diagnostic code explanation, and semantic data-flow queries.
 
 ## Command Syntax
 
@@ -21,6 +21,10 @@ The following flags can be passed globally to `avenx` commands:
 | :--- | :--- | :--- | :--- |
 | `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `generate`, `destroy` |
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. | `init`, `generate`, `destroy`, `build` |
+| `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
+| `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
+| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
+| `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--version` | `-v` | Displays the installed version of the Avenx-JS CLI package. | Global |
 
@@ -204,7 +208,7 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 
 - **Component (`component`, `c`)**: Creates `src/components/<name>/<name>.component.js` and `.css`, and registers it in `main.app.js`.
 - **Page (`page`, `p`)**: Creates `src/pages/<name>.page.js` and `.css` for client-side routing.
-- **Bridge (`bridge`)**: Creates a shared reactive domain state class at `src/global/<name>.bridge.js` extending `AvenxBridge`.
+- **Bridge (`bridge`)**: Creates a shared reactive state module at `src/global/<name>.bridge.js` built with the `bridge()` factory.
 - **Guard (`guard`)**: Creates a navigation guard class at `src/guards/<name>.guard.js` extending `AvenxGuard`.
 
 #### Options
@@ -265,12 +269,27 @@ npx avenx d p dashboard --dry-run
 
 Compiles all component templates, scoped stylesheets, page components, and global bridges into single distribution bundle files in `distDir`.
 
+**`avenx build` is a production build.** It bundles the minified runtime and links the CSS source map as a separate file. Pass `--dev` for a development build, which bundles the readable runtime and inlines the CSS source map:
+
+```bash
+npx avenx build
+```
+
+```bash
+npx avenx build --dev
+```
+
+The active mode appears in the build header, and can also be set with `mode` in `avenx.config.json` or via `NODE_ENV=development`. See the [deployment guide](/guides/deployment#build-modes) for what the two modes differ in.
+
+**Exit codes.** `avenx build` exits `0` only on a successful build. Any fatal compiler error, a warning escalated to `"error"`, or a failing lifecycle hook exits non-zero, so `avenx build && deploy` never deploys a failed build. See [Build Failures and Exit Codes](/guides/deployment#build-failures-and-exit-codes).
+
 #### Features & Distribution Files
 
 - Compiles `.component.js` files and extracts `<state>`, `<action>`, and `<computed>` tags.
 - Bundles and scopes component CSS rules.
 - Performs automatic component tree-shaking when `treeShakeComponents: true`.
 - Evaluates build-time template validation rules.
+- Minifies the bundled runtime in production mode.
 - Generates JavaScript (`<outputName>.js`) and CSS (`<outputName>.css`) distribution bundles.
 
 #### Custom Output Bundle Names (`outputName`)
@@ -334,6 +353,7 @@ Launches a local live-reloading development server with automatic file watching 
 - `--port <number>`, `-p <number>` (or positional argument `avenx serve 8080`): Sets the development server TCP port (default: `3000`).
 - `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`).
 - `--no-live-reload` / `--live-reload=false`: Disables file watching, live reload SSE client script injection, and automatic browser refreshes.
+- `--trace`: Records a causal trace of the running application. Off by default. See [`avenx trace`](#14-avenx-trace) and the [Avenx Trace guide](/core-concepts/trace/).
 
 #### Visual Inspection Dashboard (`/__avenx-inspect`)
 
@@ -486,6 +506,8 @@ Analyzes the project's source files and reports component, page, bridge, and gua
 ```bash
 npx avenx stats [options]
 npx avenx s [options]
+```
+
 #### Options
 
 | Flag / Option | Alias | Description |
@@ -538,3 +560,404 @@ The template reduction percentage is calculated as:
 
 ```text
 ((Raw Template Payload - Compiled Template Payload) / Raw Template Payload) × 100
+```
+
+---
+
+### 13. `avenx env`
+
+Inspects the project's environment variables and reports active configuration, separating public variables (which are inlined into the build) from system variables (which are kept private and masked).
+
+#### Command Syntax
+
+```bash
+npx avenx env
+```
+
+#### Options
+
+The command accepts **no flags or aliases** and does not support structured/machine-readable (`--json`) output.
+
+#### How It Resolves Configuration
+
+The command scans the project root directory and reads configuration files through the following mechanism:
+1. It loads local environment variables from the `.env` file using the `loadEnv()` helper against the resolved project root (does not overwrite existing environment variables in `process.env`).
+2. It separately parses the project's `.env` file using `parseEnv()` to identify local keys.
+3. It compares keys in `.env` with keys in `process.env` to classify each variable as public or private/system.
+
+#### Output Groups
+
+The command organizes variables and file statuses into three distinct groups:
+
+##### 1. Source Files
+Reports the path and parsing status of the project's `.env` file:
+* **Successful read**: Displays the absolute path of the `.env` file prefixed with a green checkmark (`✔`).
+* **Missing file**: Prints a warning prefixed with a yellow warning symbol (`⚠ No .env file found (only process env AVX_PUBLIC_* shown)`).
+* **Unparseable/Invalid file**: Displays an error prefixed with a yellow cross (`✖ Failed to read <absolute-path-to-.env>: <error-message>`) and sets a non-zero exit code (`1`).
+
+##### 2. Public Variables
+Lists variables prefixed with `AVX_PUBLIC_`.
+* **Source**: Collected from all keys in `process.env` (system environment) and keys in the project's `.env` file. Sorted alphabetically.
+* **Display**: Values are displayed in full and unmasked.
+* **Notes**:
+  * `inlined` (gray): Indicates the variable contains a non-empty string and will be stringified and inlined into build outputs.
+  * `empty` (yellow): Indicates the variable is empty (`""`).
+
+##### 3. System Variables
+Lists private or non-public variables.
+* **Source**: Collected **only** from the project's local `.env` file (keys not starting with `AVX_PUBLIC_`). Shell environment variables present in `process.env` but absent from `.env` are excluded from this list. Sorted alphabetically.
+* **Display**: Values are masked for security.
+
+#### Security Boundary & Best Practices
+
+Avenx enforces a strict build-time security boundary for environment variables:
+* Only variables prefixed with `AVX_PUBLIC_` are exposed to client-side compiled outputs. The compiler replaces occurrences of `process.env.AVX_PUBLIC_<KEY>` in code with their stringified value.
+* Any other variables (e.g. database credentials, server API keys) placed in the `.env` file are kept private. They are **not** replaced in code or bundled into compiled assets.
+* Developers should run `avenx env` to verify that no sensitive credentials have been accidentally prefixed with `AVX_PUBLIC_`.
+
+#### Secret Masking Rules
+
+For private system variables, Avenx masks the values using a deterministic `maskSecret()` rule:
+* **Short Values (4 characters or fewer, including empty values)**: The value is completely replaced with asterisks (`*`), with a minimum of 4 asterisks (e.g., an empty value or `key` is displayed as `****`).
+* **Long Values (more than 4 characters)**: The first 4 characters are preserved in plaintext, and the remaining characters are replaced by asterisks up to a maximum of 8. The total output length will be `4 + Math.min(8, value.length - 4)`, resulting in a maximum total output length of 12 characters.
+
+| Original Value | Masked Output | Description |
+| :--- | :--- | :--- |
+| `""` (empty) | `****` | Length 0, replaced by 4 asterisks. |
+| `key` | `****` | Length 3, replaced by 4 asterisks. |
+| `pass` | `****` | Length 4, replaced by 4 asterisks. |
+| `hello` | `hell*` | Length 5. First 4 characters preserved (`hell`), remaining 1 masked (`*`). |
+| `secret` | `secr**` | Length 6. First 4 characters preserved (`secr`), remaining 2 masked (`**`). |
+| `my_very_long_password` | `my_v********` | Length 21. First 4 characters preserved (`my_v`), remaining 17 masked (capped at 8 asterisks). |
+
+#### Exit Codes
+
+* **`0`**: Normal execution (even if `.env` is missing).
+* **`1`**: A `.env` file exists but failed to parse (e.g. contains syntax errors). If a parsing error occurs, the command sets `process.exitCode = 1` and continues executing to display any available environment details. This behavior is useful in CI pipelines to automatically fail builds if a configuration file is malformed.
+
+#### Sample Output
+
+```text
+Avenx Environment
+Project: /path/to/avenx-js
+
+Source Files
+  ✔ /path/to/avenx-js/.env
+
+Public Variables (AVX_PUBLIC_* — inlined at build time)
+  Key                          Value                    Notes
+  AVX_PUBLIC_API_URL           https://api.example.com  inlined
+  AVX_PUBLIC_APP_NAME                                   empty
+  AVX_PUBLIC_EXTERNAL_VAR      external_val             inlined
+
+System Variables (from .env — values masked)
+  Key                          Value
+  API_KEY                      ****
+  DB_PASSWORD                  secr********
+```
+
+---
+
+### 14. `avenx trace`
+
+Records why your application did what it did, and turns a recording into a regression test.
+
+Traces are recorded by `avenx serve --trace` and stored in `.avenx/traces/`, one JSON file per recording. See the [Avenx Trace guide](/core-concepts/trace/) for the full picture; this is the command surface.
+
+#### `avenx trace list`
+
+Lists stored traces, newest first.
+
+```bash
+npx avenx trace list
+```
+
+```text
+TRACE ID        AGE     EVENTS   COMPONENTS   STATUS
+trace-4f2a      2m      14       3            deterministic
+trace-a91c      8m      42       7            best-effort
+```
+
+`--json` prints the listing as machine-readable JSON.
+
+**Status** is either `deterministic` (the recording can become a regression test you rely on) or `best-effort` (something escaped the recording boundary; run `avenx trace view` for the reasons).
+
+#### `avenx trace view <id|latest>`
+
+Prints a trace as a causal tree. Every line sits under the thing that caused it.
+
+```bash
+npx avenx trace view trace-4f2a
+npx avenx trace view latest
+```
+
+```text
+▸ click <button.qty-inc> CartItem
+  └─ action CartItem.incQty()  src/components/cart-item/cart-item.component.js:3
+     └─ bridge cart · addQty("a", 1)
+        ├─ write cart.items.0.qty 2 → 3
+        │  ├─ woke CartItem#render
+        │  │  └─ patched <span.qty> text "2" → "3"
+        │  └─ woke CartSummary#render
+        │     ├─ getter cart.total 36 → 48
+        │     └─ patched <strong.total> text "$36.00" → "$48.00"
+        └─ emit cart:changed → 0 listeners
+
+Determinism: deterministic — this trace can be exported as a regression test.
+```
+
+Options:
+
+- `--json`: Print the raw trace instead of the tree.
+- `--roots=<n>`: Show only the first `n` causal roots, for a long session.
+
+Source locations come from `dist/bundle.trace.json`, which the compiler writes beside the bundle. Build the project to get them.
+
+#### `avenx trace export <id|latest>`
+
+Writes an executable regression test for a trace, plus a copy of the trace beside it so a committed test does not depend on `.avenx/traces/`.
+
+```bash
+npx avenx trace export latest --out test/cart-qty.test.js
+```
+
+Options:
+
+- `--out <file>`, `-o <file>`: Where to write the test. Defaults to `test/<component>-<event>.test.js`.
+- `--force`, `-f`: Overwrite an existing file. Without it, an existing file is an error.
+- `--dry-run`, `-d`: Print the generated test instead of writing it.
+
+The command warns when a trace is best-effort, when values were redacted, and when a contract violation was observed during the recording.
+
+#### `avenx trace prune`
+
+Removes stored traces.
+
+```bash
+npx avenx trace prune              # keep the 20 newest
+npx avenx trace prune --keep=5     # keep the 5 newest
+npx avenx trace prune trace-4f2a   # remove one
+npx avenx trace prune --all        # remove everything
+```
+
+`--dry-run` / `-d` reports what would be removed without removing it.
+
+#### Exit Codes
+
+* **`0`**: The command completed.
+* **`1`**: The named trace does not exist, a trace file could not be read, an output file already exists without `--force`, or an option value was invalid.
+
+---
+
+### 15. `avenx explain`
+
+Explains a compiler error, runtime exception, or warning code offline, printing what triggered the diagnostic, its common causes, how to fix it, and a link to the full troubleshooting guide. It reads from the built-in diagnostic catalogue, so it works with no project and no network connection.
+
+Codes surfaced by `avenx build`, `avenx check`, and the runtime (e.g. `AVX_C01`, `AVX_R18`, `AVX_W29`) can be passed straight to `avenx explain` to understand and resolve them.
+
+#### Command Syntax
+
+```bash
+npx avenx explain <CODE> [options]
+```
+
+#### Code Normalization
+
+The code argument is normalized before lookup, so you can type it however it appeared in your terminal:
+
+- **Full code**: `AVX_W29`
+- **Shorthand prefix**: `W29`
+- **Lowercase**: `w29`
+
+All three resolve to the same diagnostic. Normalization uppercases the input and prepends `AVX_` when it is missing (`w29` → `AVX_W29`, `AVXW29` → `AVX_W29`).
+
+#### Options & Flags
+
+| Flag / Option | Description |
+| :--- | :--- |
+| `--json` | Outputs the full diagnostic metadata as structured JSON. Ideal for IDE plugins, editor tooling, and CI/CD pipelines that consume diagnostics programmatically. |
+
+#### Terminal Color Output
+
+Human-readable output uses ANSI color: the severity badge is red for `[ERROR]` and yellow for `[WARNING]`, the category and documentation URL are cyan, and section labels are bold. Coloring is applied only when writing to an interactive terminal (`process.stdout.isTTY`) and is disabled when `NO_COLOR` is set or when output is piped or redirected. `--json` output is always uncolored and valid JSON regardless of environment.
+
+#### Command Output Breakdown
+
+Without `--json`, the command prints the following sections:
+
+- **Header**: The code, its name, and a severity badge (`[ERROR]` in red or `[WARNING]` in yellow).
+- **Category**: The subsystem the diagnostic belongs to (`compiler`, `runtime`, etc.).
+- **Summary**: A concise explanation of what triggered the diagnostic.
+- **Common Causes**: A bulleted list of the frequent oversights that produce the code.
+- **How to Fix**: Actionable remediation steps.
+- **Documentation**: A direct URL (`docsUrl`) to the full troubleshooting entry.
+
+#### Fuzzy Suggestions & Error Handling
+
+When an unknown code is provided, the command lists close matches from the catalogue prefixed with `Did you mean:` and exits non-zero. Partial inputs match every code sharing that prefix (e.g. `C0` suggests `AVX_C01` through `AVX_C06`).
+
+#### Exit Codes
+
+- `0`: A valid diagnostic was found and printed.
+- `1`: No code was provided, or the code is unknown (suggestions, if any, are still shown).
+
+#### Usage Examples
+
+```bash
+# Explain a warning by full code
+npx avenx explain AVX_W29
+
+# Shorthand and lowercase both resolve to the same code
+npx avenx explain W29
+npx avenx explain w29
+
+# Machine-readable metadata for tooling and CI
+npx avenx explain AVX_R18 --json
+```
+
+**Sample Output (warning):**
+
+```text
+AVX_W29: MissingKeyInLoop [WARNING]
+Category: compiler
+
+Summary:
+  A repeated list item in <@for> does not specify a unique @key attribute.
+
+Common Causes:
+  • <@for ...> rendering dynamic lists without unique tracking keys.
+
+How to Fix:
+  • Add a unique @key attribute to the root repeated item (e.g., @key="item.id").
+
+Documentation:
+  https://avenx.dev/docs/troubleshooting#avx-w29
+```
+
+**Sample Output (`--json`):**
+
+```json
+{
+  "code": "AVX_R18",
+  "name": "ReactivityLoopDetected",
+  "severity": "error",
+  "category": "runtime",
+  "summary": "A circular reactive update loop exceeded the maximum update depth limit.",
+  "causes": [
+    "An action or effect synchronously mutates state that triggers itself continuously."
+  ],
+  "remedies": [
+    "Break recursive mutations or add termination conditions to reactive watchers."
+  ],
+  "docsUrl": "https://avenx.dev/docs/troubleshooting#avx-r18"
+}
+```
+
+**Unknown Code with Suggestions:**
+
+```text
+❌ Unknown diagnostic code: 'C0'
+
+Did you mean: AVX_C01, AVX_C02, AVX_C03, AVX_C04, AVX_C05, AVX_C06?
+```
+
+The same unknown-code case in `--json` form returns an `error` field and a `suggestions` array:
+
+```json
+{
+  "error": "Unknown diagnostic code: 'C0'",
+  "suggestions": ["AVX_C01", "AVX_C02", "AVX_C03", "AVX_C04", "AVX_C05", "AVX_C06"]
+}
+```
+
+---
+
+### 16. `avenx atlas`
+
+Prints the compiler's semantic model of the application: how many components, pages, bridges, state keys, computed values, getters, actions, resources, bindings, handlers, routes and guards it declares, which routes resolve to which pages and what guards them, and a breakdown of anything the analyser could not resolve.
+
+See the [Avenx Atlas guide](/core-concepts/atlas/) for the model itself, its confidence levels, and its limitations.
+
+#### Command Syntax
+
+```bash
+npx avenx atlas
+npx avenx atlas --json    # the whole model
+```
+
+#### Options & Flags
+
+| Flag / Option | Description |
+| :--- | :--- |
+| `--json`, `-j` | Outputs the complete model — nodes, edges, unresolved entries and summary — as structured JSON. |
+
+#### Generated Artifact
+
+`avenx build` writes the same model to `dist/<outputName>.atlas.json`, beside the bundle. It is never referenced by the bundle, so it costs a browser nothing.
+
+---
+
+### 17. `avenx impact`
+
+What can be affected if a symbol changes. Follows relationships *into* it — every computed, action, template binding, handler, component, page and route that depends on it, transitively.
+
+#### Command Syntax
+
+```bash
+npx avenx impact <symbol> [options]
+```
+
+```bash
+npx avenx impact cart.items
+npx avenx impact cart.items --json
+npx avenx impact cart.items --depth=4
+```
+
+#### Options & Flags
+
+| Flag / Option | Description |
+| :--- | :--- |
+| `--json`, `-j` | Outputs the target, everything reached, and the unresolved entries bearing on the answer, as structured JSON. |
+| `--depth=<n>` | How many hops to follow. Defaults to 12. |
+
+#### Naming a Symbol
+
+The symbol argument accepts, in order of precision:
+
+- **Full node id**: `state:bridge:cart.items`
+- **Qualified member**: `cart.items`
+- **Owner**: `CartItem`
+- **Bare member name**, when only one exists: `qty`
+- **Route**: `/checkout`
+
+An ambiguous name lists its candidates rather than picking one.
+
+#### Reading the Answer
+
+Each line names the relationship (`reads`, `writes`, `invokes`, `renders`, `routes-to`, `guarded-by`), what it reached, the member path where one applies, and the file and line. An edge the analyser could not prove is marked `[possible]`.
+
+Every answer ends with the number of unresolved relationships bearing on it, **including when that number is zero**. That line is part of the answer: it says how complete the rest of it is.
+
+#### Exit Codes
+
+* **`0`**: The query was answered.
+* **`1`**: The symbol was not found, or was ambiguous, or none was given.
+
+---
+
+### 18. `avenx why`
+
+Where a value comes from — the same traversal as [`avenx impact`](#17-avenx-impact) in the opposite direction, following relationships *out of* a symbol to everything it is derived from.
+
+#### Command Syntax
+
+```bash
+npx avenx why <symbol> [options]
+```
+
+```bash
+npx avenx why cart.total
+npx avenx why CartSummary.total --json
+```
+
+It takes the same `--json` and `--depth` options, resolves symbols the same way, and uses the same exit codes as `avenx impact`.

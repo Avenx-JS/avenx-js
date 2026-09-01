@@ -24,6 +24,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 
 | Option         | Type       | Default              | Rules                                                                 |
 | -------------- | ---------- | --------------------- | ---------------------------------------------------------------------- |
+| `mode`         | `string`   | `"production"`       | Build mode: `"production"` or `"development"`. Overridden by `--dev` / `--prod`; `avenx serve` and `avenx watch` default to development. See [Build modes](#build-mode-mode). |
 | `srcDir`       | `string`   | `"src"`              | Non-empty relative path to application source files.                  |
 | `distDir`      | `string`   | `"dist"`              | Non-empty relative path where compiled output is written.             |
 | `outputName`   | `string`   | `"bundle"`         | Base name used for generated JavaScript and CSS bundles. The compiler generates <outputName>.js and <outputName>.css. Must be a non-empty filename without an extension.|
@@ -39,6 +40,33 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
 
+
+## Build mode (`mode`)
+
+`avenx build` produces a production build by default: it bundles the minified runtime and writes the CSS source map as a separate linked file. Development builds bundle the readable runtime and inline the CSS source map instead.
+
+Pin the mode in `avenx.config.json` when a project should always build one way:
+
+```json
+{
+  "mode": "production"
+}
+```
+
+Resolution order, first match wins:
+
+1. `--dev` / `--prod` on the command line.
+2. `mode` in `avenx.config.json`.
+3. `NODE_ENV=development`.
+4. The command's default — development for `avenx serve` and `avenx watch`, production for everything else.
+
+The active mode is printed in the build header, so it is never ambiguous which one ran:
+
+```text
+--- Avenx-JS Compiler (production) ---
+```
+
+Both modes compile the same application and ship the same runtime features. Production is that runtime, minified — no feature is stripped and no behaviour differs. See the [deployment guide](/guides/deployment#build-modes) for the full comparison.
 
 ## Custom void tags
 
@@ -394,6 +422,31 @@ In this example:
 Promoting specific warnings to `"error"` is a powerful tool for enforcing code quality checks in Continuous Integration (CI/CD) pipelines.
 
 By setting critical warnings (such as undeclared variables `AVX_W03` or invalid preprocessor configs `AVX_W25`) to `"error"`, your automated build checks (e.g. `avenx build` or `npm run build`) fail automatically if any component contains template errors, preventing buggy code from being merged or deployed to production.
+
+---
+
+## Rewind Configuration (`rewind`)
+
+Project-wide defaults for [Avenx Rewind](/core-concepts/rewind), the transaction
+behaviour behind `atomic` actions. Both keys are optional; an action may
+override `onConflict` for itself.
+
+```json
+{
+  "rewind": {
+    "onConflict": "safe",
+    "maxSnapshotItems": 10000
+  }
+}
+```
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `onConflict` | `"safe" \| "force" \| "abort"` | `"safe"` | What a rewind does when a path no longer holds the value the transaction wrote. `safe` leaves the newer value alone and reports `AVX_R29`; `force` restores regardless; `abort` restores what it can, then throws. |
+| `maxSnapshotItems` | `number` | `10000` | How many entries an array, `Map` or `Set` may hold before the journal stops taking a savepoint of it. A collection past the limit is reported through `AVX_R29` on rewind rather than truncated silently. |
+
+A project that leaves this section alone emits no configuration into the bundle
+at all — the defaults are already in the runtime.
 
 ---
 

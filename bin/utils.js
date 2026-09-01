@@ -185,3 +185,89 @@ export function abortIfGeneratedPathExists(baseDir, type, name, targetPaths) {
   );
   return true;
 }
+
+/**
+ * Cross-platform directory watcher with recursive support fallback.
+ * Node 18 on Linux does not support fs.watch(dir, { recursive: true }).
+ * @param {string} dirPath - Directory to watch.
+ * @param {Function} callback - Event callback (eventType, filename).
+ * @returns {{close: Function}|object} FSWatcher or compatible watcher object with close() method.
+ */
+export function watchDirectory(dirPath, callback) {
+  try {
+    return fs.watch(dirPath, { recursive: true }, callback);
+  } catch (err) {
+    if (err && err.code === 'ERR_FEATURE_UNAVAILABLE_ON_PLATFORM') {
+      return createRecursiveWatcherFallback(dirPath, callback);
+    }
+    throw err;
+  }
+}
+
+/**
+ * Fallback recursive watcher for platforms/Node versions lacking native recursive watch.
+ * Walks directory tree and registers individual fs.watch instances.
+ * @param {string} rootPath - Root directory to watch.
+ * @param {Function} callback - Event callback.
+ * @returns {{close: Function}}
+ */
+function createRecursiveWatcherFallback(rootPath, callback) {
+  const watchers = new Map();
+
+  function scanAndWatch(currentDir) {
+    if (!fs.existsSync(currentDir)) return;
+
+    if (!watchers.has(currentDir)) {
+      try {
+        const watcher = fs.watch(currentDir, (eventType, filename) => {
+          const relativeDir = path.relative(rootPath, currentDir);
+          const relativeFile = filename
+            ? (relativeDir ? path.join(relativeDir, filename) : filename).replace(/\\/g, '/')
+            : (relativeDir ? relativeDir.replace(/\\/g, '/') : '');
+
+          const fullPath = filename ? path.join(currentDir, filename) : currentDir;
+          try {
+            if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+              scanAndWatch(fullPath);
+            }
+          } catch {
+            // Ignore stat errors on deleted / inaccessible entries
+          }
+
+          callback(eventType, relativeFile);
+        });
+
+        watchers.set(currentDir, watcher);
+      } catch {
+        // Ignore watch errors on transient dirs or permission errors
+      }
+    }
+
+    try {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          scanAndWatch(path.join(currentDir, entry.name));
+        }
+      }
+    } catch {
+      // Ignore read errors on inaccessible dirs
+    }
+  }
+
+  scanAndWatch(rootPath);
+
+  return {
+    close() {
+      for (const watcher of watchers.values()) {
+        try {
+          watcher.close();
+        } catch {
+          // Ignore close errors
+        }
+      }
+      watchers.clear();
+    },
+  };
+}
+

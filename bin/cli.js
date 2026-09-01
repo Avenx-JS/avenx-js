@@ -14,6 +14,9 @@ import { runDoctor } from './commands/doctor.js';
 import { runInspect } from './commands/inspect.js';
 import { runStats } from './commands/stats.js';
 import { runEnv } from './commands/env.js';
+import { explainDiagnostic } from './commands/explain.js';
+import { runTrace } from './commands/trace.js';
+import { runAtlas, runQuery } from './commands/atlas.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +59,21 @@ export class AvenxCLI {
   async run(command, args = []) {
     const dryRun = args.includes('--dry-run') || args.includes('-d');
     const force = args.includes('--force') || args.includes('-f');
+    const withTest = args.includes('--with-test');
+    const noTest = args.includes('--no-test');
+
+    // `avenx build` is production by default; `--dev` opts out. `--prod` is
+    // accepted so a script can state the intent it relies on. `serve` and
+    // `watch` are development unless the flag says otherwise.
+    const explicitDev = args.includes('--dev') || args.includes('--development');
+    const explicitProd = args.includes('--prod') || args.includes('--production');
+    if (explicitDev) {
+      this.config.mode = 'development';
+    } else if (explicitProd) {
+      this.config.mode = 'production';
+    } else if (command === 'serve' || command === 'watch' || command === 'w') {
+      this.config.mode = 'development';
+    }
 
     let templateName = null;
     const templateIndex = args.findIndex((arg) => arg === '--template' || arg === '-t');
@@ -76,11 +94,17 @@ export class AvenxCLI {
         arg !== '-f' &&
         arg !== '--no-color' &&
         arg !== '--no-colors' &&
+        arg !== '--dev' &&
+        arg !== '--development' &&
+        arg !== '--prod' &&
+        arg !== '--production' &&
         arg !== '--template' &&
         arg !== '-t' &&
         !(templateIndex !== -1 && idx === templateIndex + 1) &&
         !arg.startsWith('--template=') &&
-        !arg.startsWith('-t='),
+        !arg.startsWith('-t=') &&
+        arg !== '--with-test' &&
+        arg !== '--no-test',
     );
     const type = filteredArgs[0];
     const name = filteredArgs[1];
@@ -111,10 +135,10 @@ export class AvenxCLI {
         } else if (type === 'page' || type === 'p') {
           generatePage(this, name, dryRun, force, templateName);
         } else if (type === 'component' || type === 'c') {
-          generateComponent(this, name, dryRun, force, templateName);
+          generateComponent(this, name, dryRun, force, templateName, withTest, noTest);
         } else {
           // Default to component if type is not specified (e.g., `avenx g MyButton`)
-          generateComponent(this, type, dryRun, force, templateName);
+          generateComponent(this, type, dryRun, force, templateName, withTest, noTest);
         }
         break;
       case 'destroy':
@@ -170,6 +194,10 @@ export class AvenxCLI {
         runStats(this, args);
         break;
       case 'serve': {
+        // Recording is opt-in and development-only. It is read here rather
+        // than from config alone so that turning it on is always a visible,
+        // deliberate act at the command line.
+        this.traceEnabled = args.includes('--trace');
         const portIdx = args.findIndex((a) => a === '--port' || a === '-p' || a.startsWith('--port=') || a.startsWith('-p='));
         const hostIdx = args.findIndex((a) => a === '--host' || a === '-h' || a.startsWith('--host=') || a.startsWith('-h='));
         const open = args.includes('--open') || args.includes('-o');
@@ -178,9 +206,23 @@ export class AvenxCLI {
           this.config.server.liveReload = false;
         }
 
+        // The positional port is the first bare argument that is not itself the
+        // value of a flag. Only args[0] used to be considered, so any leading
+        // flag — `serve --trace 8080`, `serve --open 8080` — silently fell back
+        // to the default port.
+        const flagValueIndexes = new Set();
+        for (const idx of [portIdx, hostIdx]) {
+          if (idx !== -1 && !args[idx].includes('=')) {
+            flagValueIndexes.add(idx + 1);
+          }
+        }
+        const positionalPort = args.find(
+          (arg, idx) => !arg.startsWith('-') && !flagValueIndexes.has(idx) && /^\d+$/.test(arg.trim()),
+        );
+
         const rawPortVal = portIdx !== -1
           ? (args[portIdx].includes('=') ? args[portIdx].split('=').slice(1).join('=') : args[portIdx + 1])
-          : (!args[0]?.startsWith('-') ? args[0] : null);
+          : (positionalPort ?? null);
         const rawPort = rawPortVal?.replace(/[^0-9]/g, '');
         const port = rawPort
           ? parseInt(rawPort, 10)
@@ -204,6 +246,24 @@ export class AvenxCLI {
           process.exit(0);
         });
         break;
+      case 'trace':
+        runTrace(this, args);
+        break;
+      case 'atlas':
+        runAtlas(this, args);
+        break;
+      case 'impact':
+        runQuery(this, args, 'in');
+        break;
+      case 'why':
+        runQuery(this, args, 'out');
+        break;
+      case 'explain': {
+        const asJson = args.includes('--json');
+        const codeArg = args.find((a) => !a.startsWith('-'));
+        explainDiagnostic(this, codeArg, asJson);
+        break;
+      }
       case 'help':
       default:
         printHelp();

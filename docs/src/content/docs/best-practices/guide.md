@@ -48,7 +48,7 @@ Use the narrowest state scope that satisfies the requirement:
 
 - **Local component state** — use `<state>` for private state owned by a component.
 - **Subtree state** — use `this.provide` and `static inject` when state or services are shared within a component branch.
-- **Global state** — use an `AvenxBridge` when state must be shared across unrelated parts of the application.
+- **Global state** — use a [Bridge](/core-concepts/bridges) when state must be shared across unrelated parts of the application.
 
 > [!IMPORTANT]
 > Avoid putting state in a global Bridge when only one component or subtree needs it. Keeping state local reduces coupling and makes components easier to reason about and test.

@@ -78,17 +78,20 @@ Once these files exist, running `npx avenx g counter` will use your custom templ
 **`.avenxtemplates/bridge/bridge.js.template`**
 
 ```javascript
-import { AvenxBridge } from 'avenx-core/runtime';
+import { bridge } from 'avenx-core/runtime';
 
 /**
  * {{ name }} - custom bridge template
  */
-export default class {{ name }} extends AvenxBridge {
-    constructor() {
-        super();
-        this.value = null;
-    }
-}
+export default bridge({
+    state: {
+        value: null,
+    },
+
+    setValue(next) {
+        this.value = next;
+    },
+});
 ```
 
 ## Notes

@@ -2,28 +2,17 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { bold, cyan, green, yellow, red, gray } from '../colors.js';
+import { CONFIG_SCHEMA } from '../../lib/config.js';
 
 const MIN_NODE_VERSION = [18, 0, 0];
 
-const ALLOWED_TOP_LEVEL = [
-  'srcDir',
-  'distDir',
-  'templatesDir',
-  'server',
-  'style',
-  'debug',
-  'outputName',
-  'logging',
-  'voidTags',
-  'warnings',
-  'treeShakeComponents',
-  'preprocessors',
-];
-
-const ALLOWED_SERVER = ['port', 'host', 'liveReload'];
-const ALLOWED_STYLE = ['preprocessor', 'sourceMap', 'inlineSourceMap', 'dev'];
-const ALLOWED_DEBUG = ['debugReactivity'];
-const ALLOWED_LOGGING = ['level', 'silent'];
+// One schema, owned by lib/config.js. Doctor used to keep its own copy and
+// drifted, warning that valid options such as server.headers were unknown.
+const ALLOWED_TOP_LEVEL = CONFIG_SCHEMA.topLevel;
+const ALLOWED_SERVER = CONFIG_SCHEMA.server;
+const ALLOWED_STYLE = CONFIG_SCHEMA.style;
+const ALLOWED_DEBUG = CONFIG_SCHEMA.debug;
+const ALLOWED_LOGGING = CONFIG_SCHEMA.logging;
 
 /**
  * @param {number[]} current

@@ -18,7 +18,7 @@ This overview outlines core conceptual mappings, architectural shifts, and termi
 | **Derived Values** | `useMemo` / inline recalculation | `computed()` | Server/Client state computation | `computed()` / RxJS pipes | `<computed name="..." value="..." />` tags |
 | **Methods / Actions** | JavaScript functions in scope | Component functions in `script` | Client/Server functions | Class methods | `<action name="...">...</action>` tags |
 | **Async Data Fetching** | `useEffect` + `fetch` / TanStack Query | `onMounted` + `fetch` / `useAsyncData` | Server Components / `use` | `HttpClient` + RxJS Observables | `<resource name="...">` tag & `Resource` class with Suspense support |
-| **Shared / Global State** | Context API / Redux / Zustand | Pinia / Vuex | React Context / Zustand | Services (Injectable singletons) | **Bridges** (`AvenxBridge` classes in `src/global/*.bridge.js`) |
+| **Shared / Global State** | Context API / Redux / Zustand | Pinia / Vuex | React Context / Zustand | Services (Injectable singletons) | **Bridges** (`bridge()` modules in `src/bridges/*.bridge.js`) |
 | **Styling Paradigm** | CSS Modules / Styled Components / Tailwind | Scoped CSS (`<style scoped>`) | CSS Modules / Tailwind | Component Scoped Styles (`styleUrls`) | Scoped CSS via `<@css>` blocks and `@css` attribute/tag binding |
 | **Client-Side Routing** | React Router (`<Routes>`) | Vue Router (`createRouter`) | File-based Routing / App Router | Angular Router (`RouterModule`) | `AvenxRouter` hash routing configured in `src/main.app.js` |
 | **Rendering Strategy** | Client-Side Virtual DOM | Virtual DOM | SSR / SSG / Client-Side | Real DOM manipulation via Zone.js/Signals | Compiler static analysis + client-side `DomPatcher` |
@@ -53,7 +53,7 @@ Instead of inline hooks or methods, derived values and methods use declarative c
 ### 4. Directives & Control Flow
 - **Loops**: Use `<@for item in state.items key="item.id">` with an implicit zero-indexed `index` variable.
 - **Visibility**: Use `data-ax-show="state.isVisible"` (toggles inline CSS `display` while preserving original display style).
-- **Two-Way Binding**: Use `data-ax-bind="state.username"` for input/textarea/select text values.
+- **Two-Way Binding**: Use `data-ax-bind="state.username"` on inputs, textareas and selects. Text controls bind through `value`; checkboxes and radios bind through `checked`.
 - **Conditional Templates**: Conditional rendering is achieved using inline ternary expressions inside interpolations (`{{{ state.show ? '<div>...</div>' : '' }}}`) or `data-ax-show`.
 
 ### 5. Async Data Loading with Resources
@@ -66,25 +66,24 @@ Async data operations use the built-in `<resource>` tag and runtime `Resource` A
 Resources automatically track state dependencies (`state.userId`), trigger re-fetches on state change, and integrate with `<@suspense>` and `<@errorBoundary>`.
 
 ### 6. Shared State via Bridges
-Global state is managed by creating bridge classes extending `AvenxBridge` in `src/global/<name>.bridge.js`:
+Global state is managed by creating bridge modules with the `bridge()` factory in `src/bridges/<name>.bridge.js`:
 ```javascript
-// src/global/auth.bridge.js
-import { AvenxBridge } from 'avenx-core/runtime';
+// src/bridges/auth.bridge.js
+import { bridge } from 'avenx-core/runtime';
 
-export default class AuthBridge extends AvenxBridge {
-  constructor() {
-    super();
-    this.user = null;
-    this.isLoggedIn = false;
-  }
+export default bridge({
+  state: {
+    user: null,
+    isLoggedIn: false,
+  },
 
   logout() {
     this.user = null;
     this.isLoggedIn = false;
-  }
-}
+  },
+});
 ```
-Bridges are automatically available in component templates and actions under `<BridgeName>` (e.g. `AuthBridge.user.name` and `@click="AuthBridge.logout()"`).
+A component imports the bridge to use it, and the import is what puts it in template scope (e.g. `auth.user.name` and `@click="auth.logout()"`). State is read-only outside the bridge, so every change goes through an action.
 
 ---
 
@@ -100,7 +99,7 @@ Bridges are automatically available in component templates and actions under `<B
 | `{items.map(item => ...)}` | `v-for="item in items"` | `*ngFor="let item of items"` | `<@for item in state.items key="item.id">` |
 | `style={{ display }}` | `v-show="isVisible"` | `[hidden]="!isVisible"` | `data-ax-show="state.isVisible"` |
 | `onChange={(e) => ...}` | `v-model="state.val"` | `[(ngModel)]="val"` | `data-ax-bind="state.val"` |
-| `<Context.Provider>` / Redux | Pinia store | `@Injectable()` Service | `AvenxBridge` class |
+| `<Context.Provider>` / Redux | Pinia store | `@Injectable()` Service | `bridge()` module |
 | React Router `<Route>` | Vue Router `routes: []` | `RouterModule.forRoot()` | `app.initRouter({ '/path': 'Page' })` |
 | `React.lazy` + `Suspense` | Async Component + `Suspense` | Defer block `{@defer}` | `<resource>` + `<@suspense>` / `<@defer>` |
 

@@ -5,7 +5,7 @@ description: 'Configure IDE autocompletion, type-checking with jsconfig.json, an
 
 Avenx-JS ships built-in TypeScript declarations (`.d.ts`), enabling full IDE autocompletion, hover documentation, and type safety for your single-file components, pages, state bridges, router guards, and custom directives — without requiring a complex TypeScript compilation build pipeline.
 
-Whether you write Avenx Single-File Components (`.component.js` / `.page.js`), class-based state bridges (`AvenxBridge`), or route guards (`AvenxGuard`), Avenx-JS provides complete IDE support out of the box.
+Whether you write Avenx Single-File Components (`.component.js` / `.page.js`), state bridges (`bridge()`), or route guards (`AvenxGuard`), Avenx-JS provides complete IDE support out of the box.
 
 ---
 
@@ -107,34 +107,49 @@ export default class AuthGuard extends AvenxGuard {
 
 ---
 
-### 3. Global State Bridges (`AvenxBridge`)
+### 3. Bridges (`bridge()`)
 
-Bridges extend `AvenxBridge` and hold shared reactive state and methods across components. Type bridge properties and methods directly on the class:
+Bridges hold shared reactive state and the actions that change it. `bridge()` infers the whole type from your definition — there is nothing to annotate twice:
 
 ```javascript
 // src/bridges/theme.bridge.js
-import { AvenxBridge } from 'avenx-core/runtime';
+import { bridge } from 'avenx-core/runtime';
 
 /**
  * @typedef {'light' | 'dark'} ThemeMode
  */
 
-export default class ThemeBridge extends AvenxBridge {
-  constructor() {
-    super();
+export default bridge({
+  state: {
     /** @type {ThemeMode} */
-    this.mode = 'dark';
-  }
+    mode: 'dark',
+  },
+
+  get isDark() {
+    return this.mode === 'dark';
+  },
 
   /**
    * Updates the active UI theme mode.
-   * @param {ThemeMode} newMode
+   * @param {ThemeMode} newMode - The mode to switch to.
    */
   setMode(newMode) {
     this.mode = newMode;
-  }
-}
+  },
+});
 ```
+
+Inside the definition, `this` is typed with writable state plus `emit`. Consumers get the same members with state and getters marked `readonly`, so assigning to shared state is a compile error as well as a runtime one:
+
+```typescript
+import theme from '../bridges/theme.bridge.js';
+
+theme.isDark;              // boolean
+theme.setMode('light');    // ok
+theme.mode = 'light';      // ✗ read-only property
+```
+
+See the [Bridges guide](/core-concepts/bridges/) for the full type story.
 
 ---
 

@@ -1,0 +1,29 @@
+import { describe, it, expect } from 'node:test';
+import { mountTestComponent, fireEvent } from 'avenx-core/testing';
+import {{PascalCaseName}} from './{{name}}.component.js';
+
+describe('{{PascalCaseName}} Component', () => {
+  it('renders successfully with default state', async () => {
+    const { find } = await mountTestComponent({{PascalCaseName}}, {
+      props: { name: '{{PascalCaseName}}' }
+    });
+
+    const title = find('h1');
+    expect(title.textContent).toContain('{{PascalCaseName}} Component');
+
+    const text = find('p');
+    expect(text.textContent).toContain('Current count: 0');
+  });
+
+  it('increments count on click', async () => {
+    const { find } = await mountTestComponent({{PascalCaseName}}, {
+      props: { name: '{{PascalCaseName}}' }
+    });
+
+    const buttons = find('button', { all: true });
+    await fireEvent.click(buttons[0]);
+
+    const text = find('p');
+    expect(text.textContent).toContain('Current count: 1');
+  });
+});

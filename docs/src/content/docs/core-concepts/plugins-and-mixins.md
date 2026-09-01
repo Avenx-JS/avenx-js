@@ -177,4 +177,4 @@ app.mixin({
 | :--- | :--- | :--- |
 | **Global Plugins (`app.use`)** | External libraries, third-party services, application setup packages. | Use plugins to encapsulate modular setup logic and pass options cleanly. |
 | **Global Mixins (`app.mixin`)** | Utility functions, global formatting helpers, app-wide lifecycle tracking. | Use global mixins sparingly to avoid cluttering component namespaces with unused properties. |
-| **State Bridges (`AvenxBridge`)** | Shared reactive domain state (User Auth, Shopping Cart, Notifications). | Use `AvenxBridge` instead of mixins when components need to share reactive state that changes over time. |
+| **State Bridges (`bridge()`)** | Shared reactive domain state (User Auth, Shopping Cart, Notifications). | Use a [Bridge](/core-concepts/bridges) instead of mixins when components need to share reactive state that changes over time. |

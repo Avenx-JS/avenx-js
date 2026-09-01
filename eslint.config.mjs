@@ -11,6 +11,9 @@ export default [
     ignores: [
       "**/node_modules/",
       "**/dist/",
+      // E2E fixture apps emit a development build here; it is generated
+      // output like dist/, just under a second name.
+      "**/dist-dev/",
       "docs/",
       "dev-docs/",
       "coverage/",
@@ -64,6 +67,8 @@ export default [
         IntersectionObserver: "readonly",
         navigator: "readonly",
         location: "readonly",
+        localStorage: "readonly",
+        sessionStorage: "readonly",
         fetch: "readonly",
         Headers: "readonly",
         getSelection: "readonly",
@@ -72,6 +77,9 @@ export default [
         cancelAnimationFrame: "readonly",
         DOMParser: "readonly",
         performance: "readonly",
+        Blob: "readonly",
+        AbortController: "readonly",
+        AbortSignal: "readonly",
 
         // Node / Common JS / ES Module / Test globals
         process: "readonly",

@@ -21,8 +21,15 @@
       "default": "./lib/core/index.js"
     },
     "./testing": {
-      "types": "./lib/core/index.d.ts",
-      "default": "./lib/core/index.js"
+      "types": "./lib/core/testing.d.ts",
+      "default": "./lib/core/testing.js"
+    },
+    "./tooling": {
+      "types": "./lib/core/tooling/index.d.ts",
+      "default": "./lib/core/tooling/index.js"
+    },
+    "./tooling/*": {
+      "default": "./lib/core/tooling/*.js"
     }
   },
   "bin": {

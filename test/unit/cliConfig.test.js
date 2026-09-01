@@ -182,8 +182,54 @@ try {
         `Unexpected warning: ${warnings[0]}`
       );
       assert.ok(
-        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, server, style, debug, outputName, logging, voidTags, warnings, treeShakeComponents, preprocessors, alias, hooks.'),
+        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, mode, server, style, debug, outputName, logging, voidTags, warnings, treeShakeComponents, preprocessors, alias, hooks, trace, rewind, expressionCacheCapacity, sourceMap, sourcesContent.'),
         `Unexpected warning options list: ${warnings[0]}`
+      );
+      warnings.length = 0;
+
+      // 1a. Rewind options are recognised, and their sub-keys validated
+      writeTestConfig({ rewind: { onConflict: 'force', maxSnapshotItems: 25 } });
+      const rewindConfig = loadConfig();
+      assert.strictEqual(warnings.length, 0, `Rewind options should not warn: ${warnings[0]}`);
+      assert.strictEqual(rewindConfig.rewind.onConflict, 'force');
+      assert.strictEqual(rewindConfig.rewind.maxSnapshotItems, 25);
+      warnings.length = 0;
+
+      writeTestConfig({ rewind: { onConflik: 'force' } });
+      loadConfig();
+      assert.ok(
+        warnings.some((w) => w.includes('Unknown configuration option "rewind.onConflik"')),
+        `Expected a warning for an unknown rewind sub-key: ${warnings.join(' | ')}`
+      );
+      warnings.length = 0;
+
+      // 1b. Trace options are recognised, and their sub-keys validated
+      writeTestConfig({ trace: { redact: ['auth.token'], maxNodes: 1000 } });
+      let traceConfig = loadConfig();
+      assert.strictEqual(warnings.length, 0, `Trace options should not warn: ${warnings[0]}`);
+      assert.deepStrictEqual(traceConfig.trace.redact, ['auth.token']);
+      assert.strictEqual(traceConfig.trace.maxNodes, 1000);
+      warnings.length = 0;
+
+      writeTestConfig({ trace: { redakt: ['auth.token'] } });
+      loadConfig();
+      assert.ok(
+        warnings.some((w) => w.includes('trace.redakt') && w.includes('Did you mean "trace.redact"?')),
+        `Expected a suggestion for a mistyped trace key: ${warnings.join(' | ')}`
+      );
+      warnings.length = 0;
+
+      // A non-array redact list is dropped rather than silently misapplied:
+      // getting redaction wrong means leaking a secret into a trace.
+      writeTestConfig({ trace: { redact: 'auth.token' } });
+      traceConfig = loadConfig();
+      assert.ok(
+        warnings.some((w) => w.includes('trace.redact') && w.includes('must be an array')),
+        `Expected a warning for a non-array redact list: ${warnings.join(' | ')}`
+      );
+      assert.ok(
+        !Array.isArray(traceConfig.trace.redact) || traceConfig.trace.redact.length === 0,
+        'An invalid redact list must not be applied'
       );
       warnings.length = 0;
 

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AvenxMock, flushPromises } from '../../lib/core/index.js';
+import { AvenxMock, flushPromises } from '../../lib/core/testing.js';
 
 console.log('🧪 Testing flushPromises helper...');
 

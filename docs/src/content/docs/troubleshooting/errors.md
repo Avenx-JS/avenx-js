@@ -402,6 +402,25 @@ const app = new AvenxApp({
 | `[AVX_C04]` | Node or component tagged with "static" contract contains dynamic expression or binding: {0} | **Cause:** A `static` subtree contains runtime-dependent content such as an interpolation, event handler, two-way binding, or slot.<br />**Resolution:** Remove the dynamic content or remove `static` from the containing node. See the [compiler contracts guide](/core-concepts/compiler-contracts/). |
 | `[AVX_C05]` | Isolated component "{0}" violates isolation boundary by accessing external scope or bridge: {1} | **Cause:** An `isolated` component accesses `$bridges`, `this.$bridges`, `$parent`, or `this.$parent` instead of using explicit inputs.<br />**Resolution:** Pass the required value through props or local state. See the [compiler contracts guide](/core-concepts/compiler-contracts/). |
 | `[AVX_C06]` | Invalid contract declaration "{0}" in {1}: {2} | **Cause:** The `<contract />` declaration contains an unknown contract name or malformed syntax.<br />**Resolution:** Use only `static`, `pure`, `deterministic`, and `isolated`, then fix the parser reason reported in `{2}`. See the [compiler contracts guide](/core-concepts/compiler-contracts/). |
+| `[AVX_C07]` | Bridge import "{0}" in {1} could not be resolved to a bridge module. | **Cause:** A component, page or bridge imports a `*.bridge.js` module that does not exist — usually a typo or a moved file.<br />**Resolution:** Correct the path, or create the bridge. The message lists every bridge the project did discover. See the [Bridges guide](/core-concepts/bridges/). |
+| `[AVX_C08]` | Duplicate bridge name(s) detected. | **Cause:** Two `*.bridge.js` files resolve to the same bridge name, which is derived from the file name. `src/bridges/auth.bridge.js` and `src/global/auth.bridge.js` both resolve to `auth`.<br />**Resolution:** Rename one of the files. The build lists every conflicting path. |
+| `[AVX_C09]` | Bridge "{0}" imports "{1}", which the Avenx bundler cannot inline. | **Cause:** A bridge module imports something other than the Avenx runtime or another `*.bridge.js` module. Avenx bundles bridges without a general-purpose bundler, so it cannot inline arbitrary modules.<br />**Resolution:** Keep helpers inside the bridge file (code above `export default` is preserved), move shared logic into another bridge, or expose it on `globalThis` from `index.html`. |
+| `[AVX_C10]` | Component "{0}" declares the "isolated" contract but imports the bridge "{1}". | **Cause:** An `isolated` component may not reach outside its own state, and importing a bridge does exactly that.<br />**Resolution:** Remove the import and pass the value in as a prop, or drop the `isolated` contract. |
+| `[AVX_C11]` | Bridge import cycle: {0}. | **Cause:** Two or more bridge modules import each other. Bridges initialise in dependency order, so a cycle has no valid order and the bundle would fail at load.<br />**Resolution:** Move the shared state into a third bridge that both import, or pass the value in as an action argument instead of reaching across. |
+| `[AVX_C12]` | "{0}" is not a bridge module. | **Cause:** A `*.bridge.js` file does not import the `bridge()` factory from the Avenx runtime and export the definition it returns. Class-based bridges were removed, so a class or plain-object default export no longer compiles.<br />**Resolution:** Convert the module to `export default bridge({ ... })` — see [Converting a class bridge](/core-concepts/bridges#converting-a-class-bridge) — or rename the file if it is not meant to be a bridge. |
+| `[AVX_C13]` | The Avenx runtime bundle "dist/{0}" is missing. | **Cause:** The prebuilt runtime that every application bundles is not present in the installed package.<br />**Resolution:** Reinstall `avenx-core`. When working inside the framework repository, run `npm run build` to produce it. |
+| `[AVX_C14]` | The {0} hook failed: {1} | **Cause:** A `prebuild` or `postbuild` command configured under `hooks` in `avenx.config.json` exited non-zero. A hook is part of the build, so its failure fails the build.<br />**Resolution:** Run the hook command yourself to see its output. Remove it from `hooks` if it is not meant to gate the build. |
+| `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
+| `[AVX_W37]` | Bridge "{0}" has no member "{1}". | **Cause:** A template or action reads a property the bridge does not declare — usually a typo. At runtime this would silently read `undefined`.<br />**Resolution:** Use one of the declared members. The warning lists them and suggests the closest match. |
+| `[AVX_W38]` | Bridge "{0}" never emits the event "{1}". | **Cause:** Code subscribes with `on()` to an event name that no `emit()` call in the bridge produces, so the handler would never run.<br />**Resolution:** Subscribe to an emitted event, or emit the one you meant. The warning lists the emitted events and suggests the closest match. |
+| `[AVX_W40]` | "{0}" is read nowhere in the application. | **Cause:** [Atlas](/core-concepts/atlas/) found no template binding, computed, action, resource or guard that reads this state key. Either it is dead, or the read it was meant to have is missing.<br />**Resolution:** Run `avenx impact <owner>.<key>` to see the relationships Atlas did find, then delete the declaration or add the missing read. Not reported when unresolved analysis in reach could be hiding a read. |
+| `[AVX_W41]` | "{0}" is never invoked. | **Cause:** [Atlas](/core-concepts/atlas/) found no template handler, action, computed, resource or guard that calls this action.<br />**Resolution:** Run `avenx why <owner>.<action>` to confirm, then wire up the call site or delete the action. Lifecycle actions the runtime invokes by name (`onMount` and the rest) are exempt, as are the members of a bridge nothing imports. |
+| `[AVX_R19]` | bridge() expects a definition object, received {0}. | **Cause:** `bridge()` was called with no argument, or with something that is not a plain object.<br />**Resolution:** Pass a definition object, e.g. `bridge({ state: { count: 0 } })`. |
+| `[AVX_R20]` | Bridge definition declares "{0}", which is reserved by the Bridge API. | **Cause:** The definition declares `on`, `emit`, `$dispose` or `$name`, or a getter/action collides with a state key.<br />**Resolution:** Rename the member. |
+| `[AVX_R21]` | Bridge definition declares "{0}" as a top-level value. | **Cause:** Data was placed at the top level of the definition instead of inside `state`.<br />**Resolution:** Move it into the `state` object. Only actions, getters, `state` and `setup` belong at the top level. |
+| `[AVX_R22]` | Cannot assign to "{0}.{1}" from outside the bridge. | **Cause:** A component assigned to bridge state. State is read-only for consumers so every mutation has one traceable origin.<br />**Resolution:** Add an action to the bridge and call it instead. |
+| `[AVX_R23]` | Invalid bridge event {0}. | **Cause:** `on()` or `emit()` was called with an empty/non-string event name, or `on()` without a listener function.<br />**Resolution:** Pass a non-empty event name string and, for `on()`, a handler function. |
+| `[AVX_R24]` | Bridge "{0}" failed during setup(): {1} | **Cause:** A bridge's `setup()` hook threw while initialising, for example because an external connection could not be opened.<br />**Resolution:** Fix the underlying error shown in `{1}`, or guard the setup so a failure is recorded in state instead of thrown. |
 
 ### AVX_C04 — static contract violation
 
@@ -513,6 +532,59 @@ The validator reports a child declaration when a stricter parent already enforce
 ```
 
 Remove the child declaration unless it communicates a genuinely different boundary. See the [compiler contracts guide](/core-concepts/compiler-contracts/).
+
+### AVX_W35 — COMPILER_DEADLOCK_PARSE_FAILED
+
+**Warning Message**
+
+```text
+[AVX_W35] Failed to parse <@deadlock> tag in component "{0}": {1}
+```
+
+This is the message template registered in `lib/core/runtime/AvenxError.js` for `COMPILER_DEADLOCK_PARSE_FAILED`. Placeholder `{0}` is the component file the tag was found in, and `{1}` is the specific parser reason.
+
+**Cause:** This warning is emitted during template compilation when the component parser (`ComponentParser.js`, `processDeadlock()`) encounters a malformed `<@deadlock>` reactive boundary tag.
+
+**Parser Syntax Expectations:**
+A `<@deadlock>` block accepts the following configuration attributes and nested structure:
+- `name`: String identifier for the boundary. Defaults to `"anonymous"` when omitted.
+- `maxDepth`: Recursion-threshold hint (e.g. `maxDepth="50"`). It is compiled to `data-ax-deadlock-depth` for compatibility but is not read by the scheduler at runtime.
+- `action`: Recovery strategy hint (e.g. `"fallback"`, `"abort"`, `"throw"`). It is compiled to `data-ax-deadlock-action` but is not read at runtime today.
+- `<@fallback as="err">...</@fallback>`: Optional nested fallback slot, rendered when the boundary is tripped via `$tripDeadlockBoundary()`.
+
+**Compiler Fallback Behavior:**
+When the tag cannot be parsed (for example an unclosed tag or malformed attributes), **the compiler skips the `<@deadlock>` block entirely**. As a result, the protective boundary silently does not exist at runtime, and any circular update loop inside the subtree bubbles directly to the global scheduler (surfacing later as [`AVX_R18`](#avx_r18--reactive_deadlock_detected) instead of a local fallback).
+
+**Resolution:** To resolve this warning:
+
+1. Ensure the `<@deadlock>` block has valid, quoted attribute values.
+2. Verify that nested `<@fallback>` tags are properly closed with `</@fallback>` and declare a valid `as="..."` identifier.
+3. Confirm the boundary itself is closed with `</@deadlock>`.
+4. Check for syntax typos in tag names.
+5. See the [<@deadlock> guide](/core-concepts/deadlock/) for full syntax specifications.
+
+**Incorrect**
+
+```html
+<!-- ❌ Invalid non-numeric maxDepth, missing closing fallback tag, and malformed boundary -->
+<@deadlock name="userSync" maxDepth="invalid-limit" action="fallback">
+  <UserProfile/>
+  <@fallback as="err">
+    <p>Failed to sync user profile: {{ err.message }}</p>
+  <!-- Missing </@fallback> and </@deadlock> -->
+```
+
+**Correct**
+
+```html
+<!-- ✅ Properly configured deadlock boundary with fallback slot -->
+<@deadlock name="userSync" maxDepth="25" action="fallback">
+  <UserProfile/>
+  <@fallback as="err">
+    <p>Failed to sync user profile: {{ err.message }}</p>
+  </@fallback>
+</@deadlock>
+```
 
 ### AVX_C01 — COMPILER_DIST_CREATION_FAILED
 
@@ -2769,6 +2841,101 @@ Use `class` or `data-*` attributes for repeated elements:
 </@for>
 ```
 
+### AVX_W42 — COMPILER_TRANSACTION_UNBOUNDED
+
+**Warning Message**
+
+```text
+{0} is atomic, but its write set could not be resolved completely ({1}):
+{2}
+```
+
+**Cause:** An action declared [`atomic`](/core-concepts/rewind) reaches state in a way the compiler could not follow — through a computed key (`item[field]`), an identifier that resolves to nothing, a spread — or it writes state inside a `.then()` continuation, which runs after the transaction has already closed and is therefore never journaled.
+
+**Resolution:**
+
+1. For the first group, nothing is broken: the journal watches the reactive proxies rather than this analysis, so the rewind is complete. What is incomplete is the report — AVX_W44 and AVX_W43 cannot be trusted for that action.
+2. For a write inside a continuation, the rewind genuinely will not see it. Move optimistic writes ahead of the promise the action returns.
+3. Run `avenx why <owner>.<action>` to see which relationships Atlas did resolve.
+4. Silence it for one project with `"warnings": { "AVX_W42": "off" }`.
+
+**Incorrect**
+
+```javascript
+save: atomic(function (id) {
+  return api.load(id).then((row) => {
+    this.row = row; // runs after the transaction closed — never journaled
+  });
+}),
+```
+
+**Correct**
+
+```javascript
+save: atomic(function (id, row) {
+  this.row = row; // inside the transaction
+  return api.save(id, row);
+}),
+```
+
+### AVX_W43 — COMPILER_TRANSACTION_IRREVERSIBLE
+
+**Warning Message**
+
+```text
+{0} is atomic, but {1} effect(s) cannot be rewound:
+{2}
+```
+
+**Cause:** An action declared `atomic` emits a bridge event, writes to `localStorage` or `sessionStorage`, touches the DOM directly, starts a timer, or fires a request whose result it neither returns nor awaits. A rewind restores state; it cannot un-notify a listener or un-write a key.
+
+**Resolution:**
+
+1. Move the effect after the transaction, where it runs only once the writes have committed.
+2. Return the promise whose rejection should trigger the rewind, so it becomes the transaction outcome rather than a loose effect.
+3. Accept it — state is still restored, and the listed effects are what a rewind will leave behind.
+4. Silence it with `"warnings": { "AVX_W43": "off" }`.
+
+**Incorrect**
+
+```javascript
+save: atomic(function (stamp) {
+  this.lastSaved = stamp;
+  localStorage.setItem('lastSaved', String(stamp)); // survives a rewind
+  this.emit('saved', stamp);                        // listeners already ran
+}),
+```
+
+**Correct**
+
+```javascript
+save: atomic(function (stamp) {
+  this.lastSaved = stamp;
+  return api.save(stamp);
+}),
+```
+
+with the emit moved to the caller, after the transaction has committed.
+
+### AVX_W44 — COMPILER_TRANSACTION_OVERLAP
+
+**Warning Message**
+
+```text
+{0} and {1} are both atomic and both write {2} ({3}).
+```
+
+**Cause:** Two atomic actions write the same state. If both can be in flight at once — the double-clicked like button — the first one's rewind will find a value the second one wrote.
+
+**Resolution:**
+
+1. Often nothing is wrong: the default `safe` conflict policy refuses to discard the newer value and reports [AVX_R29](#avx_r29--transaction_rewind_failed) instead.
+2. Guard the second invocation while the first is in flight, e.g. with a busy flag the template disables the control on.
+3. Set `onConflict="force"` when the transaction really is the authority on that value.
+4. Silence it with `"warnings": { "AVX_W44": "off" }`.
+
+The warning does not fire when either write set is unbounded (AVX_W42), or for a caller and its callee — a nested transaction joins the enclosing frame and cannot conflict with it.
+
 ## Runtime Codes (`AVX_R*`)
 
 | Code        | Default Message                                                                         | Cause & Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -2790,7 +2957,7 @@ Use `class` or `data-*` attributes for repeated elements:
 | `[AVX_R14]` | ROUTER_GUARD_TIMEOUT: A route guard exceeded the configured timeout duration.           | **Cause:** One or more sequential route guards returned promises that failed to resolve within the configured timeout period, causing navigation transitions to stall.<br />**Resolution:** Inspect route guard logic for unresolved or hanging promises. Optimize long-running asynchronous operations, ensure all promises properly resolve or reject, or adjust the `guardTimeout` configuration if longer execution times are expected.                                                                                  |
 | `[AVX_R15]` | SANDBOX_VIOLATION: A sandbox security violation occurred.                               | **Cause:** Template or runtime expressions attempted to access restricted properties such as `__proto__`, `constructor`, or `prototype`, or unauthorized global variables. This restriction prevents prototype pollution, template injection, and unauthorized global scope access.<br />**Resolution:** Restrict expressions to authorized variables only. Avoid accessing or modifying prototype-related properties and unauthorized globals. If necessary, wrap values securely before exposing them to expressions.      |
 | `[AVX_R16]` | Cannot reassign component state directly.                                               | **Cause:** Assigning a new object to `this.state`, such as `this.state = { count: 1 }`, replaces the reactive Proxy and breaks change detection.<br />**Resolution:** Mutate properties on the existing state object instead, such as `this.state.count = 1`, or update several properties with `Object.assign(this.state, { count: 1 })`.                                                                                                                                                                                   |
-| `[AVX_R17]` | BRIDGE_CONSTRUCTION_FAILED: Failed to construct bridge "{name}". {error}                      | **Cause:** An error occurred while constructing a registered bridge. This can happen when the bridge class's constructor throws an exception, when required dependencies are missing, or when the bridge definition is malformed.<br />**Resolution:** Check the bridge class constructor for errors. Ensure all dependencies are properly imported and initialized before the bridge is registered. Verify the bridge definition follows the expected structure (extends `AvenxBridge` or conforms to the bridge interface).
+| `[AVX_R18]` | Circular reactive update chain detected{0}. Update chain aborted to prevent infinite loop:\n{1} | **Cause:** The scheduler exceeded `maxFlushCount` recursive flush passes (default `25`), or a synchronous watcher cascade re-entered itself, forming a circular reactive update chain (A → B → A).<br />**Resolution:** Break the circular dependency shown in the causation chain (`{1}`), raise the threshold with `setSchedulerMaxFlushCount()`, or subscribe with `onSchedulerDeadlock()` and trip a `<@deadlock>` boundary. See the [<@deadlock> guide](/core-concepts/deadlock/). |
 
 ### AVX_R01 — MOUNT_TARGET_NOT_FOUND
 
@@ -3510,6 +3677,116 @@ Handling asynchronous operations and capturing user feedback in action handlers:
 </form>
 ```
 
+### AVX_R18 — REACTIVE_DEADLOCK_DETECTED
+
+**Error Message**
+
+```text
+[AVX_R18] Circular reactive update chain detected{0}. Update chain aborted to prevent infinite loop:
+{1}
+```
+
+The message template comes directly from the runtime registry. Placeholder `{0}` is an optional boundary/context suffix (for example, `" (synchronous watcher cycle)"`), and `{1}` is the formatted causation chain followed by the reason the chain was aborted.
+
+**Diagnostic Output Example (Browser Console)**
+
+```text
+[Avenx Error] [AVX_R18] Circular reactive update chain detected. Update chain aborted to prevent infinite loop:
+  Counter -> Stats -> Counter
+
+Execution aborted to prevent browser freeze.
+```
+
+**Cause:** This error is logged at runtime by the reactivity scheduler (`lib/core/reactive/scheduler.js`) — with additional synchronous-cascade guards in `lib/core/reactive/watcher.js` — when a circular reactive update chain (A → B → A) is detected before the browser main thread freezes. The related `<@deadlock>` boundary machinery lives in `lib/core/renderer/deadlockManager.js`.
+
+This is triggered when:
+- The global reactive update scheduler exceeds its configured maximum recursive flush passes (`maxFlushCount`, default `25`), or a single job runs more than `min(10, maxFlushCount)` times within one flush session.
+- A synchronous watcher cascade exceeds its fixed depth ceiling, or a synchronous watcher re-enters itself.
+
+> **Note:** The `<@deadlock>` boundary attribute `maxDepth` is compiled to a `data-ax-deadlock-depth` attribute for compatibility but is **not** read by the scheduler at runtime. The active global threshold is `maxFlushCount`, set with `setSchedulerMaxFlushCount()`. See the [<@deadlock> guide](/core-concepts/deadlock/) for the current attribute behavior.
+
+**Reading the Causation Chain:**
+The `{1}` portion of the message contains an execution-history trace such as `Counter -> Stats -> Counter`. Each hop is the name (or id) of a job in the scheduler's execution history — typically a component update, a `$watch` handler, or a bridge listener — and the repeated name at both ends marks the link that closed the cycle. The chain is a best-effort summary of recent execution history, not a guaranteed dependency graph, so map each hop back to the watcher, bridge action, or computed property with that name.
+
+**Common Root Causes:**
+- **Cross-Bridge Ping-Pong:** Two components or bridges modifying each other's state synchronously within reactive watchers or bridge listeners.
+- **Self-Mutating Watchers:** A `$watch` handler directly mutating the reactive source property it is listening to.
+- **Computed Property Side Effects:** A computed property containing a hidden write side-effect to a reactive state source.
+
+**Resolution & Recovery:** To resolve this error:
+
+1. **Inspect Causation Trace:** Map each hop back to the originating watcher, bridge action, or computed property and remove synchronous mutations.
+2. **Break Synchronous Update Chains:** Defer secondary mutations using `queueMicrotask()` or `setTimeout()`, or derive calculated values via pure `<computed>` properties instead of watchers.
+3. **Configure `<@deadlock>` Boundaries:** Wrap fragile or dynamic component subtrees with `<@deadlock action="fallback">` to catch update deadlocks locally and render fallback UI.
+4. **Tune Scheduler Limits:** For legitimate deep recursive graphs, adjust the global threshold via `setSchedulerMaxFlushCount(n)` (default `25`), or subscribe to recovery events using `onSchedulerDeadlock()`. Both are exported from `avenx-core/runtime`.
+5. **Enable Verbose Debugging:** Set `debug.debugReactivity = true` in `avenx.config.json` to log granular dependency-tracking traces in the console.
+6. See the [<@deadlock> guide](/core-concepts/deadlock/) for boundary details and best practices.
+
+**Incorrect**
+
+```javascript
+// Component causing immediate circular cycle A -> A
+export default {
+  watch: {
+    count(newVal) {
+      // ❌ Mutating the watched property synchronously inside its own watcher
+      this.state.count = newVal + 1;
+    }
+  }
+};
+```
+
+**Correct**
+
+```javascript
+// ✅ Using a computed property instead of self-mutating watcher
+export default {
+  computed: {
+    displayCount() {
+      return this.state.count + 1;
+    }
+  }
+};
+```
+
+**Defensive Example with `<@deadlock>` and Global Hooks**
+
+```html
+<!-- ✅ Scoped boundary catches cycle and renders fallback instead of halting application -->
+<@deadlock name="realtimeMetrics" maxDepth="50" action="fallback">
+  <RealtimeMetricsChart/>
+  <@fallback as="error">
+    <div class="metrics-error">
+      <p>Metrics loop intercepted: {{ error.message }}</p>
+    </div>
+  </@fallback>
+</@deadlock>
+```
+
+```javascript
+import { onSchedulerDeadlock, setSchedulerMaxFlushCount } from 'avenx-core/runtime';
+
+// Raise the global recursive-flush threshold above the default of 25.
+setSchedulerMaxFlushCount(40);
+
+// The handler receives a single event object.
+const unsubscribe = onSchedulerDeadlock((event) => {
+  console.error(`[Deadlock Telemetry] Cycle detected: ${event.cyclePath}`, {
+    triggeringJobId: event.triggeringJobId,
+    executionHistory: event.executionHistory,
+  });
+});
+
+// A scheduler cycle renders a boundary's fallback only when you trip it explicitly:
+onSchedulerDeadlock((event) => {
+  metricsPanel.$tripDeadlockBoundary('realtimeMetrics', {
+    message: `Reactive cycle detected: ${event.cyclePath}`,
+  });
+});
+```
+
+---
+
 ### AVX_R25: TraceUnreadable
 
 **Error Message:**  
@@ -3529,7 +3806,7 @@ Attempting to read a trace recorded with a newer version using an older CLI.
 **Correct Code / Scenario:**  
 Update Avenx and re-run the trace.
 
-**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for details on recording and replaying traces.
+**Cross-link:** See [Avenx Trace](/core-concepts/trace/) for details on recording and replaying traces.
 
 ---
 
@@ -3544,7 +3821,7 @@ Update Avenx and re-run the trace.
 
 **Resolution:**
 - Run `avenx trace view <id>` to see which reasons were recorded.
-- Remove the source of non-determinism � move timer-driven state changes into an action, or drop `pollInterval` � and record again.
+- Remove the source of non-determinism — move timer-driven state changes into an action, or drop `pollInterval` — and record again.
 - Pass `{ allowBestEffort: true }` to `replay()` to run it anyway; the result reports what diverged instead of claiming a pass.
 
 **Incorrect Code / Scenario:**  
@@ -3553,7 +3830,7 @@ Replaying a trace with timers or external requests that produce different result
 **Correct Code / Scenario:**  
 Ensure all state changes happen inside actions that are deterministic and recorded, and use `allowBestEffort` if you intend to accept possible divergence.
 
-**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for deterministic replay guidelines.
+**Cross-link:** See [Avenx Trace](/core-concepts/trace/) for deterministic replay guidelines.
 
 ---
 
@@ -3563,7 +3840,7 @@ Ensure all state changes happen inside actions that are deterministic and record
 `AVX_R27: TraceReplayDiverged - Replaying a trace produced different state or DOM changes than the recording.`
 
 **Cause:**
-- Application code changed since the trace was recorded � which is exactly what a regression test is for.
+- Application code changed since the trace was recorded — which is exactly what a regression test is for.
 - Something outside the sandbox boundary took part in the original run: a bridge reading `Date.now()`, a timer, or a request made outside a `<resource>`.
 - The recorded event target could not be found in the replayed DOM.
 
@@ -3578,7 +3855,7 @@ Changing the behavior of an action after recording a trace, then replaying expec
 **Correct Code / Scenario:**  
 After intentional changes, re-record the trace; otherwise, fix the bug that caused the divergence.
 
-**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for regression testing with traces.
+**Cross-link:** See [Avenx Trace](/core-concepts/trace/) for regression testing with traces.
 
 ---
 
@@ -3599,6 +3876,34 @@ Calling `replay(trace)` with no mount function.
 **Correct Code / Scenario:**  
 Call `replay(trace, { mount: () => { /* mount app and return context */ } })`.
 
-**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for the replay API.
+**Cross-link:** See [Avenx Trace](/core-concepts/trace/) for the replay API.
 
 ---
+
+### AVX_R29 — TRANSACTION_REWIND_FAILED
+
+**Error Message**
+
+```text
+Rewind of the atomic action "{0}" left {1} path(s) unrestored:
+{2}
+The "{3}" conflict policy refuses to overwrite a value the transaction did not write. Everything else it journaled was restored.
+```
+
+**Cause:** A rewind could not restore every path it journaled. Usually because another transaction, or ordinary code, wrote the same path after this transaction did — the `safe` policy will not overwrite a value it did not write. Less often: a collection grew past `rewind.maxSnapshotItems`, so no savepoint was kept, or a setter threw while the value was being put back.
+
+**Resolution:**
+
+1. Read the report: it names each path, the value the transaction wrote, and the value found instead.
+2. Check the build output for [AVX_W44](#avx_w44--compiler_transaction_overlap) — an overlap between two atomic actions is the usual cause, and it is reported before you ship.
+3. Raise `rewind.maxSnapshotItems` in `avenx.config.json` if a large collection was the reason.
+4. Set `onConflict="force"` on the action if this transaction should win regardless.
+
+**Example**
+
+```text
+[AVX_R29] Rewind of the atomic action "PostCard.like" left 1 path(s) unrestored:
+  post.likes — wrote 5, found 6
+```
+
+See the [Avenx Rewind guide](/core-concepts/rewind) for the full model.

@@ -53,6 +53,22 @@ The `event` object can be passed directly to component methods together with you
 
 Compiled action handlers expose an implicit `args` array containing the arguments supplied when the handler is invoked. This allows reusable actions to receive values passed from event bindings.
 
+## Atomic Actions
+
+An `<action>` tag accepts an `atomic` modifier. Every state write the action makes is journaled, and undone if the action throws or returns a promise that rejects:
+
+```html
+<action name="incQty" atomic>
+  busy = true;
+  cart.addQty(id, 1);
+  return api.setQty(id, cart.qtyOf(id));
+</action>
+```
+
+`onConflict="safe" | "force" | "abort"` selects what a rewind does when it finds a value the transaction did not write; it defaults to the project's `rewind.onConflict`. See [Avenx Rewind](/core-concepts/rewind).
+
+---
+
 ## Event Modifiers
 
 Event bindings support dot-suffixed **modifiers** that adjust how the underlying DOM event is handled before your expression runs. Modifiers are appended directly to the event name, e.g. `@submit.prevent="save"` or `@keydown.enter="submit"`.
@@ -276,6 +292,10 @@ When two components do not share a direct parent-child relationship (for example
 
 Avenx-JS supports two primary patterns for cross-component communication across unrelated components:
 
+:::tip
+For most cross-component communication, reach for a [Bridge](/core-concepts/bridges/) rather than a hand-written bus. A bridge already carries both shared state and events, releases subscriptions when the subscribing component unmounts, and lets the compiler check event names. The hand-rolled bus below remains valid if you want full control over the mechanism.
+:::
+
 ### 1. Global Event Bus Utility
 
 You can create a standalone Event Bus module that implements `on`, `off`, and `emit` methods to publish and subscribe to application-wide events:
@@ -371,27 +391,35 @@ export default class CartHeader extends AvenxComponent {
 
 ---
 
-### 2. Global State Bridge Pattern (`AvenxBridge`)
+### 2. Global State Bridge Pattern (`bridge()`)
 
-For state-driven cross-component communication, extending `AvenxBridge` is the recommended Avenx-JS architectural approach. Instead of managing manual event listeners, a global bridge holds shared reactive state that updates consuming components automatically:
+For state-driven cross-component communication, a [Bridge](/core-concepts/bridges) is the recommended Avenx-JS architectural approach. Instead of managing manual event listeners, a bridge holds shared reactive state that updates consuming components automatically:
 
 ```javascript
 // src/bridges/cart.bridge.js
-import { AvenxBridge } from 'avenx-core/runtime';
+import { bridge } from 'avenx-core/runtime';
 
-export default class CartBridge extends AvenxBridge {
-  constructor() {
-    super();
-    this.items = [];
-    this.count = 0;
-  }
+export default bridge({
+  state: {
+    items: [],
+  },
+
+  get count() {
+    return this.items.length;
+  },
 
   addItem(product) {
-    this.items.push(product);
-    this.count = this.items.length;
-  }
-}
+    this.items = [...this.items, product];
+    this.emit('added', product);
+  },
+});
 ```
 
-Components consume the bridge via `this.bridges.cart` and automatically receive reactive updates whenever `addItem()` is called from anywhere in the application.
+Components import the bridge and read it straight from the template, receiving reactive updates whenever `addItem()` is called from anywhere in the application:
+
+```html
+import cart from '../bridges/cart.bridge.js';
+
+<span>{{ cart.count }}</span>
+```
 

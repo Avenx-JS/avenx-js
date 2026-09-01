@@ -30,7 +30,7 @@ Creates a deep proxy around a bridge class or object, tracking method calls and 
 **Example**
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 import AuthBridge from '../src/global/auth.bridge.js';
 
 const mockAuth = AvenxMock.createMockBridge(AuthBridge, { isLoggedIn: false });
@@ -54,7 +54,7 @@ Creates and returns a new `AvenxSandbox` instance for mounting components in iso
 - `AvenxSandbox`: A new sandbox instance.
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 const sandbox = AvenxMock.createSandbox();
 ```
@@ -76,7 +76,7 @@ Dispatches an event on a DOM element (or a mock element), for simulating user in
 - Otherwise, falls back to manually walking up `parentNode` and invoking matching `listeners[eventName]` handlers, respecting `stopPropagation()`.
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 AvenxMock.trigger(buttonElement, 'click');
 ```
@@ -86,7 +86,7 @@ AvenxMock.trigger(buttonElement, 'click');
 Dispatches native or synthetic DOM events with full support for input values and keyboard/mouse options.
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 AvenxMock.triggerEvent(inputElement, 'input', { value: 'test@example.com' });
 ```
@@ -96,7 +96,7 @@ AvenxMock.triggerEvent(inputElement, 'input', { value: 'test@example.com' });
 Creates and attaches an isolated in-memory router to `window.__avenx_routers` for testing components that access route parameters or perform navigation.
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 const router = AvenxMock.createMockRouter({
   hash: '#/users/42?tab=settings',
@@ -157,7 +157,7 @@ Mocks the current active router state, allowing components and pages that depend
 **Example: Testing a Route-Dependent Component**
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 import UserProfilePage from '../src/pages/user-profile.page.js';
 
 const sandbox = AvenxMock.createSandbox();
@@ -216,7 +216,7 @@ Mounts a component (or page) class in isolation using the sandbox's registered b
 **Example**
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 import Counter from '../src/components/counter/counter.component.js';
 
 const sandbox = AvenxMock.createSandbox();
@@ -236,7 +236,7 @@ console.log(wrapper.html);
 ### Full Example: Testing a Component with a Mocked Bridge
 
 ```javascript
-import { AvenxMock } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 import ProfileCard from '../src/components/profile-card/profile-card.component.js';
 import UserBridge from '../src/global/user.bridge.js';
 
@@ -263,7 +263,9 @@ console.log(mockUserBridge.$stateChanges);
 
 ## Component Unit Testing Helpers
 
-Avenx-JS exports helper functions (`mountTestComponent`, `fireEvent`) from `avenx-core/runtime` (and alias `avenx-js/testing`) to simplify isolated unit testing with test runners like Vitest, Jest, Node Test Runner, or Playwright.
+Avenx-JS exports its testing helpers (`AvenxMock`, `AvenxSandbox`, `mountTestComponent`, `fireEvent`, `flushPromises`) from `avenx-core/testing` to simplify isolated unit testing with test runners like Vitest, Jest, Node Test Runner, or Playwright.
+
+These live behind their own entry point so they can never reach a production bundle. Importing them from `avenx-core/runtime` does not work — the runtime entry contains only what a browser needs at runtime.
 
 ### `mountTestComponent(ComponentClass, options)`
 
@@ -326,7 +328,7 @@ function fireEvent(
 
 ```javascript
 import { describe, it, expect } from 'vitest';
-import { mountTestComponent, fireEvent } from 'avenx-core/runtime';
+import { mountTestComponent, fireEvent } from 'avenx-core/testing';
 import SearchBoxComponent from '../src/components/SearchBox.component.js';
 
 describe('SearchBoxComponent Unit Test', () => {
@@ -431,7 +433,8 @@ The recipes below build on `AvenxMock.createSandbox()` for common real-world sce
 Mount a host that projects markup into a child `<slot>`, then assert the projected content appears in the rendered HTML.
 
 ```javascript
-import { AvenxComponent, AvenxMock } from 'avenx-core/runtime';
+import { AvenxComponent } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 class Card extends AvenxComponent {
   static template = `
@@ -470,7 +473,8 @@ If your component uses default slot fallback markup, mount it **without** projec
 `$emit(eventName, detail)` dispatches a `CustomEvent` on the component root. Listen on `wrapper.container` (or the instance root) before triggering the action that emits.
 
 ```javascript
-import { AvenxComponent, AvenxMock } from 'avenx-core/runtime';
+import { AvenxComponent } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 class CounterButton extends AvenxComponent {
   constructor() {
@@ -508,7 +512,8 @@ expect(wrapper.instance.state.count).toBe(1);
 Reactive mutations are scheduled asynchronously. Always `await sandbox.waitForUpdate()` (or chain mutations then wait once) before asserting DOM output so the microtask flush completes.
 
 ```javascript
-import { AvenxComponent, AvenxMock } from 'avenx-core/runtime';
+import { AvenxComponent } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 class StatusBadge extends AvenxComponent {
   constructor() {
@@ -545,7 +550,8 @@ await sandbox.waitForUpdate();
 Record hook invocations on the instance to verify mount → update → unmount ordering during a test.
 
 ```javascript
-import { AvenxComponent, AvenxMock } from 'avenx-core/runtime';
+import { AvenxComponent } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
 
 class LifecycleProbe extends AvenxComponent {
   constructor() {

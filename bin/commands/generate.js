@@ -1,7 +1,23 @@
 import fs from 'fs';
 import path from 'path';
 import { parseName, readTemplate, abortIfGeneratedPathExists, fail } from '../utils.js';
-import { cyan, gray, green, yellow } from '../colors.js';
+import { yellow, cyan, green, gray } from '../colors.js';
+
+/**
+ * Checks if test generation is enabled via CLI flag or avenx config.
+ * @param {object} cli
+ * @param {boolean} [withTestFlag]
+ * @param {boolean} [noTestFlag]
+ * @returns {boolean}
+ */
+function shouldGenerateTest(cli, withTestFlag, noTestFlag) {
+  if (noTestFlag) return false;
+  if (withTestFlag) return true;
+  if (cli?.config?.generate && typeof cli.config.generate.withTests === 'boolean') {
+    return cli.config.generate.withTests;
+  }
+  return false;
+}
 
 /**
  * Automatically adds import and registration for a component in src/main.app.js.
@@ -59,18 +75,30 @@ export function registerInMainApp(cli, className, folderName) {
  * Generates a new Bridge class and template file.
  * @param {object} cli
  * @param {string} name
- * @param {boolean} [dryRun]
+ * @param {boolean|object} [dryRun]
  * @param {boolean} [force]
  * @param {string|null} [templateName]
  */
 export function generateBridge(cli, name, dryRun = false, force = false, templateName = null) {
+  if (typeof dryRun === 'object' && dryRun !== null) {
+    force = dryRun.force || false;
+    templateName = dryRun.templateName || null;
+    dryRun = dryRun.dryRun || false;
+  }
+
   if (!name) {
     fail('Please provide a bridge name (e.g., avenx g bridge auth)');
     return;
   }
 
-  const { capitalizedName: baseName, folderFileName: lowerName } = parseName(name);
-  const capitalizedName = baseName + 'Bridge';
+  const { folderFileName: lowerName } = parseName(name);
+  // A bridge is identified by its module, so its name is simply the file name
+  // in camelCase — the same identifier you would import it under.
+  const bridgeName = lowerName
+    .split(/[-_.]/)
+    .filter(Boolean)
+    .map((part, index) => (index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join('');
 
   const globalDir = path.join(cli.baseDir, cli.config.srcDir, 'global');
   const bridgePath = path.join(globalDir, `${lowerName}.bridge.js`);
@@ -85,7 +113,7 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
 
   if (dryRun) {
     console.log(
-      cyan(`🧪 [Dry Run] Bridge '${capitalizedName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`),
+      cyan(`🧪 [Dry Run] Bridge '${bridgeName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`),
     );
     console.log(cyan('🧪 [Dry Run] No files were written.'));
     return;
@@ -97,21 +125,32 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
 
   const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'bridge', 'bridge.js.template', templateName);
 
-  fs.writeFileSync(bridgePath, template.replace(/{{ name }}/g, capitalizedName));
+  fs.writeFileSync(
+    bridgePath,
+    template.replace(/{{ name }}/g, bridgeName).replace(/{{ file }}/g, lowerName),
+  );
 
-  console.log(green(`✅ Bridge '${capitalizedName}' generated at ${cli.config.srcDir}/global/${lowerName}.bridge.js`));
-  console.log(gray(`ℹ️ It will be automatically registered as '${capitalizedName}' on the next build.`));
+  console.log(green(`✅ Bridge '${bridgeName}' generated at ${cli.config.srcDir}/global/${lowerName}.bridge.js`));
+  console.log(
+    gray(`ℹ️ Import it where you need it: import ${bridgeName} from '<path>/global/${lowerName}.bridge.js';`),
+  );
 }
 
 /**
  * Generates a new Guard class and template file.
  * @param {object} cli
  * @param {string} name
- * @param {boolean} [dryRun]
+ * @param {boolean|object} [dryRun]
  * @param {boolean} [force]
  * @param {string|null} [templateName]
  */
 export function generateGuard(cli, name, dryRun = false, force = false, templateName = null) {
+  if (typeof dryRun === 'object' && dryRun !== null) {
+    force = dryRun.force || false;
+    templateName = dryRun.templateName || null;
+    dryRun = dryRun.dryRun || false;
+  }
+
   if (!name) {
     fail('Please provide a guard name (e.g., avenx g guard auth)');
     return;
@@ -155,11 +194,17 @@ export function generateGuard(cli, name, dryRun = false, force = false, template
  * Generates a new Page class and template files.
  * @param {object} cli
  * @param {string} name
- * @param {boolean} [dryRun]
+ * @param {boolean|object} [dryRun]
  * @param {boolean} [force]
  * @param {string|null} [templateName]
  */
 export function generatePage(cli, name, dryRun = false, force = false, templateName = null) {
+  if (typeof dryRun === 'object' && dryRun !== null) {
+    force = dryRun.force || false;
+    templateName = dryRun.templateName || null;
+    dryRun = dryRun.dryRun || false;
+  }
+
   if (!name) {
     fail('Please provide a page name (e.g., avenx g page home)');
     return;
@@ -205,21 +250,50 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
  * Generates a new component folder and template files, and registers it in main.app.js.
  * @param {object} cli
  * @param {string} name
- * @param {boolean} [dryRun]
+ * @param {boolean|object} [dryRun]
  * @param {boolean} [force]
  * @param {string|null} [templateName]
+ * @param {boolean} [withTest]
+ * @param {boolean} [noTest]
  */
-export function generateComponent(cli, name, dryRun = false, force = false, templateName = null) {
+export function generateComponent(
+  cli,
+  name,
+  dryRun = false,
+  force = false,
+  templateName = null,
+  withTest = false,
+  noTest = false,
+) {
+  if (typeof dryRun === 'object' && dryRun !== null) {
+    force = dryRun.force || false;
+    templateName = dryRun.templateName || null;
+    withTest = dryRun.withTest || false;
+    noTest = dryRun.noTest || false;
+    dryRun = dryRun.dryRun || false;
+  } else if (typeof force === 'boolean' && typeof templateName === 'boolean') {
+    // Backward compatibility if called as (cli, name, dryRun, withTest, noTest)
+    noTest = templateName;
+    withTest = force;
+    force = false;
+    templateName = null;
+  }
+
   if (!name) {
     fail('Please provide a component name (e.g., avenx g my-component)');
     return;
   }
 
   const { capitalizedName, folderFileName: lowerName } = parseName(name);
-
   const compDir = path.join(cli.baseDir, cli.config.srcDir, 'components', lowerName);
+  const willGenerateTest = shouldGenerateTest(cli, withTest, noTest);
 
-  if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Component', lowerName, [compDir])) {
+  const jsPath = path.join(compDir, `${lowerName}.component.js`);
+  const cssPath = path.join(compDir, `${lowerName}.component.css`);
+  const testPath = path.join(compDir, `${lowerName}.component.test.js`);
+
+  const pathsToCheck = [compDir];
+  if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Component', lowerName, pathsToCheck)) {
     return;
   }
 
@@ -231,6 +305,9 @@ export function generateComponent(cli, name, dryRun = false, force = false, temp
     console.log(cyan(`🧪 [Dry Run] Component '${lowerName}' would be created at:`));
     console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.js`);
     console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.css`);
+    if (willGenerateTest) {
+      console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.test.js`);
+    }
     console.log(cyan(`🧪 [Dry Run] ${cli.config.srcDir}/main.app.js would be updated with:`));
     console.log(`  import ${capitalizedName} from './components/${lowerName}/${lowerName}.component.js';`);
     console.log(`  app.register('${capitalizedName}', ${capitalizedName});`);
@@ -244,10 +321,20 @@ export function generateComponent(cli, name, dryRun = false, force = false, temp
   const cssTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.css.template', templateName);
 
   fs.writeFileSync(
-    path.join(compDir, `${lowerName}.component.js`),
+    jsPath,
     jsTemplate.replace(/{{ name }}/g, capitalizedName),
   );
-  fs.writeFileSync(path.join(compDir, `${lowerName}.component.css`), cssTemplate);
+  fs.writeFileSync(cssPath, cssTemplate);
+
+  if (willGenerateTest) {
+    const testTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.test.js.template', templateName);
+    fs.writeFileSync(
+      testPath,
+      testTemplate
+        .replace(/{{PascalCaseName}}/g, capitalizedName)
+        .replace(/{{name}}/g, lowerName),
+    );
+  }
 
   console.log(green(`✅ Component '${lowerName}' generated at ${cli.config.srcDir}/components/${lowerName}/`));
   registerInMainApp(cli, capitalizedName, lowerName);

@@ -241,6 +241,42 @@ try {
 
   console.log('  createMethodMap tests passed');
 
+  // =========================================================================
+  //  4. Bounded Expression & Statement Cache
+  // =========================================================================
+  console.log('  Testing compiled expression cache and isolation...');
+
+  // 4a. Multiple calls reuse cached function across distinct scopes
+  const evalA = new DynamicEvaluator();
+  const evalB = new DynamicEvaluator();
+
+  const expr1 = 'item.value * multiplier';
+  const out1 = evalA.evaluateExpression(expr1, { item: { value: 10 }, multiplier: 2 });
+  const out2 = evalB.evaluateExpression(expr1, { item: { value: 30 }, multiplier: 3 });
+
+  assert.strictEqual(out1, 20, 'First evaluation should compute 20');
+  assert.strictEqual(out2, 90, 'Second evaluation with different scope should compute 90');
+
+  // 4b. Security validation blocks forbidden identifiers on cache-miss
+  assert.throws(
+    () => {
+      evalA.evaluateExpression('window.location.href');
+    },
+    /forbidden|sandbox/i,
+    'Sandbox must reject forbidden property access'
+  );
+
+  // 4c. Statements cache and execute properly with scope mutations
+  const stmtScopeA = { total: 10 };
+  const stmtScopeB = { total: 50 };
+  evalA.executeStatement('total += 5', stmtScopeA);
+  evalB.executeStatement('total += 5', stmtScopeB);
+
+  assert.strictEqual(stmtScopeA.total, 15, 'Statement evaluation must mutate scope A correctly');
+  assert.strictEqual(stmtScopeB.total, 55, 'Statement evaluation must mutate scope B correctly');
+
+  console.log('  Compiled expression cache tests passed');
+
   console.log('All DynamicEvaluator tests passed!');
 } catch (error) {
   console.error('DynamicEvaluator tests failed!');

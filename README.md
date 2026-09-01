@@ -15,6 +15,9 @@ Modern frontend development often requires complex build chains and heavy runtim
 - **🎨 Scoped Styling:** CSS is automatically scoped to your component using hashed class generation.
 - **🛠️ Integrated Tooling:** A built-in CLI handles project scaffolding, component generation, and development servers.
 - **📦 Lightweight Core:** Minimal runtime footprint for fast loading and execution.
+- **🗺️ Compiler Semantic Model:** Ask the compiler what depends on a piece of state, before you change it.
+- **🔍 Causal Tracing:** Record why your app did what it did, then export that recording as a regression test.
+- **↩️ Atomic Actions:** Mark an action `atomic` and every state write it makes is undone if it fails.
 
 ---
 
@@ -32,9 +35,9 @@ Define your UI using standard HTML with added superpowers. Components support `s
 
 Styles defined in `.component.css` are automatically scoped to that specific component. Use the `<@global>` tag for global variables and the `<@css>` tag for component-specific styles.
 
-### 🌐 Reactive Bridges (Shared State)
+### 🌐 Bridges (Shared State)
 
-Shared state across multiple components is handled via **Bridges**. These are global reactive objects that any component can subscribe to and update.
+Shared state lives in **Bridges** — small modules created with `bridge()` and consumed by importing them. Because the import is the connection, the compiler can see every consumer: it drops unused bridges from the bundle and catches mistyped members before you run the app.
 
 ### 🌊 Declarative Async Data, Suspense & Error Boundaries
 
@@ -65,10 +68,10 @@ Fetch data seamlessly with `<resource>` declarations and handle loading & error 
 
 ### 🛡️ Reactive Deadlock Boundary (`<@deadlock>`)
 
-Protect sections of your component tree against circular update loops ($A \rightarrow B \rightarrow A$) and infinite reactive cascades:
+Define a named fallback boundary for reactive-cycle recovery:
 
 ```html
-<@deadlock name="dashboard-boundary" maxDepth="8" action="fallback">
+<@deadlock name="dashboard-boundary">
   <Sidebar />
   <Content />
   <Stats />
@@ -80,13 +83,191 @@ Protect sections of your component tree against circular update loops ($A \right
 </@deadlock>
 ```
 
-- **Cycle Detection:** Automatically monitors recursive microtask and watcher execution to prevent thread freezes.
-- **Diagnostics (`AVX_R18`):** Emits clear causation chain traces (e.g. `Counter -> Stats -> Counter`).
-- **Declarative Recovery:** Unmounts cyclically deadlocked child components and renders an isolated `<@fallback>` UI.
+- **Global Detection:** Scheduler and watcher guards stop runaway reactive work and log `AVX_R18` diagnostics.
+- **Manual Recovery:** Call `$tripDeadlockBoundary('dashboard-boundary', error)` to replace that boundary's active content with its fallback.
+- **Explicit Integration:** Use `onSchedulerDeadlock()` when you want to connect global scheduler detection to a particular component boundary.
+
+Detection does not automatically trip the nearest boundary. The compiled `maxDepth`, `action`, and `isolated` attributes are currently metadata rather than active per-boundary controls. See the [reactive deadlock boundary guide](docs/src/content/docs/core-concepts/deadlock.md) for current behavior and limitations.
+
+### ↩️ Avenx Rewind — an optimistic update that undoes itself
+
+Mark an action `atomic` and every state write it makes is journaled. If the
+action throws, or returns a promise that rejects, the journal is played
+backwards and the state is what it was before the action ran.
+
+```html
+<action name="incQty" atomic>
+  busy = true; cart.addQty(props.id, 1);
+  <!-- writes bridge state, through a bridge action -->
+  return api.setQty(props.id, qty);
+  <!-- if this rejects, none of the above stands -->
+</action>
+```
+
+No `catch`, no snapshot, no inverse. Component state, bridge state, nested
+properties, array and `Map`/`Set` mutations, and keys the action created or
+deleted all come back — and because the restore goes through the same reactive
+machinery as an ordinary write, the DOM corrects itself.
+
+Every framework can be made to do that much with a library. What a library
+cannot do is tell you, at build time, **which of the action's effects a rewind
+will not undo**:
+
+```text
+[AVX_W43] session.save is atomic, but 2 effect(s) cannot be rewound:
+  storage localStorage.setItem(  src/bridges/session.bridge.js:14
+  emit emit('saved'  src/bridges/session.bridge.js:15
+
+[AVX_W44] PostCard.like and PostCard.unlike are both atomic and both write
+PostCard.likes — if they can be in flight at once, a rewind may find a value
+it did not write.
+
+[AVX_W42] cart.setField is atomic, but its write set could not be resolved
+completely: dynamic-member "item[field]".
+```
+
+That last one is the house rule again: Avenx reports where its own analysis was
+incomplete rather than concluding from it. The rewind is unaffected — the
+journal watches the reactive proxies, not the prediction — but the two warnings
+above it are not to be trusted for that action.
+
+Two optimistic updates racing on the same value is the case naive rollback gets
+wrong. The default `safe` policy restores a path only if the value there is
+still the one the transaction wrote, so the second click's increment survives
+the first click's rollback, and the conflict is reported rather than hidden.
+
+With no transaction open, a write costs one boolean read — the same guard shape
+tracing uses. Measured over 100,000 writes: 89.24 ms idle, 89.89 ms inside a
+transaction.
+
+See the [Avenx Rewind guide](docs/src/content/docs/core-concepts/rewind.md).
+
+### 🗺️ Avenx Atlas — ask the compiler what breaks before you break it
+
+The compiler keeps a semantic model of your whole application: components,
+pages, bridges, **individual state keys**, computed values, actions, resources,
+template bindings, event handlers, routes and guards — and the relationships
+between them.
+
+```bash
+npx avenx atlas             # what is in this application
+npx avenx impact cart.items # what can be affected if this changes
+npx avenx why cart.total    # where this value comes from
+```
+
+```text
+What depends on: cart.items
+   state  src/bridges/cart.bridge.js:5
+
+├─ reads cart.total .reduce  src/bridges/cart.bridge.js:10
+│  ├─ reads CartSummary {{ }} "cart.total"  src/components/cart-summary/cart-summary.component.js:14
+│  └─ reads Checkout {{ }} "cart.total"  src/pages/checkout.page.js:7
+│     └─ declares Checkout  src/pages/checkout.page.js
+│        └─ routes-to /checkout  src/main.app.js:9
+├─ reads CartList <@for> "cart.items"  src/components/cart-list/cart-list.component.js:9
+├─ reads CartList {{ }} "item.qty" .[].qty  src/components/cart-list/cart-list.component.js:10
+└─ writes cart.addQty .[].qty [possible]  src/bridges/cart.bridge.js:23
+   └─ invokes CartItem.incQty  src/components/cart-item/cart-item.component.js:7
+      └─ invokes CartItem @click="incQty()"  src/components/cart-item/cart-item.component.js:19
+
+0 unresolved relationships in this answer.
+```
+
+This is a **data-flow** map, not a module graph. The loop variable inside
+`<@for item in cart.items>` resolves back to the state it iterates, so
+`{{ item.qty }}` is reported as a read of `cart.items[].qty`.
+
+Every edge declares how much to trust it — `certain` when it follows from a
+declaration, `possible` when it does not — and everything the analyser could
+**not** follow is listed with its reason and location rather than silently
+dropped. Every answer prints that count, including when it is zero. An
+uncertain answer is better than a confidently wrong one.
+
+Two diagnostics fall out of the model, and both refuse to fire when the
+analysis behind them was incomplete:
+
+```text
+[AVX_W40] cart.discount is written by cart.applyCoupon but read nowhere.
+[AVX_W41] CartSummary.neverCalled is never invoked from a template, action or guard.
+```
+
+Atlas is **compile-time only**. `avenx build` writes `dist/bundle.atlas.json`
+beside the bundle and never references it, so the runtime is byte-for-byte
+unchanged.
+
+Atlas and [Trace](docs/src/content/docs/core-concepts/trace.md) are two sides of
+one model: **Atlas is what can happen, Trace is what did.** A test in this
+repository checks that every causal step in a recorded trace corresponds to an
+edge Atlas predicted.
+
+See the [Avenx Atlas guide](docs/src/content/docs/core-concepts/atlas.md).
+
+### 🔍 Avenx Trace — reproduce a bug once, get a test forever
+
+Avenx records **why** your application did what it did — the click, the action,
+the bridge mutation, the state write, the watchers that woke, the DOM nodes that
+changed — and turns that recording into an executable regression test.
+
+```bash
+npx avenx serve --trace          # reproduce the bug in the browser
+npx avenx trace view latest      # read why it happened
+npx avenx trace export latest --out test/cart-qty.test.js
+```
+
+```text
+▸ click <button.qty-inc> CartItem
+  └─ action CartItem.incQty()  src/components/cart-item/cart-item.component.js:3
+     └─ bridge cart · addQty("a", 1)
+        ├─ write cart.items.0.qty 2 → 3
+        │  ├─ woke CartItem#render
+        │  │  └─ patched <span.qty> text "2" → "3"
+        │  └─ woke CartSummary#render
+        │     ├─ getter cart.total 36 → 48
+        │     └─ patched <strong.total> text "$36.00" → "$48.00"
+        └─ emit cart:changed → 0 listeners
+
+Determinism: deterministic — this trace can be exported as a regression test.
+```
+
+The exported test replays the recorded inputs through the real framework and
+compares **every** state and DOM change against the recording. When the code
+regresses you get the cause, not a bare mismatch:
+
+```text
+Step 1 (click <button.qty-inc>) diverged at position 1:
+  recorded: write count 0 -> 1
+  replayed: write count 0 -> 2
+```
+
+Avenx can do this because template expressions, computed properties and action
+bodies stay **source text** right through to evaluation, and every identifier
+they resolve — including `Date` and `Math` — passes through one sandbox. That
+same choke point is what lets a recorded session be replayed deterministically.
+A framework that compiles expressions into closures has thrown that away before
+the code runs.
+
+Recording is off by default and never reaches a production build — with tracing
+off, each instrumented site is a single boolean check. Determinism is **verified
+by replay**, not claimed by the recorder: a trace that says it is reproducible
+and is not fails loudly rather than passing for the wrong reason.
+
+Configure redaction so a trace never captures what it should not:
+
+```json
+{ "trace": { "redact": ["auth.token", "user.*", "*.password"] } }
+```
+
+See the [Avenx Trace guide](docs/src/content/docs/core-concepts/trace.md).
 
 ### 🛠️ CLI-First Workflow
 
 Generate components, pages, and bridges with a single command. The built-in dev server provides hot-reloading for a seamless development experience.
+
+### 📦 Production Builds
+
+`avenx build` produces a production bundle: the minified runtime, with no testing or lint infrastructure and no Node shims in the graph. Testing helpers live behind `avenx-core/testing` and the ESLint tooling behind `avenx-core/tooling`, so neither can reach an application bundle. `avenx build --dev` builds the readable runtime instead, which is what `avenx serve` uses.
+
+The runtime publishes `globalThis.Avenx` plus seven named globals, rather than copying its whole export surface onto the global object.
 
 ---
 
@@ -109,6 +290,9 @@ npx avenx g counter
 
 # Start development server
 npx avenx serve
+
+# Build for production
+npx avenx build
 ```
 
 Your app will be running at `http://localhost:3000`.
@@ -162,9 +346,9 @@ An Avenx component consists of two files: `<name>.component.js` and `<name>.comp
 </@css>
 ```
 
-### 2. Reactive Bridges (Shared State)
+### 2. Bridges (Shared State)
 
-Bridges allow you to share reactive state between components without complex prop drilling. They are defined in the `src/global/` directory.
+A **Bridge** holds state that several components need, plus the actions that change it. You create one with `bridge()` and use it by importing it.
 
 #### Creation
 
@@ -175,29 +359,39 @@ npx avenx g bridge auth
 #### Definition (`src/global/auth.bridge.js`)
 
 ```javascript
-import { AvenxBridge } from 'avenx-core/runtime';
+import { bridge } from 'avenx-core/runtime';
 
-export default class AuthBridge extends AvenxBridge {
-  constructor() {
-    super();
-    this.isLoggedIn = false;
-    this.user = {
-      name: 'Guest',
-      role: 'visitor',
-    };
-  }
-}
+export default bridge({
+  state: {
+    user: null,
+    status: 'anonymous',
+  },
+
+  get displayName() {
+    return this.user ? this.user.name : 'Guest';
+  },
+
+  login(user) {
+    this.user = user;
+    this.status = 'authenticated';
+    this.emit('login', user);
+  },
+});
 ```
 
 #### Usage in Component
 
-Bridges are automatically available in your component templates and actions.
+Import the bridge, then read it straight from the template. Reads are tracked, so the component re-renders when the data it uses changes — no subscription to write, and none to clean up.
 
 ```html
-<p>Welcome, {{ AuthBridge.user.name }}</p>
+import auth from '../global/auth.bridge.js';
 
-<action name="login"> AuthBridge.isLoggedIn = true; AuthBridge.user.name = 'John Doe'; </action>
+<p>Welcome, {{ auth.displayName }}</p>
+
+<action name="signIn"> auth.login({ name: 'John Doe' }); </action>
 ```
+
+Because a bridge is reached through an import, the compiler knows exactly which components use it: unused bridges are left out of the bundle, mistyped members and unknown event names are reported at build time, and the whole surface is typed in TypeScript. State is read-only outside the bridge, so every mutation has one traceable origin.
 
 ---
 
@@ -327,6 +521,13 @@ my-avenx-app/
 | `avenx check` (or `lint`) | Validates component templates without building.        |
 | `avenx doctor`            | Runs environment and project health diagnostics.       |
 | `avenx serve [port]`      | Starts the dev server with hot-reload (default: 3000). |
+| `avenx atlas`             | Prints the compiler's semantic map of the application. |
+| `avenx impact <symbol>`   | What can be affected if this symbol changes.           |
+| `avenx why <symbol>`      | Where this symbol's value comes from.                  |
+| `avenx trace list`        | Lists recorded causal traces.                          |
+| `avenx trace view <id>`   | Prints a trace as a causal tree.                       |
+| `avenx trace export <id>` | Turns a recorded trace into a regression test.         |
+| `avenx trace prune`       | Removes stored traces.                                 |
 | `avenx watch` (or `w`)    | Watch for file changes and rebuild automatically.      |
 
 ### Options
@@ -336,6 +537,10 @@ my-avenx-app/
 | `--dry-run`, `-d`     | Preview actions for generators and destructors without writing/deleting files. |
 | `--port`, `-p <port>` | Configure the port for the development server.                                 |
 | `--host`, `-h <host>` | Configure the host for the development server (default: `localhost`).          |
+| `--trace`             | Record a causal trace while serving. Development only, off by default.         |
+| `--out`, `-o <file>`  | Where `trace export` writes the generated regression test.                     |
+| `--json`, `-j`        | Machine-readable output for `check`, `atlas`, `impact` and `why`.              |
+| `--depth=<n>`         | How many hops `impact` and `why` follow (default: 12).                         |
 
 ---
 
@@ -349,7 +554,9 @@ Avenx-JS provides comprehensive testing support, from fast unit tests to full br
 - **Playwright End-to-End (E2E) Browser Tests:** `npm run test:e2e`
 - **Full Test Suite:** `npm test`
 
-Playwright E2E tests run against **Chromium**, **Firefox**, and **WebKit** in headless mode. See [test/e2e/README.md](test/e2e/README.md) for detailed configuration and usage guides.
+The E2E suite compiles real Avenx applications with the CLI and drives the compiled bundle in a browser, so a test cannot pass unless the compiler and runtime both ran. Every pull request runs it on **Chromium**; **Firefox** and **WebKit** run nightly.
+
+See [test/e2e/README.md](test/e2e/README.md) for the fixture-app layout, the conventions, what belongs in E2E rather than unit tests, and the framework gaps the suite currently pins.
 
 ---
 

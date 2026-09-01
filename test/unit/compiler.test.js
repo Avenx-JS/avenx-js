@@ -91,8 +91,14 @@ try {
                 const app = new AvenxApp({ target: '#app' });
             `,
       registrations: "app.registerPage('Home', Home);",
-      expectedContains: ["const app = new AvenxApp({ target: '#app' });", "app.registerPage('Home', Home);"],
-      expectedNotContains: ['import {', 'AvenxComponent', '} from'],
+      // A runtime import is rewritten, not deleted: the names it asked for are
+      // bound from the Avenx namespace so they do not depend on bare globals.
+      expectedContains: [
+        'const { AvenxApp, AvenxComponent } = Avenx;',
+        "const app = new AvenxApp({ target: '#app' });",
+        "app.registerPage('Home', Home);",
+      ],
+      expectedNotContains: ['import {', '} from'],
     },
     {
       name: 'CSS-only / side-effect import',

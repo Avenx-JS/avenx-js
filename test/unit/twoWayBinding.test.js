@@ -201,7 +201,81 @@ function testParserCompilation() {
   assert.ok(processedSelect.includes('value="{{ city }}"'));
   assert.ok(processedSelect.includes('@change="city = event.target.value"'));
 
+  // Value-bound controls must never grow a checked binding.
+  for (const processed of [processedInput, processedTextarea, processedSelect]) {
+    assert.ok(!processed.includes('checked='), 'value-bound controls stay bound to value');
+  }
+
   console.log('  ✅ Two-way binding compilation tests passed!');
+}
+
+/**
+ * Checkbox and radio inputs bind through `checked`, not `value`.
+ *
+ * The runtime behaviour is covered in test/integration/form_bindings.test.js.
+ * This pins the compiled output, because the transform is what decides which
+ * DOM property a control binds to — and that decision is invisible until an
+ * input is actually rendered.
+ */
+function testCheckboxAndRadioCompilation() {
+  console.log('🧪 Testing checkbox and radio binding compilation...');
+  const cp = new ComponentParser(new StyleProcessor());
+
+  // A checkbox bound to a boolean: checked mirrors the value, and the change
+  // handler reads back from `checked` rather than `value`.
+  const boolCheckbox = cp.processBindDirectives('<input type="checkbox" data-ax-bind="agreed" />');
+  assert.ok(boolCheckbox.includes('checked="{{'), 'a checkbox binds through checked');
+  assert.ok(!/\svalue="\{\{/.test(boolCheckbox), 'a checkbox does not bind through value');
+  assert.ok(boolCheckbox.includes('!!(agreed)'), 'the checked state is derived from the bound value');
+  assert.ok(boolCheckbox.includes('agreed = event.target.checked'), 'the model reads event.target.checked');
+
+  // A checkbox group bound to an array: membership drives checked, and the
+  // handler adds or removes the input's value.
+  const groupCheckbox = cp.processBindDirectives(
+    '<input type="checkbox" value="apple" data-ax-bind="fruits" />',
+  );
+  assert.ok(groupCheckbox.includes('checked="{{'), 'a checkbox group binds through checked');
+  assert.ok(groupCheckbox.includes("(fruits).includes('apple')"), 'membership drives the checked state');
+  assert.ok(groupCheckbox.includes('event.target.checked'), 'the handler branches on event.target.checked');
+  assert.ok(groupCheckbox.includes("(fruits).push('apple')"), 'checking adds the value');
+  assert.ok(groupCheckbox.includes('splice'), 'unchecking removes the value');
+
+  // A radio: checked is the comparison, and selecting one stores its value.
+  // Reading `checked` here would collapse the group to a boolean.
+  const radio = cp.processBindDirectives(
+    '<input type="radio" name="color" value="red" data-ax-bind="selectedColor" />',
+  );
+  assert.ok(radio.includes('checked="{{'), 'a radio binds through checked');
+  assert.ok(!/\svalue="\{\{/.test(radio), 'a radio does not bind its checked state through value');
+  assert.ok(radio.includes("(selectedColor) === 'red'"), 'checked compares the model to the input value');
+  assert.ok(radio.includes('selectedColor = event.target.value'), 'selecting a radio stores its value');
+
+  // The type is read wherever it appears and however it is quoted.
+  const variants = [
+    "<input type='checkbox' data-ax-bind='ok' />",
+    '<input TYPE="CheckBox" data-ax-bind="ok" />',
+    '<input data-ax-bind="ok" type="checkbox" />',
+  ];
+  for (const variant of variants) {
+    assert.ok(
+      cp.processBindDirectives(variant).includes('checked="{{'),
+      `checkbox detection should not depend on attribute order or casing: ${variant}`,
+    );
+  }
+
+  // A static checked attribute is dropped: the binding owns that state.
+  const preChecked = cp.processBindDirectives('<input type="checkbox" checked data-ax-bind="ok" />');
+  assert.strictEqual(
+    (preChecked.match(/checked="/g) || []).length,
+    1,
+    'a pre-existing checked attribute is replaced, not duplicated',
+  );
+  assert.ok(
+    !/\schecked(?=[\s/>])/.test(preChecked),
+    'the bare checked attribute is removed so the binding owns that state',
+  );
+
+  console.log('  ✅ Checkbox and radio compilation tests passed!');
 }
 
 /**
@@ -271,6 +345,7 @@ async function testRuntimeNestedTwoWayBinding() {
 (async () => {
   try {
     testParserCompilation();
+    testCheckboxAndRadioCompilation();
     await testRuntimeTwoWayBinding();
     await testRuntimeNestedTwoWayBinding();
     console.log('✅ All two-way binding tests passed!');

@@ -513,6 +513,68 @@ comp.$watch('items.length', () => {
 }, { flush: 'post' });
 ```
 
+### `$inspect()`
+
+Returns a diagnostic snapshot of a component.Props and state are sanitized clones, while the root element remains live for inspection in browser DevTools. Computed properties are listed by key only and are not evaluated.
+
+#### Returns 
+
+
+| Return Property | Type | Description |
+| --------------- | ---- | ----------- |
+| `componentName` | `string` | The name of the component. |
+| `props` | `object` | A sanitized snapshot of the component's props. |
+| `state` | `object` | A sanitized snapshot of the component's state. |
+| `computed` | `string[]` | Names of computed properties. They are not evaluated during inspection. |
+| `slots` | `string[]` | Names of the slots currently transcluded into the component. |
+| `element` | `Element \| null` | The component's live root DOM element, which can be inspected in browser DevTools. |
+
+
+#### Key Behaviors & Safety
+
+- **Safe snapshots:** `props` and `state` are detached, sanitized clones that can be logged, serialized, or diffed without modifying the component's reactive state. Circular references and non-serializable functions are sanitized.
+- **Computed properties are not evaluated:** `computed` contains property names only, so inspecting a component does not trigger computed getters or their side effects.
+- **Live root element:** `element` references the component's live root DOM element, making it directly inspectable in browser DevTools.
+- **Slot introspection:** `slots` contains the names of the currently provided slots, such as `['default', 'header', 'footer']`.
+
+
+#### Usage Examples
+
+**Logging component state in a lifecycle hook**
+
+```Javascript
+onMount() {
+  const snapshot = this.$inspect();
+  console.log('[Diagnostics]', snapshot);
+}
+```
+
+**Snapshot assertions in unit tests**
+
+``` Javascript
+
+const wrapper = await mountTestComponent(UserProfile, {
+  props: { name: 'Alice' },
+});
+
+const snapshot = wrapper.instance.$inspect();
+
+assert.strictEqual(snapshot.componentName, 'UserProfile');
+assert.ok(Array.isArray(snapshot.computed));
+assert.ok(Array.isArray(snapshot.slots));
+```
+
+**Debugging in the browser console**
+
+``` Javascript
+
+const snapshot = component.$inspect();
+console.log(snapshot);
+
+
+---
+
+
 
 ### `emit(eventName, detail, options)`
 

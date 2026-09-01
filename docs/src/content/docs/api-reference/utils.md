@@ -353,7 +353,7 @@ Helper method that delegates to `Sanitizer.prototype.sanitize()`.
 ### `AvenxSandbox` Class Reference
 
 ```javascript
-import { AvenxSandbox } from 'avenx-core/runtime';
+import { AvenxSandbox } from 'avenx-core/testing';
 ```
 
 #### Methods

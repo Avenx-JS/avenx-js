@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
-import { AvenxMock, mountTestComponent, fireEvent } from '../../lib/core/index.js';
+import { AvenxMock, mountTestComponent, fireEvent } from '../../lib/core/testing.js';
 import { setupDOMMock, teardownDOMMock } from '../helpers/dom-mock.js';
 
 // Sample bridge definition for tests

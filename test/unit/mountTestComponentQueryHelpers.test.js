@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
-import { mountTestComponent } from '../../lib/core/index.js';
+import { mountTestComponent } from '../../lib/core/testing.js';
 import { setupDOMMock, teardownDOMMock } from '../helpers/dom-mock.js';
 
 (async () => {

@@ -483,6 +483,23 @@ export class VirtualList extends AvenxComponent<any> {
     prevPage(): void;
 }
 
+export interface RouterA11yOptions {
+    /**
+     * Whether to shift focus to the new page or target after navigation (default is true).
+     */
+    focusOnNavigate?: boolean;
+
+    /**
+     * Whether to announce the route title change to screen readers via a live region (default is true).
+     */
+    announceRouteChanges?: boolean;
+
+    /**
+     * Optional CSS selector to target for focus (default is '[data-ax-page-heading]').
+     */
+    focusTarget?: string;
+}
+
 /**
  * Configuration options for the AvenxRouter.
  */
@@ -534,6 +551,11 @@ export interface AvenxRouterOptions {
      * - `'manual'`: do not change scroll position
      */
     scrollRestoration?: 'top' | 'auto' | 'manual';
+    
+    /**
+     * Accessibility options for focus management and route announcements.
+     */
+    a11y?: RouterA11yOptions;
 }
 
 /**
@@ -777,7 +799,7 @@ export class AvenxApp {
      * @param name Bridge global identifier (e.g. `AuthBridge`).
      * @param bridgeData Raw object schema or instance.
      */
-    registerBridge(name: string, bridgeData: Record<string, any> | Function): void;
+    registerBridge(name: string, bridgeData: Record<string, any>): void;
 
     /**
      * Forces updates on all active component nodes.
@@ -854,12 +876,197 @@ export class AvenxApp {
     }): this;
 }
 
+/** Releases a bridge subscription. Safe to call more than once. */
+export type BridgeUnsubscribe = () => void;
+
+/** Keys of a bridge definition that name an action. */
+type BridgeActionKeys<D> = {
+    [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? K : never;
+}[keyof D];
+
+/** Keys of a bridge definition that name a derived (getter) value. */
+type BridgeDerivedKeys<D> = {
+    [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? never : K;
+}[keyof D];
+
+/** The shared state object declared by a bridge definition. */
+type BridgeStateOf<D> = D extends { state: infer S } ? S : Record<never, never>;
+
+/** The actions declared by a bridge definition. */
+type BridgeActionsOf<D> = Pick<D, BridgeActionKeys<D>>;
+
+/** The derived values declared by a bridge definition. */
+type BridgeDerivedOf<D> = Pick<D, BridgeDerivedKeys<D>>;
+
 /**
- * Base class for global reactive bridges.
+ * The value bound to `this` inside actions, getters and `setup()`.
+ * State is writable here and `emit` is available; both are withheld from
+ * consumers so that every mutation and every event has one origin.
  */
-export class AvenxBridge {
-    constructor();
+export type BridgeSelf<D> = BridgeStateOf<D> &
+    Readonly<BridgeDerivedOf<D>> &
+    BridgeActionsOf<D> & {
+        /** Broadcasts an event to every subscriber. */
+        emit(event: string, payload?: unknown): void;
+    };
+
+/**
+ * The bridge instance a module exports and components import.
+ * State and derived values are read-only; mutation goes through actions.
+ */
+export type Bridge<D> = Readonly<BridgeStateOf<D>> &
+    Readonly<BridgeDerivedOf<D>> &
+    BridgeActionsOf<D> & {
+        /**
+         * Subscribes to an event emitted by this bridge.
+         * Called from a component lifecycle hook or event handler, the
+         * subscription is released automatically when that component unmounts.
+         * @returns A function that unsubscribes early.
+         */
+        on<P = any>(event: string, handler: (payload: P) => void): BridgeUnsubscribe;
+        /** Runs the cleanup from `setup()`, drops listeners and restores initial state. */
+        $dispose(): void;
+        /** Diagnostic name, derived from the file name by the compiler. */
+        readonly $name: string;
+    };
+
+/**
+ * Creates a Bridge: a reactive unit of shared state and behaviour that
+ * components consume by importing it.
+ * @example
+ * export default bridge({
+ *   state: { user: null as User | null },
+ *   get isLoggedIn() { return this.user !== null; },
+ *   login(user: User) { this.user = user; this.emit('login', user); },
+ * });
+ */
+export function bridge<D extends object>(definition: D & ThisType<BridgeSelf<D>>): Bridge<D>;
+
+/** Reports whether a value is a bridge instance created by `bridge()`. */
+export function isBridge(value: unknown): boolean;
+
+/** Assigns a bridge its diagnostic name. Emitted by the compiler. */
+export function defineBridgeName<T>(name: string, instance: T): T;
+
+/**
+ * What a rewind does when it finds a value the transaction did not write.
+ *
+ * - `safe` leaves the newer value alone and reports the conflict (AVX_R29).
+ * - `force` restores regardless, for a transaction that owns the value.
+ * - `abort` restores what it can, then throws.
+ */
+export type RewindConflictPolicy = 'safe' | 'force' | 'abort';
+
+/** The conflict policies, as values. */
+export const ConflictPolicy: {
+    readonly SAFE: 'safe';
+    readonly FORCE: 'force';
+    readonly ABORT: 'abort';
+};
+
+/** How many entries a collection may hold before the journal stops saving it. */
+export const DEFAULT_MAX_SNAPSHOT_ITEMS: number;
+
+/** What a rewind managed to do. */
+export interface RewindOutcome {
+    /** How many paths and collections were put back. */
+    restored: number;
+    /** Paths left alone because they no longer held the value the transaction wrote. */
+    conflicts: Array<{ path: string; expected: unknown; found: unknown }>;
+    /** Collections that were never saved, and why. */
+    unrewindable: string[];
 }
+
+/** One transaction's record of what it changed. */
+export class JournalFrame {
+    constructor(options?: {
+        owner?: string;
+        name?: string;
+        onConflict?: RewindConflictPolicy;
+        maxSnapshotItems?: number;
+    });
+    readonly owner: string;
+    readonly name: string;
+    readonly onConflict: RewindConflictPolicy;
+    /** True when a rewind would have nothing to do. */
+    readonly empty: boolean;
+    /** Plays the frame backwards and reports what it could not restore. */
+    rewind(): RewindOutcome;
+}
+
+/**
+ * The write journal behind Avenx Rewind.
+ *
+ * Applications do not normally reach for this: `<action ... atomic>` and
+ * `atomic()` are the surface. It is exported for tests, for tooling, and for
+ * the rare case that needs a transaction the compiler cannot see.
+ */
+export const journal: {
+    /** True while a transaction is recording. Read once per state write. */
+    readonly active: boolean;
+    /** Applies `rewind` from avenx.config.json. */
+    configure(options?: { onConflict?: RewindConflictPolicy; maxSnapshotItems?: number }): void;
+    /** The innermost open frame, or null. */
+    current(): JournalFrame | null;
+    /**
+     * Runs a function as a transaction. It commits by returning and rewinds by
+     * throwing, or by returning a promise that rejects.
+     */
+    run<T>(
+        spec: { owner?: string; name?: string; onConflict?: RewindConflictPolicy; maxSnapshotItems?: number },
+        fn: () => T,
+    ): T;
+    /** Drops every open frame. */
+    reset(): void;
+};
+
+/**
+ * Declares a bridge action transactional.
+ *
+ * Every state write the action makes — its own and those of anything it calls
+ * — is journaled. If the action throws, or returns a promise that rejects, the
+ * journal is played backwards and the state is what it was before it ran.
+ *
+ * Returns the same function, so its name, arity and identity survive.
+ * @example
+ * export default bridge({
+ *   state: { items: [] as Item[] },
+ *   addQty: atomic(function (id: string, n: number) { ... }),
+ * });
+ */
+export function atomic<T extends (...args: any[]) => any>(
+    fn: T,
+    options?: { onConflict?: RewindConflictPolicy },
+): T;
+
+/** Reports whether a function was declared atomic. */
+export function isAtomic(fn: unknown): boolean;
+
+/** Reads the transaction options off a marked function, or null. */
+export function atomicOptions(fn: unknown): { onConflict?: RewindConflictPolicy } | null;
+
+/**
+ * Collects teardown callbacks and releases them together. Components own one
+ * and dispose it on unmount, which is how bridge subscriptions are released.
+ */
+export class DisposalScope {
+    constructor(name?: string);
+    readonly name: string;
+    readonly disposed: boolean;
+    /** Registers a teardown callback; returns a run-once release function. */
+    add(disposer: () => void): () => void;
+    /** Runs every registered teardown callback. */
+    dispose(): void;
+}
+
+/** Returns the scope that currently owns new teardown callbacks. */
+export function getScope(): DisposalScope | null;
+
+/** Runs a function with the given scope active. Pass null to detach ownership. */
+export function runInScope<T>(scope: DisposalScope | null, fn: () => T): T;
+
+/** Registers a teardown callback with the active scope, if there is one. */
+export function onScopeDispose(disposer: () => void): () => void;
 
 /**
  * Factory for creating reactive state proxies.
@@ -1090,128 +1297,6 @@ export function watchEffect(
     options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string }
 ): () => void;
 
-export interface MockBridgeStateChange {
-    prop: string;
-    value: any;
-}
-
-export interface MockBridgeCall {
-    method: string;
-    args: any[];
-}
-
-export type MockBridge<T> = T & {
-    $calls: MockBridgeCall[];
-    $stateChanges: MockBridgeStateChange[];
-    $onStateChange(cb: (prop: string, value: any) => void): () => void;
-    $onCall(cb: (method: string, args: any[]) => void): () => void;
-    $reset(): void;
-    readonly $isMock: true;
-};
-
-export class AvenxMock {
-    static createMockBridge<T extends object>(
-        bridgeClassOrObject: T | (new (...args: any[]) => T),
-        initialData?: Partial<T> | Record<string, any>
-    ): MockBridge<T>;
-
-    static createSandbox(): AvenxSandbox;
-
-    static createMockRouter(options?: {
-        currentRoute?: { hash?: string; page?: string; params?: Record<string, any> };
-        hash?: string;
-        page?: string;
-        params?: Record<string, any>;
-        queryParams?: Record<string, any>;
-        guards?: Array<
-            | ((to: any, from: any) => boolean | string | void)
-            | { canActivate: (to: any, from: any) => boolean | string | void }
-        >;
-    }): {
-        currentRoute: { hash: string; page: string; params: Record<string, any> };
-        push(path: string): boolean;
-        replace(path: string): boolean;
-        getParams(): Record<string, any>;
-        $calls: Array<{ method: string; args: any[]; blocked?: boolean }>;
-        $reset(): void;
-        readonly $isMock: true;
-    };
-
-    static trigger(element: any, eventName: string, eventData?: Record<string, any>): void;
-
-    static mountTestComponent<C extends AvenxComponent<any> = AvenxComponent<any>>(
-        ComponentClass: new (...args: any[]) => C,
-        options?: MountTestComponentOptions
-    ): Promise<MountTestComponentResult<C>>;
-
-    static fireEvent(
-        element: any,
-        eventType: string,
-        detail?: Record<string, any>
-    ): Promise<void>;
-
-    static flushPromises(): Promise<void>;
-}
-
-export interface MountTestComponentOptions {
-    props?: Record<string, any>;
-    slots?: Record<string, any> | string | any;
-    state?: Record<string, any>;
-    initialState?: Record<string, any>;
-    bridges?: Record<string, any>;
-    components?: Record<string, typeof AvenxComponent>;
-    container?: any;
-    route?: Record<string, any>;
-}
-
-export interface MountTestComponentResult<C = AvenxComponent<any>> {
-    instance: C;
-    component: C;
-    element: any;
-    container: any;
-    update(): void;
-    unmount(): void;
-    readonly html: string;
-    find(selector: string): any | null;
-    findAll(selector: string): any[];
-    findComponent(ComponentClassOrName: any): AvenxComponent<any> | null;
-    trigger(selectorOrEl: any, eventName: string, detail?: Record<string, any>): Promise<void>;
-}
-
-export function mountTestComponent<C extends AvenxComponent<any> = AvenxComponent<any>>(
-    ComponentClass: new (...args: any[]) => C,
-    options?: MountTestComponentOptions
-): Promise<MountTestComponentResult<C>>;
-
-export function fireEvent(
-    element: any,
-    eventType: string,
-    detail?: Record<string, any>
-): Promise<void>;
-
-export function flushPromises(): Promise<void>;
-
-export class AvenxSandbox {
-    components: Map<string, typeof AvenxComponent>;
-    bridges: Record<string, any>;
-    constructor();
-    register(name: string, compClass: typeof AvenxComponent): this;
-    registerBridge(name: string, bridgeInstance: any): this;
-    setRoute(route: { hash?: string; page?: string; params?: Record<string, any> }): this;
-    waitForUpdate(): Promise<void>;
-    mount(
-        compClass: typeof AvenxComponent,
-        props?: Record<string, any>,
-        container?: any
-    ): {
-        instance: AvenxComponent<any>;
-        container: any;
-        readonly html: string;
-        update(): void;
-        trigger(selectorOrElement: any, eventName: string, eventData?: Record<string, any>): void;
-    };
-}
-
 export function initInspector(app: AvenxApp): void;
 
 export class LruCache<T = any> {
@@ -1226,18 +1311,6 @@ export class LruCache<T = any> {
     clear(): void;
     readonly size: number;
 }
-
-export interface InvalidComponentTagIssue {
-    tagName: string;
-    expectedName: string;
-    index: number;
-}
-
-export function componentNameFromFile(fileName: string): string;
-export function findRegisteredComponents(projectRoot: string, componentsDir?: string): Set<string>;
-export function extractLintableTemplate(source: string): string;
-export function findInvalidComponentTags(source: string, registeredComponents: Set<string>): InvalidComponentTagIssue[];
-export function findProjectRoot(filePath: string, fallbackRoot: string): string;
 
 export function profile<T = any>(enableProfiling: boolean, componentName: string, phase: string, fn: () => T): T;
 export function getComponentProfilingInfo(element: any): { enableProfiling: boolean; componentName: string };
@@ -1349,3 +1422,136 @@ export class StyleMountManager {
  * Shared StyleMountManager instance used by the runtime.
  */
 export const styleMountManager: StyleMountManager;
+
+// ---------------------------------------------------------------------------
+// Trace recording
+//
+// Only the recording half of `avenx trace` ships in the runtime, because that
+// is the half that has to run in a real browser next to a real bug. Replay,
+// the causal viewer and test generation live behind `avenx-core/testing` and
+// the CLI, where an application bundle cannot reach them.
+// ---------------------------------------------------------------------------
+
+/** How a trace node relates to Avenx's execution model. */
+export type TraceNodeKind =
+    | 'event'
+    | 'action'
+    | 'bridge-action'
+    | 'bridge-emit'
+    | 'write'
+    | 'watcher'
+    | 'computed'
+    | 'dom'
+    | 'resource'
+    | 'navigation'
+    | 'global'
+    | 'error'
+    | 'contract';
+
+/** Whether a recorded session can be faithfully replayed. */
+export type TraceDeterminism = 'deterministic' | 'best-effort';
+
+/** A reference to a DOM node that both reads well and resolves again on replay. */
+export interface TraceNodeRef {
+    selector: string;
+    nth: number;
+}
+
+/** One recorded step. Causality is expressed by `parent`, not by nesting. */
+export interface TraceNode {
+    id: number;
+    parent: number | null;
+    seq: number;
+    /** Milliseconds since the recording started. */
+    t: number;
+    type: TraceNodeKind;
+    [field: string]: any;
+}
+
+/** A complete recording. */
+export interface Trace {
+    traceVersion: number;
+    id: string;
+    createdAt: string;
+    determinism: {
+        status: TraceDeterminism;
+        reasons: Array<{ reason: string; detail?: string }>;
+    };
+    meta: Record<string, any>;
+    /** Non-deterministic values the sandbox handed out, in observation order. */
+    globals: { now?: number[]; random?: number[] };
+    /** Property-path patterns whose values were withheld. */
+    redactions: string[];
+    redacted?: boolean;
+    /** How many nodes the ring buffer dropped, if any. */
+    dropped: number;
+    nodes: TraceNode[];
+}
+
+/** Records one session's causal trace. */
+export class TraceRecorder {
+    constructor(options?: {
+        id?: string;
+        maxNodes?: number;
+        redact?: string[];
+        meta?: Record<string, any>;
+    });
+    readonly id: string;
+    readonly nodes: TraceNode[];
+    /** Only ever downgrades: a recording never talks itself back up to deterministic. */
+    readonly isDeterministic: boolean;
+    readonly componentCount: number;
+    /** Switches from application startup to recording user interaction. */
+    arm(): TraceRecorder;
+    stop(): TraceRecorder;
+    toJSON(): Trace;
+    serialize(indent?: number): string;
+}
+
+/** Starts recording, replacing any recording already in progress. */
+export function startRecording(options?: {
+    id?: string;
+    maxNodes?: number;
+    redact?: string[];
+    meta?: Record<string, any>;
+}): TraceRecorder;
+
+/** Stops the active recording and returns the finished trace. */
+export function stopRecording(): Trace | null;
+
+/** The recorder currently attached, if any. */
+export function activeRecorder(): TraceRecorder | null;
+
+/** The control surface `avenx serve --trace` publishes on `window.avenxTrace`. */
+export interface TraceController {
+    readonly id: string;
+    readonly size: number;
+    readonly deterministic: boolean;
+    /** Posts the current trace to the dev server. */
+    save(): Promise<{ ok: boolean; id?: string; error?: string }>;
+    /** The trace as it stands, without saving it. */
+    snapshot(): Trace;
+    stop(): Trace | null;
+}
+
+/**
+ * Starts browser recording and publishes `window.avenxTrace`.
+ *
+ * Called by the dev server only for `avenx serve --trace`. Nothing in the
+ * trace runtime runs until this is called.
+ */
+export function installTraceRecorder(options?: {
+    endpoint?: string;
+    redact?: string[];
+    maxNodes?: number;
+    autoSave?: boolean;
+}): TraceController;
+
+/** Stops a recording started by installTraceRecorder. */
+export function uninstallTraceRecorder(): Trace | null;
+
+/** Whether a browser recording is currently running. */
+export function isRecording(): boolean;
+
+/** Where installTraceRecorder posts a saved trace. */
+export const TRACE_ENDPOINT: string;

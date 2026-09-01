@@ -15,7 +15,7 @@ const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 /**
  *
  * @param {string[]} args
- * @returns {import('child_process').SpawnSyncReturns<string>}
+ * @returns {object}
  */
 function runCli(args) {
   return spawnSync(process.execPath, [BIN_PATH, ...args], {
@@ -176,15 +176,19 @@ async function runTest() {
 
     const bundleContent = fs.readFileSync(bundleJsPath, 'utf-8');
 
-    assert.ok(bundleContent.includes('HtmlEscaper'), 'bundle.js should contain HtmlEscaper');
+    // Assert on the contract, not on internal identifiers: `avenx build` is a
+    // production build, so class names inside the runtime are minified away.
+    // Export names survive because the bundle publishes them by name.
+    assert.ok(
+      bundleContent.includes('AvenxComponent'),
+      'bundle.js should publish AvenxComponent, which compiled components extend',
+    );
 
-    assert.ok(bundleContent.includes('SafeHtml'), 'bundle.js should contain SafeHtml');
-
-    assert.ok(bundleContent.includes('html'), 'bundle.js should contain html function');
+    assert.ok(bundleContent.includes('AvenxApp'), 'bundle.js should publish AvenxApp');
 
     assert.ok(
-      bundleContent.includes('ListManager = class'),
-      'bundle.js should contain ListManager runtime dependency',
+      bundleContent.includes('globalThis'),
+      'bundle.js should install the runtime on the global object',
     );
 
     assert.match(buildOutput, /Asset sizes:/, 'prints asset size');
@@ -380,7 +384,7 @@ async function runTest() {
     );
 
     assert.ok(
-      forcedForceBridgeJs.includes('ForceAuthBridge extends AvenxBridge'),
+      forcedForceBridgeJs.includes('bridge({'),
       'Force generation should overwrite the modified Bridge',
     );
 
@@ -877,7 +881,10 @@ async function runTest() {
     assert.match(inspectOutput, /🧩 Components/, 'inspect should display Components category');
     assert.match(inspectOutput, /🌉 Bridges/, 'inspect should display Bridges category');
     assert.match(inspectOutput, /UnusedInspectBtn.*\(⚠️ Unused\)/, 'should flag unused component with ⚠️ Unused');
-    assert.match(inspectOutput, /InspectAuthBridge -> src\/global\/inspect-auth\.bridge\.js/, 'should list bridge');
+    // The compiler registers a bridge under the name it derives from the file
+    // (`app.registerBridge('inspectAuth', ...)`), and inspect now reports what
+    // the compiler registered rather than a class name scraped from the source.
+    assert.match(inspectOutput, /inspectAuth -> src\/global\/inspect-auth\.bridge\.js/, 'should list bridge under its registered name');
 
     const inspectAliasOutput = execSync(`node ${BIN_PATH} i`, { cwd: TEST_DIR, encoding: 'utf8' });
     assert.strictEqual(inspectAliasOutput, inspectOutput, 'avenx i should produce identical output to avenx inspect');
