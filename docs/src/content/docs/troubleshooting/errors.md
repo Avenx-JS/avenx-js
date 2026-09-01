@@ -3510,3 +3510,95 @@ Handling asynchronous operations and capturing user feedback in action handlers:
 </form>
 ```
 
+### AVX_R25: TraceUnreadable
+
+**Error Message:**  
+`AVX_R25: TraceUnreadable - A trace file could not be read by this version of Avenx.`
+
+**Cause:**
+- The trace was produced by a newer `avenx-core` than the one reading it.
+- The file is not a trace, or was truncated while being written.
+
+**Resolution:**
+- Upgrade `avenx-core` to a version that understands this trace format version.
+- Re-record the session with `avenx serve --trace`.
+
+**Incorrect Code / Scenario:**  
+Attempting to read a trace recorded with a newer version using an older CLI.
+
+**Correct Code / Scenario:**  
+Update Avenx and re-run the trace.
+
+**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for details on recording and replaying traces.
+
+---
+
+### AVX_R26: TraceNotDeterministic
+
+**Error Message:**  
+`AVX_R26: TraceNotDeterministic - A best-effort trace was replayed without explicitly accepting that it may not reproduce.`
+
+**Cause:**
+- The recording detected something replay cannot reproduce: an unattributed state write, a polling resource, a value that could not be serialized, or a redacted input.
+- The recording buffer filled up and dropped its oldest nodes.
+
+**Resolution:**
+- Run `avenx trace view <id>` to see which reasons were recorded.
+- Remove the source of non-determinism — move timer-driven state changes into an action, or drop `pollInterval` — and record again.
+- Pass `{ allowBestEffort: true }` to `replay()` to run it anyway; the result reports what diverged instead of claiming a pass.
+
+**Incorrect Code / Scenario:**  
+Replaying a trace with timers or external requests that produce different results each run.
+
+**Correct Code / Scenario:**  
+Ensure all state changes happen inside actions that are deterministic and recorded, and use `allowBestEffort` if you intend to accept possible divergence.
+
+**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for deterministic replay guidelines.
+
+---
+
+### AVX_R27: TraceReplayDiverged
+
+**Error Message:**  
+`AVX_R27: TraceReplayDiverged - Replaying a trace produced different state or DOM changes than the recording.`
+
+**Cause:**
+- Application code changed since the trace was recorded — which is exactly what a regression test is for.
+- Something outside the sandbox boundary took part in the original run: a bridge reading `Date.now()`, a timer, or a request made outside a `<resource>`.
+- The recorded event target could not be found in the replayed DOM.
+
+**Resolution:**
+- Read the divergence report: it names the step and the first recorded and replayed operation that differ.
+- If the change was intended, re-record the trace and re-export the test.
+- If it was not, the divergence is the bug the trace was meant to catch.
+
+**Incorrect Code / Scenario:**  
+Changing the behavior of an action after recording a trace, then replaying expecting it to pass.
+
+**Correct Code / Scenario:**  
+After intentional changes, re-record the trace; otherwise, fix the bug that caused the divergence.
+
+**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for regression testing with traces.
+
+---
+
+### AVX_R28: TraceReplayFailed
+
+**Error Message:**  
+`AVX_R28: TraceReplayFailed - A replay could not be set up.`
+
+**Cause:**
+- `replay()` was called without a `mount()` option.
+
+**Resolution:**
+- Pass a `mount()` function that constructs and mounts the application, and returns the context your assertions need.
+
+**Incorrect Code / Scenario:**  
+Calling `replay(trace)` with no mount function.
+
+**Correct Code / Scenario:**  
+Call `replay(trace, { mount: () => { /* mount app and return context */ } })`.
+
+**Cross-link:** See [Avenx Trace](/docs/core-concepts/trace/) for the replay API.
+
+---
