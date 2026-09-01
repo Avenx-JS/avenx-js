@@ -15,7 +15,7 @@ const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 /**
  *
  * @param {string[]} args
- * @returns {import('child_process').SpawnSyncReturns<string>}
+ * @returns {object}
  */
 function runCli(args) {
   return spawnSync(process.execPath, [BIN_PATH, ...args], {
@@ -881,7 +881,10 @@ async function runTest() {
     assert.match(inspectOutput, /🧩 Components/, 'inspect should display Components category');
     assert.match(inspectOutput, /🌉 Bridges/, 'inspect should display Bridges category');
     assert.match(inspectOutput, /UnusedInspectBtn.*\(⚠️ Unused\)/, 'should flag unused component with ⚠️ Unused');
-    assert.match(inspectOutput, /InspectAuthBridge -> src\/global\/inspect-auth\.bridge\.js/, 'should list bridge');
+    // The compiler registers a bridge under the name it derives from the file
+    // (`app.registerBridge('inspectAuth', ...)`), and inspect now reports what
+    // the compiler registered rather than a class name scraped from the source.
+    assert.match(inspectOutput, /inspectAuth -> src\/global\/inspect-auth\.bridge\.js/, 'should list bridge under its registered name');
 
     const inspectAliasOutput = execSync(`node ${BIN_PATH} i`, { cwd: TEST_DIR, encoding: 'utf8' });
     assert.strictEqual(inspectAliasOutput, inspectOutput, 'avenx i should produce identical output to avenx inspect');

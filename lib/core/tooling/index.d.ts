@@ -23,3 +23,18 @@ export const componentTagNamingRule: {
 export const avenxTemplateParser: {
     parseForESLint(code: string, options?: any): any;
 };
+
+/**
+ * Compiles a single `.component.js` or `.page.js` into a usable class.
+ *
+ * Avenx component files are not JavaScript modules, so a test cannot import
+ * one. This runs the same ComponentParser the build uses, which is what lets a
+ * generated regression test mount the component the application ships.
+ */
+export function loadComponent(
+    filePath: string,
+    options?: { type?: 'component' | 'page'; config?: Record<string, any> }
+): new (bridges?: any, props?: any) => any;
+
+/** The class name the compiler emits for a component file. */
+export function classNameFor(filePath: string): string;

@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import AvenxCompiler from '../../lib/compiler.js';
+import { reportAtlasDiagnostics } from '../../lib/compiler/atlas/diagnostics.js';
+import { reportRewindDiagnostics } from '../../lib/compiler/rewind/diagnostics.js';
 import { cyan, gray, green, red } from '../colors.js';
 import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
@@ -200,9 +202,29 @@ export function runCheckPass(cli, args = []) {
   }
 
   try {
-    const compiler = new AvenxCompiler(cli.config);
-    compiler.processComponents();
-    compiler.processPages();
+    // analyze() is the same pipeline the build runs, so check sees exactly
+    // what a build would: bridges included, which the previous
+    // processComponents/processPages pair skipped entirely. It is tolerant so
+    // one broken bridge cannot hide every template diagnostic behind it; the
+    // failure itself is reported below.
+    const compiler = new AvenxCompiler({
+      ...cli.config,
+      ...(cli.baseDir ? { rootDir: cli.baseDir } : {}),
+    });
+    const model = compiler.analyze();
+
+    for (const failure of model.errors) {
+      errorCount++;
+      const message = `[${failure.code}] ${failure.message}`;
+      if (isJson) {
+        diagnostics.push(parseDiagnostic('error', [message]));
+      } else {
+        originalError(red(`❌ ${message}`));
+      }
+    }
+
+    reportAtlasDiagnostics(model, cli.config);
+    reportRewindDiagnostics(model, cli.config);
   } catch (err) {
     errorCount++;
     if (isJson) {

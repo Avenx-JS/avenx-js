@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
+import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
+import { AtlasNodeKind } from '../../lib/compiler/atlas/AppModel.js';
+import { buildModel } from './atlas.js';
 import { bold, cyan, green, yellow, gray } from '../colors.js';
 
 /**
@@ -68,6 +71,41 @@ function extractRawTemplate(content) {
 }
 
 /**
+ * Reads what each unit declares from the compiler's semantic model.
+ *
+ * Keyed by file path rather than by name: `stats` derives a display name from
+ * whatever `class X` a file contains, while the compiler names a unit after
+ * its file. Those disagree often enough that matching on them would silently
+ * report zero. The path is the same fact on both sides.
+ *
+ * Falls back to per-file parsing when the model cannot be built — `stats` is a
+ * footprint report and should still produce byte sizes for a project that does
+ * not currently compile.
+ * @param {object} cli - The AvenxCLI instance.
+ * @returns {{available: boolean, stateCounts: Map<string, number>}} Declared
+ *   state counts by root-relative file path.
+ */
+function collectSemantics(cli) {
+  /** @type {Map<string, number>} */
+  const stateCounts = new Map();
+  try {
+    const model = buildModel(cli);
+    if (model.errors.length > 0) {
+      return { available: false, stateCounts };
+    }
+    for (const node of model.nodes.values()) {
+      if (node.kind !== AtlasNodeKind.STATE || !node.owner) continue;
+      const owner = model.getNode(node.owner);
+      if (!owner || !owner.file) continue;
+      stateCounts.set(owner.file, (stateCounts.get(owner.file) || 0) + 1);
+    }
+    return { available: true, stateCounts };
+  } catch {
+    return { available: false, stateCounts };
+  }
+}
+
+/**
  * Scans the project source directory and collects component, page, bridge, and guard metrics.
  * @param {object} cli - AvenxCLI instance containing baseDir and config.
  * @returns {object} Analysis result containing summary and item metrics.
@@ -78,7 +116,15 @@ export function analyzeStats(cli) {
   const srcDir = path.join(rootDir, srcRel);
 
   const allFiles = getAllFiles(srcDir);
-  const parser = new ComponentParser(cli.config);
+  // ComponentParser's first argument is a StyleProcessor. It used to be handed
+  // the config object, so every styleProcessor.process() call threw into the
+  // catch below and scoped CSS was silently reported as zero bytes.
+  const parser = new ComponentParser(new StyleProcessor((cli.config && cli.config.style) || {}, cli.config), (cli.config && cli.config.voidTags) || [], cli.config);
+
+  // Byte sizes have to be measured from the files. What each file *is*, and
+  // what it declares, is something the compiler already knows, so those come
+  // from the model rather than from a second set of regexes.
+  const semantics = collectSemantics(cli);
 
   const items = [];
   let totalFiles = 0;
@@ -134,15 +180,16 @@ export function analyzeStats(cli) {
       name = toPascalCase(base);
     }
 
-    let statePropsCount = 0;
+    let statePropsCount = semantics.stateCounts.get(relPath) || 0;
     let rawTemplateBytes = 0;
     let compiledTemplateBytes = 0;
     let scopedCssBytes = 0;
 
     try {
-      // 1. State extraction
       const state = parser.expressionParser.parseState(content);
-      statePropsCount = Object.keys(state || {}).length;
+      if (!semantics.available) {
+        statePropsCount = Object.keys(state || {}).length;
+      }
 
       if (isComponent || isPage) {
         // 2. Raw template extraction & byte size

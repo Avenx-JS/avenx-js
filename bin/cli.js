@@ -15,6 +15,8 @@ import { runInspect } from './commands/inspect.js';
 import { runStats } from './commands/stats.js';
 import { runEnv } from './commands/env.js';
 import { explainDiagnostic } from './commands/explain.js';
+import { runTrace } from './commands/trace.js';
+import { runAtlas, runQuery } from './commands/atlas.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -192,6 +194,10 @@ export class AvenxCLI {
         runStats(this, args);
         break;
       case 'serve': {
+        // Recording is opt-in and development-only. It is read here rather
+        // than from config alone so that turning it on is always a visible,
+        // deliberate act at the command line.
+        this.traceEnabled = args.includes('--trace');
         const portIdx = args.findIndex((a) => a === '--port' || a === '-p' || a.startsWith('--port=') || a.startsWith('-p='));
         const hostIdx = args.findIndex((a) => a === '--host' || a === '-h' || a.startsWith('--host=') || a.startsWith('-h='));
         const open = args.includes('--open') || args.includes('-o');
@@ -200,9 +206,23 @@ export class AvenxCLI {
           this.config.server.liveReload = false;
         }
 
+        // The positional port is the first bare argument that is not itself the
+        // value of a flag. Only args[0] used to be considered, so any leading
+        // flag — `serve --trace 8080`, `serve --open 8080` — silently fell back
+        // to the default port.
+        const flagValueIndexes = new Set();
+        for (const idx of [portIdx, hostIdx]) {
+          if (idx !== -1 && !args[idx].includes('=')) {
+            flagValueIndexes.add(idx + 1);
+          }
+        }
+        const positionalPort = args.find(
+          (arg, idx) => !arg.startsWith('-') && !flagValueIndexes.has(idx) && /^\d+$/.test(arg.trim()),
+        );
+
         const rawPortVal = portIdx !== -1
           ? (args[portIdx].includes('=') ? args[portIdx].split('=').slice(1).join('=') : args[portIdx + 1])
-          : (!args[0]?.startsWith('-') ? args[0] : null);
+          : (positionalPort ?? null);
         const rawPort = rawPortVal?.replace(/[^0-9]/g, '');
         const port = rawPort
           ? parseInt(rawPort, 10)
@@ -225,6 +245,18 @@ export class AvenxCLI {
           console.log(`\n${gray('Stopping watch...')}`);
           process.exit(0);
         });
+        break;
+      case 'trace':
+        runTrace(this, args);
+        break;
+      case 'atlas':
+        runAtlas(this, args);
+        break;
+      case 'impact':
+        runQuery(this, args, 'in');
+        break;
+      case 'why':
+        runQuery(this, args, 'out');
         break;
       case 'explain': {
         const asJson = args.includes('--json');

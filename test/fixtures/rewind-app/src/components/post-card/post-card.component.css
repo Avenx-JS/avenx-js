@@ -1,0 +1,21 @@
+<@css>
+    card {
+        display: block;
+    }
+
+    count {
+        font-variant-numeric: tabular-nums;
+    }
+
+    state {
+        color: gray;
+    }
+
+    up {
+        cursor: pointer;
+    }
+
+    down {
+        cursor: pointer;
+    }
+</@css>

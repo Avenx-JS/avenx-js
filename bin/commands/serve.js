@@ -4,8 +4,19 @@ import http from 'http';
 import { spawn } from 'child_process';
 import { buildProject } from './build.js';
 import { reportRebuildFailure } from '../fatal.js';
-import { cyan, green, yellow, red } from '../colors.js';
+import { cyan, green, yellow, red, gray } from '../colors.js';
 import { watchDirectory } from '../utils.js';
+import { saveTrace } from '../../lib/core/trace/store.js';
+import { TRACE_ENDPOINT } from '../../lib/core/trace/devtools.js';
+
+/**
+ * The largest request body the trace ingest endpoint will buffer.
+ *
+ * A recording is bounded by the recorder's ring buffer, so anything larger is
+ * not a trace and must not be accumulated in memory.
+ * @type {number}
+ */
+const MAX_TRACE_BYTES = 32 * 1024 * 1024;
 
 /**
  * Checks whether a resolved path is the project root itself or sits beneath it.
@@ -707,6 +718,47 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
       });
       return;
     }
+    // Trace ingest. Only mounted for `avenx serve --trace`, so a dev server
+    // without the flag has no endpoint that writes to disk at all.
+    if (cli.traceEnabled && req.method === 'POST' && req.url === TRACE_ENDPOINT) {
+      let body = '';
+      let tooLarge = false;
+      req.on('data', (chunk) => {
+        body += chunk;
+        // A trace is bounded by the recorder's ring buffer, so anything past
+        // this is not a trace and must not be buffered indefinitely.
+        if (body.length > MAX_TRACE_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Trace too large' }));
+          req.destroy();
+        }
+      });
+      req.on('end', () => {
+        if (tooLarge) {
+          return;
+        }
+        try {
+          const trace = JSON.parse(body);
+          const savedPath = saveTrace(cli.baseDir, trace);
+          const nodes = Array.isArray(trace.nodes) ? trace.nodes.length : 0;
+          const status = (trace.determinism && trace.determinism.status) || 'unknown';
+          console.log(
+            `\n${green(`📼 Recorded ${trace.id}`)} ${gray(`· ${nodes} nodes · ${status}`)}\n` +
+              `   ${cyan(`avenx trace view ${trace.id}`)}\n` +
+              `   ${cyan(`avenx trace export ${trace.id}`)}\n`,
+          );
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, id: trace.id, path: savedPath }));
+        } catch (error) {
+          console.error(`Failed to save trace: ${error.message}`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message }));
+        }
+      });
+      return;
+    }
+
     if (req.url === '/__avenx-inspect') {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(getInspectorHtml(cli));
@@ -760,11 +812,32 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
     }
 </script>
 `;
+          const traceScript = cli.traceEnabled
+            ? `
+<script>
+    // Injected by \`avenx serve --trace\`. Recording is opt-in and never
+    // reaches a production build.
+    window.addEventListener('DOMContentLoaded', function () {
+        if (window.Avenx && window.Avenx.installTraceRecorder) {
+            window.Avenx.installTraceRecorder(${JSON.stringify({
+    endpoint: TRACE_ENDPOINT,
+    redact: (cli.config.trace && cli.config.trace.redact) || [],
+    maxNodes: (cli.config.trace && cli.config.trace.maxNodes) || undefined,
+  })});
+        } else {
+            console.warn('[Avenx] --trace is on but the runtime did not load; nothing is being recorded.');
+        }
+    });
+</script>
+`
+            : '';
+
           const contentStr = content.toString('utf-8');
+          const injected = `${script}${traceScript}`;
           if (contentStr.includes('</body>')) {
-            responseContent = contentStr.replace('</body>', `${script}</body>`);
+            responseContent = contentStr.replace('</body>', `${injected}</body>`);
           } else {
-            responseContent = contentStr + script;
+            responseContent = contentStr + injected;
           }
         }
 
@@ -779,6 +852,11 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
     console.log(`\n${green(`🚀 Dev-Server running at ${url}`)}`);
     if (cli.config.server.liveReload) {
       console.log(cyan(`👀 Watching for changes in ${cli.config.srcDir}/...\n`));
+    }
+    if (cli.traceEnabled) {
+      console.log(green('📼 Trace recording is ON.'));
+      console.log(gray('   Reproduce the behaviour, then run `await avenxTrace.save()` in the console'));
+      console.log(gray('   (or navigate away — the trace is sent automatically).\n'));
     }
     if (open) {
       openBrowser(url);
