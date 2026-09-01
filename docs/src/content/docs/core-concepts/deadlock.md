@@ -121,6 +121,8 @@ Example Diagnostic Output:
 Execution aborted to prevent browser freeze.
 ```
 
+For the full diagnostic reference — the verbatim message template, how to read the causation chain, and every recovery path — see [`AVX_R18` in the troubleshooting guide](/troubleshooting/errors/#avx_r18--reactive_deadlock_detected). A `<@deadlock>` tag that fails to compile emits [`AVX_W35`](/troubleshooting/errors/#avx_w35--compiler_deadlock_parse_failed) and is skipped entirely.
+
 The public scheduler utilities are exported from `avenx-core/runtime`:
 
 ```javascript
