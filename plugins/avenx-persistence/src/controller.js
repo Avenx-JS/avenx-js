@@ -7,9 +7,13 @@
  *   state -> storage  on every change, coalesced into one write per tick
  *
  * The second direction is driven by `watchEffect`, so the plugin learns about
- * changes the same way a component does. There is no polling, no second
- * update mechanism and no copy of the state: the bridge remains the only
- * place the data lives.
+ * changes the same way a component does. There is no polling, no second update
+ * mechanism and no copy of the state: the bridge remains the only place the
+ * data lives.
+ *
+ * Every write goes through the bridge's own `this` facade — the one `setup()`
+ * receives — so "state is only written from inside the bridge" still holds
+ * with the plugin installed.
  * @module @avenx/persistence/controller
  */
 
@@ -54,8 +58,6 @@ function isQuotaError(error) {
 export class PersistenceController {
   /** @type {object|null} */
   #config = null;
-  /** @type {object|null} */
-  #source = null;
   /** @type {Function|null} */
   #stopWatcher = null;
   /** @type {string|null} */
@@ -71,12 +73,20 @@ export class PersistenceController {
 
   /**
    * @param {string} key - The persistence key, unique within the application.
+   * @param {object} owner - The bridge's own write-capable state facade.
    * @param {string[]} keys - The state keys this controller persists.
    * @param {object} options - The options passed to `persist()`.
    */
-  constructor(key, keys, options) {
+  constructor(key, owner, keys, options) {
     /** @type {string} */
     this.key = key;
+    /**
+     * The bridge this controller belongs to. Created once by `bridge()` and
+     * stable across `$dispose`, which is what lets a re-initialized bridge be
+     * recognised as the same one rather than as a key collision.
+     * @type {object}
+     */
+    this.owner = owner;
     /** @type {string[]} */
     this.keys = keys;
     /** @type {object} */
@@ -96,11 +106,22 @@ export class PersistenceController {
   }
 
   /**
-   * Whether the controller is currently watching a bridge.
+   * Whether the controller is currently watching its bridge.
    * @returns {boolean} True between start() and stop().
    */
   get active() {
     return this.#stopWatcher !== null;
+  }
+
+  /**
+   * Replaces the keys and options a re-initialized bridge declared.
+   * @param {string[]} keys - The state keys to persist.
+   * @param {object} options - The options passed to `persist()`.
+   */
+  reconfigure(keys, options) {
+    this.keys = keys;
+    this.options = options;
+    this.#config = null;
   }
 
   /**
@@ -133,12 +154,9 @@ export class PersistenceController {
    */
   #serializeCurrent() {
     const config = this.#resolve();
-    if (!this.#source) {
-      return null;
-    }
     let text;
     try {
-      text = config.serialize(packEnvelope(snapshot(this.#source, this.keys), config.version));
+      text = config.serialize(packEnvelope(snapshot(this.owner, this.keys), config.version));
     } catch (error) {
       report(this.#context(), 'serialize', 'state could not be serialized and was not persisted', error);
       return null;
@@ -155,19 +173,17 @@ export class PersistenceController {
   }
 
   /**
-   * Begins persisting a bridge: restores once, then watches for changes.
+   * Begins persisting: restores once, then watches for changes.
    *
    * Restoration deliberately runs before the effect is created. Writing the
    * restored values into state is itself a state change, and a watcher that
-   * already existed would answer it by saving what it had just read back —
-   * the feedback loop this ordering removes by construction.
-   * @param {object} source - The bridge's own write-capable state facade.
+   * already existed would answer it by saving what it had just read back — the
+   * feedback loop this ordering removes by construction.
    */
-  start(source) {
+  start() {
     if (this.#stopWatcher) {
       return;
     }
-    this.#source = source;
     const config = this.#resolve();
 
     if (config.restore) {
@@ -181,7 +197,7 @@ export class PersistenceController {
           // Reading each persisted key registers this effect as a dependent of
           // it; `deep` walks the returned values so a nested or array mutation
           // is tracked too. The read is the subscription.
-          const tracked = this.keys.map((key) => source[key]);
+          const tracked = this.keys.map((key) => this.owner[key]);
           if (!this.#priming) {
             queueJob(this.#saveJob);
           }
@@ -205,7 +221,6 @@ export class PersistenceController {
     this.save();
     this.#stopWatcher();
     this.#stopWatcher = null;
-    this.#source = null;
   }
 
   /**
@@ -214,7 +229,10 @@ export class PersistenceController {
    * data is not a reason for the application to stop.
    */
   save() {
-    if (!this.#source) {
+    if (!this.#stopWatcher) {
+      // Not watching: either persistence has not started, or the bridge was
+      // disposed. Writing here would store the definition's defaults over data
+      // the next page load still wants.
       return;
     }
     const config = this.#resolve();
@@ -244,9 +262,6 @@ export class PersistenceController {
    */
   restore() {
     const config = this.#resolve();
-    if (!this.#source) {
-      return false;
-    }
 
     let raw;
     try {
@@ -327,7 +342,7 @@ export class PersistenceController {
   /**
    * Writes restored values into bridge state through the bridge's own facade.
    *
-   * Only keys the definition declares are written. A key that has since been
+   * Only keys the bridge declares are written. A key that has since been
    * renamed or removed is dropped rather than resurrected, which is what stops
    * an older release's data from reappearing as state nothing reads.
    * @param {object} data - The state to restore.
@@ -343,9 +358,18 @@ export class PersistenceController {
       }
     }
     for (const key of this.keys) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        this.#source[key] = clone(data[key]);
+      if (!Object.prototype.hasOwnProperty.call(data, key)) {
+        continue;
+      }
+      try {
+        this.owner[key] = clone(data[key]);
         restored++;
+      } catch (error) {
+        // The bridge refused the write — the key turned out to be a getter or
+        // another member the plugin may not assign. Drop it rather than let one
+        // key stop the rest of the restore.
+        this.keys = this.keys.filter((entry) => entry !== key);
+        report(this.#context(), 'malformed', `state key "${key}" cannot be written and is no longer persisted`, error);
       }
     }
 

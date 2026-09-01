@@ -32,33 +32,32 @@ function createApp() {
  * @returns {object} The bridge instance.
  */
 function counterBridge(options) {
-  return bridge(
-    persist(
-      {
-        state: { count: 0, label: 'idle', session: { token: null } },
+  return bridge({
+    state: { count: 0, label: 'idle', session: { token: null } },
 
-        /**
-         * @returns {boolean} True while the counter is untouched.
-         */
-        get isPristine() {
-          return this.count === 0;
-        },
+    /**
+     * @returns {boolean} True while the counter is untouched.
+     */
+    get isPristine() {
+      return this.count === 0;
+    },
 
-        increment() {
-          this.count++;
-        },
+    increment() {
+      this.count++;
+    },
 
-        rename(label) {
-          this.label = label;
-        },
+    rename(label) {
+      this.label = label;
+    },
 
-        signIn(token) {
-          this.session.token = token;
-        },
-      },
-      { key: 'counter', ...options },
-    ),
-  );
+    signIn(token) {
+      this.session.token = token;
+    },
+
+    setup() {
+      return persist(this, { key: 'counter', ...options });
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -270,17 +269,15 @@ async function testMultipleBridges() {
   const storage = memoryStorage();
   seed(storage, 'avenx:theme', { mode: 'dark' });
 
-  const theme = bridge(
-    persist(
-      {
-        state: { mode: 'light' },
-        toggle() {
-          this.mode = this.mode === 'light' ? 'dark' : 'light';
-        },
-      },
-      { key: 'theme', storage },
-    ),
-  );
+  const theme = bridge({
+    state: { mode: 'light' },
+    toggle() {
+      this.mode = this.mode === 'light' ? 'dark' : 'light';
+    },
+    setup() {
+      return persist(this, { key: 'theme', storage });
+    },
+  });
   const counter = counterBridge({ storage });
 
   assert.strictEqual(theme.mode, 'dark', 'the theme bridge restored its own key');
@@ -297,11 +294,13 @@ async function testMultipleBridges() {
   app.use(avenxPersistence);
   assert.deepStrictEqual(app.$persistence.keys().sort(), ['counter', 'theme'], 'both keys are registered');
 
-  assert.throws(
-    () => persist({ state: { mode: 'light' } }, { key: 'theme', storage }),
-    /already used by another persisted bridge/,
-    'two bridges may not share one key',
-  );
+  const clashing = bridge({
+    state: { mode: 'light' },
+    setup() {
+      return persist(this, { key: 'theme', storage });
+    },
+  });
+  assert.throws(() => clashing.mode, /already used by another persisted bridge/, 'two bridges may not share one key');
 
   console.log('  ✅ Multiple persisted bridges passed!');
 }
@@ -319,17 +318,15 @@ async function testKeysAndPrefixes() {
   reset();
 
   const storage = memoryStorage();
-  const scoped = bridge(
-    persist(
-      {
-        state: { value: 1 },
-        bump() {
-          this.value++;
-        },
-      },
-      { key: 'checkout/step', storage, prefix: 'shop::' },
-    ),
-  );
+  const scoped = bridge({
+    state: { value: 1 },
+    bump() {
+      this.value++;
+    },
+    setup() {
+      return persist(this, { key: 'checkout/step', storage, prefix: 'shop::' });
+    },
+  });
   scoped.bump();
   await nextTick();
   assert.ok(storage.getItem('shop::checkout/step'), 'the per-bridge prefix and key form the storage key');
@@ -437,11 +434,13 @@ async function testStorageAdapters() {
   scratch.removeItem('a');
   assert.strictEqual(scratch.getItem('a'), null, 'removal works');
 
-  assert.throws(
-    () => persist({ state: { a: 1 } }, { key: 'bad-adapter', storage: { getItem() {} } }),
-    /not a storage adapter/,
-    'an incomplete adapter is rejected where it is declared',
-  );
+  const badAdapter = bridge({
+    state: { a: 1 },
+    setup() {
+      return persist(this, { key: 'bad-adapter', storage: { getItem() {} } });
+    },
+  });
+  assert.throws(() => badAdapter.a, /not a storage adapter/, 'an incomplete adapter is rejected');
 
   console.log('  ✅ Storage adapters passed!');
 }
@@ -477,29 +476,45 @@ async function testIncludeExclude() {
   const excludedState = JSON.parse(otherStorage.getItem('avenx:counter')).state;
   assert.deepStrictEqual(excludedState, { count: 1, label: 'idle' }, 'the excluded key never leaves the application');
 
+  // A bridge initializes on first use, so a configuration mistake surfaces
+  // when it is first read — with the message naming what is wrong.
   reset();
   assert.throws(
-    () => counterBridge({ include: ['typo'] }),
+    () => counterBridge({ include: ['typo'] }).count,
     /which the bridge does not declare in state/,
     'an unknown include key is refused',
   );
   reset();
   assert.throws(
-    () => counterBridge({ exclude: ['typo'] }),
+    () => counterBridge({ exclude: ['typo'] }).count,
     /which the bridge does not declare in state/,
     'an unknown exclude key is refused',
   );
   reset();
   assert.throws(
-    () => counterBridge({ include: ['count'], exclude: ['label'] }),
+    () => counterBridge({ include: ['count'], exclude: ['label'] }).count,
     /both "include" and "exclude"/,
     'the two are mutually exclusive',
   );
   reset();
   assert.throws(
-    () => counterBridge({ exclude: ['count', 'label', 'session'] }),
+    () => counterBridge({ exclude: ['count', 'label', 'session'] }).count,
     /would persist no state at all/,
     'excluding everything is a mistake worth naming',
+  );
+
+  // Getters are derived, so they are never persisted even without `exclude`.
+  reset();
+  const derivedStorage = memoryStorage();
+  const derived = counterBridge({ storage: derivedStorage });
+  derived.increment();
+  await nextTick();
+  const derivedState = JSON.parse(derivedStorage.getItem('avenx:counter')).state;
+  assert.ok(!('isPristine' in derivedState), 'a getter is left out of the persisted keys');
+  assert.deepStrictEqual(
+    Object.keys(derivedState).sort(),
+    ['count', 'label', 'session'],
+    'every declared state key is persisted, and nothing else',
   );
 
   console.log('  ✅ include and exclude passed!');
@@ -625,27 +640,24 @@ async function testCleanup() {
   let setupRuns = 0;
   let cleanupRuns = 0;
 
-  const tracked = bridge(
-    persist(
-      {
-        state: { value: 0 },
-        setup() {
-          setupRuns++;
-          return () => {
-            cleanupRuns++;
-          };
-        },
-        bump() {
-          this.value++;
-        },
-      },
-      { key: 'tracked', storage },
-    ),
-  );
+  const tracked = bridge({
+    state: { value: 0 },
+    bump() {
+      this.value++;
+    },
+    setup() {
+      setupRuns++;
+      const stopPersisting = persist(this, { key: 'tracked', storage });
+      return () => {
+        cleanupRuns++;
+        stopPersisting();
+      };
+    },
+  });
 
   tracked.bump();
   await nextTick();
-  assert.strictEqual(setupRuns, 1, "the definition's own setup ran");
+  assert.strictEqual(setupRuns, 1, 'setup ran once, on first use');
   assert.strictEqual(cleanupRuns, 0, 'and has not been cleaned up yet');
 
   const controller = getController('tracked');
@@ -653,7 +665,7 @@ async function testCleanup() {
 
   const writesBeforeDispose = storage.counts.writes;
   tracked.$dispose();
-  assert.strictEqual(cleanupRuns, 1, "the definition's own cleanup ran");
+  assert.strictEqual(cleanupRuns, 1, 'the cleanup setup returned ran');
   assert.strictEqual(controller.active, false, 'the watcher was torn down');
 
   // $dispose resets state to the declared defaults. With the watcher gone that
@@ -697,17 +709,15 @@ async function testPersistenceHandle() {
   app.use(avenxPersistence, { storage });
 
   const counter = counterBridge({});
-  const theme = bridge(
-    persist(
-      {
-        state: { mode: 'light' },
-        toggle() {
-          this.mode = 'dark';
-        },
-      },
-      { key: 'theme' },
-    ),
-  );
+  const theme = bridge({
+    state: { mode: 'light' },
+    toggle() {
+      this.mode = 'dark';
+    },
+    setup() {
+      return persist(this, { key: 'theme' });
+    },
+  });
 
   counter.increment();
   theme.toggle();
@@ -753,42 +763,40 @@ async function testValidation() {
   console.log('  14. Testing persist() validation...');
   reset();
 
+  const facade = { a: 1, b: 2 };
+
+  assert.throws(() => persist(null, { key: 'a' }), /expects the bridge's own `this`/, 'a missing facade is refused');
+  assert.throws(() => persist(facade, {}), /requires a non-empty "key"/, 'a missing key is refused');
+  assert.throws(() => persist(facade, { key: '  ' }), /requires a non-empty "key"/, 'a blank key is refused');
   assert.throws(
-    () => persist(null, { key: 'a' }),
-    /expects a bridge definition object/,
-    'a missing definition is refused',
-  );
-  assert.throws(() => persist({ state: {} }, {}), /requires a non-empty "key"/, 'a missing key is refused');
-  assert.throws(() => persist({ state: {} }, { key: '  ' }), /requires a non-empty "key"/, 'a blank key is refused');
-  assert.throws(
-    () => persist({ count: 0 }, { key: 'a' }),
-    /expects the definition to declare a "state" object/,
-    'a definition without state is refused',
-  );
-  assert.throws(
-    () => persist({ state: { a: 1 }, setup: 3 }, { key: 'a' }),
-    /"setup" member that is not a function/,
-    'a non-function setup is refused',
-  );
-  assert.throws(
-    () => persist({ state: { a: 1 } }, { key: 'a', serialize: 'no' }),
+    () => persist(facade, { key: 'a', serialize: 'no' }),
     /"serialize" that is not a function/,
     'a non-function serializer is refused',
   );
   assert.throws(
-    () => persist({ state: { a: 1 } }, { key: 'a', migrate: 'no' }),
+    () => persist(facade, { key: 'a', migrate: 'no' }),
     /"migrate" that is not a function/,
     'a non-function migrate is refused',
   );
   assert.throws(
-    () => persist({ state: { a: 1 } }, { key: 'a', restore: 'yes' }),
+    () => persist(facade, { key: 'a', restore: 'yes' }),
     /"restore" that is not a boolean/,
     'a non-boolean restore is refused',
   );
   assert.throws(
-    () => persist({ state: { a: 1 } }, { key: 'a', prefix: 5 }),
+    () => persist(facade, { key: 'a', prefix: 5 }),
     /"prefix" that is not a string/,
     'a non-string prefix is refused',
+  );
+  assert.throws(
+    () => persist(facade, { key: 'a', storage: { getItem() {} } }),
+    /not a storage adapter/,
+    'an incomplete adapter is refused',
+  );
+  assert.throws(
+    () => persist({}, { key: 'a', storage: memoryStorage() }),
+    /would persist no state at all/,
+    'a bridge with no state is refused',
   );
 
   assert.strictEqual(loggedMatching('[avenx-persistence]').length, 0, 'validation errors are thrown, not logged');

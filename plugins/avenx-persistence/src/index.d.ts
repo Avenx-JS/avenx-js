@@ -78,9 +78,9 @@ export interface PersistBridgeOptions<S = Record<string, any>> extends Persisten
     /** Storage key for this bridge. Required, and unique within the application. */
     key: string;
     /** Persist only these state keys. Mutually exclusive with `exclude`. */
-    include?: Array<keyof S & string>;
+    include?: Array<Extract<keyof S, string>>;
     /** Persist every state key except these. Mutually exclusive with `include`. */
-    exclude?: Array<keyof S & string>;
+    exclude?: Array<Extract<keyof S, string>>;
     /**
      * Upgrades state written by an earlier `version`. Return the upgraded state,
      * or `null` to discard the stored data and start from the bridge's defaults.
@@ -108,18 +108,23 @@ export interface AvenxPlugin {
 }
 
 /**
- * Adds persistence to a bridge definition.
+ * Persists a bridge's state. Call it from the bridge's own `setup()` hook and
+ * return the result, so persistence stops when the bridge is disposed.
  *
  * ```javascript
- * export default bridge(
- *   persist({ state: { items: [] } }, { key: 'cart' }),
- * );
+ * export default bridge({
+ *   state: { items: [], draft: '' },
+ *   setup() {
+ *     return persist(this, { key: 'cart', exclude: ['draft'] });
+ *   },
+ * });
  * ```
+ * @returns The cleanup function to return from `setup()`.
  */
-export function persist<D extends { state: Record<string, any> }>(
-    definition: D,
-    options: PersistBridgeOptions<D['state']>
-): D;
+export function persist<S extends Record<string, any> = Record<string, any>>(
+    self: S,
+    options: PersistBridgeOptions<S>
+): () => void;
 
 /**
  * Official Avenx persistence plugin. Install it to set application-wide

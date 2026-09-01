@@ -14,22 +14,24 @@ captureLogs();
 function makeBridge(options = {}) {
   const failures = [];
   const storage = options.storage || memoryStorage();
-  const instance = bridge(
-    persist(
-      {
-        state: { count: 0, note: 'ok' },
-        increment() {
-          this.count++;
-        },
-      },
-      {
+  const instance = bridge({
+    state: { count: 0, note: 'ok' },
+    increment() {
+      this.count++;
+    },
+    setup() {
+      return persist(this, {
         key: 'resilient',
         storage,
         onError: (failure) => failures.push(failure),
         ...options,
-      },
-    ),
-  );
+      });
+    },
+  });
+
+  // A bridge initializes on first use. Touching it here means every scenario
+  // below observes restoration having already happened.
+  void instance.count;
   return { instance, failures, storage };
 }
 
@@ -242,19 +244,21 @@ async function testSerializationFailures() {
   reset();
   const circularStorage = memoryStorage();
   const failures = [];
-  const circular = bridge(
-    persist(
-      {
-        state: { tree: null },
-        buildCycle() {
-          const node = { name: 'root', parent: null };
-          node.parent = node;
-          this.tree = node;
-        },
-      },
-      { key: 'resilient', storage: circularStorage, onError: (failure) => failures.push(failure) },
-    ),
-  );
+  const circular = bridge({
+    state: { tree: null },
+    buildCycle() {
+      const node = { name: 'root', parent: null };
+      node.parent = node;
+      this.tree = node;
+    },
+    setup() {
+      return persist(this, {
+        key: 'resilient',
+        storage: circularStorage,
+        onError: (failure) => failures.push(failure),
+      });
+    },
+  });
 
   circular.buildCycle();
   await nextTick();
@@ -345,23 +349,21 @@ async function testReporting() {
   const storage = memoryStorage();
   storage.setItem('avenx:resilient', JSON.stringify({ avenx: 1, version: 1, state: { count: 4, secret: 'hunter2' } }));
 
-  const instance = bridge(
-    persist(
-      {
-        state: { count: 0 },
-        increment() {
-          this.count++;
-        },
-      },
-      {
+  const instance = bridge({
+    state: { count: 0 },
+    increment() {
+      this.count++;
+    },
+    setup() {
+      return persist(this, {
         key: 'resilient',
         storage,
         onError: () => {
           throw new Error('the application handler is broken');
         },
-      },
-    ),
-  );
+      });
+    },
+  });
 
   assert.strictEqual(instance.count, 4, 'restoration succeeded despite the broken handler');
   assert.strictEqual(loggedMatching('[avenx-persistence]').length > 0, true, 'the failure reached the logger');
