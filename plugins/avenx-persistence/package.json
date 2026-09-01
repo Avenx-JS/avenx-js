@@ -14,6 +14,9 @@
     "src/",
     "README.md"
   ],
+  "scripts": {
+    "test": "node test/persistence.test.js && node test/persistenceResilience.test.js"
+  },
   "keywords": [
     "avenx",
     "persistence",

@@ -40,21 +40,37 @@ export function isPlainObject(value) {
  * This mirrors how `bridge()` copies its own initial state: class instances,
  * Dates, Maps and functions are shared by reference rather than mangled into
  * something that only looks like them.
+ *
+ * A cycle in the source is reproduced rather than followed. State a developer
+ * can legitimately hold — a node that points back at its parent — must not
+ * turn a snapshot into a stack overflow; the serializer is then the thing that
+ * decides whether the cycle can be written, and says so if it cannot.
  * @param {any} value - The value to copy.
+ * @param {Map<object, any>} [seen] - Containers already copied on this walk.
  * @returns {any} A copy for plain containers, or the original value.
  */
-export function clone(value) {
-  if (Array.isArray(value)) {
-    return value.map(clone);
+export function clone(value, seen = new Map()) {
+  const isArray = Array.isArray(value);
+  if (!isArray && !isPlainObject(value)) {
+    return value;
   }
-  if (isPlainObject(value)) {
-    const copy = {};
-    for (const key of Object.keys(value)) {
-      copy[key] = clone(value[key]);
+  if (seen.has(value)) {
+    return seen.get(value);
+  }
+
+  const copy = isArray ? [] : {};
+  seen.set(value, copy);
+
+  if (isArray) {
+    for (let index = 0; index < value.length; index++) {
+      copy[index] = clone(value[index], seen);
     }
-    return copy;
+  } else {
+    for (const key of Object.keys(value)) {
+      copy[key] = clone(value[key], seen);
+    }
   }
-  return value;
+  return copy;
 }
 
 /**
