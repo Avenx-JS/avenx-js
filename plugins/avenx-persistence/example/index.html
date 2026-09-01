@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avenx Persistence Example</title>
+    <link rel="stylesheet" href="dist/bundle.css">
+</head>
+<body>
+    <div id="app"></div>
+
+    <!--
+      The Avenx CLI compiles the application into one self-contained bundle, so
+      a plugin reaches it through a global rather than an import. Load order
+      does not matter: the plugin resolves the runtime the first time a bridge
+      asks to be persisted, which is after the bundle has installed it.
+
+      With a bundler (Vite, Rollup, webpack) drop this script and import
+      @avenx/persistence normally in both files instead.
+    -->
+    <script src="../dist/avenx-persistence.global.js"></script>
+    <script src="dist/bundle.js"></script>
+</body>
+</html>

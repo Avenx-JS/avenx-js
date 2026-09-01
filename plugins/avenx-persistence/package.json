@@ -12,9 +12,12 @@
   },
   "files": [
     "src/",
+    "dist/",
     "README.md"
   ],
   "scripts": {
+    "build": "node scripts/build.js",
+    "prepare": "npm run build",
     "test": "node test/persistence.test.js && node test/persistenceResilience.test.js"
   },
   "keywords": [

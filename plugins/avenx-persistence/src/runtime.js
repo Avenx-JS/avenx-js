@@ -15,4 +15,4 @@ try {
   core = await import('../../../lib/core/index.js');
 }
 
-export const { logger, watchEffect, queueJob, nextTick } = core;
+export const { logger, watchEffect, queueJob } = core;
