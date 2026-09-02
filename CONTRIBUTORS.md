@@ -163,7 +163,7 @@ If you have questions or want to contribute, feel free to reach out.
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/WesleyKaihara"><img src="https://avatars.githubusercontent.com/u/89811553?v=4?s=100" width="100px;" alt="WesleyKaihara"/><br /><sub><b>WesleyKaihara</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=WesleyKaihara" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/parthmahajan30"><img src="https://avatars.githubusercontent.com/u/233291742?v=4?s=100" width="100px;" alt="Parth Mahajan"/><br /><sub><b>Parth Mahajan</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=parthmahajan30" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/parthmahajan30"><img src="https://avatars.githubusercontent.com/u/233291742?v=4?s=100" width="100px;" alt="Parth Mahajan"/><br /><sub><b>Parth Mahajan</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=parthmahajan30" title="Code">💻</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=parthmahajan30" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
