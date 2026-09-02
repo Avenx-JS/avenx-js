@@ -744,8 +744,8 @@ function testCorruptedPersistedState() {
     testReactivityEncapsulation();
     testParentMapMemoryLeak();
     testStatePersistenceInitialization();
-testStatePersistenceMutation();
-testCorruptedPersistedState();
+    testStatePersistenceMutation();
+    testCorruptedPersistedState();
     console.log('✅ All reactivity tests passed!');
   } catch (error) {
     console.error('❌ Reactivity tests failed!');
