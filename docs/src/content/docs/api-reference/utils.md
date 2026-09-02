@@ -1911,3 +1911,127 @@ patcher.patch(target, newHtml, (expression, scope) => {
 ```
 
 In practice, `DomPatcher` is instantiated internally by `AvenxComponent` and invoked during the component's `runUpdate()` cycle - application code rarely calls it directly.
+## 17. Disposal Scopes & Automatic Teardown
+
+`DisposalScope`, along with the `onScopeDispose`, `runInScope`, and `getScope` functions (`lib/core/reactive/scope.js`), power Avenx-JS's automatic teardown system. Every `AvenxComponent` owns a `DisposalScope`; registering a teardown callback while that scope is active ties the callback's lifetime to the component's. See [Automatic Teardown with Disposal Scopes](/core-concepts/reactivity#automatic-teardown-with-disposal-scopes) for usage examples.
+
+### Importing
+
+```javascript
+import { DisposalScope, onScopeDispose, runInScope, getScope } from 'avenx-core/runtime';
+```
+
+---
+
+### `onScopeDispose(disposer)`
+
+Registers a teardown callback with the currently active `DisposalScope`.
+
+- **Signature:** `onScopeDispose(disposer: () => void): () => void`
+- **Parameters:** `disposer: () => void` — The teardown callback.
+- **Returns:** `() => void` — An idempotent release function. Calling it runs `disposer` at most once, and also removes it from the scope if the scope hasn't been disposed yet.
+
+If there is no active scope when `onScopeDispose` is called, `disposer` is not attached to anything. The returned function still works as a manual release, but nothing calls it for you.
+
+```javascript
+const release = onScopeDispose(() => console.log('cleaned up'));
+release(); // runs immediately, removes itself from the scope
+release(); // no-op, already released
+```
+
+---
+
+### `runInScope(scope, fn)`
+
+Runs `fn` with `scope` set as the active scope, restoring the previously active scope afterward — even if `fn` throws.
+
+- **Signature:** `runInScope<T>(scope: DisposalScope | null, fn: () => T): T`
+- **Parameters:**
+  - `scope: DisposalScope | null` — The scope to activate. Pass `null` to run `fn` with no active scope, detaching any `onScopeDispose` calls inside it from the caller's current scope.
+  - `fn: () => T` — The function to run.
+- **Returns:** `T` — Whatever `fn` returns.
+
+```javascript
+const scope = new DisposalScope('background-poller');
+runInScope(scope, () => {
+  onScopeDispose(() => stopPolling());
+  startPolling();
+});
+// Later, when appropriate:
+scope.dispose();
+```
+
+---
+
+### `getScope()`
+
+Returns the currently active `DisposalScope`.
+
+- **Signature:** `getScope(): DisposalScope | null`
+- **Returns:** `DisposalScope | null` — The active scope, or `null` if none is active.
+
+```javascript
+if (getScope()) {
+  onScopeDispose(() => console.log('will run on scope disposal'));
+} else {
+  console.log('no active scope — nothing will auto-clean this up');
+}
+```
+
+---
+
+### `class DisposalScope`
+
+Collects teardown callbacks and runs them together when disposed.
+
+#### Constructor
+
+```javascript
+const scope = new DisposalScope(name);
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | `string` | `'scope'` | Debug label used in diagnostics. Has no effect on behavior. |
+
+#### Properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `disposed` | `boolean` | `true` once `dispose()` has been called at least once, `false` otherwise. |
+
+#### Methods
+
+##### `add(disposer)`
+
+Registers `disposer` with this scope.
+
+- **Signature:** `add(disposer: () => void): () => void`
+- **Parameters:** `disposer: () => void` — The teardown callback.
+- **Returns:** `() => void` — An idempotent release function. Calling it before `dispose()` removes `disposer` from the scope and runs it once, without affecting the rest of the scope's callbacks.
+
+If the scope is already disposed, `disposer` runs **immediately** instead of being queued.
+
+##### `dispose()`
+
+Runs every registered teardown callback and clears the scope.
+
+- **Signature:** `dispose(): void`
+
+Safe to call more than once — later calls are no-ops since the callback set is already empty.
+
+### Usage Example
+
+```javascript
+import { DisposalScope, runInScope, onScopeDispose } from 'avenx-core/runtime';
+
+const workerScope = new DisposalScope('worker-pool');
+
+runInScope(workerScope, () => {
+  const worker = new Worker('worker.js');
+  onScopeDispose(() => worker.terminate());
+});
+
+// When the pool is no longer needed:
+workerScope.dispose(); // terminates the worker
+```
