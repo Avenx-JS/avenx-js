@@ -10,6 +10,7 @@ const mockElement = {
 global.document = {
   querySelector: () => mockElement,
 };
+global.localStorage = global.window.localStorage;
 
 import { isReactiveTarget, RAW_SYMBOL } from '../../lib/core/reactive/proxyHandler.js';
 import { StateFactory } from '../../lib/core/reactive/createState.js';
@@ -646,6 +647,88 @@ function testParentMapMemoryLeak() {
   console.log('  ✅ parentMap memory leak and side effect prevention tests passed!');
 }
 
+/**
+ * Verifies that configured state values are restored from localStorage.
+ */
+function testStatePersistenceInitialization() {
+  console.log('🧪 Testing persisted state initialization...');
+
+  localStorage.clear();
+  localStorage.setItem('count', JSON.stringify(42));
+
+  const state = new StateFactory().create(
+    {
+      count: 0,
+      name: 'Avenx',
+    },
+    {
+      persist: ['count'],
+    },
+  );
+
+  assert.strictEqual(state.count, 42);
+  assert.strictEqual(state.name, 'Avenx');
+
+  localStorage.clear();
+
+  console.log('  ✅ Persisted state initialization test passed!');
+}
+
+/**
+ * Verifies that configured state values are written to localStorage on mutation.
+ */
+function testStatePersistenceMutation() {
+  console.log('🧪 Testing persisted state mutation...');
+
+  localStorage.clear();
+
+  const state = new StateFactory().create(
+    {
+      count: 0,
+    },
+    {
+      persist: ['count'],
+    },
+  );
+
+  state.count = 5;
+
+  assert.strictEqual(localStorage.getItem('count'), JSON.stringify(5));
+
+  state.count = 10;
+
+  assert.strictEqual(localStorage.getItem('count'), JSON.stringify(10));
+
+  localStorage.clear();
+
+  console.log('  ✅ Persisted state mutation test passed!');
+}
+
+/**
+ * Verifies that corrupted persisted JSON is ignored gracefully.
+ */
+function testCorruptedPersistedState() {
+  console.log('🧪 Testing corrupted persisted state handling...');
+
+  localStorage.clear();
+  localStorage.setItem('count', '{invalid-json');
+
+  const state = new StateFactory().create(
+    {
+      count: 7,
+    },
+    {
+      persist: ['count'],
+    },
+  );
+
+  assert.strictEqual(state.count, 7);
+
+  localStorage.clear();
+
+  console.log('  ✅ Corrupted persisted state test passed!');
+}
+
 (async () => {
   try {
     testIsReactiveTarget();
@@ -660,6 +743,9 @@ function testParentMapMemoryLeak() {
     testMapAndSetReactivity();
     testReactivityEncapsulation();
     testParentMapMemoryLeak();
+    testStatePersistenceInitialization();
+    testStatePersistenceMutation();
+    testCorruptedPersistedState();
     console.log('✅ All reactivity tests passed!');
   } catch (error) {
     console.error('❌ Reactivity tests failed!');
