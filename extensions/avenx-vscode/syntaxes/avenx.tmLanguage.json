@@ -1,0 +1,181 @@
+{
+  "name": "Avenx",
+  "scopeName": "source.avenx",
+  "patterns": [
+    {
+      "include": "source.js"
+    },
+    {
+      "include": "#avenx-template"
+    }
+  ],
+  "repository": {
+    "avenx-template": {
+      "begin": "(\\bstatic\\s+template\\s*=\\s*)(`)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.operator.assignment.avenx"
+        },
+        "2": {
+          "name": "punctuation.definition.string.begin.avenx"
+        }
+      },
+      "end": "`",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.avenx"
+        }
+      },
+      "name": "meta.template.avenx",
+      "patterns": [
+        {
+          "include": "#avenx-interpolation"
+        },
+        {
+          "include": "#avenx-css-block"
+        },
+        {
+          "include": "#avenx-template-expression"
+        },
+        {
+          "include": "#avenx-unescaped-interpolation"
+        },
+        {
+          "include": "#avenx-interpolation-binding"
+        },
+        {
+          "include": "#avenx-compiler-tag"
+        },
+        {
+          "include": "#avenx-data-attribute"
+        },
+        {
+          "include": "#avenx-event"
+        },
+        {
+          "include": "text.html.basic"
+        }
+      ]
+    },
+
+    "avenx-interpolation": {
+      "begin": "\\$\\{",
+      "end": "\\}",
+      "name": "meta.embedded.expression.avenx",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.embedded.begin.avenx"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.embedded.end.avenx"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.js"
+        }
+      ]
+    },
+
+    "avenx-template-expression": {
+      "begin": "\\{\\{\\s*",
+      "end": "\\s*\\}\\}",
+      "name": "meta.interpolation.avenx",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.interpolation.begin.avenx"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.interpolation.end.avenx"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.js"
+        }
+      ]
+    },
+
+    "avenx-unescaped-interpolation": {
+      "begin": "\\{\\{\\{\\s*",
+      "end": "\\s*\\}\\}\\}",
+      "name": "meta.interpolation.unescaped.avenx",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.interpolation.unescaped.begin.avenx"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.interpolation.unescaped.end.avenx"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.js"
+        }
+      ]
+    },
+
+    "avenx-interpolation-binding": {
+      "match": "\\{\\{[^{}\\n]+\\}\\}",
+      "name": "variable.other.interpolation.avenx"
+    },
+
+    "avenx-compiler-tag": {
+      "patterns": [
+        {
+          "match": "<@/?[A-Za-z][A-Za-z0-9:_-]*",
+          "name": "entity.name.tag.compiler.avenx"
+        },
+        {
+          "match": "\\b(?:if|else|for|item|in|await|pending|catch|error|deadlock|defer|transition|suspense)\\b",
+          "name": "keyword.control.compiler.avenx"
+        },
+        {
+          "match": "/?>",
+          "name": "punctuation.definition.tag.end.avenx"
+        }
+      ]
+    },
+
+    "avenx-data-attribute": {
+      "match": "\\bdata-ax-[A-Za-z0-9:_-]+(?=\\s*=)",
+      "name": "entity.other.attribute-name.data.avenx"
+    },
+
+    "avenx-event": {
+      "match": "@[A-Za-z][A-Za-z0-9:_-]*(?=\\s*=)",
+      "name": "entity.other.attribute-name.event.avenx"
+    },
+
+    "avenx-css-block": {
+      "begin": "<@(css|global)\\b[^>]*>",
+      "beginCaptures": {
+        "0": {
+          "name": "entity.name.tag.compiler.avenx"
+        },
+        "1": {
+          "name": "entity.name.tag.compiler.avenx"
+        }
+      },
+      "end": "</@(css|global)\\s*>",
+      "endCaptures": {
+        "0": {
+          "name": "entity.name.tag.compiler.avenx"
+        }
+      },
+      "name": "meta.embedded.block.css.avenx",
+      "contentName": "source.css",
+      "patterns": [
+        {
+          "include": "source.css"
+        }
+      ]
+    }
+  }
+}
