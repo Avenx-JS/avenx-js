@@ -480,6 +480,42 @@ async function testAdapterInterop() {
   console.log('  ✅ Storage adapter interoperability passed!');
 }
 
+// ---------------------------------------------------------------------------
+// 11. Diagnostics do not grow without bound
+// ---------------------------------------------------------------------------
+
+/**
+ * Warnings are deduplicated, but the history that makes that possible is
+ * bounded: an application is free to build keys from data, so the set of
+ * distinct messages is unbounded in principle.
+ */
+async function testBoundedDiagnostics() {
+  console.log('  11. Testing bounded diagnostics...');
+  reset();
+
+  const i18n = createI18n({ fallbackLocale: null, messages: { en: {} } });
+
+  assert.strictEqual(i18n.t('first.key'), 'first.key', 'the first miss renders as the key');
+  assert.strictEqual(loggedMatching('no translation for "first.key"').length, 1, 'and warns once');
+  i18n.t('first.key');
+  assert.strictEqual(loggedMatching('no translation for "first.key"').length, 1, 'a repeat is suppressed');
+
+  // Far more distinct keys than the history remembers.
+  for (let index = 0; index < 600; index++) {
+    assert.strictEqual(i18n.t(`generated.${index}`), `generated.${index}`, 'every key still renders');
+  }
+
+  const before = loggedMatching('no translation for "first.key"').length;
+  i18n.t('first.key');
+  assert.strictEqual(
+    loggedMatching('no translation for "first.key"').length,
+    before + 1,
+    'the history was emptied rather than grown, so the warning comes back',
+  );
+
+  console.log('  ✅ Bounded diagnostics passed!');
+}
+
 /**
  * Runs the suite.
  */
@@ -496,6 +532,7 @@ async function runTests() {
   await testRenderSurvival();
   await testCacheCorrectness();
   await testAdapterInterop();
+  await testBoundedDiagnostics();
 
   console.log('\n🎉 ALL AVENX I18N RESILIENCE TESTS PASSED SUCCESSFULLY!\n');
 }

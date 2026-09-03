@@ -32,6 +32,29 @@ export const PLUGIN_TAG = '[avenx-i18n]';
 const emitted = new Set();
 
 /**
+ * How many distinct messages the deduplication set remembers.
+ *
+ * Most of what is deduplicated names a translation key, and an application is
+ * free to build keys from data — `t(`errors.${code}`)`. That makes the set of
+ * distinct messages unbounded in principle, so it is emptied when it gets
+ * large rather than grown forever. The cost of forgetting is a warning
+ * repeated once, which is the right way round.
+ * @type {number}
+ */
+const MAX_REMEMBERED = 500;
+
+/**
+ * Records a message as emitted, keeping the history bounded.
+ * @param {string} text - The message that was just emitted.
+ */
+function remember(text) {
+  if (emitted.size >= MAX_REMEMBERED) {
+    emitted.clear();
+  }
+  emitted.add(text);
+}
+
+/**
  * Builds an Error carrying the plugin tag, for configuration mistakes that are
  * a developer's to fix and should therefore be loud.
  * @param {string} message - What went wrong.
@@ -50,7 +73,7 @@ export function warnOnce(message) {
   if (emitted.has(text)) {
     return;
   }
-  emitted.add(text);
+  remember(text);
   logger.warn(text);
 }
 
@@ -78,7 +101,7 @@ export function createReporter(owner) {
     if (emitted.has(text)) {
       return;
     }
-    emitted.add(text);
+    remember(text);
     logger.warn(text);
 
     const onError = owner && owner.onError;
