@@ -26,22 +26,16 @@
           "name": "punctuation.definition.string.end.avenx"
         }
       },
-      "name": "meta.template.avenx",
+      "name": "meta.embedded.block.html.avenx",
       "patterns": [
+        {
+          "include": "#avenx-unescaped-interpolation"
+        },
         {
           "include": "#avenx-interpolation"
         },
         {
           "include": "#avenx-css-block"
-        },
-        {
-          "include": "#avenx-template-expression"
-        },
-        {
-          "include": "#avenx-unescaped-interpolation"
-        },
-        {
-          "include": "#avenx-interpolation-binding"
         },
         {
           "include": "#avenx-compiler-tag"
@@ -59,27 +53,6 @@
     },
 
     "avenx-interpolation": {
-      "begin": "\\$\\{",
-      "end": "\\}",
-      "name": "meta.embedded.expression.avenx",
-      "beginCaptures": {
-        "0": {
-          "name": "punctuation.section.embedded.begin.avenx"
-        }
-      },
-      "endCaptures": {
-        "0": {
-          "name": "punctuation.section.embedded.end.avenx"
-        }
-      },
-      "patterns": [
-        {
-          "include": "source.js"
-        }
-      ]
-    },
-
-    "avenx-template-expression": {
       "begin": "\\{\\{\\s*",
       "end": "\\s*\\}\\}",
       "name": "meta.interpolation.avenx",
@@ -119,11 +92,6 @@
           "include": "source.js"
         }
       ]
-    },
-
-    "avenx-interpolation-binding": {
-      "match": "\\{\\{[^{}\\n]+\\}\\}",
-      "name": "variable.other.interpolation.avenx"
     },
 
     "avenx-compiler-tag": {
@@ -169,7 +137,7 @@
           "name": "entity.name.tag.compiler.avenx"
         }
       },
-      "name": "meta.embedded.block.css.avenx",
+      "name": "meta.embedded.block.css",
       "contentName": "source.css",
       "patterns": [
         {
