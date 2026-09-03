@@ -44,7 +44,8 @@
           ".bridge.js",
           ".guard.js",
           ".component.css"
-        ]
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
