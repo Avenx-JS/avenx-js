@@ -1,385 +1,196 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-
-const vscodeTextmate = require('vscode-textmate');
 const vscodeOniguruma = require('vscode-oniguruma');
+const vscodeTextmate = require('vscode-textmate');
 
 const extensionRoot = path.resolve(__dirname, '..');
-const grammarPath = path.join(
-  extensionRoot,
-  'syntaxes',
-  'avenx.tmLanguage.json',
-);
+const grammarPath = path.join(extensionRoot, 'syntaxes', 'avenx.tmLanguage.json');
 
-function loadGrammar() {
-  const grammar = JSON.parse(
-    fs.readFileSync(grammarPath, 'utf8'),
-  );
-
-  assert.strictEqual(
-    grammar.scopeName,
-    'source.avenx',
-    'Avenx grammar must use source.avenx as its scope.',
-  );
-
-  assert.ok(
-    Array.isArray(grammar.patterns),
-    'Avenx grammar must define top-level patterns.',
-  );
-
-  assert.ok(
-    grammar.repository,
-    'Avenx grammar must define a repository.',
-  );
-
-  return grammar;
-}
-
-function collectMatches(pattern, text) {
-  const regex = new RegExp(pattern, 'g');
-  const matches = [];
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    matches.push(match[0]);
-  }
-
-  return matches;
+function readGrammar() {
+  return JSON.parse(fs.readFileSync(grammarPath, 'utf8'));
 }
 
 function testGrammarStructure() {
-  const grammar = loadGrammar();
+  const grammar = readGrammar();
 
-  const repository = grammar.repository;
+  assert.strictEqual(grammar.name, 'Avenx');
+  assert.strictEqual(grammar.scopeName, 'source.avenx');
+  assert.ok(grammar.repository);
+  assert.ok(grammar.repository['avenx-template']);
+  assert.ok(grammar.repository['avenx-interpolation']);
+  assert.ok(grammar.repository['avenx-unescaped-interpolation']);
+  assert.ok(grammar.repository['avenx-compiler-tag']);
+  assert.ok(grammar.repository['avenx-data-attribute']);
+  assert.ok(grammar.repository['avenx-event']);
+  assert.ok(grammar.repository['avenx-css-block']);
 
-  const requiredRules = [
-    'avenx-template',
-    'avenx-interpolation',
-    'avenx-unescaped-interpolation',
-    'avenx-compiler-tag',
-    'avenx-data-attribute',
-    'avenx-event',
-    'avenx-css-block',
-  ];
-
-  for (const rule of requiredRules) {
-    assert.ok(
-      repository[rule],
-      `Missing required grammar rule: ${rule}`,
-    );
-  }
-
-  const templateRule = repository['avenx-template'];
-
-  assert.ok(
-    templateRule.begin,
-    'Template grammar must define a begin pattern.',
+  const templatePatterns = grammar.repository['avenx-template'].patterns.map(
+    (pattern) => pattern.include,
   );
 
-  assert.strictEqual(
-    templateRule.end,
-    '`',
-    'Template grammar must end at the closing backtick.',
-  );
+  assert.ok(templatePatterns.includes('#avenx-unescaped-interpolation'));
+  assert.ok(templatePatterns.includes('#avenx-interpolation'));
+  assert.ok(templatePatterns.includes('#avenx-css-block'));
+  assert.ok(templatePatterns.includes('#avenx-compiler-tag'));
+  assert.ok(templatePatterns.includes('#avenx-data-attribute'));
+  assert.ok(templatePatterns.includes('#avenx-event'));
 
-  const embeddedLanguages =
-    grammar.patterns
-      .concat(
-        repository['avenx-template'].patterns || [],
-      );
+  const unescapedIndex = templatePatterns.indexOf('#avenx-unescaped-interpolation');
+  const escapedIndex = templatePatterns.indexOf('#avenx-interpolation');
 
   assert.ok(
-    embeddedLanguages.length > 0,
-    'Grammar must contain tokenization patterns.',
+    unescapedIndex < escapedIndex,
+    'Unescaped interpolation must be matched before escaped interpolation.',
   );
 }
 
-function testAvenxSyntaxPatterns() {
-  const grammarText = fs.readFileSync(
-    grammarPath,
-    'utf8',
-  );
+function testAvenxPatterns() {
+  const grammarText = fs.readFileSync(grammarPath, 'utf8');
 
-  const fixtures = [
-    {
-      name: 'escaped interpolation',
-      text: '{{ user.name }}',
-      pattern: '\\{\\{',
-    },
-    {
-      name: 'unescaped interpolation',
-      text: '{{{ htmlContent }}}',
-      pattern: '\\{\\{\\{',
-    },
-    {
-      name: 'compiler tag',
-      text: '<@for item in items>',
-      pattern: '<@',
-    },
-    {
-      name: 'data attribute',
-      text: 'data-ax-id="user"',
-      pattern: 'data-ax-',
-    },
-    {
-      name: 'event binding',
-      text: '@click="handleClick"',
-      pattern: '@',
-    },
-    {
-      name: 'CSS block',
-      text: '<@css>',
-      pattern: '<@\\(css\\|global\\)',
-    },
+  const requiredPatterns = [
+    '\\{\\{\\{',
+    '\\{\\{',
+    '<@/?[A-Za-z]',
+    'data-ax-',
+    '@[A-Za-z]',
+    '<@(css|global)',
+    'source.css',
+    'text.html.basic',
   ];
 
-  for (const fixture of fixtures) {
-    const matches = collectMatches(
-      fixture.pattern,
-      fixture.text,
-    );
-
+  for (const pattern of requiredPatterns) {
     assert.ok(
-      matches.length > 0,
-      `${fixture.name} fixture must match its expected syntax.`,
-    );
-
-    assert.ok(
-      grammarText.includes(
-        fixture.pattern
-          .replace(/\\\(|\\\)|\\/g, ''),
-      ) ||
-        fixture.name === 'CSS block',
-      `Grammar must contain a rule for ${fixture.name}.`,
+      grammarText.includes(pattern),
+      `Expected grammar pattern to contain: ${pattern}`,
     );
   }
 }
 
-function testTemplateFixture() {
-  const fixture = `
-export default class Counter {
-  static template = \`
-    <div class="counter" data-ax-id="counter">
-      <h1>{{ count }}</h1>
-      <div>{{{ trustedHtml }}}</div>
-
-      <button @click="increment">
-        Increment
-      </button>
-
-      <@if count > 0>
-        <span>Positive</span>
-      </@if>
-
-      <@for item in items>
-        <span>{{ item }}</span>
-      </@for>
-    </div>
-
-    <@css>
-      .counter {
-        display: block;
-      }
-    </@css>
-
-    <@global>
-      body {
-        margin: 0;
-      }
-    </@global>
-  \`;
-}
-`;
-
-  assert.match(
-    fixture,
-    /static\s+template\s*=\s*`/,
-    'Fixture must contain an Avenx template literal.',
-  );
-
-  assert.match(
-    fixture,
-    /\{\{\s*count\s*\}\}/,
-    'Fixture must contain escaped interpolation.',
-  );
-
-  assert.match(
-    fixture,
-    /\{\{\{\s*trustedHtml\s*\}\}\}/,
-    'Fixture must contain unescaped interpolation.',
-  );
-
-  assert.match(
-    fixture,
-    /<@if\b/,
-    'Fixture must contain a compiler tag.',
-  );
-
-  assert.match(
-    fixture,
-    /<@for\b/,
-    'Fixture must contain a compiler loop.',
-  );
-
-  assert.match(
-    fixture,
-    /data-ax-id/,
-    'Fixture must contain an Avenx data attribute.',
-  );
-
-  assert.match(
-    fixture,
-    /@click=/,
-    'Fixture must contain an Avenx event binding.',
-  );
-
-  assert.match(
-    fixture,
-    /<@css>/,
-    'Fixture must contain a CSS block.',
-  );
-
-  assert.match(
-    fixture,
-    /<@global>/,
-    'Fixture must contain a global CSS block.',
-  );
-}
-
-async function testTextMateTokenization() {
-  const onigWasmPath = require.resolve(
+async function loadGrammar() {
+  const wasmPath = require.resolve(
     'vscode-oniguruma/release/onig.wasm',
   );
 
-  const wasm = fs.readFileSync(
-    onigWasmPath,
-  );
+  const wasmBuffer = fs.readFileSync(wasmPath);
 
-  await vscodeOniguruma.loadWASM(wasm);
+  await vscodeOniguruma.loadWASM(wasmBuffer);
 
-  const registry =
-    new vscodeTextmate.Registry({
-      onigLib: Promise.resolve({
-        createOnigScanner(patterns) {
-          return new vscodeOniguruma.OnigScanner(
-            patterns,
-          );
-        },
-
-        createOnigString(value) {
-          return new vscodeOniguruma.OnigString(
-            value,
-          );
-        },
-      }),
-
-      loadGrammar: async (scopeName) => {
-        if (scopeName === 'source.avenx') {
-          return vscodeTextmate.parseRawGrammar(
-            fs.readFileSync(
-              grammarPath,
-              'utf8',
-            ),
-            grammarPath,
-          );
-        }
-
-        if (scopeName === 'source.js') {
-          return vscodeTextmate.parseRawGrammar(
-            JSON.stringify({
-              scopeName: 'source.js',
-              patterns: [],
-            }),
-            'source.js.json',
-          );
-        }
-
-        if (scopeName === 'text.html.basic') {
-          return vscodeTextmate.parseRawGrammar(
-            JSON.stringify({
-              scopeName: 'text.html.basic',
-              patterns: [],
-            }),
-            'text.html.basic.json',
-          );
-        }
-
-        if (scopeName === 'source.css') {
-          return vscodeTextmate.parseRawGrammar(
-            JSON.stringify({
-              scopeName: 'source.css',
-              patterns: [],
-            }),
-            'source.css.json',
-          );
-        }
-
-        return null;
+  const registry = new vscodeTextmate.Registry({
+    onigLib: Promise.resolve({
+      createOnigScanner(patterns) {
+        return new vscodeOniguruma.OnigScanner(patterns);
       },
-    });
+      createOnigString(s) {
+        return new vscodeOniguruma.OnigString(s);
+      },
+    }),
 
-  const grammar =
-    await registry.loadGrammar(
-      'source.avenx',
-    );
+    loadGrammar: async (scopeName) => {
+      if (scopeName === 'source.avenx') {
+        return vscodeTextmate.parseRawGrammar(
+          fs.readFileSync(grammarPath, 'utf8'),
+          grammarPath,
+        );
+      }
 
-  assert.ok(
-    grammar,
-    'TextMate must load the Avenx grammar.',
-  );
+      return null;
+    },
+  });
 
-  const fixtureLines = [
+  return registry.loadGrammar('source.avenx');
+}
+
+async function testTokenization() {
+  const grammar = await loadGrammar();
+
+  const fixture = [
     'static template = `',
-    '  <div data-ax-id="demo">',
-    '    {{ name }}',
-    '    {{{ trustedHtml }}}',
-    '    <button @click="save">Save</button>',
-    '    <@for item in items>',
-    '      {{ item }}',
-    '    </@for>',
-    '  </div>',
+    '<div data-ax-id="card" @click={handleClick}>',
+    '  <span>{{ title }}</span>',
+    '  <span>{{{ html }}</span>',
+    '  <@for item in items>',
+    '    <div>{{ item }}</div>',
+    '  </@for>',
+    '  <@css>',
+    '    .card { color: red; }',
+    '  </@css>',
+    '</div>',
     '`;',
-  ];
+  ].join('\\n');
 
-  let ruleStack;
+  const lines = fixture.split('\\n');
+  let state = vscodeTextmate.INITIAL;
 
-  const tokenizedLines = [];
+  const tokens = [];
 
-  for (const line of fixtureLines) {
-    const result = grammar.tokenizeLine(
-      line,
-      ruleStack,
-    );
+  for (const line of lines) {
+    const result = grammar.tokenizeLine(line, state);
 
-    ruleStack = result.ruleStack;
+    for (const token of result.tokens) {
+      tokens.push({
+        text: line.slice(token.startIndex, token.endIndex),
+        scopes: token.scopes,
+      });
+    }
 
-    tokenizedLines.push(result.tokens);
+    state = result.ruleStack;
   }
 
+  const allScopes = tokens.flatMap((token) => token.scopes);
+
   assert.ok(
-    tokenizedLines.some(
-      (tokens) => tokens.length > 0,
+    allScopes.some((scope) =>
+      scope.includes('interpolation'),
     ),
-    'Avenx fixture must produce TextMate tokens.',
+    'Expected interpolation scopes.',
+  );
+
+  assert.ok(
+    allScopes.some((scope) =>
+      scope.includes('unescaped'),
+    ),
+    'Expected unescaped interpolation scope.',
+  );
+
+  assert.ok(
+    allScopes.some((scope) =>
+      scope.includes('compiler'),
+    ),
+    'Expected compiler tag scope.',
+  );
+
+  assert.ok(
+    allScopes.some((scope) =>
+      scope.includes('data'),
+    ),
+    'Expected data-ax attribute scope.',
+  );
+
+  assert.ok(
+    allScopes.some((scope) =>
+      scope.includes('event'),
+    ),
+    'Expected event attribute scope.',
+  );
+
+  assert.ok(
+    allScopes.some((scope) =>
+      scope.includes('css'),
+    ),
+    'Expected CSS embedded scope.',
   );
 }
 
-async function run() {
+async function main() {
   testGrammarStructure();
-  testAvenxSyntaxPatterns();
-  testTemplateFixture();
-  await testTextMateTokenization();
+  testAvenxPatterns();
+  await testTokenization();
 
-  console.log(
-    'Avenx VS Code extension tests passed.',
-  );
+  console.log('Avenx VS Code extension tests passed.');
 }
 
-run().catch((error) => {
-  console.error(
-    'Avenx VS Code extension tests failed.',
-  );
+main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
