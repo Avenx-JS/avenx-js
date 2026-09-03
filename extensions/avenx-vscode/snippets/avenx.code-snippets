@@ -1,0 +1,173 @@
+{
+  "Avenx Component": {
+    "prefix": "avx-component",
+    "body": [
+      "import { Component } from 'avenx-core';",
+      "",
+      "export default class ${1:MyComponent} extends Component {",
+      "  static template = `",
+      "    <div class=\"${2:component}\">",
+      "      ${3:Content}",
+      "    </div>",
+      "  `;",
+      "",
+      "  static styles = `",
+      "    .${2:component} {",
+      "      ${4:}",
+      "    }",
+      "  `;",
+      "}"
+    ],
+    "description": "Create an Avenx component"
+  },
+
+  "Avenx Page": {
+    "prefix": "avx-page",
+    "body": [
+      "import { Page } from 'avenx-core';",
+      "",
+      "export default class ${1:HomePage} extends Page {",
+      "  static template = `",
+      "    <main>",
+      "      ${2:Content}",
+      "    </main>",
+      "  `;",
+      "}"
+    ],
+    "description": "Create an Avenx page"
+  },
+
+  "Avenx Bridge": {
+    "prefix": "avx-bridge",
+    "body": [
+      "import { Bridge } from 'avenx-core';",
+      "",
+      "export default class ${1:MyBridge} extends Bridge {",
+      "  ${2:}",
+      "}"
+    ],
+    "description": "Create an Avenx bridge"
+  },
+
+  "Avenx Guard": {
+    "prefix": "avx-guard",
+    "body": [
+      "export default async function ${1:authGuard}(context) {",
+      "  ${2:}",
+      "}"
+    ],
+    "description": "Create an Avenx guard"
+  },
+
+  "Compiler If": {
+    "prefix": "avx-if",
+    "body": [
+      "<@if ${1:condition}>",
+      "  ${2:content}",
+      "</@if>"
+    ],
+    "description": "Avenx conditional compiler tag"
+  },
+
+  "Compiler For": {
+    "prefix": "avx-for",
+    "body": [
+      "<@for ${1:item} in ${2:items}>",
+      "  ${3:content}",
+      "</@for>"
+    ],
+    "description": "Avenx loop compiler tag"
+  },
+
+  "Compiler Suspense": {
+    "prefix": "avx-suspense",
+    "body": [
+      "<@suspense>",
+      "  ${1:content}",
+      "</@suspense>"
+    ],
+    "description": "Avenx suspense compiler tag"
+  },
+
+  "Compiler Error Boundary": {
+    "prefix": "avx-error",
+    "body": [
+      "<@error-boundary>",
+      "  ${1:content}",
+      "</@error-boundary>"
+    ],
+    "description": "Avenx error boundary compiler tag"
+  },
+
+  "Compiler Deadlock": {
+    "prefix": "avx-deadlock",
+    "body": [
+      "<@deadlock>",
+      "  ${1:content}",
+      "</@deadlock>"
+    ],
+    "description": "Avenx deadlock compiler tag"
+  },
+
+  "Compiler Defer": {
+    "prefix": "avx-defer",
+    "body": [
+      "<@defer>",
+      "  ${1:content}",
+      "</@defer>"
+    ],
+    "description": "Avenx defer compiler tag"
+  },
+
+  "Avenx Interpolation": {
+    "prefix": "avx-interpolation",
+    "body": [
+      "{{ ${1:expression} }}"
+    ],
+    "description": "Escaped Avenx template interpolation"
+  },
+
+  "Avenx Unescaped Interpolation": {
+    "prefix": "avx-unescaped",
+    "body": [
+      "{{{ ${1:expression} }}}"
+    ],
+    "description": "Unescaped Avenx template interpolation"
+  },
+
+  "Avenx Data Attribute": {
+    "prefix": "avx-data",
+    "body": [
+      "data-ax-${1:name}=\"${2:value}\""
+    ],
+    "description": "Avenx data attribute"
+  },
+
+  "Avenx Event": {
+    "prefix": "avx-event",
+    "body": [
+      "@${1:click}=\"${2:handler}\""
+    ],
+    "description": "Avenx event binding"
+  },
+
+  "Avenx CSS Block": {
+    "prefix": "avx-css",
+    "body": [
+      "<@css>",
+      "  ${1:}",
+      "</@css>"
+    ],
+    "description": "Avenx scoped CSS block"
+  },
+
+  "Avenx Global CSS": {
+    "prefix": "avx-global",
+    "body": [
+      "<@global>",
+      "  ${1:}",
+      "</@global>"
+    ],
+    "description": "Avenx global CSS block"
+  }
+}
