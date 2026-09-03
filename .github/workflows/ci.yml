@@ -36,6 +36,27 @@ jobs:
         if: matrix.node-version != 18
         run: npm run lint
 
+  vscode-extension:
+    name: VS Code Extension Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install extension dependencies
+        working-directory: extensions/avenx-vscode
+        run: npm install
+
+      - name: Run extension tests
+        working-directory: extensions/avenx-vscode
+        run: npm test
+
   e2e:
     name: E2E (Chromium)
     runs-on: ubuntu-latest
