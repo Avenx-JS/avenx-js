@@ -2066,7 +2066,7 @@ const state = {};
 ```
 
 ```html
-<@for="user in state.users">
+<@for user in state.users>
   {{ user.name }}
 </@for>
 ```
@@ -2082,18 +2082,25 @@ const state = {
 ```
 
 ```html
-<@for="user in state.users">
+<@for user in state.users>
   {{ user.name }}
 </@for>
+```
+
+**Using `data-ax-for`**
+
+```html
+<template data-ax-for="state.users" data-ax-as="user">
+  <p>{{ user.name }}</p>
+</template>
 ```
 
 **Defensive Example**
 
 ```javascript
 const users = Array.isArray(state.users) ? state.users : [];
-```
 
-Using a default empty array ensures that the renderer always receives a valid iterable and prevents evaluation failures.
+```
 
 ### AVX_W19 — RENDER_KEY_EVALUATION_FAILED
 
