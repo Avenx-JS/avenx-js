@@ -1,0 +1,91 @@
+{
+  "name": "avenx-vscode",
+  "displayName": "Avenx",
+  "description": "Official VS Code extension for Avenx with template syntax highlighting, snippets, and save-time diagnostics.",
+  "version": "0.1.0",
+  "publisher": "avenx-js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Avenx-JS/avenx-js.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters"
+  ],
+  "keywords": [
+    "avenx",
+    "avenx-js",
+    "javascript",
+    "html",
+    "css",
+    "syntax highlighting",
+    "diagnostics"
+  ],
+  "activationEvents": [
+    "onLanguage:avenx"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "avenx",
+        "aliases": [
+          "Avenx",
+          "avenx"
+        ],
+        "extensions": [
+          ".component.js",
+          ".page.js",
+          ".bridge.js",
+          ".guard.js",
+          ".component.css"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "avenx",
+        "scopeName": "source.avenx",
+        "path": "./syntaxes/avenx.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.html": "html",
+          "meta.embedded.block.css": "css"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "avenx",
+        "path": "./snippets/avenx.code-snippets"
+      }
+    ],
+    "configuration": {
+      "title": "Avenx",
+      "properties": {
+        "avenx.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run Avenx template validation and show diagnostics when an Avenx file is saved."
+        },
+        "avenx.diagnosticDelay": {
+          "type": "number",
+          "default": 150,
+          "minimum": 0,
+          "description": "Delay in milliseconds before running Avenx diagnostics after saving a file."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node test/run-tests.js"
+  },
+  "devDependencies": {
+    "vscode-textmate": "^9.2.0",
+    "vscode-oniguruma": "^2.0.1"
+  }
+}
