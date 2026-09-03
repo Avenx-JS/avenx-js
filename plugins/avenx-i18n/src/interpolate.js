@@ -110,6 +110,10 @@ function stringify(value) {
  * @param {string} context.key - The translation key, for diagnostics.
  * @param {string} context.locale - The locale the message came from.
  * @param {function(string, string, object=): void} context.report - The failure reporter.
+ * @param {function(string): string} [context.escape] - Applied to every substituted
+ *   value, and never to the message's own literal text. `tHtml()` passes an HTML
+ *   escaper here so a parameter can contribute text to a rich translation but
+ *   never markup.
  * @returns {string} The rendered message.
  */
 export function interpolate(segments, params, context) {
@@ -130,7 +134,8 @@ export function interpolate(segments, params, context) {
       result += `{${segment.name}}`;
       continue;
     }
-    result += stringify(value);
+    const text = stringify(value);
+    result += context.escape ? context.escape(text) : text;
   }
   return result;
 }
