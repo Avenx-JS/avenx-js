@@ -1,0 +1,4 @@
+.vscode/**
+test/**
+*.log
+.gitignore
