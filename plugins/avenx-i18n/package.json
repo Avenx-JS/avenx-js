@@ -1,0 +1,47 @@
+{
+  "name": "@avenx/i18n",
+  "version": "0.1.0",
+  "description": "Official internationalization plugin for Avenx.js — reactive translations, locale fallback and Intl formatting",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src/",
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "prepare": "npm run build",
+    "test": "node test/i18n.test.js && node test/i18nIntegration.test.js && node test/i18nResilience.test.js"
+  },
+  "keywords": [
+    "avenx",
+    "i18n",
+    "internationalization",
+    "localization",
+    "translation",
+    "intl",
+    "reactive",
+    "plugin"
+  ],
+  "author": "Avenx Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avenx-js/avenx-js.git",
+    "directory": "plugins/avenx-i18n"
+  },
+  "bugs": {
+    "url": "https://github.com/avenx-js/avenx-js/issues"
+  },
+  "homepage": "https://avenx-js.com/",
+  "peerDependencies": {
+    "avenx-core": ">=0.4.0"
+  }
+}

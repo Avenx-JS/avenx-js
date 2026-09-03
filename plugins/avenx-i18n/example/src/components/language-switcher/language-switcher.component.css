@@ -1,0 +1,29 @@
+<@css>
+    switcher {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+    }
+
+    label {
+        margin-right: 0.25rem;
+        font-size: 0.8125rem;
+        color: #666666;
+    }
+
+    choice {
+        padding: 0.25rem 0.6rem;
+        border: 1px solid #c9c9d4;
+        border-radius: 999px;
+        background: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.8125rem;
+    }
+
+    loading {
+        color: #666666;
+    }
+</@css>

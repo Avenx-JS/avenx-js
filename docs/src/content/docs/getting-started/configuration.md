@@ -36,9 +36,32 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `debug.debugReactivity` | `boolean` | `false` | Enables verbose reactivity dependency tracking and watcher execution logging to the browser console during development. |
 | `treeShakeComponents` | `boolean` | `true` | Removes unused components from the compiled bundle during compilation. Set to `false` to compile all discovered components. |
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
+| `templateGlobals` | `string[]` | `[]`                 | Identifiers a plugin publishes into every component's template scope through `app.mixin()`. Declaring them lets template validation accept `{{ t('home.title') }}` without weakening the check for anything else. See [Plugin-provided template globals](#plugin-provided-template-globals). |
 | `warnings`     | `object`   | `{}`                   | Map of compiler warning codes (`AVX_W01`, `AVX_W03`, etc.) to severity overrides (`"off"`, `"ignore"`, `"warn"`, or `"error"`). |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
+
+
+## Plugin-provided template globals
+
+A plugin installed with `app.use()` can publish helpers into every component's
+template scope — that is what `app.mixin()` does, and it is how
+[`@avenx/i18n`](/guides/i18n) makes `t()` available everywhere without an
+import in each file.
+
+The compiler cannot see that. It reads your source, not your running
+application, so a template calling a name it never saw declared is reported as
+an undeclared reference (`AVX_W03`). `templateGlobals` is where a project says
+which names a plugin provides:
+
+```json
+{
+  "templateGlobals": ["t", "tHtml", "n", "d", "rel", "locale", "$i18n"]
+}
+```
+
+Every other identifier in the template is still checked, which is the point of
+declaring the names rather than switching `AVX_W03` off.
 
 
 ## Build mode (`mode`)

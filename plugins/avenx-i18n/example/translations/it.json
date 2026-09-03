@@ -1,0 +1,21 @@
+{
+  "app": {
+    "title": "Grande Magazzino Avenx",
+    "tagline": "Un'applicazione, quattro lingue, nessun render superfluo."
+  },
+  "nav": { "language": "Lingua", "settings": "Impostazioni" },
+  "order": {
+    "greeting": "Ciao, {name}!",
+    "items": {
+      "zero": "Il tuo carrello è vuoto.",
+      "one": "Hai {count} articolo nel carrello.",
+      "other": "Hai {count} articoli nel carrello."
+    },
+    "total": "Totale",
+    "placed": "Ordinato {when}",
+    "add": "Aggiungi un articolo",
+    "remove": "Rimuovine uno",
+    "terms": "Ordinando accetti le nostre <a href=\"#terms\">condizioni di vendita</a>."
+  },
+  "errors": { "network": { "timeout": "La richiesta è scaduta. Riprova." } }
+}

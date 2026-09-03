@@ -1,0 +1,21 @@
+{
+  "app": {
+    "title": "Grand Magasin Avenx",
+    "tagline": "Une application, quatre langues, aucun rendu inutile."
+  },
+  "nav": { "language": "Langue", "settings": "Paramètres" },
+  "order": {
+    "greeting": "Bonjour, {name} !",
+    "items": {
+      "zero": "Votre panier est vide.",
+      "one": "Vous avez {count} article dans votre panier.",
+      "other": "Vous avez {count} articles dans votre panier."
+    },
+    "total": "Total",
+    "placed": "Commandé {when}",
+    "add": "Ajouter un article",
+    "remove": "En retirer un",
+    "terms": "En commandant, vous acceptez nos <a href=\"#terms\">conditions de vente</a>."
+  },
+  "errors": { "network": { "timeout": "La requête a expiré. Veuillez réessayer." } }
+}
