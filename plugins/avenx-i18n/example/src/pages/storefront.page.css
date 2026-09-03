@@ -1,0 +1,76 @@
+<@css>
+    card {
+        max-width: 34rem;
+        margin: 3rem auto;
+        padding: 1.5rem;
+        border: 1px solid #d8d8e0;
+        border-radius: 0.75rem;
+        font-family: system-ui, sans-serif;
+        color: #1c1c22;
+        background: #ffffff;
+    }
+
+    header {
+        margin-bottom: 1.25rem;
+    }
+
+    title {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    tagline {
+        margin: 0.35rem 0 0;
+        color: #666666;
+        font-size: 0.875rem;
+    }
+
+    panel {
+        margin-top: 1.25rem;
+        padding: 1rem;
+        background: #f7f7fa;
+        border-radius: 0.5rem;
+    }
+
+    greeting {
+        margin: 0 0 0.75rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    line {
+        margin: 0.35rem 0;
+    }
+
+    muted {
+        color: #666666;
+        font-size: 0.8125rem;
+    }
+
+    row {
+        display: flex;
+        gap: 0.5rem;
+        margin: 1rem 0 0.5rem;
+    }
+
+    button {
+        padding: 0.45rem 0.9rem;
+        border: 1px solid #c9c9d4;
+        border-radius: 0.375rem;
+        background: #ffffff;
+        cursor: pointer;
+        font: inherit;
+    }
+
+    terms {
+        margin: 0.75rem 0 0;
+        font-size: 0.8125rem;
+        color: #555555;
+    }
+
+    footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1.25rem;
+    }
+</@css>
