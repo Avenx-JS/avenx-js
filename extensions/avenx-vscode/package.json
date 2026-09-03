@@ -1,5 +1,5 @@
 {
-  "name": "avenx-vscode",
+  "name": "avenx",
   "displayName": "Avenx",
   "description": "Official VS Code extension for Avenx with template syntax highlighting, snippets, and save-time diagnostics.",
   "version": "0.1.0",
@@ -54,7 +54,7 @@
         "scopeName": "source.avenx",
         "path": "./syntaxes/avenx.tmLanguage.json",
         "embeddedLanguages": {
-          "meta.embedded.block.html": "html",
+          "meta.embedded.block.html.avenx": "html",
           "meta.embedded.block.css": "css"
         }
       }
