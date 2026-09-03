@@ -76,6 +76,21 @@ try {
       const loaded = loadConfig(projectDir);
       assert.deepStrictEqual(loaded.templateGlobals, ['t', 'locale'], 'the option is read from the config file');
 
+      // A `$`-prefixed identifier survives. Config values run through
+      // environment-variable interpolation, which would otherwise read `$i18n`
+      // as a placeholder and blank it out.
+      process.env.i18n = 'should-not-be-substituted';
+      fs.writeFileSync(
+        path.join(projectDir, 'avenx.config.json'),
+        JSON.stringify({ templateGlobals: ['$i18n', '$route'], srcDir: 'src' }),
+      );
+      assert.deepStrictEqual(
+        loadConfig(projectDir).templateGlobals,
+        ['$i18n', '$route'],
+        'a $-prefixed identifier is not treated as an environment reference',
+      );
+      delete process.env.i18n;
+
       fs.writeFileSync(path.join(projectDir, 'avenx.config.json'), JSON.stringify({ templateGlobals: 't' }));
       assert.throws(
         () => loadConfig(projectDir),
