@@ -18,7 +18,13 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../../packa
 export async function initProject(cli, args = []) {
   const { stylePreprocessor, layoutTemplate, isInteractive } = await runWizard(args);
 
-  console.log(bold(cyan(`🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`)));
+  console.log(
+    bold(
+      cyan(
+        `🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`,
+      ),
+    ),
+  );
 
   // Write avenx.config.json if preprocessor option is configured
   const configPath = path.join(cli.baseDir, 'avenx.config.json');
@@ -53,16 +59,37 @@ export async function initProject(cli, args = []) {
   // Create initial .vscode files
   const jsConfigPath = path.join(cli.baseDir, '.vscode/jsconfig.json');
   if (!fs.existsSync(jsConfigPath)) {
-    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'jsconfig.json.template');
+    const template = readTemplate(
+      cli.baseDir,
+      cli.config,
+      cli.frameworkDir,
+      'vscode',
+      'jsconfig.json.template',
+    );
     fs.writeFileSync(jsConfigPath, template);
     console.log('  Created: .vscode/jsconfig.json');
   }
 
   const settingsPath = path.join(cli.baseDir, '.vscode/settings.json');
   if (!fs.existsSync(settingsPath)) {
-    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'settings.json.template');
+    const template = readTemplate(
+      cli.baseDir,
+      cli.config,
+      cli.frameworkDir,
+      'vscode',
+      'settings.json.template',
+    );
     fs.writeFileSync(settingsPath, template);
     console.log('  Created: .vscode/settings.json');
+  }
+
+  const extensionsPath = path.join(cli.baseDir, '.vscode/extensions.json');
+  if (!fs.existsSync(extensionsPath)) {
+    const extensionsConfig = {
+      recommendations: ['avenx-js.avenx'],
+    };
+    fs.writeFileSync(extensionsPath, JSON.stringify(extensionsConfig, null, 2) + '\n');
+    console.log('  Created: .vscode/extensions.json');
   }
 
   // Create initial index.html
@@ -243,7 +270,9 @@ export async function initProject(cli, args = []) {
     fs.writeFileSync(gitignorePath, `node_modules/\n${cli.config.distDir}/\n.DS_Store\n`);
     console.log('  Created: .gitignore');
   }
+
   console.log(green('✅ Project initialized successfully!'));
+
   if (isInteractive) {
     process.stdin.pause();
   }
