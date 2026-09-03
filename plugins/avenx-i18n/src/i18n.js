@@ -340,11 +340,16 @@ export function createI18n(options = {}) {
   };
 
   /**
-   * Reports whether anything along a locale's chain has messages.
+   * Reports whether a locale, or one of its own ancestors, has messages.
+   *
+   * Ancestors count, so switching to `en-GB` when only `en` is registered is
+   * ordinary regional fallback and says nothing. The configured fallback
+   * locales deliberately do not count: they would cover every tag ever passed
+   * in, including a typo, which is exactly what this is here to catch.
    * @param {string} canonical - A canonical locale tag.
-   * @returns {boolean} True when the locale renders as something.
+   * @returns {boolean} True when the locale has messages of its own.
    */
-  const isCovered = (canonical) => chainFor(canonical).some((step) => catalogs.get(step)?.size > 0);
+  const isCovered = (canonical) => expandLocale(canonical).some((step) => catalogs.get(step)?.size > 0);
 
   /**
    * Activates a locale, loading it first when it is lazy.
@@ -367,9 +372,11 @@ export function createI18n(options = {}) {
      */
     const activate = () => {
       if (!isCovered(canonical)) {
-        report('missing-locale', `no messages are registered for "${canonical}"; it will render through the fallback chain`, {
-          locale: canonical,
-        });
+        report(
+          'missing-locale',
+          `no messages are registered for "${canonical}"; it will render through the fallback chain`,
+          { locale: canonical },
+        );
       }
       store.setLocale(canonical);
       return store.locale;
@@ -378,7 +385,14 @@ export function createI18n(options = {}) {
     // Only the exact tag is worth loading: `de-CH` falls back to `de`, so a
     // loader for `de-CH` is what would make it more than that.
     const needsLoad = !catalogs.has(canonical) && loaders.has(canonical);
-    return needsLoad ? load(canonical).then(activate) : Promise.resolve(activate());
+    if (!needsLoad) {
+      return Promise.resolve(activate());
+    }
+    // A locale that was going to be loaded and could not be is not switched to.
+    // Activating it anyway would drop the user into a language the application
+    // has no messages for, over one it does — a worse outcome than staying put,
+    // and one the caller can see because the resolved locale is unchanged.
+    return load(canonical).then((loaded) => (loaded ? activate() : store.locale));
   };
 
   /**
