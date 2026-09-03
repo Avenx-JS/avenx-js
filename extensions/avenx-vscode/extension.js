@@ -7,6 +7,7 @@ const diagnosticCollection =
   vscode.languages.createDiagnosticCollection('avenx');
 
 const runningChecks = new Map();
+const checkTimers = new Map();
 
 function getWorkspaceRoot(document) {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
@@ -20,9 +21,22 @@ function getWorkspaceRoot(document) {
 
 function getAvenxCliPath(workspaceRoot) {
   const candidates = [
-    path.join(workspaceRoot, 'node_modules', 'avenx-core', 'bin', 'avenx.js'),
-    path.join(workspaceRoot, 'node_modules', '@avenx-js', 'core', 'bin', 'avenx.js'),
-    path.join(workspaceRoot, 'bin', 'avenx.js')
+    path.join(
+      workspaceRoot,
+      'node_modules',
+      'avenx-core',
+      'bin',
+      'avenx.js',
+    ),
+    path.join(
+      workspaceRoot,
+      'node_modules',
+      '@avenx-js',
+      'core',
+      'bin',
+      'avenx.js',
+    ),
+    path.join(workspaceRoot, 'bin', 'avenx.js'),
   ];
 
   for (const candidate of candidates) {
@@ -70,7 +84,10 @@ function createDiagnostic(item, document) {
   let end = start;
 
   if (Number.isInteger(item.length) && item.length > 0) {
-    end = new vscode.Position(line, column + item.length);
+    end = new vscode.Position(
+      line,
+      column + item.length,
+    );
   } else {
     const lineText =
       line < document.lineCount
@@ -158,10 +175,12 @@ function runAvenxCheck(document) {
     return;
   }
 
-  const previous = runningChecks.get(document.uri.toString());
+  const documentKey = document.uri.toString();
+  const previous = runningChecks.get(documentKey);
 
   if (previous) {
     previous.kill();
+    runningChecks.delete(documentKey);
   }
 
   const child = spawn(
@@ -173,7 +192,7 @@ function runAvenxCheck(document) {
     },
   );
 
-  runningChecks.set(document.uri.toString(), child);
+  runningChecks.set(documentKey, child);
 
   let stdout = '';
   let stderr = '';
@@ -186,12 +205,16 @@ function runAvenxCheck(document) {
     stderr += data.toString();
   });
 
-  child.on('error', () => {
-    runningChecks.delete(document.uri.toString());
+  child.on('error', (error) => {
+    runningChecks.delete(documentKey);
+
+    console.warn(
+      `[Avenx] Failed to run diagnostics: ${error.message}`,
+    );
   });
 
   child.on('close', () => {
-    runningChecks.delete(document.uri.toString());
+    runningChecks.delete(documentKey);
 
     const report = parseCheckOutput(stdout);
 
@@ -205,90 +228,102 @@ function runAvenxCheck(document) {
       return;
     }
 
-    const diagnostics = extractDiagnostics(report, document);
+    const diagnostics = extractDiagnostics(
+      report,
+      document,
+    );
 
-    diagnosticCollection.set(document.uri, diagnostics);
+    diagnosticCollection.set(
+      document.uri,
+      diagnostics,
+    );
   });
 }
 
 function scheduleCheck(document) {
-  const config = vscode.workspace.getConfiguration(
-    'avenx',
-    document.uri,
-  );
-
-  const delay = Math.max(
-    0,
-    Number(config.get('diagnosticDelay', 150)),
-  );
-
   const key = document.uri.toString();
-  const existingTimer = scheduleCheck.timers?.get(key);
+
+  const existingTimer = checkTimers.get(key);
 
   if (existingTimer) {
     clearTimeout(existingTimer);
   }
 
-  if (!scheduleCheck.timers) {
-    scheduleCheck.timers = new Map();
-  }
+  const config = vscode.workspace.getConfiguration(
+    'avenx',
+    document.uri,
+  );
+
+  const configuredDelay = Number(
+    config.get('diagnosticDelay', 150),
+  );
+
+  const delay = Number.isFinite(configuredDelay)
+    ? Math.max(0, configuredDelay)
+    : 150;
 
   const timer = setTimeout(() => {
-    scheduleCheck.timers.delete(key);
+    checkTimers.delete(key);
     runAvenxCheck(document);
   }, delay);
 
-  scheduleCheck.timers.set(key, timer);
+  checkTimers.set(key, timer);
 }
 
 function activate(context) {
-  context.subscriptions.push(diagnosticCollection);
-
   context.subscriptions.push(
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      if (isAvenxFile(document)) {
-        scheduleCheck(document);
-      }
-    }),
+    diagnosticCollection,
   );
 
   context.subscriptions.push(
-    vscode.workspace.onDidCloseTextDocument((document) => {
-      const key = document.uri.toString();
+    vscode.workspace.onDidSaveTextDocument(
+      (document) => {
+        if (isAvenxFile(document)) {
+          scheduleCheck(document);
+        }
+      },
+    ),
+  );
 
-      const timer = scheduleCheck.timers?.get(key);
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument(
+      (document) => {
+        const key = document.uri.toString();
 
-      if (timer) {
-        clearTimeout(timer);
-        scheduleCheck.timers.delete(key);
-      }
+        const timer = checkTimers.get(key);
 
-      const child = runningChecks.get(key);
+        if (timer) {
+          clearTimeout(timer);
+          checkTimers.delete(key);
+        }
 
-      if (child) {
-        child.kill();
-        runningChecks.delete(key);
-      }
+        const child = runningChecks.get(key);
 
-      diagnosticCollection.delete(document.uri);
-    }),
+        if (child) {
+          child.kill();
+          runningChecks.delete(key);
+        }
+
+        diagnosticCollection.delete(
+          document.uri,
+        );
+      },
+    ),
   );
 }
 
 function deactivate() {
+  for (const timer of checkTimers.values()) {
+    clearTimeout(timer);
+  }
+
+  checkTimers.clear();
+
   for (const child of runningChecks.values()) {
     child.kill();
   }
 
   runningChecks.clear();
-
-  if (scheduleCheck.timers) {
-    for (const timer of scheduleCheck.timers.values()) {
-      clearTimeout(timer);
-    }
-
-    scheduleCheck.timers.clear();
-  }
 
   diagnosticCollection.clear();
 }
