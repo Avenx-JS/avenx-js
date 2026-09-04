@@ -998,6 +998,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "BISHAL095",
+      "name": "Bishal Pal",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114282618?v=4",
+      "profile": "https://github.com/BISHAL095",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
