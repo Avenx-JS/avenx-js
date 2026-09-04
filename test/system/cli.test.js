@@ -287,6 +287,7 @@ async function runTest() {
       'utf-8',
     );
 
+
     assert.ok(
       forcedDefaultBoxJs.includes('DefaultBox Component'),
       'Force generation should overwrite the modified component',
@@ -348,6 +349,43 @@ async function runTest() {
     );
 
     console.log('✅ Page --force test passed!');
+
+    console.log('🧪 Testing avenx generate component -f (shorthand)...');
+
+    fs.writeFileSync(
+      defaultBoxJsPath,
+      '// MODIFIED BY SHORT FLAG TEST',
+    );
+
+    const shortForceResult = runCli([
+      'generate',
+      'component',
+      'default-box',
+      '-f',
+    ]);
+
+    assert.strictEqual(shortForceResult.status, 0, 'Short flag -f component generation should succeed');
+    assert.match(
+      shortForceResult.stderr,
+      /Force enabled: overwriting existing Component 'default-box'/,
+      'Short flag -f generation should warn before overwriting the existing component',
+    );
+
+    const shortForcedJs = fs.readFileSync(
+      defaultBoxJsPath,
+      'utf-8',
+    );
+
+    assert.ok(
+      shortForcedJs.includes('DefaultBox Component'),
+      'Short flag -f generation should overwrite the modified component',
+    );
+    assert.ok(
+      !shortForcedJs.includes('// MODIFIED BY SHORT FLAG TEST'),
+      'Short flag -f generation should remove the modified component content',
+    );
+
+    console.log('✅ Component -f test passed!');
 
     console.log('🧪 Testing avenx generate bridge --force...');
 

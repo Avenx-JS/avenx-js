@@ -41,6 +41,7 @@ ${bold(cyan('Options:'))}
   ${green('--dev')}                     ${gray('Build for development: readable runtime, inline CSS source maps')}
   ${green('--prod')}                    ${gray('Build for production (the default for "build")')}
   ${green('--dry-run, -d')}             ${gray('Preview actions without writing or deleting any files')}
+  ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
