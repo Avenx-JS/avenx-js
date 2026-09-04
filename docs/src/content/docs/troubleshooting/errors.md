@@ -1799,34 +1799,40 @@ Registering all pages during application startup helps ensure every routed page 
 ### AVX_W14 — COMPONENT_RESTORE_SLOT_CONTENT_FAILED
 
 **Warning Message**
-Failed to restore default slot content. Error: {0}
 
-**Cause:** This warning relates to how Avenx-JS handles component **slots** — placeholder regions inside a component's template where a parent can inject custom ("transcluded") content, falling back to the component's own default markup when nothing is provided. When transcluded content is unmounted (for example, when a parent stops passing slot content, or the component itself unmounts and remounts), Avenx-JS attempts to restore the slot's original default template elements so the component returns to a consistent state. This warning is emitted when that restore step fails.
+`Failed to restore default slot content. Error: {0}`
 
-This typically happens for a few common reasons:
+**Cause**
 
-- Code outside the component (custom DOM manipulation, a third-party library, or a browser extension) directly mutated the DOM nodes inside the slot, so the renderer's internal reference to the original default content no longer matches the live DOM.
-- The default slot content itself contained elements that were later removed or replaced by other framework logic before the restore attempt ran.
-- Rapid mount/unmount cycles on the same component instance interrupted the restore process before it completed.
+This warning occurs when Avenx-JS cannot restore the original default content of a component slot after dynamically transcluded content has been removed.
 
-**Impact:** When this restore fails, the slot may be left empty or in an inconsistent state rather than falling back to the component's intended default content. This is a rendering consistency issue, not a security issue, but it can result in visibly broken or missing UI where default slot content was expected.
+A component **slot** is a placeholder in a component's template where content supplied by the parent can be rendered. When no transcluded content is provided, the component can use its own default slot content. Avenx-JS keeps track of this default content so it can restore it when dynamically inserted content is unmounted.
 
-**Resolution:** To resolve this warning:
+The restore operation can fail when the DOM inside the slot has been changed outside the control of Avenx-JS. For example, manually adding, removing, replacing, or moving DOM elements inside a managed slot can leave the DOM structure different from what the renderer expects.
 
-1. Avoid directly mutating the DOM inside a component's slot region from outside the framework (e.g. via `document.querySelector` plus manual `appendChild`/`removeChild` calls). Let Avenx-JS own all DOM updates within its managed tree.
-2. If you're integrating a third-party library that manipulates the DOM (such as a jQuery plugin or a non-Avenx widget), mount it outside the component's slot boundary, or use a dedicated wrapper/bridge pattern instead of injecting it directly into slot content.
-3. Avoid rapidly toggling a component's mounted state or its slot content in the same render cycle; batch these changes where possible.
-4. If the warning persists without any external DOM manipulation, it may indicate a genuine bug — check for other components or event handlers that could be mutating shared DOM nodes.
+**Impact**
+
+When this restore operation fails, the slot may be left empty or in an inconsistent state instead of falling back to the component's intended default content. This can result in missing or incorrectly rendered UI.
+
+**Resolution**
+
+To resolve this warning:
+
+1. Avoid directly modifying DOM elements inside Avenx-JS-managed slot regions.
+2. Use Avenx-JS component and rendering APIs to update slot content.
+3. Check custom DOM manipulation code, third-party libraries, or browser extensions that may modify elements inside the slot.
+4. Avoid rapidly mounting and unmounting the same component or changing its slot content repeatedly within the same render cycle.
+5. If the warning persists without external DOM manipulation, check for other components or event handlers that may be modifying the same DOM nodes.
 
 **Incorrect**
 
 ```javascript
-// Directly manipulating DOM nodes inside a component's slot from outside Avenx-JS
+// Directly modifying DOM inside an Avenx-JS-managed slot
 const slotContainer = document.querySelector('.my-component .slot-content');
 slotContainer.innerHTML = '<p>Injected externally</p>';
 ```
 
-Manipulating the slot's DOM outside of Avenx-JS's rendering tree causes the renderer's internal reference to the default content to become stale, so it cannot reliably restore it later.
+Direct DOM manipulation can make the renderer's internal reference to the default slot content inconsistent with the live DOM, preventing Avenx-JS from restoring it correctly.
 
 **Correct**
 
@@ -1836,21 +1842,17 @@ Manipulating the slot's DOM outside of Avenx-JS's rendering tree causes the rend
 </MyComponent>
 ```
 
-Pass content through the component's own slot mechanism so Avenx-JS can track and restore it correctly.
+Pass content through the component's slot mechanism so Avenx-JS can manage the content and restore the default slot content correctly when needed.
 
 **Defensive Example**
-
-```javascript
-// If integrating a non-Avenx widget, mount it in its own container
-// outside the component's slot boundary rather than inside it.
-```
 
 ```html
 <MyComponent></MyComponent>
 <div id="third-party-widget-container"></div>
 ```
 
-Keeping externally-managed DOM separate from Avenx-managed slot regions prevents the renderer from losing track of default slot content.
+Keep DOM managed by third-party libraries in a separate container outside the Avenx-JS-managed slot region. This prevents external DOM changes from interfering with slot restoration.
+
 
 ### AVX_W15 — COMPONENT_INJECT_KEY_NOT_FOUND
 
