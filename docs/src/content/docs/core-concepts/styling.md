@@ -483,7 +483,7 @@ npm install -D less
 #### PostCSS
 
 ```bash
-npm install -D postcss postcss-cli
+npm install -D postcss
 ```
 
 ### 3. Preprocessor Pipeline & Scoping Interaction
