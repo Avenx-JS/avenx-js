@@ -1,0 +1,74 @@
+{
+  "version": 1.1,
+  "tags": [
+    {
+      "name": "state",
+      "description": "Declares the component's reactive state. One per component. Each attribute becomes a state key; values are coerced (numbers, booleans, null, JSON). May be written across several lines, with JSDoc annotations between attributes.",
+      "attributes": []
+    },
+    {
+      "name": "computed",
+      "description": "Declares a derived value. The `value` attribute is an expression evaluated by Avenx: it may name state keys directly (`count * 2`) and re-evaluates when any value it reads changes. Statements are not expressions -- use an <action> for those.",
+      "attributes": [
+        { "name": "name", "description": "The name the template reads." },
+        { "name": "value", "description": "The expression. Bare state keys are reactive; `state.` is optional." }
+      ]
+    },
+    {
+      "name": "action",
+      "description": "Declares a method the template can call. The body is JavaScript statements and may use `if`, `for`, `return` and `await`.",
+      "attributes": [
+        { "name": "name", "description": "The name the template calls." },
+        { "name": "atomic", "description": "Journal every state write and undo them all if the action throws or its promise rejects (Avenx Rewind).", "valueSet": "v" },
+        {
+          "name": "onConflict",
+          "description": "What a rewind does when it finds a value the transaction did not write.",
+          "values": [
+            { "name": "safe", "description": "Restore only paths still holding the value the transaction wrote; report the rest." },
+            { "name": "force", "description": "Restore regardless of what is there now." },
+            { "name": "abort", "description": "Abandon the rewind and report." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resource",
+      "description": "Declares async data. The body returns a promise; the template reads the resolved value by name and suspends until it arrives.",
+      "attributes": [
+        { "name": "name", "description": "The name the template reads." },
+        { "name": "handler", "description": "The expression producing the promise, when written as a self-closing tag." },
+        { "name": "pollInterval", "description": "Milliseconds between refetches." }
+      ]
+    },
+    {
+      "name": "contract",
+      "description": "Declares compiler contracts the component promises to honour. The compiler reports a violation at build time.",
+      "attributes": [
+        { "name": "static", "description": "The component renders no reactive bindings.", "valueSet": "v" },
+        { "name": "pure", "description": "Rendering performs no side effects.", "valueSet": "v" },
+        { "name": "deterministic", "description": "Rendering does not read non-deterministic values.", "valueSet": "v" },
+        { "name": "isolated", "description": "The component reads no bridges.", "valueSet": "v" }
+      ]
+    },
+    { "name": "@for", "description": "Repeats its contents for each item: <@for item in items>. Use `key` for stable identity across reorders." },
+    { "name": "@suspense", "description": "Shows its <@fallback> while a <resource> inside it is pending." },
+    { "name": "@errorBoundary", "description": "Shows its <@fallback> when a descendant throws." },
+    { "name": "@deadlock", "description": "A named boundary whose <@fallback> can replace its contents after a reactive cycle." },
+    { "name": "@fallback", "description": "The content shown by the enclosing boundary. `as` names the error binding." },
+    { "name": "@css", "description": "Applies a scoped class from the component's stylesheet." },
+    { "name": "slot", "description": "Where transcluded child content renders." }
+  ],
+  "globalAttributes": [
+    { "name": "@click", "description": "Click handler. The value is a statement, e.g. `count++` or `save()`." },
+    { "name": "@input", "description": "Input handler. `event` is in scope." },
+    { "name": "@submit", "description": "Submit handler." },
+    { "name": "@change", "description": "Change handler." },
+    { "name": "data-ax-show", "description": "Expression; toggles `display` without removing the element." },
+    { "name": "data-ax-class", "description": "Expression producing a class map, e.g. `{ active: item.done }`." },
+    { "name": "data-ax-style", "description": "Expression producing an inline style map." },
+    { "name": "data-ax-html", "description": "Expression whose value is inserted as HTML. Escaped unless wrapped in html()." },
+    { "name": "data-ax-model", "description": "Two-way binding to a state key." },
+    { "name": "data-ax-key", "description": "Stable identity for a list item." },
+    { "name": "data-ax-validate", "description": "Validation rules applied to a form control." }
+  ]
+}

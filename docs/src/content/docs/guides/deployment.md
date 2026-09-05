@@ -342,15 +342,40 @@ The `bundle.css.map` file is a debugging and source-map artifact. It is **not** 
 
 ### Content Security Policy (CSP)
 
-Because the Avenx-JS dynamic reactivity engine utilizes `new Function()` for expression evaluation and statement execution, it has specific Content Security Policy implications.
-
-If you choose to implement a Content Security Policy for your production application, you **must** include the `'unsafe-eval'` directive within your `script-src` policy. Without it, the browser will block dynamic reactivity, and the framework will not function.
+**Template expressions do not require `'unsafe-eval'`.** Interpolations,
+computed values, directive bindings and list keys are parsed by Avenx and
+evaluated by walking the resulting tree — no `eval`, no `new Function`. An
+expression the parser cannot read fails the **build** (`AVX_R32`), so this is a
+property of what ships rather than something that degrades quietly at runtime.
 
 ```text
-Content-Security-Policy: script-src 'self' 'unsafe-eval';
+Content-Security-Policy: script-src 'self';
 ```
 
-This is an example showing the unsafe-eval requirement and is not a complete production CSP.
+### When you still need `'unsafe-eval'`
+
+`<action>` bodies are JavaScript **statements**, and a body using real statement
+syntax — `if`, `for`, `while`, `try`, `return`, a declaration — is compiled with
+`new Function` when it first runs. Bodies that are runs of expressions
+(`count++`, `busy = true; save()`) are not.
+
+So:
+
+- If every action body in your application is expression-only, `script-src
+  'self'` is enough.
+- If any action body uses statement syntax, that page needs `'unsafe-eval'`:
+
+  ```text
+  Content-Security-Policy: script-src 'self' 'unsafe-eval';
+  ```
+
+Both examples show only the `script-src` implication and are not complete
+production policies.
+
+To find out which applies to your application, call `getFallbackReport()` from
+`avenx-core/runtime` after exercising it — it lists every source that was
+compiled rather than parsed, with the reason. An empty report means nothing in
+that session needed `eval`.
 
 ### Hosting Configuration
 
