@@ -775,14 +775,28 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
 
     const extname = String(path.extname(filePath)).toLowerCase();
     const mimeTypes = {
-      '.html': 'text/html',
-      '.js': 'text/javascript',
-      '.css': 'text/css',
-      '.json': 'application/json',
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'text/javascript; charset=utf-8',
+      '.mjs': 'text/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.svg': 'image/svg+xml; charset=utf-8',
+      '.txt': 'text/plain; charset=utf-8',
+      '.map': 'application/json; charset=utf-8',
       '.png': 'image/png',
-      '.jpg': 'image/jpg',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
       '.gif': 'image/gif',
-      '.svg': 'image/svg+xml',
+      '.webp': 'image/webp',
+      '.avif': 'image/avif',
+      '.ico': 'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+      '.ttf': 'font/ttf',
+      '.eot': 'application/vnd.ms-fontobject',
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.mp3': 'audio/mpeg',
     };
 
     const contentType = mimeTypes[extname] || 'application/octet-stream';
