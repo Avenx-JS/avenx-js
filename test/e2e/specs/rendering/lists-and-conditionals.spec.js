@@ -108,26 +108,23 @@ test.describe('interpolation escaping', () => {
   });
 });
 
-test.describe('known gap: a <state> tag written across several lines', () => {
-  // Runs and is expected to fail. ComponentParser strips the state declaration
-  // with /<state.*? \/>/g; `.` does not match newlines, so a multi-line tag is
-  // left in the template. The values parse correctly and the first render is
-  // right, but the leaked tag breaks patching and nothing updates afterwards.
+test.describe('a <state> tag written across several lines', () => {
+  // Was a pinned gap. ComponentParser stripped the state declaration with
+  // /<state.*? \/>/g while reading it with a pattern that did match newlines,
+  // so a multi-line tag was parsed correctly and left in the template, where it
+  // rendered as a literal element and broke patching from the second render on.
   //
-  // Unit tests miss this because parseState() reads the multi-line form
-  // correctly in isolation -- the damage only appears once the compiled
-  // template reaches a real DOM, which is exactly what an E2E suite is for.
-  test.fail();
-
+  // Declarations are now removed by the source ranges the scanner reported, so
+  // the reader and the remover cannot disagree. Kept as an E2E test because the
+  // damage only ever appeared once a compiled template reached a real DOM --
+  // parseState() read the multi-line form correctly in isolation the whole time.
   test('keeps a component reactive when its state tag spans multiple lines', async ({ page, app }) => {
     await app.open('rendering', { hash: '#/multiline-state' });
 
-    // The initial render is correct, which is what makes the bug easy to miss.
     await expect(page.getByTestId('count')).toHaveText('0');
 
     await page.getByTestId('increment').click();
 
-    // Fails today: the rendered count stays at 0.
     await expect(page.getByTestId('count')).toHaveText('1');
   });
 });
