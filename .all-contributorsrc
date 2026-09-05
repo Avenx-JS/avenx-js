@@ -1014,7 +1014,8 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/305122577?v=4",
       "profile": "https://github.com/ShadowSpatula",
       "contributions": [
-        "code"
+        "code",
+        "test"
       ]
     }
   ],
