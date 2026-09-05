@@ -54,7 +54,14 @@ async function runTests() {
           { user: { name: 'Alice', age: 25 } },
           {},
           {},
-          `<div><span>{% state.user.name %}</span></div>`
+          // `{% ... %}` is not an interpolation syntax the renderer supports
+          // (see createInterpolationRegex), so this template never evaluated
+          // anything. The assertion below passed only because building a scope
+          // used to spread the reactive state, reading every key whether an
+          // expression named it or not -- the very behaviour that made
+          // unrelated state changes re-render a component. With a real
+          // interpolation the test now asserts genuine dependency tracking.
+          `<div><span>{{ state.user.name }}</span></div>`
         );
       }
     }

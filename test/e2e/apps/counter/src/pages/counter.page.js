@@ -1,11 +1,9 @@
 <state count="0" step="1" />
 
 <!--
-  Computed expressions reference state through `state.` deliberately.
-  The bare-identifier form the README documents (value="count * 2") renders
-  its initial value correctly but never recomputes, because the dependency is
-  not tracked. See specs/reactivity/state-drives-dom.spec.js for the test that
-  documents that gap.
+  Both forms are reactive. `state.count` is kept here deliberately so the suite
+  covers the explicit form; specs/reactivity/state-drives-dom.spec.js drives the
+  bare-identifier page, which is the form the documentation uses.
 -->
 <computed name="doubled" value="state.count * 2" />
 <computed name="isZero" value="state.count === 0" />
