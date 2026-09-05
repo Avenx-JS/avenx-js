@@ -14,12 +14,70 @@ Use double curly braces `{{ }}` to interpolate reactive state or computed values
 <p>Hello, {{ state.name }}!</p>
 ```
 
-Any valid JavaScript expression is supported inside the braces, including property access and simple operations:
+Bare state keys work, and are reactive:
 
 ```html
 <state price="100" />
-<p>Total: {{ state.price * 1.1 }}</p>
+<p>Total: {{ price * 1.1 }}</p>
 ```
+
+`state.price` means the same thing. Either form registers a dependency on
+`price` and on nothing else, so a change to an unrelated state key does not
+re-render this component.
+
+---
+
+## What an expression may contain
+
+Template expressions, computed values, directive bindings and list keys are
+**parsed and evaluated by Avenx**, not handed to the JavaScript engine. Two
+things follow from that, and both are worth knowing before you write one.
+
+**They need no `'unsafe-eval'`.** A page carrying only Avenx expressions runs
+under `script-src 'self'`. See [Deployment](/guides/deployment/).
+
+**They are expressions, not statements.** Supported:
+
+- property access, optional chaining, computed access — `user.name`,
+  `a?.b`, `items[i]`
+- calls, including callbacks — `items.filter(i => i.done).length`,
+  `items.map(function (i) { return i.id; })`
+- arithmetic, comparison, logical and nullish operators, ternaries
+- template literals, array and object literals, spread, `new`
+- assignment and update operators, in event handlers — `count++`
+
+Not supported, because they are not expressions: `if`, `for`, `while`, `try`,
+`return`, `await`, variable declarations, destructuring patterns. Put that logic
+in an `<action>` and call it:
+
+```html
+<!-- Refused at build time with AVX_R32 -->
+<computed name="label" value="if (count) { 'some' } else { 'none' }" />
+
+<!-- Write this instead -->
+<computed name="label" value="count ? 'some' : 'none'" />
+```
+
+The compiler checks every one of these when you build, so an unsupported
+expression is a build failure with a file, a line and a reason — never a blank
+value discovered in production.
+
+---
+
+## What the expression boundary does and does not protect
+
+An expression cannot reach `window`, `document`, `fetch`, `localStorage`,
+`globalThis`, `Reflect` or `Symbol`; cannot read or write `constructor`,
+`prototype` or `__proto__` however the key is spelled, including keys assembled
+at runtime; and cannot reach a built-in prototype object. Those refusals are
+`AVX_R15`.
+
+That boundary exists so a template stays inside its declared scope and cannot
+corrupt state shared with the rest of the page. **It is not isolation against
+expressions written by someone you do not trust.** An expression can still call
+any function the scope legitimately exposes, and an `<action>` body is ordinary
+JavaScript. Do not build a feature that evaluates user-supplied expression
+source on the assumption that this contains it.
 
 ---
 
