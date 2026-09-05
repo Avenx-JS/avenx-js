@@ -1587,3 +1587,22 @@ export function isRecording(): boolean;
 
 /** Where installTraceRecorder posts a saved trace. */
 export const TRACE_ENDPOINT: string;
+
+/**
+ * Every expression source that was compiled with `new Function` rather than
+ * parsed, with the parser's reason.
+ *
+ * Template expressions are never in this list -- an unsupported one fails the
+ * build. What can appear is an `<action>` body using statement syntax. An empty
+ * report means nothing evaluated so far required `'unsafe-eval'`.
+ */
+export function getFallbackReport(): Array<{ source: string; reason: string }>;
+
+/** Whether an expression can be evaluated without `new Function`. */
+export function isCompilable(source: string): boolean;
+
+/** Whether a URL may be placed in a navigating attribute. */
+export function isSafeUrl(value: string): boolean;
+
+/** Whether an attribute's value is treated as a URL by the renderer. */
+export function isUrlAttribute(name: string): boolean;
