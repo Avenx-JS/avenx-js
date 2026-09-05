@@ -50,6 +50,9 @@ async function mount(size) {
   const rows = Array.from({ length: size }, (_, i) => ({ id: i, label: `row ${i}` }));
   const cells = rows.map((_, i) => `<span>{{ items[${i}].label }}</span>`).join('');
 
+  /**
+   * A component whose template interpolates every element of one state array.
+   */
   class Bench extends AvenxComponent {
     /**
      * Builds the benchmark component.
