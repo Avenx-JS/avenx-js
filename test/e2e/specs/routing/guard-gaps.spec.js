@@ -30,29 +30,22 @@ test.describe('an application with more than one guard', () => {
   });
 });
 
-test.describe('known gap: a guard reading a bridge', () => {
-  // Runs and is expected to fail.
+test.describe('a guard reading a bridge', () => {
+  // Was a pinned gap, and the one that mattered most: "is this visitor signed
+  // in?" is the reason route guards exist, and it was unanswerable. The
+  // compiler deleted a guard's relative import without rewiring the binding the
+  // way it does for components, so the identifier was undefined and the router
+  // reported AVX_R07 on every navigation through the guard. There was no
+  // alternative -- AvenxGuard received no injection and the sandbox blocks
+  // `window` -- so the only decisions a guard could make were ones the URL
+  // already carried.
   //
-  // Asking "is this visitor signed in?" from a guard by reading a bridge is
-  // the ordinary way to write an auth guard. The compiler strips the relative
-  // import out of a guard module without rewiring the binding the way it does
-  // for components, so the identifier is undefined and the router reports
-  // AVX_R07 on every navigation through the guard.
-  //
-  // There is no supported alternative today: AvenxGuard receives no injection,
-  // and the template sandbox blocks `window` inside actions (AVX_R15), so a
-  // guard has no route to shared state at all. The routing app's own AuthGuard
-  // works around it by deciding from the `to` route, which only suits
-  // decisions the URL already carries.
-  //
-  // This app also trips the duplicate-declaration bug above, so today the two
-  // failures compound. Fixing that one first is what will make this test
-  // report on the bridge binding specifically.
-  test.fail();
-
-  test('admits a navigation based on state the guard read from a bridge', async ({ page, app, runtimeIssues }) => {
-    runtimeIssues.allow(/AVX_R07|session is not defined/);
-
+  // Two things were wrong, and both are fixed. The compiler now resolves a
+  // guard's bridge imports to bundle-scope aliases inside the guard's own
+  // module scope, and guard modules count as bridge consumers -- without that
+  // second half the bridge was tree-shaken as unreachable and the alias
+  // resolved to an undefined identifier, which stopped the app booting.
+  test('admits a navigation based on state the guard read from a bridge', async ({ page, app }) => {
     await app.open('guard-gaps', { hash: '#/second' });
 
     await expect(page.getByTestId('page-home')).toBeVisible();
