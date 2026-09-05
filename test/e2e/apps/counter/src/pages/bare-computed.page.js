@@ -1,14 +1,8 @@
 <!--
-  Exists to pin a known framework gap, not to demonstrate good practice.
-
-  This page writes its computed expression the way README.md and
-  docs/core-concepts/components.md document it: bare identifiers, with no
-  `state.` prefix. The initial render is correct, but the value never
-  recomputes, because the bare form registers no reactive dependency.
-
-  specs/reactivity/state-drives-dom.spec.js drives this page under test.fail(),
-  so the day the compiler starts tracking bare identifiers the suite says so
-  instead of quietly carrying a stale expectation.
+  Writes its computed expression the way the documentation does: bare
+  identifiers, with no `state.` prefix. This used to render correctly once and
+  never recompute; specs/reactivity/state-drives-dom.spec.js pins that it now
+  stays in step with the state it reads.
 -->
 <state count="0" />
 

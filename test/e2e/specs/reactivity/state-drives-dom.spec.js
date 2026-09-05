@@ -90,14 +90,16 @@ test.describe('bound boolean attributes follow state', () => {
   });
 });
 
-test.describe('known gap: computed values written with bare identifiers', () => {
-  // Runs and is expected to fail. README.md and the component documentation
-  // both show `<computed value="count * 2" />` without a `state.` prefix, and
-  // that form renders its initial value but never recomputes -- the dependency
-  // is never registered. Written as test.fail() rather than skipped so that
-  // fixing the compiler turns this red and the gap cannot be forgotten.
-  test.fail();
-
+test.describe('computed values written with bare identifiers', () => {
+  // Was a pinned gap, and the one a new user hit first: README.md, the
+  // quickstart and the state-management guide all document
+  // `<computed value="count * 2" />`, and that form rendered its initial value
+  // and then never recomputed. No error, no warning.
+  //
+  // Building the evaluation scope used to spread the reactive state into a
+  // plain object, so a bare identifier read a snapshot and registered no
+  // dependency. The scope is now layered and lazy: a bare identifier resolves
+  // through the live proxy, inside whichever watcher is evaluating.
   test('recomputes a value declared as "count * 2" rather than "state.count * 2"', async ({ page, app }) => {
     await app.open('counter', { hash: '#/bare-computed' });
 
@@ -106,8 +108,6 @@ test.describe('known gap: computed values written with bare identifiers', () => 
 
     await page.getByTestId('increment').click();
     await expect(page.getByTestId('count')).toHaveText('1');
-
-    // Fails today: the rendered value stays at 0.
     await expect(page.getByTestId('doubled')).toHaveText('2');
   });
 });
