@@ -812,7 +812,11 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
         }
       } else {
         let responseContent = content;
-        if (cli.config.server.liveReload && contentType === 'text/html') {
+        // Compared against the extension rather than the full Content-Type:
+        // the mime map returns 'text/html; charset=utf-8', so an equality test
+        // against 'text/html' was never true and live reload was silently dead
+        // for every page the dev server served.
+        if (cli.config.server.liveReload && extname === '.html') {
           const script = `
 <script>
     window.__avenx_inspect_enabled = true;

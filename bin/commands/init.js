@@ -58,6 +58,16 @@ export async function initProject(cli, args = []) {
     console.log('  Created: .vscode/jsconfig.json');
   }
 
+  // Teaches the editor's HTML mode about Avenx's own tags, which is what turns
+  // component files from "markup the editor does not understand" into files
+  // with completion and hover documentation. Referenced by settings.json.
+  const htmlDataPath = path.join(cli.baseDir, '.vscode/avenx.html-data.json');
+  if (!fs.existsSync(htmlDataPath)) {
+    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'avenx.html-data.json.template');
+    fs.writeFileSync(htmlDataPath, template);
+    console.log('  Created: .vscode/avenx.html-data.json');
+  }
+
   const settingsPath = path.join(cli.baseDir, '.vscode/settings.json');
   if (!fs.existsSync(settingsPath)) {
     const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'settings.json.template');

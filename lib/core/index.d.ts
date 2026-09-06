@@ -18,17 +18,49 @@ export type GuardResult =
     | string
     | GuardControlObject
     | Promise<boolean | string | GuardControlObject>;
+/**
+ * The capabilities a route guard is given when it runs.
+ *
+ * Constructed by the router, once per navigation. It exposes the application's
+ * bridges and the router asking, and deliberately exposes no browser globals:
+ * a guard that needs one reads it through a bridge.
+ */
+export class GuardContext {
+    constructor(options?: { bridges?: Record<string, any>; app?: any; router?: any });
+    /** Registered bridges, by name. */
+    bridges: Record<string, any>;
+    /** The application instance, when the router has one. */
+    app: any | null;
+    /** The router performing this navigation. */
+    router: any | null;
+    /** Looks a bridge up by name; undefined when it is not registered. */
+    bridge<T = any>(name: string): T | undefined;
+}
+
 export class AvenxGuard {
+    /**
+     * Guards are constructed by the router with the context for the
+     * navigation being decided.
+     */
+    constructor(context?: GuardContext);
+    /** The capabilities this guard was given. */
+    $context: GuardContext;
+    /** The application's bridges, by name. */
+    readonly $bridges: Record<string, any>;
+    /** Looks a bridge up by name; undefined when it is not registered. */
+    $bridge<T = any>(name: string): T | undefined;
     /**
      * Determines whether the route can be activated.
      * Can return a boolean, a redirect string, control object,
      * or a Promise resolving to either.
      * @param to Target route information.
      * @param from Current route information.
+     * @param context The capabilities for this navigation, also on `this.$context`.
      */
     canActivate(
         to: { hash: string; page: string; params: Record<string, any> },
-        from: { hash: string; page: string; params: Record<string, any> } | null
+        from: { hash: string; page: string; params: Record<string, any> } | null,
+        context?: GuardContext
     ): GuardResult;
     canDeactivate?(
         current: { hash: string; page: string; params: Record<string, any> },
@@ -1555,3 +1587,22 @@ export function isRecording(): boolean;
 
 /** Where installTraceRecorder posts a saved trace. */
 export const TRACE_ENDPOINT: string;
+
+/**
+ * Every expression source that was compiled with `new Function` rather than
+ * parsed, with the parser's reason.
+ *
+ * Template expressions are never in this list -- an unsupported one fails the
+ * build. What can appear is an `<action>` body using statement syntax. An empty
+ * report means nothing evaluated so far required `'unsafe-eval'`.
+ */
+export function getFallbackReport(): Array<{ source: string; reason: string }>;
+
+/** Whether an expression can be evaluated without `new Function`. */
+export function isCompilable(source: string): boolean;
+
+/** Whether a URL may be placed in a navigating attribute. */
+export function isSafeUrl(value: string): boolean;
+
+/** Whether an attribute's value is treated as a URL by the renderer. */
+export function isUrlAttribute(name: string): boolean;

@@ -1,9 +1,16 @@
 {
     "files.associations": {
         "*.component.js": "html",
+        "*.page.js": "html",
         "*.component.css": "html",
-        "*.app.js": "javascript"
+        "*.page.css": "html",
+        "*.app.js": "javascript",
+        "*.bridge.js": "javascript",
+        "*.guard.js": "javascript"
     },
+    "html.customData": [
+        "./avenx.html-data.json"
+    ],
     "javascript.validate.enable": true,
     "html.format.templating": true
 }

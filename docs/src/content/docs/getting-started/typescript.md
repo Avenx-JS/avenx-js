@@ -3,15 +3,43 @@ title: 'TypeScript & JSDoc Support'
 description: 'Configure IDE autocompletion, type-checking with jsconfig.json, and JSDoc annotations in Avenx-JS projects.'
 ---
 
-Avenx-JS ships built-in TypeScript declarations (`.d.ts`), enabling full IDE autocompletion, hover documentation, and type safety for your single-file components, pages, state bridges, router guards, and custom directives — without requiring a complex TypeScript compilation build pipeline.
+Avenx-JS ships TypeScript declarations (`.d.ts`) for its runtime, so the files
+in your project that **are** JavaScript get real editor support with no build
+step. What you get differs by file type, and it is worth being precise about
+which, because the difference is structural rather than a gap waiting to be
+filled.
 
-Whether you write Avenx Single-File Components (`.component.js` / `.page.js`), state bridges (`bridge()`), or route guards (`AvenxGuard`), Avenx-JS provides complete IDE support out of the box.
+| File | Editor support |
+| :--- | :--- |
+| `main.app.js`, `*.bridge.js`, `*.guard.js` | Full. Type checking, completion, hover documentation and go-to-definition from `avenx-core`'s declarations. |
+| `*.component.js`, `*.page.js` | Markup-level. Tag and attribute completion for Avenx's own declarations, hover documentation, folding and formatting. |
+
+**Component and page files are not JavaScript.** A `.component.js` file is
+markup with `<state>`, `<computed>` and `<action>` declarations in it, so the
+JavaScript language service cannot check it — pointed at one, it reports an
+error on nearly every line. `avenx init` therefore associates those files with
+HTML mode and excludes them from `jsconfig.json`, and ships an
+`avenx.html-data.json` that teaches HTML completion about Avenx's tags.
+
+What checks the code *inside* them is the compiler, not the editor:
+
+- `avenx check` validates every template binding against the component's
+  declarations, and reports an undeclared reference with a file and a line.
+- `avenx build` fails if a template expression, computed value or directive
+  binding is outside the expression language Avenx evaluates — `AVX_R32`, with
+  the expression, the reason and the position.
+
+There is no Avenx language server today. Full in-editor diagnostics for the
+expressions inside a component file would need one, and this page will say so
+until there is.
 
 ---
 
 ## Configuring `.vscode/jsconfig.json`
 
-To enable type checking and intelligent code completion in VS Code or WebStorm, create or update `.vscode/jsconfig.json` at your project root:
+`avenx init` writes this for you. It turns type checking **on** for the
+JavaScript in your project, and excludes component and page files, which are
+markup:
 
 ```json
 {

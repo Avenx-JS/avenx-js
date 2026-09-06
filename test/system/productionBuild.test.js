@@ -13,9 +13,17 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * lint infrastructure once; its job is to catch the next module that gets
  * re-exported from the runtime barrel by accident. Raise it only with a
  * reason, and never to accommodate development-only code.
+ *
+ * Raised from 200 to 230 when the expression parser and AST evaluator replaced
+ * `new Function` as the primary evaluation path. That is a deliberate trade,
+ * measured: roughly +22 KB minified and +6 KB gzipped, in exchange for
+ * template expressions that need no 'unsafe-eval' and a property-access gate
+ * that sees the resolved key -- which is what closes the
+ * `({})['const'+'ructor']` escape the old source-text check could not. The
+ * engine is a fixed cost that does not grow with the application.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 200;
+const PRODUCTION_SIZE_CEILING_KB = 230;
 
 /**
  * Source that must never appear in a production bundle.
