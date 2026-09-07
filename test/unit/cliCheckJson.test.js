@@ -77,6 +77,37 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-json');
     assert.ok(warningReport.diagnostics[0].message.includes('undeclaredUser'));
     assert.strictEqual(process.exitCode, 1);
 
+    // 5. Project with an unresolved component reference (AVX_W46) check --json
+    console.log('Testing checkProject with --json on an unresolved component reference...');
+    fs.rmSync(invalidCompPath, { force: true });
+    // A real, registered component derives its name from the filename:
+    // user-card.component.js -> UserCard.
+    fs.writeFileSync(
+      path.join(FIXTURE_DIR, 'src', 'components', 'user-card.component.js'),
+      `export default {
+        name: 'UserCard',
+        template: '<div>card</div>'
+      };`
+    );
+    // A component that references it with a typo.
+    fs.writeFileSync(
+      path.join(FIXTURE_DIR, 'src', 'components', 'home.component.js'),
+      `export default {
+        name: 'Home',
+        template: '<div><UserCrad /></div>'
+      };`
+    );
+
+    const unresolvedReport = checkProject(mockCli, ['--json']);
+    assert.strictEqual(unresolvedReport.valid, false, 'the report is not valid');
+    const w46 = unresolvedReport.diagnostics.filter((d) => d.code === 'AVX_W46');
+    assert.strictEqual(w46.length, 1, 'exactly one AVX_W46 diagnostic is emitted');
+    assert.strictEqual(w46[0].severity, 'warning');
+    assert.ok(w46[0].message.includes('UserCrad'), 'the diagnostic names the offending tag');
+    assert.ok(w46[0].message.includes('UserCard'), 'the diagnostic suggests the closest name');
+    assert.ok(w46[0].file && w46[0].file.includes('home.component.js'), 'the diagnostic carries the file');
+    assert.strictEqual(process.exitCode, 1);
+
     // Cleanup fixture
     fs.rmSync(FIXTURE_DIR, { recursive: true, force: true });
 
