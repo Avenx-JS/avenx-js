@@ -4,7 +4,7 @@ import os from 'os';
 import net from 'net';
 import path from 'path';
 import http from 'http';
-import { resolveRequestPath } from '../../bin/commands/serve.js';
+import { resolveRequestPath, isDeniedProjectPath } from '../../bin/commands/serve.js';
 
 /**
  * Regression coverage for the development server joining the raw request target
@@ -170,12 +170,47 @@ async function testLiveServerRejectsTraversal() {
   }
 }
 
+/**
+ * Sensitive project files must not be served even when they sit inside the root.
+ */
+function testSensitiveProjectFilesAreDenied() {
+  console.log('Testing sensitive project files are denied...');
+
+  fs.writeFileSync(path.join(projectDir, '.env'), 'SECRET=1');
+  fs.mkdirSync(path.join(projectDir, '.git'), { recursive: true });
+  fs.writeFileSync(path.join(projectDir, '.git', 'config'), '[core]');
+  fs.mkdirSync(path.join(projectDir, 'node_modules', 'x'), { recursive: true });
+  fs.writeFileSync(path.join(projectDir, 'node_modules', 'x', 'index.js'), 'export {}');
+  fs.writeFileSync(path.join(projectDir, 'package.json'), '{"name":"demo"}');
+
+  const denied = ['/.env', '/.git/config', '/node_modules/x/index.js', '/package.json'];
+  for (const attempt of denied) {
+    assert.strictEqual(resolveRequestPath(projectDir, attempt), null, `${attempt} must be denied`);
+  }
+
+  assert.strictEqual(
+    resolveRequestPath(projectDir, '/index.html'),
+    path.join(projectDir, 'index.html'),
+    'application files must still resolve',
+  );
+  assert.strictEqual(
+    resolveRequestPath(projectDir, '/assets/app.js'),
+    path.join(assetsDir, 'app.js'),
+    'assets must still resolve',
+  );
+
+  assert.ok(isDeniedProjectPath(projectDir, path.join(projectDir, '.env')));
+  assert.ok(!isDeniedProjectPath(projectDir, path.join(projectDir, 'index.html')));
+  console.log('  sensitive project files denied.');
+}
+
 (async () => {
   try {
     testTraversalIsRejected();
     testLegitimateRequestsResolve();
     testQueryStringsAreStripped();
     testMalformedRequestsAreRejected();
+    testSensitiveProjectFilesAreDenied();
     await testLiveServerRejectsTraversal();
     console.log('🎉 All dev server path traversal tests passed successfully!');
   } catch (err) {
