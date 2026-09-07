@@ -13,6 +13,9 @@
       "default": "./src/preprocessor.js"
     }
   },
+  "scripts": {
+    "test": "node test/charts.test.js"
+  },
   "keywords": [
     "avenx",
     "charts",
@@ -24,6 +27,15 @@
   ],
   "author": "Avenx Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avenx-js/avenx-js.git",
+    "directory": "plugins/avenx-charts"
+  },
+  "bugs": {
+    "url": "https://github.com/avenx-js/avenx-js/issues"
+  },
+  "homepage": "https://avenx-js.com/",
   "peerDependencies": {
     "avenx-core": ">=0.4.0"
   }
