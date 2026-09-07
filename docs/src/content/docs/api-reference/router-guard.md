@@ -407,6 +407,23 @@ When a guard returns a redirect path:
 
 The router waits for a promise returned by `canActivate` to resolve before acting on its value. When the resolved value is a string or redirect control object, the router stops the current guard chain and starts a new navigation to that hash. Avoid redirecting to a route protected by the same guard unless that route can pass the guard, or the redirects will loop indefinitely.
 
+## Current Guard Module Limitations
+
+Guard modules are not ordinary ES modules at build time. Until the tracking bugs are fixed, treat these as hard constraints:
+
+- Guard sources are concatenated into one script scope rather than bundled as modules. Two guards that each import `AvenxGuard` from `avenx-core/runtime` emit the same binding twice and the bundle fails to parse ([#1244](https://github.com/Avenx-JS/avenx-js/issues/1244)).
+- Relative imports inside a guard are removed instead of being rewired, so `import auth from '../bridges/auth.bridge.js'` disappears and navigation fails with `AVX_R07` ([#1246](https://github.com/Avenx-JS/avenx-js/issues/1246)).
+- There is currently no supported injection path for shared application state from a guard. Prefer keeping auth decisions in data the guard can read without relative imports, or wait for the fixes above.
+
+### Guard Diagnostics
+
+| Code | Constant | When it appears |
+| --- | --- | --- |
+| `AVX_R06` | `ROUTER_GUARD_DENIED` | A guard returned `false` or `{ cancel: true }`. |
+| `AVX_R07` | `ROUTER_GUARD_ERROR` | A guard threw, or a stripped import left an undefined reference. |
+| `AVX_R14` | `ROUTER_GUARD_TIMEOUT` | `canActivate` exceeded `guardTimeout`. |
+| `AVX_W27` | `ROUTER_GUARD_UNDEFINED_RETURN` | A guard returned `undefined`; navigation continues with a warning. |
+
 ---
 
 ## Pluggable Navigation Delegates (`NavigationDelegate`)

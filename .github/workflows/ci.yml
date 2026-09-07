@@ -32,6 +32,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run plugin tests
+        run: npm run test:plugins
+
       - name: Run lint
         if: matrix.node-version != 18
         run: npm run lint

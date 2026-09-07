@@ -1,6 +1,6 @@
 # Contributing to Avenx.js
 
-First of all, thank you for your interest in contributing to Avenx.js! 🎉
+First of all, thank you for your interest in contributing to Avenx.js!
 
 Avenx.js is an open-source JavaScript framework focused on simplicity, maintainability, and developer experience. Every contribution, whether it's code, documentation, bug reports, or ideas, helps improve the project.
 
@@ -23,3 +23,14 @@ A quick start for working on the codebase:
 1. **Clone and install dependencies**:
    ```bash
    npm install
+   ```
+
+## Plugin tests
+
+Official plugins under `plugins/` ship their own suites. From the repository root run:
+
+```bash
+npm run test:plugins
+```
+
+CI runs this after `npm test`. Prefer fixing a plugin failure against the working-tree core rather than a published `avenx-core`.
