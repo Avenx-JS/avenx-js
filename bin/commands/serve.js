@@ -68,7 +68,39 @@ export function resolveRequestPath(baseDir, requestUrl) {
     filePath = path.join(root, 'index.html');
   }
 
+  if (isDeniedProjectPath(root, filePath)) {
+    return null;
+  }
+
   return filePath;
+}
+
+/**
+ * Returns true when a resolved path should not be served from the project root.
+ * Dot segments, node_modules, and package manifests are refused after containment.
+ * @param {string} root
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+export function isDeniedProjectPath(root, filePath) {
+  const relative = path.relative(path.resolve(root), path.resolve(filePath));
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return true;
+  }
+
+  const segments = relative.split(path.sep).filter(Boolean);
+  const deniedFiles = new Set(['package.json', 'package-lock.json', 'npm-shrinkwrap.json']);
+
+  for (const segment of segments) {
+    if (segment === 'node_modules' || segment.startsWith('.')) {
+      return true;
+    }
+    if (deniedFiles.has(segment)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
