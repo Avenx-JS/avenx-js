@@ -415,6 +415,7 @@ const app = new AvenxApp({
 | `[AVX_W38]` | Bridge "{0}" never emits the event "{1}". | **Cause:** Code subscribes with `on()` to an event name that no `emit()` call in the bridge produces, so the handler would never run.<br />**Resolution:** Subscribe to an emitted event, or emit the one you meant. The warning lists the emitted events and suggests the closest match. |
 | `[AVX_W40]` | "{0}" is read nowhere in the application. | **Cause:** [Atlas](/core-concepts/atlas/) found no template binding, computed, action, resource or guard that reads this state key. Either it is dead, or the read it was meant to have is missing.<br />**Resolution:** Run `avenx impact <owner>.<key>` to see the relationships Atlas did find, then delete the declaration or add the missing read. Not reported when unresolved analysis in reach could be hiding a read. |
 | `[AVX_W41]` | "{0}" is never invoked. | **Cause:** [Atlas](/core-concepts/atlas/) found no template handler, action, computed, resource or guard that calls this action.<br />**Resolution:** Run `avenx why <owner>.<action>` to confirm, then wire up the call site or delete the action. Lifecycle actions the runtime invokes by name (`onMount` and the rest) are exempt, as are the members of a bridge nothing imports. |
+| `[AVX_W46]` | Component "<{0}>" does not resolve to a registered component, built-in, or HTML/SVG element. | **Cause:** A PascalCase template tag is misspelled or names a component that was never created or imported (e.g. `<UserCrad />` for `<UserCard />`).<br />**Resolution:** Fix the spelling (the warning suggests the closest name), create the component, or use a lowercase HTML element. Custom elements with a dash are never flagged. See [AVX_W46](#avx_w46--compiler_unresolved_component_reference). |
 | `[AVX_R19]` | bridge() expects a definition object, received {0}. | **Cause:** `bridge()` was called with no argument, or with something that is not a plain object.<br />**Resolution:** Pass a definition object, e.g. `bridge({ state: { count: 0 } })`. |
 | `[AVX_R20]` | Bridge definition declares "{0}", which is reserved by the Bridge API. | **Cause:** The definition declares `on`, `emit`, `$dispose` or `$name`, or a getter/action collides with a state key.<br />**Resolution:** Rename the member. |
 | `[AVX_R21]` | Bridge definition declares "{0}" as a top-level value. | **Cause:** Data was placed at the top level of the definition instead of inside `state`.<br />**Resolution:** Move it into the `state` object. Only actions, getters, `state` and `setup` belong at the top level. |
@@ -2944,6 +2945,25 @@ with the emit moved to the caller, after the transaction has committed.
 4. Silence it with `"warnings": { "AVX_W44": "off" }`.
 
 The warning does not fire when either write set is unbounded (AVX_W42), or for a caller and its callee — a nested transaction joins the enclosing frame and cannot conflict with it.
+
+### AVX_W46 — COMPILER_UNRESOLVED_COMPONENT_REFERENCE
+
+**Warning Message**
+
+```text
+Component "<{0}>" referenced in template of {1} does not resolve to a registered component, a built-in tag, or a known HTML/SVG element.
+```
+
+**Cause:** A PascalCase tag in a template names something that is not a registered component, not a framework built-in (`<slot>`, `<resource>`, `<@for>`, `<@if>`, `<@suspense>`, `<@errorBoundary>`, `<@deadlock>`, `<@defer>`, …), and not a known HTML/SVG element. The usual reason is a misspelled name (`<UserCrad />` for `<UserCard />`) or a component that was never created or imported. Without this check the mistake escapes the build and surfaces only at runtime as [AVX_R03](#avx_r03--component_not_found), or inside a page as [AVX_W13](#avx_w13--page_component_not_registered) — with no file, no line and no suggestion.
+
+**Resolution:**
+
+1. Fix the spelling. The warning names the file, the line, the offending tag, and the closest registered component when one is within the suggestion threshold.
+2. Create the component file (e.g. `UserCard.component.js`) so the name resolves.
+3. Use a lowercase HTML element, or a dash-containing custom element (e.g. `my-widget`) — custom elements are never flagged.
+4. If the component is registered at runtime through `app.register()`, which the compiler cannot see, silence the code with `"warnings": { "AVX_W46": "off" }` in `avenx.config.json`.
+
+This is a warning rather than an error precisely because a component may be registered at runtime. `avenx check` reports it (including in `--json` output), so a rename that misses one call site no longer passes CI silently.
 
 ## Runtime Codes (`AVX_R*`)
 
