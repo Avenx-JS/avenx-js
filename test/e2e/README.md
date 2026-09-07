@@ -131,7 +131,6 @@ a missing element for no visible reason.
 - Use web-first assertions. No `waitForTimeout`. Prefer `expect(page).toHaveURL()`
   over reading `page.url()` once: the router settles the hash a beat after it
   swaps the page, and that race is a real source of flake.
-- Keep `<state>` on one line (see the known gaps below).
 
 ## What is tested here, and what is not
 
@@ -152,7 +151,7 @@ product running in a browser.
 
 ## Current coverage
 
-92 tests in 13 files. 85 assert behaviour that works; 7 are pinned failures
+92 tests in 13 files. 86 assert behaviour that works; 6 are pinned failures
 documenting framework bugs, described below.
 
 | Area | Tests | Covers |
@@ -175,7 +174,7 @@ server and live reload, and trace capture under `avenx serve --trace`.
 
 ## Known gaps this suite documents
 
-Seven tests are written as `test.fail()`. They **run**, they are **expected to
+Six tests are written as `test.fail()`. They **run**, they are **expected to
 fail**, and Playwright reports the suite as green while they do. If one starts
 passing, the run turns red and says so — which is the point: a fixed bug should
 not leave a stale expectation behind.
@@ -186,7 +185,6 @@ isolation; the damage only appears once the output reaches a browser.
 | Gap | Effect |
 | :--- | :--- |
 | `<computed value="count * 2" />` | The bare-identifier form that `README.md` and the component docs both show renders its initial value and never recomputes. Only `state.count * 2` registers a dependency. |
-| Multi-line `<state>` tag | `ComponentParser` strips it with `/<state.*? \/>/g`; `.` does not match newlines, so the tag leaks into the template and reactivity stops for the whole component. Values still parse and the first render still looks right. |
 | Two guard modules | Each emits its own `const { AvenxGuard } = Avenx;` into one bundle scope, so the bundle fails to parse and the app never starts. **The build still reports success.** Any project with an auth guard and a role guard ships broken. |
 | A guard reading a bridge | The relative import is stripped without the binding being rewired, so the router reports `AVX_R07`. There is no supported alternative: `AvenxGuard` takes no injection and the sandbox blocks `window` inside actions. |
 | A component inside `<@defer>` | The trigger fires and the marker is inserted, but nothing mounts it. This is the headline use of the feature. |
