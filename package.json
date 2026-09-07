@@ -48,6 +48,7 @@
     "prepare": "npm run build",
     "pretest": "npm run build",
     "test": "node test/run-tests.js",
+    "test:plugins": "npm --prefix plugins/avenx-i18n test && npm --prefix plugins/avenx-persistence test && npm --prefix plugins/avenx-charts test",
     "test:unit": "node test/run-tests.js unit",
     "test:integration": "node test/run-tests.js integration",
     "test:system": "node test/run-tests.js system",
