@@ -191,7 +191,6 @@ function testRefusals() {
 
   const cases = [
     ['a list', '<ul><template data-ax-for="items" data-ax-as="i"><li>x</li></template></ul>'],
-    ['a child component', '<div data-avenx-comp="Child"></div>'],
     ['a dynamic component', '<div data-avenx-comp-dynamic="which"></div>'],
     ['a slot', '<div><slot></slot></div>'],
     ['a suspense boundary', '<div data-ax-suspense="true"></div>'],
@@ -218,6 +217,49 @@ function testRefusals() {
       `${label} must report what caused it`,
     );
   }
+}
+
+/**
+ * A static child component compiles, and each of its props becomes its own op.
+ *
+ * This is the case that matters most in practice: before it was supported,
+ * essentially every page in a real application fell back, because a page whose
+ * whole job is composing components contains at least one component tag.
+ *
+ * A *dynamic* component tag still refuses. Its class can change between
+ * renders, which means unmounting one instance and mounting another -- a
+ * lifecycle decision the program does not own.
+ */
+function testChildComponentProps() {
+  console.log('🧪 Testing child component props compile to prop ops...');
+
+  const program = compiled(
+    '<main><h1>{{ title }}</h1>' +
+      '<div data-avenx-comp="StatCard" data-props-label="title" data-props-value="revenue">' +
+      '<span>{{ note }}</span></div></main>',
+  );
+
+  const props = program.ops.filter((op) => op.k === OpKind.PROP);
+  assert.deepStrictEqual(props, [
+    { k: OpKind.PROP, e: 0, n: 'label', x: 'title' },
+    { k: OpKind.PROP, e: 0, n: 'value', x: 'revenue' },
+  ]);
+
+  // The mount marker survives: the page finds child mount points by querying
+  // for it, and removing it would leave the child unmounted.
+  assert.ok(program.html.includes('data-avenx-comp="StatCard"'), 'the mount marker must survive');
+
+  // The prop attributes do not: two mechanisms driving one prop is how they
+  // come to disagree.
+  assert.ok(!program.html.includes('data-props-'), 'prop attributes leave the skeleton');
+
+  // Transcluded content is compiled in the *parent's* scope, because that is
+  // where its expressions are evaluated -- the child only moves the nodes.
+  const texts = program.ops.filter((op) => op.k === OpKind.TEXT);
+  assert.deepStrictEqual(
+    texts.map((op) => op.x),
+    ['title', 'note'],
+  );
 }
 
 /**
@@ -274,6 +316,7 @@ testDirectiveOps();
 testEventsAreNotOps();
 testStaticSubtrees();
 testRefusals();
+testChildComponentProps();
 testRefusalDiscardsPartialWork();
 testMarkerNumbering();
 testEmptyTemplate();
