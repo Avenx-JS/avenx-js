@@ -324,7 +324,7 @@ async function testLifecycleParity() {
  * between two renderers is how a bug report becomes unreproducible.
  */
 async function testKnownDifference() {
-  console.log('🧪 Testing the one documented difference between the paths...');
+  console.log('🧪 Testing the documented difference in DOM ownership...');
 
   // `#other` carries a binding of its own, so it is not a static subtree and
   // the string renderer's diff really does visit it. Fingerprinting a static
@@ -414,7 +414,88 @@ await testDirectiveParity();
 await testStaticSubtreeParity();
 await testFormControlParity();
 await testLifecycleParity();
+/**
+ * A boolean attribute bound to nothing.
+ *
+ * `disabled="{{ busy }}"` with `busy` null: the compiled path removes the
+ * attribute and clears the property; the string path leaves `disabled=""` and a
+ * disabled control.
+ *
+ * The string path's behaviour is a bug, and it is not fixable there. It sees
+ * only the rendered attribute value, where an empty string is indistinguishable
+ * from the `disabled=""` an author may have written literally -- and in HTML
+ * that spelling *does* mean disabled. The compiled path can tell them apart,
+ * because the compiler knows which attributes are bound: a literal
+ * `disabled=""` stays in the skeleton and no op ever touches it.
+ *
+ * So this is a capability the new architecture has and the old one cannot,
+ * rather than a regression in either direction. Asserted in both directions so
+ * that neither changes by accident.
+ */
+async function testBoundBooleanWithNoValue() {
+  console.log('🧪 Testing a boolean attribute bound to nothing...');
+
+  const source = '<state busy="true" />\n<div><button id="b" disabled="{{ busy }}">y</button></div>';
+  const ComponentClass = compileComponent(source, `ParityBool${seq++}`);
+
+  /**
+   * Reports the button's state after binding the attribute to a value.
+   * @param {boolean} compiled - Which path.
+   * @param {any} value - What to bind.
+   * @returns {Promise<{attr: string|null, prop: boolean}>} The resulting state.
+   */
+  async function bind(compiled, value) {
+    const { host, component } = mount(ComponentClass, compiled);
+    component.state.busy = value;
+    await component.$nextTick();
+    const button = host.querySelector('#b');
+    const result = { attr: button.getAttribute('disabled'), prop: button.disabled };
+    component.unmount();
+    host.remove();
+    return result;
+  }
+
+  // Where they agree, and must keep agreeing.
+  for (const value of [true, false]) {
+    assert.deepStrictEqual(
+      await bind(true, value),
+      await bind(false, value),
+      `both paths must agree for a boolean bound to ${value}`,
+    );
+  }
+
+  // Where they differ, deliberately.
+  for (const value of [null, undefined, '']) {
+    assert.deepStrictEqual(
+      await bind(true, value),
+      { attr: null, prop: false },
+      'a compiled binding to nothing leaves the control enabled',
+    );
+    assert.deepStrictEqual(
+      await bind(false, value),
+      { attr: '', prop: true },
+      'the string renderer cannot tell an empty binding from a literal disabled=""',
+    );
+  }
+
+  // And a literal `disabled=""` still means disabled on the compiled path,
+  // which is the whole reason the string renderer cannot simply be changed.
+  const Literal = compileComponent(
+    '<state n="0" />\n<div><button id="b" disabled="">y</button><span>{{ n }}</span></div>',
+    `ParityBoolLiteral${seq++}`,
+  );
+  const { host, component } = mount(Literal, true);
+  assert.strictEqual(
+    host.querySelector('#b').hasAttribute('disabled'),
+    true,
+    'a literal disabled="" is markup, not a binding, and keeps HTML semantics',
+  );
+  component.unmount();
+  host.remove();
+}
+
 await testKnownDifference();
+await testBoundBooleanWithNoValue();
 await testBookkeepingIsConsumed();
 
 console.log('✅ Render path parity tests passed.');
