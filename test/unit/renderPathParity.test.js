@@ -244,6 +244,43 @@ async function testFormControlParity() {
 }
 
 /**
+ * SVG and table fragments, the two shapes HTML parsing treats specially.
+ *
+ * Both are where a renderer that reparses markup gets into trouble. The string
+ * renderer needs explicit SVG handling because `DOMParser` plus node adoption
+ * loses the namespace, and it uses `document.body`, which relocates a bare
+ * `<td>`. The compiled path parses its skeleton into a `<template>`, where
+ * fragment parsing keeps both intact -- so this is a case the new architecture
+ * makes easier rather than harder, and worth pinning before someone
+ * "simplifies" the template element away.
+ */
+async function testNamespaceAndTableParity() {
+  await parity(
+    'svg and table fragments',
+    `<state r="10" label="dot" />
+<div><svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r="{{ r }}" /><title>{{ label }}</title></svg>
+<table><thead><tr><th>{{ label }}</th></tr></thead><tbody><tr><td>{{ r }}</td></tr></tbody></table></div>`,
+    async (component, host) => {
+      const circle = host.querySelector('circle');
+      assert.strictEqual(
+        circle.namespaceURI,
+        'http://www.w3.org/2000/svg',
+        'an SVG child must keep its namespace',
+      );
+      assert.ok(host.querySelector('td'), 'a table cell must not be relocated out of its row');
+
+      component.state.r = 20;
+      await component.$nextTick();
+      component.state.label = 'updated';
+      await component.$nextTick();
+
+      assert.strictEqual(host.querySelector('circle').getAttribute('r'), '20');
+      assert.strictEqual(host.querySelector('td').textContent, '20');
+    },
+  );
+}
+
+/**
  * The lifecycle hooks fire in the same order, the same number of times.
  */
 async function testLifecycleParity() {
@@ -413,6 +450,7 @@ await testComputedAndEventParity();
 await testDirectiveParity();
 await testStaticSubtreeParity();
 await testFormControlParity();
+await testNamespaceAndTableParity();
 await testLifecycleParity();
 /**
  * A boolean attribute bound to nothing.
