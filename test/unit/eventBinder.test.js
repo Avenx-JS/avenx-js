@@ -3,7 +3,7 @@ import '../helpers/register-happy-dom.js';
 import { EventBinder } from '../../lib/core/events/bindEvents.js';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 import { EventExecutor } from '../../lib/core/events/eventExecutor.js';
-import { AvenxSandbox } from '../../lib/core/security/sandbox.js';
+import { DynamicEvaluator } from '../../lib/core/security/evaluator.js';
 
 try {
   console.log('🧪 Testing EventBinder...');
@@ -182,66 +182,69 @@ try {
   assert.strictEqual(customEventReceived, true, 'my-custom-event should bubble to container');
   assert.deepStrictEqual(customEventDetail, { user: 'Avenx' }, 'Event detail payload should be preserved');
 
-  // 6. Test EventExecutor compilation caching and error handling
-  console.log('  Testing EventExecutor caching and validation...');
-  
-  let validateCount = 0;
-  const originalValidate = AvenxSandbox.validateSource;
-  AvenxSandbox.validateSource = (source) => {
-    validateCount++;
-    return originalValidate.call(AvenxSandbox, source);
-  };
+  // 6. EventExecutor hands the handler source to the component
+  //
+  // This block used to pin the opposite contract: that the executor compiled
+  // each handler with `new Function`, cached the closure, and ran
+  // `AvenxSandbox.validateSource` over the source text first. All three are
+  // gone, deliberately.
+  //
+  // Compiling here meant every inline handler took the legacy proxy sandbox
+  // and none reached the AST evaluator -- so an application needed
+  // 'unsafe-eval' for a single @click, and `validateSource`'s word-level check
+  // for "constructor" walked straight past `x['const'+'ructor']`. The
+  // evaluator gates on the *resolved* key and refuses both spellings, which is
+  // why the check it replaced is not missed.
+  //
+  // Caching is not lost either: the expression compiler keeps its own LRU of
+  // parsed ASTs, keyed by source, so a repeated handler is still parsed once.
+  console.log('  Testing EventExecutor hands over handler source...');
 
-  try {
-    let callCount = 0;
-    const testExecutor = new EventExecutor((fn, event) => {
-      callCount++;
-      const state = { counter: 10 };
-      const methods = {
-        add(val) {
-          state.counter += val;
-        }
-      };
-      const args = [5];
-      fn(state, methods, event, args);
-      return state.counter;
+  {
+    const seen = [];
+    const evaluator = new DynamicEvaluator();
+    const state = { counter: 10 };
+    const methods = {
+      /**
+       * @param {number} val - Amount to add.
+       */
+      add(val) {
+        state.counter += val;
+      },
+    };
+
+    const testExecutor = new EventExecutor((source, event) => {
+      seen.push(source);
+      return evaluator.executeStatement(
+        source,
+        { counter: state.counter, add: methods.add, args: [5], event },
+        state,
+      );
     });
 
-    // First execution: compiles, validates, and runs
-    const res1 = testExecutor.execute('counter++; add(args[0])');
-    assert.strictEqual(res1, 16, 'Should correctly execute event statement with state, methods, and args');
-    assert.strictEqual(validateCount, 1, 'Should call validateSource exactly once on first compile');
-    assert.strictEqual(callCount, 1);
-
-    // Second execution of the SAME expression: should hit cache
-    const res2 = testExecutor.execute('counter++; add(args[0])');
-    assert.strictEqual(res2, 16, 'Should yield identical result on cached execution');
-    assert.strictEqual(validateCount, 1, 'Should NOT call validateSource on cache hit');
-    assert.strictEqual(callCount, 2);
-
-    // Third execution of a DIFFERENT expression: should compile and validate again
-    const res3 = testExecutor.execute('counter = 0');
-    assert.strictEqual(res3, 0, 'Should compile and execute new expression');
-    assert.strictEqual(validateCount, 2, 'Should validate new expression');
-
-    // Error handling - Sandbox violation (Prototype pollution check)
-    assert.throws(
-      () => testExecutor.execute('counter.constructor.prototype.polluted = true'),
-      /Access to "constructor", "__proto__", or "prototype" is blocked/,
-      'Should throw Sandbox Violation error during compilation of unsafe expressions'
+    testExecutor.execute('counter + 1');
+    testExecutor.execute('counter + 1');
+    assert.deepStrictEqual(
+      seen,
+      ['counter + 1', 'counter + 1'],
+      'the handler must arrive as source every time, not as a compiled closure'
     );
 
-    // Error handling - Syntax error
+    // An escape the old source-text check let through must now be refused.
     assert.throws(
-      () => testExecutor.execute('counter +++'),
-      SyntaxError,
-      'Should throw SyntaxError during compilation of syntactically invalid expressions'
+      () => testExecutor.execute("counter['const' + 'ructor']"),
+      /AVX_R15|constructor/,
+      'a computed constructor access must be refused, not merely a literal one'
+    );
+
+    assert.throws(
+      () => testExecutor.execute('counter.constructor.prototype.polluted = true'),
+      /AVX_R15|constructor/,
+      'the literal spelling stays refused too'
     );
 
     testExecutor.teardown();
-  } finally {
-    // Restore the original validateSource method
-    AvenxSandbox.validateSource = originalValidate;
+    assert.throws(() => testExecutor.execute('counter'), TypeError, 'teardown releases the handler');
   }
 
   console.log('  ✅ EventBinder tests passed!');
