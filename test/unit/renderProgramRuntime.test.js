@@ -27,6 +27,7 @@ import { html } from '../../lib/core/security/escapeHtml.js';
 import { nextTick } from '../../lib/core/reactive/scheduler.js';
 import { depMap } from '../../lib/core/reactive/watcher.js';
 import { toRaw } from '../../lib/core/reactive/proxyHandler.js';
+import { AvenxComponent, bridge } from '../../lib/core/index.js';
 
 /**
  * Compiles a template and mounts it against a plain reactive state object.
@@ -506,6 +507,84 @@ function testBindingErrorIsIsolated() {
   instance.dispose();
 }
 
+/**
+ * A bridge read from a compiled template updates fine-grained.
+ *
+ * Bridges are how state is shared in Avenx, so a component that reads one is
+ * the ordinary case rather than an edge case. What matters here is that a
+ * bridge write behaves like any other reactive write: it wakes the bindings
+ * that read it and leaves the rest of the template alone. Under the string
+ * renderer a bridge change re-rendered the whole component, so "fine-grained"
+ * would have been untestable.
+ */
+async function testBridgeBackedBindings() {
+  console.log('🧪 Testing bridge-backed bindings update fine-grained...');
+
+  const cart = bridge({
+    state: { count: 0, label: 'empty' },
+    /** Adds an item. */
+    add() {
+      this.count = this.count + 1;
+      this.label = `${this.count} items`;
+    },
+  });
+
+  const result = compileTemplateProgram(
+    '<div><span id="c">{{ cart.count }}</span><span id="l">{{ cart.label }}</span><b id="own">{{ own }}</b></div>',
+  );
+  assert.ok(result.program);
+
+  /** A component reading a bridge and one local value. */
+  class Consumer extends AvenxComponent {
+    /**
+     * @param {object} bridges - Bridges.
+     * @param {object} props - Props.
+     */
+    constructor(bridges, props) {
+      super(
+        { own: 'local' },
+        {},
+        bridges,
+        '<div><span id="c">{{ cart.count }}</span><span id="l">{{ cart.label }}</span><b id="own">{{ own }}</b></div>',
+        {},
+        props,
+        {},
+        {},
+        { program: result.program },
+      );
+    }
+  }
+
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const component = new Consumer({ cart }, {});
+  component.mount(host);
+  await nextTick();
+
+  assert.strictEqual(component.$compiled, true, 'the fixture must take the compiled path');
+  assert.strictEqual(host.querySelector('#c').textContent, '0');
+  assert.strictEqual(host.querySelector('#l').textContent, 'empty');
+
+  // Fingerprint the binding the bridge does not feed.
+  const own = host.querySelector('#own');
+  own.setAttribute('data-fingerprint', 'kept');
+
+  cart.add();
+  await nextTick();
+
+  assert.strictEqual(host.querySelector('#c').textContent, '1');
+  assert.strictEqual(host.querySelector('#l').textContent, '1 items');
+  assert.strictEqual(
+    own.getAttribute('data-fingerprint'),
+    'kept',
+    'a bridge write must not disturb a binding that does not read it',
+  );
+  assert.strictEqual(host.querySelector('#own'), own, 'and must not replace its node');
+
+  component.unmount();
+  host.remove();
+}
+
 testTemplateIsParsedOnce();
 testMissingMarkerRefusesToPrepare();
 await testTextBindings();
@@ -521,6 +600,7 @@ await testUpdatesAreFineGrained();
 await testUnreadStateDoesNothing();
 testDisposeReleasesWatchers();
 await testBatching();
+await testBridgeBackedBindings();
 testBindingErrorIsIsolated();
 
 console.log('✅ Render program runtime tests passed.');

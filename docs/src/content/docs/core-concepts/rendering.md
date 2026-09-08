@@ -287,6 +287,31 @@ is worth looking at.
 
 ---
 
+## What it costs
+
+Both renderers ship. The string one is not going anywhere while `<@for>` and
+`<slot>` fall back to it, so the runtime carries the program renderer *in
+addition to* what was already there: about **3 KB gzipped**.
+
+Measured against the same component on both paths, at 800 bindings:
+
+| | String | Compiled |
+| --- | ---: | ---: |
+| Update one binding | 27.7 ms | 0.027 ms |
+| Mount | 28.6 ms | 24.8 ms |
+| Retained per instance | 9026 KB | 9463 KB |
+
+Mount was expected to be the loser — one reactive effect per binding is more
+allocation than one per component — and is 16% cheaper instead, because the
+skeleton is parsed once per component *class* rather than once per instance and
+the first render is a clone plus direct writes rather than a serialise, a parse
+and a diff against an empty tree.
+
+The measured cost is 5% more retained heap per mounted instance, plus the 3 KB.
+`benches/render-paths.bench.js` produces this table.
+
+---
+
 ## Where the code lives
 
 | Module | Role |
