@@ -15,6 +15,8 @@ This guide provides a structural breakdown of the Avenx‑JS codebase to help co
 | :--- | :--- | :--- |
 | `lib/compiler/` | Template parsing, AST transformation, style scoping, and bundle packaging. | Adding template syntax, changing bundling, or optimizing CSS hashing. |
 | `lib/compiler/atlas/` | The retained semantic model: nodes, edges, expression resolution, source locations, the fragment cache and the two Atlas diagnostics. | Teaching Atlas about a new template construct, or changing what a query reports. |
+| `lib/compiler/render/` | Template → render program: the op vocabulary, and the compiler that emits one or reports why it could not. | Teaching the compiled renderer a construct that currently falls back. |
+| `lib/core/renderer/program/` | The runtime that executes a render program: skeleton preparation, per-op DOM writes, per-binding effects. | Adding an op kind, or changing what one does to the DOM. |
 | `lib/core/` | Zero‑dependency client runtime (`reactive/`, `renderer/`, `runtime/`, `events/`, `security/`, `validation/`, `tooling/`, `utils/`). | Modifying reactivity proxies, DOM patcher, component lifecycle, or error codes. |
 | `bin/` | CLI command entry points and dispatch logic (`avenx generate`, `build`, `doctor`, etc.). | Adding or modifying CLI flags, subcommands, or scaffolding behavior. |
 | `plugins/` | Build tool integration plugins (e.g., Vite plugin). | Fixing development server hooks or HMR behaviors in third‑party bundlers. |
@@ -34,22 +36,36 @@ When `avenx build` executes, `lib/compiler/compiler.js` orchestrates the source�
 3. **StyleProcessor** – Parses companion CSS files, generates deterministic scope IDs, and hashes class names for CSS isolation (`lib/compiler/StyleProcessor.js`).
 4. **ContractValidator** – Performs static analysis against declared state variables, action definitions, and template expressions, using `AvenxErrorCodes` for diagnostics (`lib/compiler/ContractValidator.js`).
 5. **Atlas** – Retains what the parser just produced as a semantic model (`lib/compiler/atlas/`). Nothing is re‑parsed: `addComponentUnit` receives the same objects step 2 produced. The model is emitted as `dist/bundle.atlas.json` and never referenced by the bundle.
-6. **AvenxCompiler / Bundler** – Resolves component dependencies, tree‑shakes unreferenced elements, and packages compiled classes together with the minimal client runtime into a single IIFE bundle inside `dist/bundle.js`.
+6. **Render program** – Compiles the finished template into a static skeleton plus a list of binding ops (`lib/compiler/render/compileTemplate.js`). Runs last, on exactly the template the runtime will receive, because every rewrite above changes the markup the bindings have to address. A template containing a construct the program runtime does not implement produces no program and is reported as `AVX_W47`.
+7. **AvenxCompiler / Bundler** – Resolves component dependencies, tree‑shakes unreferenced elements, and packages compiled classes together with the minimal client runtime into a single IIFE bundle inside `dist/bundle.js`.
 
 `AvenxCompiler.analyze()` runs steps 1–5 without emitting anything. `avenx atlas`, `avenx impact`, `avenx why`, `avenx inspect`, `avenx stats` and `avenx check` all use it, which is what keeps them from disagreeing with a build.
 
 ---
 
-## 3. Runtime Data Flow (State Mutation → DOM Patch)
+## 3. Runtime Data Flow (State Mutation → DOM)
 
-State updates follow a predictable microtask‑batched lifecycle:
+There are two paths, chosen per component at build time. See
+[How Rendering Works](/core-concepts/rendering) for the full account.
+
+### Compiled path (a component with a render program)
 
 1. **State Mutation** – A property is set (e.g., `state.count++`).
-2. **Proxy Trap** – `ProxyHandlerFactory` / `StateFactory` (in `lib/core/reactive/proxy-handler.js`) intercepts the mutation.
-3. **Schedule Update** – `AvenxComponent.scheduleUpdate()` (in `lib/core/runtime/component.js`) flags the component as dirty.
-4. **Microtask Batching** – `scheduler.js` (in `lib/core/reactive/scheduler.js`) deduplicates updates and batches re‑renders into a single microtask.
-5. **Re‑evaluate** – `TemplateRenderer` (in `lib/core/renderer/renderer.js`) uses `DynamicEvaluator` / `AvenxSandbox` (in `lib/core/security/`) to re‑evaluate bindings.
-6. **DOM Patch** – `DomPatcher` (in `lib/core/renderer/patcher.js`) computes the minimal diff and applies atomic updates, with `ListManager`, `DeferManager`, and `DeadlockManager` handling special cases.
+2. **Proxy Trap** – `ProxyHandlerFactory` (`lib/core/reactive/proxyHandler.js`) intercepts it and `trigger()` wakes the watchers registered for that target and key.
+3. **Per‑binding wake** – Each woken watcher is one binding's effect. It marks itself dirty and queues its own job.
+4. **Microtask Batching** – `scheduler.js` drains the queue in one flush, ordered by component uid so parents run before children.
+5. **Write** – Each job re‑evaluates its expression through `DynamicEvaluator` and writes to exactly one node (`lib/core/renderer/program/bindings.js`).
+6. **Coalesced lifecycle** – `onUpdate`, `avenx:update` and injected‑child notification fire once per flush, not once per binding.
+
+Nothing is serialised, parsed or diffed. `DomPatcher` is not involved.
+
+### String path (a component that did not compile)
+
+1–4 as above, except that the whole component is one reactive unit, so any
+dependency of any binding schedules one component‑level job.
+
+5. **Re‑evaluate** – `TemplateRenderer` (`lib/core/renderer/renderTemplate.js`) interpolates the whole template into an HTML string.
+6. **DOM Patch** – `DomPatcher` (`lib/core/renderer/domPatch.js`) parses that string and diffs the result against the live DOM, with `ListManager`, `DeferManager`, and `DeadlockManager` handling special cases.
 
 ---
 
@@ -57,7 +73,8 @@ State updates follow a predictable microtask‑batched lifecycle:
 
 | I Want To Add... | Primary Target Files / Directories |
 | :--- | :--- |
-| **New template directive / tag** | `lib/compiler/ComponentParser.js`, `lib/compiler/templateEvents.js` (so Atlas sees it too) and `lib/core/renderer/` |
+| **New template directive / tag** | `lib/compiler/ComponentParser.js`, `lib/compiler/templateEvents.js` (so Atlas sees it too), `lib/core/renderer/`, and `lib/compiler/render/compileTemplate.js` — a new construct must either compile to an op or be added to the blocking list, never be silently ignored |
+| **New render op** | `lib/compiler/render/program.js` (the vocabulary), `compileTemplate.js` (emit it), `lib/core/renderer/program/bindings.js` (apply it), `TemplateInstance.js` (dispatch it) |
 | **New component instance method / API** | `lib/core/runtime/component.js` and `lib/core/index.d.ts` |
 | **New CLI command or option flag** | `bin/commands/<command>.js`, `bin/cli.js`, and `bin/commands/help.js` |
 | **New diagnostic error / warning code** | `lib/core/runtime/AvenxError.js` (code + message template), `lib/core/diagnostics/catalogue.js` (so `avenx explain` answers), plus `docs/src/content/docs/troubleshooting/errors.md` |
