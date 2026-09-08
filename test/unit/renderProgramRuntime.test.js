@@ -237,11 +237,16 @@ async function testAttributeBindings() {
   assert.strictEqual(anchor.getAttribute('class'), 'base danger', 'the literal part is preserved');
   assert.strictEqual(anchor.getAttribute('title'), 'first', 'an unrelated attribute is not rewritten');
 
-  // A whole-value binding keeps the value's type, so null can remove the
-  // attribute rather than setting it to "null".
+  // A null value renders as an empty attribute, not a removed one, and not the
+  // string "null". Removal would be the better behaviour, and is deliberately
+  // not what happens: the string renderer produces `title=""` here, both
+  // renderers are in service together, and two renderers disagreeing about one
+  // attribute is worse than one attribute with an unfortunate value. See the
+  // note on `applyAttribute`, and renderPathParity.test.js, which is what would
+  // fail if this changed on one path only.
   state.label = null;
   await flush();
-  assert.strictEqual(anchor.hasAttribute('title'), false, 'null removes a whole-value attribute');
+  assert.strictEqual(anchor.getAttribute('title'), '', 'null renders as an empty attribute');
 }
 
 /**
