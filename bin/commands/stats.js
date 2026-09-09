@@ -196,8 +196,20 @@ export function analyzeStats(cli) {
         const rawTpl = extractRawTemplate(content);
         rawTemplateBytes = Buffer.byteLength(rawTpl, 'utf8');
 
-        // 3. Compiled template extraction & byte size
-        const compiledTpl = parser.extractTemplate(content, {}, name, file, state, {}, {});
+        // 3. Compiled template extraction & byte size.
+        //
+        // The declarations have to be read before the template is transformed,
+        // even though only its size is wanted here. `extractTemplate` validates
+        // every identifier a binding names against the state, computed values
+        // and actions it is given, so calling it with empty maps reported an
+        // action the component plainly declares as undeclared -- `avenx stats`
+        // printed AVX_W03 for a file `avenx build` and `avenx check` both
+        // accepted. Passing what the file actually declares costs one extra
+        // parse of a string already in memory.
+        const computed = parser.extractComputed(content);
+        const methods = parser.extractMethods(content, name, file);
+        const resources = parser.expressionParser.parseResources(content);
+        const compiledTpl = parser.extractTemplate(content, {}, name, file, state, computed, methods, resources);
         compiledTemplateBytes = Buffer.byteLength(compiledTpl || '', 'utf8');
 
         // 4. Scoped CSS extraction & byte size
