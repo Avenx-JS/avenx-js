@@ -25,7 +25,31 @@ Modern frontend development often requires complex build chains and heavy runtim
 
 ### 🔄 Proxy-based Reactivity
 
-State management is built directly into the core. Changing a property on the `state` object automatically triggers a re-render of only the affected parts of the DOM.
+State management is built directly into the core. Changing a property on the `state` object automatically updates the DOM that reads it.
+
+### ⚙️ Compiled Rendering
+
+The compiler turns a template into a **render program**: a static HTML skeleton
+plus one binding operation per dynamic part. The skeleton is parsed once per
+component class; each binding becomes its own reactive effect. A state change
+wakes the bindings that read it and writes to their nodes — nothing is
+serialised, reparsed or diffed.
+
+The cost of an update is therefore proportional to the change rather than to the
+template. Changing one text binding, measured in happy-dom:
+
+| Bindings in the component | Before | After |
+| ---: | ---: | ---: |
+| 10 | 0.371 ms | 0.015 ms |
+| 500 | 16.758 ms | 0.019 ms |
+| 1500 | 161.018 ms | 0.050 ms |
+
+A template using a construct the program does not implement yet — a `<@for>`, a
+`<slot>`, a suspense or error boundary — renders through the previous string
+renderer instead, and `avenx build` says which and why (`AVX_W47`). There is no
+partial mode: a template is compiled entirely or not at all.
+
+See the [rendering guide](docs/src/content/docs/core-concepts/rendering.md).
 
 ### 🧩 Declarative Components
 

@@ -106,6 +106,22 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
     readonly $isUnmounted: boolean;
 
     /**
+     * True when this component renders through a compiled render program.
+     *
+     * The compiler emits a program for every template it can compile
+     * exhaustively; a template using a construct the program runtime does not
+     * implement (a `<@for>`, a child component, a slot, a suspense or error
+     * boundary) renders through the string renderer instead. Both produce the
+     * same DOM -- the difference is that a compiled component updates only the
+     * bindings whose dependencies changed, while the string renderer re-renders
+     * the whole template.
+     *
+     * Read-only and informational. Which path a component takes is decided at
+     * build time and cannot be set from application code.
+     */
+    readonly $compiled: boolean;
+
+    /**
      * Helpers for inspecting whether the parent provided slot content.
      */
     readonly $slots: {

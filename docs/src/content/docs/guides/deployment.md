@@ -354,16 +354,21 @@ Content-Security-Policy: script-src 'self';
 
 ### When you still need `'unsafe-eval'`
 
-`<action>` bodies are JavaScript **statements**, and a body using real statement
-syntax — `if`, `for`, `while`, `try`, `return`, a declaration — is compiled with
-`new Function` when it first runs. Bodies that are runs of expressions
-(`count++`, `busy = true; save()`) are not.
+`<action>` bodies and inline event handlers are JavaScript **statements**, and a
+body using real statement syntax — `if`, `for`, `while`, `try`, `return`, a
+declaration — is compiled with `new Function` when it first runs. Bodies that are
+runs of expressions (`count++`, `busy = true; save()`) are not.
+
+Inline event handlers used to be compiled unconditionally, whatever they
+contained, which meant an application needed `'unsafe-eval'` as soon as it
+contained a single `@click` and `getFallbackReport()` never said so. They now
+take the same path as any other statement body.
 
 So:
 
-- If every action body in your application is expression-only, `script-src
-  'self'` is enough.
-- If any action body uses statement syntax, that page needs `'unsafe-eval'`:
+- If every action body and inline handler in your application is
+  expression-only, `script-src 'self'` is enough.
+- If any of them uses statement syntax, that page needs `'unsafe-eval'`:
 
   ```text
   Content-Security-Policy: script-src 'self' 'unsafe-eval';
@@ -375,7 +380,8 @@ production policies.
 To find out which applies to your application, call `getFallbackReport()` from
 `avenx-core/runtime` after exercising it — it lists every source that was
 compiled rather than parsed, with the reason. An empty report means nothing in
-that session needed `eval`.
+that session needed `eval`. Exercise the handlers you care about: a body is
+only classified when it first runs.
 
 ### Hosting Configuration
 
