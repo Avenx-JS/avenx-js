@@ -143,7 +143,11 @@ try {
   `,
   );
 
-  const processedMain = compiler.processMain();
+  // The entry module is assembled from main.app.js with the developer's own
+  // imports intact; environment substitution happens on the way in.
+  const virtualModules = new Map();
+  const entryId = compiler.buildEntryModule(virtualModules, []);
+  const processedMain = virtualModules.get(entryId);
   assert.ok(processedMain.includes('const secret = "success_injection";'));
 
   // Clean up
