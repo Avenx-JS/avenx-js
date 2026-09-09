@@ -6,10 +6,10 @@ import '../helpers/register-happy-dom.js';
 import AvenxCompiler from '../../lib/compiler.js';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
 import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
+import { bridgeModule } from '../../lib/compiler/modules.js';
 import {
   analyzeBridge,
   bridgeNameFromFile,
-  emitBridge,
   extractEmittedEvents,
   extractSubscriptions,
   findBridgeImports,
@@ -38,8 +38,48 @@ function makeProject(files) {
  * @param {Record<string, string>} files - The project files.
  * @returns {{bundle: string, output: string, error: Error|null, root: string}} The result.
  */
+/**
+ * Adds the component registrations a fixture's `main.app.js` implies.
+ *
+ * A component reaches the bundle when something imports it, and it can only
+ * render when something registers it -- which is the same act, since
+ * registration names an imported binding. These fixtures write components and
+ * reference them from a page template, so the helper writes the import and the
+ * `app.register` call a real application would have. Before the bundler, an
+ * unregistered component was still concatenated into the output, where it was
+ * dead code that could never be instantiated.
+ * @param {object} files - The fixture's files, keyed by relative path.
+ * @returns {object} The same files, with registrations added to main.app.js.
+ */
+function registerComponents(files) {
+  const main = files['src/main.app.js'];
+  if (typeof main !== 'string' || main.includes('app.register(')) {
+    return files;
+  }
+
+  const components = Object.keys(files)
+    .filter((file) => file.endsWith('.component.js'))
+    .map((file) => {
+      const base = path.basename(file, '.component.js');
+      const className = base
+        .split(/[-_]/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+      return { className, specifier: `./${file.replace(/^src\//, '')}` };
+    });
+
+  if (components.length === 0) {
+    return files;
+  }
+
+  const imports = components.map((entry) => `import ${entry.className} from '${entry.specifier}';`).join('\n');
+  const calls = components.map((entry) => `app.register('${entry.className}', ${entry.className});`).join('\n');
+
+  return { ...files, 'src/main.app.js': `${imports}\n\n${main}\n${calls}\n` };
+}
+
 function build(files) {
-  const root = makeProject(files);
+  const root = makeProject(registerComponents(files));
   const lines = [];
   const capture = (...args) => lines.push(args.map(String).join(' '));
   const original = {
@@ -264,17 +304,24 @@ function testEmission() {
   console.log('🧪 Testing bundle emission...');
 
   const descriptor = analyzeBridge('/p/src/bridges/auth.bridge.js', AUTH_BRIDGE);
-  const emitted = emitBridge(descriptor, AUTH_BRIDGE, new Map());
+  const emitted = bridgeModule({
+    name: descriptor.name,
+    binding: descriptor.binding,
+    source: AUTH_BRIDGE,
+  });
 
-  assert.ok(emitted.includes('const __avx_bridge_auth = (() => {'), 'the module becomes a scoped IIFE');
+  // A bridge file is already valid JavaScript, so emission does almost nothing
+  // to it. What used to happen -- wrapping it in an IIFE, stripping its runtime
+  // import, deleting its bridge imports and replacing them with aliases -- was
+  // all in service of concatenation, and the graph does it properly now.
+  assert.ok(emitted.includes(`const ${descriptor.binding} = bridge({`), 'the default export is given a name');
   assert.ok(emitted.includes("const GUEST_NAME = 'Guest'"), 'a constant above the export survives');
   assert.ok(emitted.includes('function normalize(raw)'), 'a helper above the export survives');
-  assert.ok(emitted.includes('return bridge({'), 'the default export becomes the return value');
-  assert.ok(!emitted.includes('export default'), 'the export keyword is gone');
-  assert.ok(!emitted.includes("from 'avenx-core/runtime'"), 'the runtime import is stripped');
-  assert.ok(emitted.includes('defineBridgeName("auth"'), 'the bridge is labelled for diagnostics');
+  assert.ok(emitted.includes("from 'avenx-core/runtime'"), 'the runtime import survives, to be resolved');
+  assert.ok(emitted.includes(`__avx_defineBridgeName("auth", ${descriptor.binding})`), 'the bridge is labelled');
+  assert.ok(emitted.includes(`export default ${descriptor.binding};`), 'and it is exported for importers');
 
-  console.log('  ✅ The whole module body survives compilation.');
+  console.log('  ✅ A bridge module keeps its body and gains a name.');
 }
 
 // ---------------------------------------------------------------------------
@@ -307,12 +354,15 @@ function testEndToEndCompilation() {
     /class Plain extends AvenxComponent[\s\S]*?super\([^)]*?, bridges,/.test(bundle),
     'a component that imports nothing gets no bridge bindings',
   );
-  assert.ok(!bundle.includes('import auth from'), 'the import statement does not reach the bundle');
+  // The import statement itself is resolved by the bundler rather than deleted,
+  // so what must not appear is the *unresolved* specifier and, as always, the
+  // import leaking into the emitted template string.
+  assert.ok(!/from '\.\.\/bridges\/auth\.bridge\.js'/.test(bundle), 'the specifier is resolved, not carried');
   assert.ok(
     !/"[^"]*import auth from/.test(bundle),
     'the import statement does not leak into the template string',
   );
-  assert.ok(bundle.includes("app.registerBridge('auth', __avx_bridge_auth)"), 'the bridge is registered for devtools');
+  assert.ok(/registerBridge\("auth", __avx_bridge_\d+\)/.test(bundle), 'the bridge is registered for devtools');
 
   console.log('  ✅ Imports become compile-time scope bindings.');
 }
@@ -339,10 +389,13 @@ function testImportAliases() {
   assert.strictEqual(error, null, 'the build should succeed');
   assert.ok(bundle.includes('"session": __avx_bridge_auth'), 'the aliased name is bound');
   assert.ok(bundle.includes('"auth": __avx_bridge_auth'), 'the plain name is bound');
+  // Each importing module aliases the binding into its own scope, so the name
+  // appears once per importer. What must happen exactly once is the thing the
+  // assertion was always about: the bridge being *constructed*.
   assert.strictEqual(
-    (bundle.match(/const __avx_bridge_auth = /g) || []).length,
+    (bundle.match(/= bridge\(/g) || []).length,
     1,
-    'the bridge itself is only emitted once',
+    'the bridge itself is only constructed once, however many components import it',
   );
 
   console.log('  ✅ Each component sees the bridge under the name it chose.');
@@ -401,7 +454,12 @@ export default bridge({
     bundle.indexOf('const __avx_bridge_http') < bundle.indexOf('const __avx_bridge_auth'),
     'the dependency is emitted before the bridge that imports it',
   );
-  assert.ok(bundle.includes('const http = __avx_bridge_http;'), 'the import is re-bound inside the IIFE');
+  // The bridge-to-bridge import is a real module edge now, resolved by the
+  // bundler, rather than an alias the compiler wrote by hand.
+  assert.ok(
+    /var http = __avx\d+\.default;/.test(bundle),
+    `the composed bridge binds its dependency through the module graph:\n${bundle.slice(0, 0)}`,
+  );
   assert.ok(
     bundle.includes('__avx_bridge_http'),
     'a bridge reachable only through another bridge is still bundled',
@@ -518,25 +576,47 @@ function testDuplicateNameIsFatal() {
 }
 
 /**
- * A bridge importing a module the bundler cannot inline stops the build,
- * instead of silently dropping the import as the old pipeline did.
+ * A bridge may import an ordinary module, and an import that resolves to
+ * nothing stops the build.
+ *
+ * The first half is new. A bridge importing a local helper used to fail with
+ * AVX_C09 -- a bridge module may only import the Avenx runtime and other
+ * bridge modules -- because the concatenator had no way to inline anything
+ * else. The bundler resolves it like any other specifier.
  */
-function testUnsupportedImportIsFatal() {
-  console.log('🧪 Testing unsupported bridge imports...');
+function testBridgeImports() {
+  console.log('🧪 Testing bridge imports...');
 
-  const { error } = build({
+  const supported = build({
     'src/bridges/auth.bridge.js': `import { bridge } from 'avenx-core/runtime';
 import { helper } from '../utils/helper.js';
 export default bridge({ state: { value: helper() } });`,
-    'src/utils/helper.js': `export function helper() { return 1; }`,
-    'src/main.app.js': `const app = new AvenxApp({ target: '#app' });`,
+    'src/utils/helper.js': 'export function helper() { return 41 + 1; }',
+    // A bridge ships when something imports it, so the fixture needs a consumer.
+    'src/components/reader/reader.component.js': `import auth from '../../bridges/auth.bridge.js';
+
+<div>{{ auth.value }}</div>`,
+    'src/main.app.js': "const app = new AvenxApp({ target: '#app' });",
   });
 
-  assert.ok(error, 'the build fails');
-  assert.strictEqual(error.code, AvenxErrorCodes.COMPILER_BRIDGE_UNSUPPORTED_IMPORT, 'with the right code');
-  assert.ok(error.message.includes('helper.js'), 'naming the offending import');
+  assert.strictEqual(supported.error, null, `a bridge may import a helper module: ${supported.error}`);
+  assert.ok(supported.bundle.includes('return 41 + 1'), 'and the helper is bundled with it');
 
-  console.log('  ✅ An un-inlinable import fails loudly instead of vanishing.');
+  const missing = build({
+    'src/bridges/auth.bridge.js': `import { bridge } from 'avenx-core/runtime';
+import { helper } from '../utils/nowhere.js';
+export default bridge({ state: { value: helper() } });`,
+    'src/components/reader/reader.component.js': `import auth from '../../bridges/auth.bridge.js';
+
+<div>{{ auth.value }}</div>`,
+    'src/main.app.js': "const app = new AvenxApp({ target: '#app' });",
+  });
+
+  assert.ok(missing.error, 'an import that resolves to nothing fails the build');
+  assert.strictEqual(missing.error.code, AvenxErrorCodes.COMPILER_UNRESOLVED_IMPORT, 'reported as AVX_C17');
+  assert.ok(missing.error.message.includes('nowhere.js'), 'naming the offending import');
+
+  console.log('  ✅ A bridge may import ordinary modules; an unresolvable one fails loudly.');
 }
 
 /**
@@ -698,14 +778,24 @@ export default bridge({
 
 <div>[{{ counter.count }}/{{ counter.doubled }}]<button id="inc" @click="counter.increment()">+</button></div>`,
     'src/pages/home.page.js': `<div><Display /></div>`,
-    'src/main.app.js': `const app = new AvenxApp({ target: '#app' });`,
+    // A module's declarations are private to it now, so the test reaches the
+    // component and the bridge the way an application would: by importing them
+    // in main.app.js. Reading them out of bundle scope worked only because
+    // concatenation had no module boundaries to respect.
+    'src/main.app.js': `import Display from './components/display.component.js';
+import counter from './bridges/counter.bridge.js';
+
+const app = new AvenxApp({ target: '#app' });
+app.register('Display', Display);
+globalThis.__avxTestExports = { Display, counter };`,
   });
 
   assert.strictEqual(error, null, 'the build should succeed');
 
   // The bundle's entry point constructs an AvenxApp against '#app'.
   document.body.innerHTML = '<div id="app"></div><div id="bundle-root"></div>';
-  const exported = new Function(`${bundle}\n; return { Display, counter: __avx_bridge_counter };`)();
+  new Function(bundle)();
+  const exported = globalThis.__avxTestExports;
 
   assert.strictEqual(exported.counter.$name, 'counter', 'the bridge is labelled at runtime');
   assert.strictEqual(exported.counter.doubled, 0, 'the module-level constant survived compilation');
@@ -748,7 +838,7 @@ async function run() {
   testNoFalsePositives();
   testMissingBridgeIsFatal();
   testDuplicateNameIsFatal();
-  testUnsupportedImportIsFatal();
+  testBridgeImports();
   testCircularBridgeImportIsFatal();
   testIsolatedImportIsFatal();
   testNonBridgeModuleIsRejected();

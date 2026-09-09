@@ -38,15 +38,11 @@
   "files": [
     "bin/",
     "lib/",
-    "dist/",
     "templates/",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "node scripts/build.js",
-    "prepare": "npm run build",
-    "pretest": "npm run build",
     "test": "node test/run-tests.js",
     "test:plugins": "npm --prefix plugins/avenx-i18n test && npm --prefix plugins/avenx-persistence test && npm --prefix plugins/avenx-charts test",
     "test:unit": "node test/run-tests.js unit",

@@ -58,6 +58,32 @@ function scaffold() {
 }
 
 /**
+ * Routes the guards a project declares, so something imports them.
+ *
+ * A guard reaches the bundle when the application references it, which is what
+ * a route does. The old pipeline concatenated every `.guard.js` in the project
+ * whether or not a route named one, so these fixtures never had to say.
+ * @param {string} dir - Project root.
+ * @param {Array<{file: string, className: string}>} guards - The guards written.
+ */
+function routeGuards(dir, guards) {
+  const imports = guards.map((guard) => `import ${guard.className} from './guards/${guard.file}';`).join('\n');
+  const list = guards.map((guard) => guard.className).join(', ');
+  fs.writeFileSync(
+    path.join(dir, 'src', 'main.app.js'),
+    `import { AvenxApp } from 'avenx-core/runtime';
+${imports}
+
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '#/admin': { page: 'Admin', guards: [${list}] },
+});
+`,
+  );
+}
+
+/**
  * Writes a guard module.
  * @param {string} dir - Project root.
  * @param {string} file - File name under src/guards.
@@ -111,6 +137,10 @@ try {
     created.push(dir);
     writeGuard(dir, 'auth.guard.js', 'AuthGuard');
     writeGuard(dir, 'role.guard.js', 'RoleGuard');
+    routeGuards(dir, [
+      { file: 'auth.guard.js', className: 'AuthGuard' },
+      { file: 'role.guard.js', className: 'RoleGuard' },
+    ]);
 
     const build = avenx(['build'], dir);
     assert.strictEqual(build.status, 0, `a two-guard project builds:\n${build.stdout}${build.stderr}`);
@@ -137,6 +167,10 @@ try {
     for (const name of ['a', 'b', 'c', 'd', 'e']) {
       writeGuard(dir, `${name}.guard.js`, `${name.toUpperCase()}Guard`);
     }
+    routeGuards(
+      dir,
+      ['a', 'b', 'c', 'd', 'e'].map((name) => ({ file: `${name}.guard.js`, className: `${name.toUpperCase()}Guard` })),
+    );
 
     // Two guards that each declare a module-private helper with the same name.
     // Before module scoping this was a second, independent collision.
@@ -181,20 +215,61 @@ export default class BGuard extends AvenxGuard {
   }
 
   /* ---------------------------------------------------------------------
-   * A genuine collision is reported, not emitted.
+   * The collision this file was written for is now structurally impossible.
+   *
+   * Two guards exporting the same class name used to emit that name twice into
+   * one scope, which is what made the bundle a SyntaxError. Every module is its
+   * own function scope now, so the same two files coexist -- and the invariant
+   * the collision violated is still the one being checked: the emitted
+   * JavaScript parses.
    * ------------------------------------------------------------------ */
   {
     const dir = scaffold();
     created.push(dir);
     writeGuard(dir, 'first.guard.js', 'SameName');
     writeGuard(dir, 'second.guard.js', 'SameName');
+    // Only one of them can be imported under that name, which is exactly how
+    // two same-named modules coexist in any module system.
+    fs.writeFileSync(
+      path.join(dir, 'src', 'main.app.js'),
+      `import { AvenxApp } from 'avenx-core/runtime';
+import First from './guards/first.guard.js';
+import Second from './guards/second.guard.js';
+
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '#/admin': { page: 'Admin', guards: [First, Second] },
+});
+`,
+    );
 
     const build = avenx(['build'], dir);
-    assert.notStrictEqual(build.status, 0, 'two guards exporting the same class name fail the build');
+    assert.strictEqual(build.status, 0, `two guards exporting the same name now coexist:\n${build.stdout}${build.stderr}`);
+    const result = parses(path.join(dir, 'dist', 'bundle.js'));
+    assert.ok(result.ok, `and the bundle parses (got: ${result.message})`);
+    console.log('  ✅ Same-named exports in different modules no longer collide at all.');
+  }
+
+  /* ---------------------------------------------------------------------
+   * A build that cannot link fails, and says what it could not resolve.
+   * ------------------------------------------------------------------ */
+  {
+    const dir = scaffold();
+    created.push(dir);
+    avenx(['g', 'counter'], dir);
+    const componentPath = path.join(dir, 'src', 'components', 'counter', 'counter.component.js');
+    fs.writeFileSync(
+      componentPath,
+      `import { formatDistance } from 'not-installed-anywhere';\n\n${fs.readFileSync(componentPath, 'utf-8')}`,
+    );
+
+    const build = avenx(['build'], dir);
+    assert.notStrictEqual(build.status, 0, 'an unresolvable import fails the build');
     const output = build.stdout + build.stderr;
-    assert.ok(output.includes('AVX_C16'), `the collision is reported as AVX_C16:\n${output}`);
-    assert.ok(output.includes('SameName'), 'and names the colliding binding');
-    console.log('  ✅ A real name collision fails the build with a located diagnostic.');
+    assert.ok(output.includes('AVX_C17'), `reported as AVX_C17:\n${output}`);
+    assert.ok(output.includes('not-installed-anywhere'), 'and names the specifier');
+    console.log('  ✅ An unresolvable import fails the build with a located diagnostic.');
   }
 
   /* ---------------------------------------------------------------------
@@ -231,9 +306,12 @@ export default class BGuard extends AvenxGuard {
     assert.strictEqual(first.status, 0, 'the first build succeeds');
     const good = fs.readFileSync(path.join(dir, 'dist', 'bundle.js'), 'utf-8');
 
-    // Introduce a collision, then confirm the previous output survived.
-    writeGuard(dir, 'x.guard.js', 'Dup');
-    writeGuard(dir, 'y.guard.js', 'Dup');
+    // Introduce an unresolvable import, then confirm the previous output survived.
+    const componentPath = path.join(dir, 'src', 'components', 'counter', 'counter.component.js');
+    fs.writeFileSync(
+      componentPath,
+      `import missing from './does-not-exist.js';\n\n${fs.readFileSync(componentPath, 'utf-8')}`,
+    );
     const second = avenx(['build'], dir);
     assert.notStrictEqual(second.status, 0, 'the second build fails');
 

@@ -10,6 +10,20 @@ import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/**
+ * Compiles the project's components and joins the generated modules.
+ *
+ * `processComponents` fills a module table instead of returning concatenated
+ * text: each unit is its own ES module now, and the bundler links them.
+ * @param {object} compiler - The compiler instance.
+ * @returns {string} Every generated module, joined.
+ */
+function collect(compiler) {
+  const modules = new Map();
+  compiler.processComponents(modules);
+  return [...modules.values()].join('\n');
+}
+
 console.log('🧪 Testing Circular Dependency Detection in AvenxCompiler...');
 
 const tempDir = path.join(__dirname, 'temp_circular_dep_test');
@@ -48,7 +62,11 @@ try {
   };
 
   const compiler = new AvenxCompiler({ rootDir: tempDir, srcDir: 'src' });
-  const resultJs = compiler.processComponents();
+  // Compiled units are collected as ES modules now, one per source file,
+  // rather than concatenated into a single string.
+  const modules = new Map();
+  compiler.processComponents(modules);
+  const resultJs = [...modules.values()].join('\n');
 
   logger.warn = originalWarn;
 
@@ -79,7 +97,7 @@ try {
   };
 
   const compiler3 = new AvenxCompiler({ rootDir: tempDir, srcDir: 'src' });
-  const resultJs3 = compiler3.processComponents();
+  const resultJs3 = collect(compiler3);
 
   logger.warn = originalWarn;
 
@@ -106,7 +124,7 @@ try {
   };
 
   const compilerClean = new AvenxCompiler({ rootDir: tempDir, srcDir: 'src' });
-  const resultJsClean = compilerClean.processComponents();
+  const resultJsClean = collect(compilerClean);
 
   logger.warn = originalWarn;
 

@@ -443,7 +443,7 @@ AVX_C10  An isolated component may not import a bridge
 
 ### A limit worth knowing
 
-A bridge module may import the Avenx runtime and other `*.bridge.js` modules. Any other import fails the build with `AVX_C09` — Avenx compiles bridges into a single bundle without a general-purpose bundler, so it cannot inline arbitrary modules.
+A bridge module may import anything the bundler can resolve: the Avenx runtime, other `*.bridge.js` modules, local helpers and npm packages. An import that resolves to nothing fails the build with `AVX_C17`, naming the specifier and the file that asked for it.
 
 Everything else in the file is yours. Constants, helper functions and JSDoc above `export default` all work normally:
 

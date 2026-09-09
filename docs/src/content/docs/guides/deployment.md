@@ -7,6 +7,106 @@ Avenx-JS applications can be built into static JavaScript and CSS assets and ser
 
 ---
 
+## How a build is produced
+
+`avenx build` runs two halves with a clean boundary between them.
+
+The **compiler** owns everything Avenx-specific: templates, `<state>` and
+`<action>` declarations, expression handling, scoped CSS, the Atlas, and the
+shape of a generated component class. It turns each `.component.js`, `.page.js`,
+`.bridge.js` and `.guard.js` into an ordinary ES module.
+
+The **bundler** owns everything module-specific: resolving specifiers, walking
+the dependency graph, eliminating what nothing reaches, and emitting the final
+script and its source map. It knows nothing about components or bridges.
+
+```text
+.component.js / .page.js
+  → compiler        (templates, declarations, scoped CSS, Atlas)
+  → ES modules
+  → bundler         (resolution, graph, tree shaking, emission)
+  → dist/bundle.js
+```
+
+The Avenx runtime is a normal dependency in that graph, resolved through
+`avenx-core/runtime` like any other import. It is not a prebuilt file that gets
+prepended to your application.
+
+### Imports
+
+Your `import` statements are resolved, not rewritten. That means:
+
+- **npm packages work**, from components, pages, bridges and guards alike. Both
+  ES modules and CommonJS packages are supported; a package's `exports`,
+  `browser`, `module` and `main` fields are honoured, preferring its browser and
+  ES builds.
+- **Local modules work** — by path, by extension-less path, or through a
+  directory `index.js`.
+- **An import that cannot be resolved fails the build**, with the specifier and
+  the file that asked for it. Nothing is ever dropped silently.
+
+An imported value is also in scope for your templates and `<action>` bodies,
+below your own `<state>`, computed values, actions and bridges — so nothing you
+import can shadow something you declared.
+
+Two kinds of import are rejected on purpose, because a browser cannot honour
+them: Node built-ins such as `fs` and `path`, and asset imports such as
+`import './theme.css'`. Component styles belong in a matching `.component.css`,
+application-wide styles in a `<@global>` block, and a genuinely external
+stylesheet in a `<link>` tag in `index.html`.
+
+### Tree shaking
+
+A module reaches the bundle when something imports it. A plain `import` always
+executes its target, as the language requires; a re-export is followed only for
+the names something asked for, which is what lets `avenx-core/runtime` — a
+barrel of re-exports — be shaken at all. A re-export target that runs code at
+its own top level, or whose package declares `sideEffects` honestly, is kept
+regardless.
+
+In practice that means a production build does not carry the trace recorder,
+because nothing in it can start a recording. A development build does, because
+`avenx serve --trace` installs it.
+
+Set `"treeShake": false` in `avenx.config.json` to keep everything the graph
+reaches. It cannot resurrect a file nothing imports — such a file was never in
+the graph.
+
+The build reports what it did:
+
+```text
+Bundled 66 modules · 5 shaken out
+```
+
+### Dynamic imports, and code splitting
+
+`import('./thing.js')` works. The module joins the graph and is bundled, and the
+promise resolves with its namespace:
+
+```javascript
+const { renderChart } = await import('./charts/renderer.js');
+```
+
+What it does **not** do yet is produce a separate file. Avenx emits one chunk,
+so a dynamically imported module is bundled eagerly and the promise resolves
+immediately. That is the correct observable behaviour for an unsplit build — the
+semantics are right, and what is missing is the chunk boundary — but it means a
+dynamic import is a code-organisation tool today, not a payload-reduction one.
+
+The specifier must be a literal. `import(name)` fails the build, because no
+build-time analysis can say what it names and the emitted bundle is a classic
+script with no module loader to resolve it at run time.
+
+**Why splitting is not implemented.** Emitting chunks is not the hard part; the
+pieces around it are. `dist/bundle.js` is loaded with a plain `<script src>`, so
+a second chunk needs a loader and a decision about whether the bundle becomes a
+module script. Route-level laziness additionally needs `initRouter` to accept a
+loader rather than a page name, and the router's mount path to become
+asynchronous. Those are application-facing changes, and the bundler now has the
+graph they would build on: dynamic imports are already distinct edges, and
+`lib/bundler/emit.js` already takes the set of modules to include as a
+parameter.
+
 ## Build Modes
 
 Avenx builds in one of two modes.
@@ -15,9 +115,10 @@ Avenx builds in one of two modes.
 | :--- | :--- | :--- |
 | Command | `npx avenx build --dev` | `npx avenx build` |
 | Also used by | `avenx serve`, `avenx watch` | — |
-| Runtime bundled | `runtime.js`, readable | `runtime.min.js`, minified |
+| Minified | No — comments and indentation kept | Yes |
+| Trace recorder | Included, for `avenx serve --trace` | Shaken out |
 | CSS source map | Inline, for the browser devtools | Emitted as `bundle.css.map` and linked |
-| Hello World bundle | ~403 KB | ~154 KB |
+| Hello World bundle | ~470 KB | ~389 KB (~87 KB gzipped) |
 
 **Production is the default.** `npx avenx build` is what a deploy script runs, so it produces optimised output without a flag. `avenx serve` and `avenx watch` build in development mode, because a readable stack trace matters more than size while you are working. Either default can be overridden with `--dev` or `--prod`, or pinned in `avenx.config.json`:
 
@@ -35,28 +136,49 @@ Avenx builds in one of two modes.
 
 ### What the production build does
 
-- **Bundles the minified runtime.** Both runtime variants are built from the same module graph, so they cannot differ in behaviour — only in readability.
-- **Excludes development infrastructure.** The testing utilities (`avenx-core/testing`) and the lint and build helpers (`avenx-core/tooling`) are separate entry points and are never part of an application bundle. Neither are Node built-ins: the runtime graph is browser-only and needs no `fs` or `path` shim.
+- **Minifies.** Comments and indentation are removed. Avenx's minifier does not
+  rename identifiers or join statements: doing that safely needs a full
+  ECMAScript parser, and a minifier that guesses produces a bundle that is
+  smaller and wrong. It buys one property with the bytes it leaves behind —
+  **line count is preserved exactly**, so a source map stays valid across
+  minification and a production stack trace names a line you wrote.
+- **Shakes out what nothing reaches.** See above.
+- **Excludes development infrastructure.** The testing utilities
+  (`avenx-core/testing`) and the lint and build helpers (`avenx-core/tooling`)
+  are separate entry points and can never be part of an application bundle.
+  Neither can Node built-ins: an import of one fails the build.
 - **Keeps the global surface small.** See below.
 
-Nothing is removed from the runtime in production. Both modes ship the same features; production is the same code, minified.
+#### Squeezing it further
+
+`dist/bundle.js` is a plain classic script with a valid source map beside it, so
+any minifier can post-process it. Identifier mangling is where the remaining
+size is: on the scaffolded project, running the production bundle through a
+mangling minifier takes it from 389 KB / 87 KB gzipped to 230 KB / 66 KB
+gzipped. Avenx does not do this for you, because it will not ship a
+transformation it cannot prove safe.
 
 ### What the bundle puts on `globalThis`
 
-A compiled application is one concatenated script, so the runtime has to publish itself somewhere the generated code can reach. It installs:
+Generated modules import what they use, so the global object is a compatibility
+surface rather than a mechanism. The bundle installs:
 
-- **`Avenx`** — a namespace carrying the complete runtime surface. Anything the runtime exports is available as `Avenx.<name>`.
-- **Seven named globals** — `AvenxComponent`, `AvenxPage`, `defineBridgeName`, `AvenxApp`, `AvenxGuard`, `AvenxRouter` and `bridge`. The first three are emitted into generated code; the rest are authoring entry points a project may reference without importing.
+- **`Avenx`** — a namespace carrying the seven names below.
+- **Seven named globals** — `AvenxComponent`, `AvenxPage`, `defineBridgeName`,
+  `AvenxApp`, `AvenxGuard`, `AvenxRouter` and `bridge`.
 
-Your own `import` statements keep working regardless of that list. The compiler rewrites runtime imports into destructuring from the namespace, so
+Anything else the runtime exports is reached by importing it:
 
 ```javascript
 import { logger, LruCache } from 'avenx-core/runtime';
 ```
 
-becomes `const { logger, LruCache } = Avenx;` in the bundle. Import what you use; nothing depends on a name happening to be global.
+That import is resolved by the bundler and only what you name is bundled.
+Publishing the whole export surface on the global object would pin every runtime
+module into every application.
 
-If your page loads other scripts, note that these eight names are the only ones Avenx claims.
+If your page loads other scripts, these eight names are the only ones Avenx
+claims.
 
 ## Build Failures and Exit Codes
 

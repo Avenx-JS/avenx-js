@@ -2,6 +2,7 @@ import assert from 'assert';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import zlib from 'zlib';
 import { Window } from 'happy-dom';
 import AvenxCompiler from '../../lib/compiler.js';
 import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
@@ -11,19 +12,32 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  *
  * This is a regression guard, not a target. It caught 438 KB of testing and
  * lint infrastructure once; its job is to catch the next module that gets
- * re-exported from the runtime barrel by accident. Raise it only with a
- * reason, and never to accommodate development-only code.
+ * pulled into the graph by accident. Raise it only with a reason, and never to
+ * accommodate development-only code.
  *
- * Raised from 200 to 230 when the expression parser and AST evaluator replaced
- * `new Function` as the primary evaluation path. That is a deliberate trade,
- * measured: roughly +22 KB minified and +6 KB gzipped, in exchange for
- * template expressions that need no 'unsafe-eval' and a property-access gate
- * that sees the resolved key -- which is what closes the
- * `({})['const'+'ructor']` escape the old source-text check could not. The
- * engine is a fixed cost that does not grow with the application.
+ * Raised from 230 to 430 when the concatenator was replaced by the Avenx
+ * bundler, and the reason is the minifier rather than the graph. The old
+ * number measured `dist/runtime.min.js`, produced by esbuild with identifier
+ * mangling. Avenx now minifies its own output and deliberately does not
+ * mangle: that needs a real ECMAScript parser, and a minifier that guesses
+ * produces a bundle that is smaller and wrong. The uncompressed figure is
+ * therefore larger and the *transferred* figure much closer, which is why
+ * GZIPPED_CEILING_KB below is the number that actually matters. Tree shaking
+ * moved the other way and now removes what the blob could not: the trace
+ * recorder no longer ships to an application that never records.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 230;
+const PRODUCTION_SIZE_CEILING_KB = 430;
+
+/**
+ * Ceiling for the same bundle over the wire, in KB.
+ *
+ * Comments and indentation are what gzip compresses best, so this is where the
+ * gap between a conservative minifier and a mangling one nearly closes -- and
+ * it is what a browser actually downloads. A regression here is a real one.
+ * @type {number}
+ */
+const GZIPPED_CEILING_KB = 100;
 
 /**
  * Source that must never appear in a production bundle.
@@ -59,13 +73,14 @@ function makeHelloWorld() {
 
   write(
     'src/components/hello/hello.component.js',
-    `<state message="Hello World" count="0" />
+    `<state message="Hello World" count="0" untrusted="&lt;script&gt;alert(1)&lt;/script&gt;" />
 
 <action name="increment"> count++; </action>
 
 <div>
   <h1>{{ message }}</h1>
   <p class="count">Count: {{ count }}</p>
+  <p class="untrusted">{{ untrusted }}</p>
   <button @click="increment()">+</button>
 </div>`,
   );
@@ -140,19 +155,24 @@ function testNoDevelopmentCode(bundle) {
 function testMinified(bundle, devBundle) {
   console.log('🧪 Testing that production output is minified...');
 
-  // A proxy for minification that does not depend on generated names: minified
-  // code packs many characters per line, unminified code does not.
-  const charsPerLine = bundle.length / bundle.split('\n').length;
+  // Measured by what the minifier removes, rather than by characters per line.
+  // Avenx's minifier is deliberately conservative: it strips comments and
+  // margins and does not rename identifiers or join statements, because those
+  // need a real ECMAScript parser to do safely. It buys one property with the
+  // bytes it leaves behind, and that property is asserted here too.
+  assert.ok(!/\/\*\*/.test(bundle), 'JSDoc blocks are gone from production output');
+  assert.ok(!/^\s+\/\//m.test(bundle), 'indented line comments are gone');
+
+  const lines = bundle.split('\n');
+  const indented = lines.filter((line) => /^[ \t]+\S/.test(line)).length;
   assert.ok(
-    charsPerLine > 200,
-    `production output should be minified (${charsPerLine.toFixed(0)} chars/line)`,
+    indented / lines.length < 0.1,
+    `indentation is gone from all but the multi-line template literals that carry it as data (${indented}/${lines.length})`,
   );
 
-  const devCharsPerLine = devBundle.length / devBundle.split('\n').length;
-  assert.ok(devCharsPerLine < 100, 'the development build stays readable');
-
+  assert.ok(devBundle.includes('/**'), 'the development build keeps its comments');
   assert.ok(
-    bundle.length < devBundle.length * 0.6,
+    bundle.length < devBundle.length * 0.75,
     `production should be well under the development build (${bundle.length} vs ${devBundle.length})`,
   );
 
@@ -170,10 +190,19 @@ function testSizeCeiling(bundle) {
   assert.ok(
     kb < PRODUCTION_SIZE_CEILING_KB,
     `Hello World production bundle is ${kb.toFixed(1)} KB, over the ${PRODUCTION_SIZE_CEILING_KB} KB ceiling. ` +
-      'Something large was added to the runtime graph — check what lib/core/index.js now re-exports.',
+      'Something large joined the module graph — check what the application imports, and what lib/core/index.js re-exports.',
   );
 
-  console.log(`  ✅ ${kb.toFixed(1)} KB, under the ${PRODUCTION_SIZE_CEILING_KB} KB ceiling.`);
+  const gzipKb = zlib.gzipSync(Buffer.from(bundle, 'utf8')).length / 1024;
+  assert.ok(
+    gzipKb < GZIPPED_CEILING_KB,
+    `Hello World transfers ${gzipKb.toFixed(1)} KB gzipped, over the ${GZIPPED_CEILING_KB} KB ceiling.`,
+  );
+
+  console.log(
+    `  ✅ ${kb.toFixed(1)} KB raw / ${gzipKb.toFixed(1)} KB gzipped, under the ` +
+      `${PRODUCTION_SIZE_CEILING_KB} / ${GZIPPED_CEILING_KB} KB ceilings.`,
+  );
 }
 
 /**
@@ -228,7 +257,7 @@ function testExecutesInBrowser(bundle) {
 function testRuntimeStillWorks(window) {
   console.log('🧪 Testing runtime behaviour in the minified bundle...');
 
-  const { bridge, Avenx } = window;
+  const { bridge } = window;
 
   const counter = bridge({
     state: { count: 0 },
@@ -258,12 +287,19 @@ function testRuntimeStillWorks(window) {
     counter.count = 99;
   }, 'state stays read-only for consumers');
 
-  // Escaping is security-relevant, so confirm it survived minification.
+  // Escaping is security-relevant, so confirm it survived minification. Checked
+  // through what the application rendered rather than by calling HtmlEscaper on
+  // the namespace: the namespace now carries the documented globals and nothing
+  // else, and rendered output is the stronger assertion anyway.
+  const untrusted = window.document.querySelector('.untrusted');
+  assert.ok(untrusted, 'the component rendered the untrusted value');
+  assert.ok(untrusted.textContent.includes('script'), 'the value reaches the DOM as text');
   assert.strictEqual(
-    new Avenx.HtmlEscaper().escape('<script>alert(1)</script>'),
-    '&lt;script&gt;alert(1)&lt;/script&gt;',
-    'HTML escaping still works',
+    untrusted.querySelector('script'),
+    null,
+    'and never as markup: HTML escaping still works after minification',
   );
+  assert.strictEqual(untrusted.children.length, 0, 'the interpolation produced no elements at all');
 
   console.log('  ✅ Reactivity, events, read-only state and escaping all work.');
 }

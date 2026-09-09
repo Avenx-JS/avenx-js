@@ -24,7 +24,7 @@ try {
   const parsedState = cp.extractState(multilineState);
 
   assert.strictEqual(parsedState.count, 0);
-  assert.strictEqual(parsedState.name, "Nikita");
+  assert.strictEqual(parsedState.name, 'Nikita');
 
   // Existing test continues below
   const state = cp.extractState(content);

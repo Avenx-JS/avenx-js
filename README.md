@@ -289,9 +289,15 @@ Generate components, pages, and bridges with a single command. The built-in dev 
 
 ### 📦 Production Builds
 
-`avenx build` produces a production bundle: the minified runtime, with no testing or lint infrastructure and no Node shims in the graph. Testing helpers live behind `avenx-core/testing` and the ESLint tooling behind `avenx-core/tooling`, so neither can reach an application bundle. `avenx build --dev` builds the readable runtime instead, which is what `avenx serve` uses.
+`avenx build` compiles your components to ES modules and links them with Avenx's own bundler. The runtime is an ordinary dependency in that graph, resolved through `avenx-core/runtime` — not a prebuilt file prepended to your application.
 
-The runtime publishes `globalThis.Avenx` plus seven named globals, rather than copying its whole export surface onto the global object.
+That means your imports are **resolved, not rewritten**: npm packages work from components, pages, bridges and guards, ES and CommonJS alike; local modules resolve by path, by extension-less path or through a directory index; and an import that names nothing **fails the build** with the specifier and the file that asked for it. Nothing is ever dropped silently.
+
+It also means the build can leave things out. A module ships when something reaches it, so a production bundle does not carry the trace recorder — nothing in it can start a recording. A development build does, which is what `avenx serve --trace` uses. Testing helpers live behind `avenx-core/testing` and the ESLint tooling behind `avenx-core/tooling`, so neither can reach an application bundle, and an import of a Node built-in is a build error rather than a shim.
+
+The bundle publishes `globalThis.Avenx` plus seven named globals for compatibility. Everything else is reached by importing it, because importing now works.
+
+See the [deployment guide](docs/src/content/docs/guides/deployment.md).
 
 ---
 

@@ -48,7 +48,7 @@ jobs:
 
       - name: Compare sizes and generate report
         id: compare
-        run: node scripts/size-check.js --action compare --base base-sizes.json --pr pr-sizes.json --markdown size-report.md --threshold 50
+        run: node scripts/size-check.js --action compare --base base-sizes.json --pr pr-sizes.json --markdown size-report.md --threshold 600
         continue-on-error: true
 
       - name: Post or Update Comment

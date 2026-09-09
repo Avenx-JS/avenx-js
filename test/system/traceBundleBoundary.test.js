@@ -33,11 +33,28 @@ try {
   assert.ok(fs.existsSync(bundlePath), 'a production bundle was produced');
   const bundle = fs.readFileSync(bundlePath, 'utf8');
 
-  // --- What must ship ---------------------------------------------------
+  const devBuild = spawnSync(process.execPath, [cliPath, 'build', '--dev'], { cwd: workDir, encoding: 'utf8' });
+  assert.strictEqual(devBuild.status, 0, `development build failed:\n${devBuild.stderr}`);
+  const devBundle = fs.readFileSync(bundlePath, 'utf8');
 
+  // --- Where the recorder ships, and where it does not -------------------
+
+  // This is the boundary the bundler moved, and moved in the direction the
+  // documentation already promised. The recorder used to be fused into
+  // dist/runtime.min.js, so it shipped to every application whether or not one
+  // could ever record. It is an ordinary module now, and a production build
+  // references nothing that reaches it.
   assert.ok(
-    bundle.includes('installTraceRecorder'),
-    'the browser recorder ships: it is the half that has to run next to a real bug',
+    !bundle.includes('installTraceRecorder'),
+    'a production build does not carry the recorder: nothing in it can start a recording',
+  );
+
+  // `avenx serve --trace` installs the recorder through the namespace, and
+  // serve builds in development mode. That is the whole difference between the
+  // two modes.
+  assert.ok(
+    devBundle.includes('installTraceRecorder'),
+    'a development build carries the recorder: it is the half that has to run next to a real bug',
   );
 
   // --- What must never ship ---------------------------------------------

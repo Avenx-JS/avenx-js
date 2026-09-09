@@ -344,7 +344,13 @@ function testFailureAfterStagingDoesNotPromote() {
     const beforeJs = fs.readFileSync(bundlePath, 'utf-8');
     const beforeCss = fs.readFileSync(cssPath, 'utf-8');
 
-    fs.writeFileSync(path.join(root, 'avenx.config.json'), '{ "warnings": { "AVX_W01": "error" } }');
+    // The threshold has to be named as well as escalated: it defaults to a
+    // ceiling a scaffolded project sits well under, where it used to be 50 KB
+    // and fired on everything.
+    fs.writeFileSync(
+      path.join(root, 'avenx.config.json'),
+      '{ "bundleSizeWarningKb": 1, "warnings": { "AVX_W01": "error" } }',
+    );
 
     const result = runBuild(root);
     assertFailed(result, 'AVX_W01 escalated to an error');

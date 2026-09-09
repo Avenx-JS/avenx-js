@@ -83,6 +83,23 @@ export default class AuthGuard extends AvenxGuard {
 `,
   );
 
+  // Guards reach the bundle the way everything else does: something imports
+  // them. A route naming a guard class is that import, and is what a real
+  // project writes -- the old pipeline concatenated every .guard.js in the
+  // project whether a route used it or not.
+  fs.writeFileSync(
+    path.join(dir, 'src', 'main.app.js'),
+    `import { AvenxApp } from 'avenx-core/runtime';
+import AuthGuard from './guards/auth.guard.js';
+${secondGuard ? "import RoleGuard from './guards/role.guard.js';\n" : ''}
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '#/admin': { page: 'Admin', guards: [AuthGuard${secondGuard ? ', RoleGuard' : ''}] },
+});
+`,
+  );
+
   if (secondGuard) {
     fs.writeFileSync(
       path.join(dir, 'src', 'guards', 'role.guard.js'),
@@ -115,11 +132,14 @@ try {
     const bundle = fs.readFileSync(path.join(dir, 'dist', 'bundle.js'), 'utf-8');
 
     // The bundle must parse, and the guard's local name must be bound inside
-    // the guard's own module scope.
+    // the guard's own module scope. It is an ordinary resolved import now
+    // rather than a compiler-written alias, which is what made a guard's bridge
+    // import resolve to `undefined` and report AVX_R07 on every navigation.
     new vm.Script(bundle, { filename: 'bundle.js' });
-    assert.ok(/const session = \w+;/.test(bundle), `the guard's bridge import is rewired to a binding:\n`);
+    assert.ok(/var session = __avx\d+\.default;/.test(bundle), "the guard's bridge import is bound in its own scope");
     assert.ok(bundle.includes('signedIn'), 'and the bridge itself is in the bundle, not tree-shaken away');
-    console.log('  ✅ A guard bridge import compiles to a bundle-scope alias.');
+    assert.ok(bundle.includes('session.signedIn'), 'so the guard can actually read it');
+    console.log('  ✅ A guard reads its bridge through a resolved import.');
   }
 
   /* ---------------------------------------------------------------------
@@ -133,12 +153,12 @@ try {
     assert.strictEqual(build.status, 0, `the project builds:\n${build.output}`);
 
     const bundle = fs.readFileSync(path.join(dir, 'dist', 'bundle.js'), 'utf-8');
-    const aliasMatch = bundle.match(/const session = (\w+);/);
-    assert.ok(aliasMatch, 'the alias exists');
-    const binding = aliasMatch[1];
+    const bindingMatch = bundle.match(/var session = (__avx\d+)\.default;/);
+    assert.ok(bindingMatch, 'the guard binds the bridge');
+    const binding = bindingMatch[1];
     assert.ok(
-      new RegExp(`const ${binding}\\s*=`).test(bundle),
-      `the bridge binding ${binding} is declared in the bundle rather than dangling`,
+      new RegExp(`var ${binding}\\s*=`).test(bundle),
+      `the bridge module ${binding} is in the bundle rather than dangling`,
     );
     console.log('  ✅ A bridge imported only by a guard is not tree-shaken.');
   }

@@ -16,7 +16,6 @@ import { spawnSync } from 'child_process';
 import { APPS, APPS_DIR, REPO_ROOT } from './apps.js';
 
 const CLI = path.join(REPO_ROOT, 'bin', 'avenx.js');
-const RUNTIME_BUILD = path.join(REPO_ROOT, 'scripts', 'build.js');
 
 /**
  * Runs a Node script and returns its result, with output captured for reporting.
@@ -48,21 +47,6 @@ function run(script, args, cwd) {
  */
 function fail(headline, output) {
   throw new Error(`${headline}\n\n${output || '(no output)'}\n`);
-}
-
-/**
- * Rebuilds the browser runtime bundles the compiler embeds.
- *
- * Always, not only when the files are missing. The previous suite rebuilt only
- * when `dist/runtime.js` was absent, so a stale runtime from an earlier checkout
- * was silently tested against current specs.
- * @returns {void}
- */
-function buildRuntime() {
-  const { status, output } = run(RUNTIME_BUILD, [], REPO_ROOT);
-  if (status !== 0) {
-    fail('E2E setup: the Avenx runtime bundles failed to build.', output);
-  }
 }
 
 /**
@@ -111,7 +95,6 @@ function buildApp(app) {
  */
 export default async function globalSetup() {
   const started = Date.now();
-  buildRuntime();
 
   for (const app of APPS) {
     buildApp(app);

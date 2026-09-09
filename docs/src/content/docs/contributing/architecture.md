@@ -13,7 +13,8 @@ This guide provides a structural breakdown of the Avenx‑JS codebase to help co
 
 | Directory | Purpose | When You Would Touch It |
 | :--- | :--- | :--- |
-| `lib/compiler/` | Template parsing, AST transformation, style scoping, and bundle packaging. | Adding template syntax, changing bundling, or optimizing CSS hashing. |
+| `lib/compiler/` | Template parsing, AST transformation, style scoping, and turning compiled units into ES modules (`modules.js`). | Adding template syntax, or changing what a generated module looks like. |
+| `lib/bundler/` | Avenx's own bundler: module reading (`parseModule.js`), specifier resolution (`resolve.js`), the dependency graph (`graph.js`), tree shaking (`treeshake.js`), emission and source maps (`emit.js`), minification (`minify.js`). | Changing how modules are resolved, linked, shaken or emitted. Never for anything Avenx-specific — the bundler knows nothing about components. |
 | `lib/compiler/atlas/` | The retained semantic model: nodes, edges, expression resolution, source locations, the fragment cache and the two Atlas diagnostics. | Teaching Atlas about a new template construct, or changing what a query reports. |
 | `lib/compiler/render/` | Template → render program: the op vocabulary, and the compiler that emits one or reports why it could not. | Teaching the compiled renderer a construct that currently falls back. |
 | `lib/core/renderer/program/` | The runtime that executes a render program: skeleton preparation, per-op DOM writes, per-binding effects. | Adding an op kind, or changing what one does to the DOM. |
@@ -37,7 +38,42 @@ When `avenx build` executes, `lib/compiler/compiler.js` orchestrates the source�
 4. **ContractValidator** – Performs static analysis against declared state variables, action definitions, and template expressions, using `AvenxErrorCodes` for diagnostics (`lib/compiler/ContractValidator.js`).
 5. **Atlas** – Retains what the parser just produced as a semantic model (`lib/compiler/atlas/`). Nothing is re‑parsed: `addComponentUnit` receives the same objects step 2 produced. The model is emitted as `dist/bundle.atlas.json` and never referenced by the bundle.
 6. **Render program** – Compiles the finished template into a static skeleton plus a list of binding ops (`lib/compiler/render/compileTemplate.js`). Runs last, on exactly the template the runtime will receive, because every rewrite above changes the markup the bindings have to address. A template containing a construct the program runtime does not implement produces no program and is reported as `AVX_W47`.
-7. **AvenxCompiler / Bundler** – Resolves component dependencies, tree‑shakes unreferenced elements, and packages compiled classes together with the minimal client runtime into a single IIFE bundle inside `dist/bundle.js`.
+7. **Module generation** – Frames each compiled class as an ES module: an import of the runtime, the developer's own imports verbatim, and a default export (`lib/compiler/modules.js`). `ComponentParser.parse()` still returns a bare `class X extends AvenxComponent`; how a unit is *linked* is not a reason to change how it is *compiled*, and that output shape is what `avenx-core/testing` and the Vite plugin consume.
+8. **Bundling** – `lib/bundler/` resolves every specifier, builds the dependency graph, drops what nothing reaches, and emits `dist/bundle.js` with a source map. The Avenx runtime is an ordinary dependency in that graph, resolved through `avenx-core/runtime`.
+
+### The compiler/bundler boundary
+
+Keep it clean. The compiler owns Avenx semantics — templates, declarations,
+expressions, scoped CSS, Atlas, the shape of a generated class. The bundler owns
+modules — resolution, the graph, dead-code elimination, format interop, emission.
+The moment the bundler needs to know what a `.page.js` is, the two halves have
+grown back together.
+
+The compiler communicates through *virtual modules*: a `Map` from a source
+file's absolute path to the module source it generated. The bundler resolves
+against that table first, so `import './counter.component.js'` reaches the
+compiled class rather than the template file, which is not JavaScript.
+
+### What the bundler guarantees
+
+```text
+avenx build reports success
+  => every import resolved, and every name it imported is exported
+```
+
+There is no path through `lib/bundler/graph.js` that drops an edge. This
+replaced `rewriteRuntimeImports`, which deleted every import that was not the
+runtime entry — the reason a component could import an npm package, build green,
+and throw `ReferenceError` in the browser.
+
+Three things the emitter has to get right, each documented at length in
+`lib/bundler/emit.js`: **live bindings** (`export let activeWatcher` is
+reassigned in `reactive/watcher.js` and read across a module boundary by
+`AvenxComponent`, so it is hoisted to bundle scope rather than copied),
+**cycles** (only function declarations may cross one, exactly as in the
+language), and **line fidelity** (rewritten declarations are padded back to the
+line count they replaced, which is what makes the source map exact and keeps it
+valid across minification).
 
 `AvenxCompiler.analyze()` runs steps 1–5 without emitting anything. `avenx atlas`, `avenx impact`, `avenx why`, `avenx inspect`, `avenx stats` and `avenx check` all use it, which is what keeps them from disagreeing with a build.
 
@@ -104,14 +140,17 @@ To run a **single test file**, use:
 - `npm test` – Run all unit, integration, and system tests.
 - `npm run test:coverage` – Generate code coverage reports.
 - `npm run bench` – Run compiler and runtime benchmark suites (`benches/`).
-- `node scripts/size-check.js` – Verify bundle footprint constraints (also run in CI).
+- `node scripts/size-check.js --action build --repo . --out sizes.json` – Measure the scaffolded project's bundle (also run in CI).
 - `npm run docs` – Generate JSDoc output to `dev-docs/`.
 - `npm run lint` / `npm run format` – Lint and format the codebase.
 
 To try your local changes against a scratch project:
-1. `npm run build` – Build the distribution.
-2. `npm link` – Link the package globally.
-3. In your test project: `npm link avenx-js` and test your changes.
+1. `npm link` – Link the package globally.
+2. In your test project: `npm link avenx-core` and test your changes.
+
+There is no build step for the framework itself. The runtime is source, resolved
+and linked into each application's own bundle, so a change to `lib/core/` takes
+effect on the next `avenx build`.
 
 ---
 
