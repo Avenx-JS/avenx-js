@@ -576,25 +576,47 @@ function testDuplicateNameIsFatal() {
 }
 
 /**
- * A bridge importing a module the bundler cannot inline stops the build,
- * instead of silently dropping the import as the old pipeline did.
+ * A bridge may import an ordinary module, and an import that resolves to
+ * nothing stops the build.
+ *
+ * The first half is new. A bridge importing a local helper used to fail with
+ * AVX_C09 -- a bridge module may only import the Avenx runtime and other
+ * bridge modules -- because the concatenator had no way to inline anything
+ * else. The bundler resolves it like any other specifier.
  */
-function testUnsupportedImportIsFatal() {
-  console.log('🧪 Testing unsupported bridge imports...');
+function testBridgeImports() {
+  console.log('🧪 Testing bridge imports...');
 
-  const { error } = build({
+  const supported = build({
     'src/bridges/auth.bridge.js': `import { bridge } from 'avenx-core/runtime';
 import { helper } from '../utils/helper.js';
 export default bridge({ state: { value: helper() } });`,
-    'src/utils/helper.js': `export function helper() { return 1; }`,
-    'src/main.app.js': `const app = new AvenxApp({ target: '#app' });`,
+    'src/utils/helper.js': 'export function helper() { return 41 + 1; }',
+    // A bridge ships when something imports it, so the fixture needs a consumer.
+    'src/components/reader/reader.component.js': `import auth from '../../bridges/auth.bridge.js';
+
+<div>{{ auth.value }}</div>`,
+    'src/main.app.js': "const app = new AvenxApp({ target: '#app' });",
   });
 
-  assert.ok(error, 'the build fails');
-  assert.strictEqual(error.code, AvenxErrorCodes.COMPILER_BRIDGE_UNSUPPORTED_IMPORT, 'with the right code');
-  assert.ok(error.message.includes('helper.js'), 'naming the offending import');
+  assert.strictEqual(supported.error, null, `a bridge may import a helper module: ${supported.error}`);
+  assert.ok(supported.bundle.includes('return 41 + 1'), 'and the helper is bundled with it');
 
-  console.log('  ✅ An un-inlinable import fails loudly instead of vanishing.');
+  const missing = build({
+    'src/bridges/auth.bridge.js': `import { bridge } from 'avenx-core/runtime';
+import { helper } from '../utils/nowhere.js';
+export default bridge({ state: { value: helper() } });`,
+    'src/components/reader/reader.component.js': `import auth from '../../bridges/auth.bridge.js';
+
+<div>{{ auth.value }}</div>`,
+    'src/main.app.js': "const app = new AvenxApp({ target: '#app' });",
+  });
+
+  assert.ok(missing.error, 'an import that resolves to nothing fails the build');
+  assert.strictEqual(missing.error.code, AvenxErrorCodes.COMPILER_UNRESOLVED_IMPORT, 'reported as AVX_C17');
+  assert.ok(missing.error.message.includes('nowhere.js'), 'naming the offending import');
+
+  console.log('  ✅ A bridge may import ordinary modules; an unresolvable one fails loudly.');
 }
 
 /**
@@ -816,7 +838,7 @@ async function run() {
   testNoFalsePositives();
   testMissingBridgeIsFatal();
   testDuplicateNameIsFatal();
-  testUnsupportedImportIsFatal();
+  testBridgeImports();
   testCircularBridgeImportIsFatal();
   testIsolatedImportIsFatal();
   testNonBridgeModuleIsRejected();
