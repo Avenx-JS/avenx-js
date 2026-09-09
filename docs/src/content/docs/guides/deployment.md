@@ -78,6 +78,35 @@ The build reports what it did:
 Bundled 66 modules · 5 shaken out
 ```
 
+### Dynamic imports, and code splitting
+
+`import('./thing.js')` works. The module joins the graph and is bundled, and the
+promise resolves with its namespace:
+
+```javascript
+const { renderChart } = await import('./charts/renderer.js');
+```
+
+What it does **not** do yet is produce a separate file. Avenx emits one chunk,
+so a dynamically imported module is bundled eagerly and the promise resolves
+immediately. That is the correct observable behaviour for an unsplit build — the
+semantics are right, and what is missing is the chunk boundary — but it means a
+dynamic import is a code-organisation tool today, not a payload-reduction one.
+
+The specifier must be a literal. `import(name)` fails the build, because no
+build-time analysis can say what it names and the emitted bundle is a classic
+script with no module loader to resolve it at run time.
+
+**Why splitting is not implemented.** Emitting chunks is not the hard part; the
+pieces around it are. `dist/bundle.js` is loaded with a plain `<script src>`, so
+a second chunk needs a loader and a decision about whether the bundle becomes a
+module script. Route-level laziness additionally needs `initRouter` to accept a
+loader rather than a page name, and the router's mount path to become
+asynchronous. Those are application-facing changes, and the bundler now has the
+graph they would build on: dynamic imports are already distinct edges, and
+`lib/bundler/emit.js` already takes the set of modules to include as a
+parameter.
+
 ## Build Modes
 
 Avenx builds in one of two modes.

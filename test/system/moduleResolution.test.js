@@ -305,6 +305,53 @@ app.initRouter({ '': 'Home', '#/about': 'About' });
     console.log('  ✅ Generated page imports and registrations resolve like any other');
   }
 
+  {
+    // A dynamic import. Avenx does not emit separate chunks yet, so the module
+    // is bundled eagerly and `import()` resolves immediately with its
+    // namespace. That is the correct observable behaviour for an unsplit
+    // build: what is missing is a chunk boundary, not the semantics. Leaving
+    // the `import()` in place would be the one remaining way a specifier could
+    // reach a browser unresolved, because the bundle is a classic script.
+    const root = project({
+      'src/components/lazy/lazy.component.js': `<state text="" />
+
+<action name="load"> text = 'ready'; </action>
+
+<div><p class="out">{{ text }}</p></div>`,
+      'src/utils/heavy.js': "export const heavy = 'loaded lazily';\nexport default 'heavy default';\n",
+      'src/main.app.js': `import { AvenxApp } from 'avenx-core/runtime';
+import Lazy from './components/lazy/lazy.component.js';
+
+const app = new AvenxApp({ target: '#app' });
+app.register('Lazy', Lazy);
+
+import('./utils/heavy.js').then((mod) => {
+  globalThis.__avxLazy = { named: mod.heavy, fallback: mod.default };
+});
+`,
+    });
+
+    const build = avenx(['build'], root);
+    assert.strictEqual(build.status, 0, `a dynamic import builds:\n${build.output}`);
+
+    const bundle = bundleOf(root);
+    assertParses(bundle);
+    assert.ok(bundle.includes("'loaded lazily'"), 'the dynamically imported module is bundled');
+    assert.ok(!/\bimport\s*\(\s*['"]/.test(bundle), 'and no import() survives into the classic script');
+
+    const window = new Window({ url: 'http://localhost/' });
+    window.document.write(fs.readFileSync(path.join(root, 'index.html'), 'utf-8'));
+    window.eval(bundle);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    // Compared field by field: the object was created inside the window's own
+    // realm, so its prototype is not this realm's Object.prototype.
+    assert.ok(window.__avxLazy, 'the dynamic import settled');
+    assert.strictEqual(window.__avxLazy.named, 'loaded lazily', 'a named export resolves');
+    assert.strictEqual(window.__avxLazy.fallback, 'heavy default', 'and so does the default');
+    console.log('  ✅ A dynamic import resolves to the bundled module namespace');
+  }
+
   // ============================================================== red paths ===
 
   /**
@@ -346,6 +393,16 @@ app.initRouter({ '': 'Home', '#/about': 'About' });
       mentions: 'builtin',
     },
     {
+      label: 'a dynamic import with a computed specifier',
+      files: {
+        'src/components/broken/broken.component.js': '<div>{{ 1 }}</div>',
+        'src/utils/loader.js': "const name = './thing.js';\nexport const load = () => import(name);\n",
+      },
+      extraMain: "import { load } from './utils/loader.js';\nvoid load;\n",
+      code: 'AVX_C17',
+      mentions: 'computed specifier',
+    },
+    {
       label: 'a stylesheet, which Avenx does not bundle',
       files: {
         'src/components/broken/broken.component.js': "import '../../styles/theme.css';\n\n<div>{{ 1 }}</div>",
@@ -361,7 +418,7 @@ app.initRouter({ '': 'Home', '#/about': 'About' });
       ...failure.files,
       'src/main.app.js': `import { AvenxApp } from 'avenx-core/runtime';
 import Broken from './components/broken/broken.component.js';
-
+${failure.extraMain || ''}
 const app = new AvenxApp({ target: '#app' });
 app.register('Broken', Broken);
 `,
