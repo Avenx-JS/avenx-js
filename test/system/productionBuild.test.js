@@ -257,7 +257,7 @@ function testExecutesInBrowser(bundle) {
 function testRuntimeStillWorks(window) {
   console.log('🧪 Testing runtime behaviour in the minified bundle...');
 
-  const { bridge, Avenx } = window;
+  const { bridge } = window;
 
   const counter = bridge({
     state: { count: 0 },
