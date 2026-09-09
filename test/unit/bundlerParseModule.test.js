@@ -73,11 +73,26 @@ import other, * as space from './e.js';
 }
 
 {
-  // A dynamic import is an expression, not a declaration, and must not become a
-  // static edge in the graph.
+  // A dynamic import is an expression rather than a declaration, so it is
+  // recorded separately -- but it is still a dependency. An Avenx bundle is a
+  // classic script with no module loader, so a surviving `import()` would
+  // request a path that was never written; the module has to be in the graph.
   const record = read(`const load = () => import('./lazy.js');\nconst url = import.meta.url;`);
-  assert.deepEqual(record.dependencies, [], 'dynamic import is not a static dependency');
-  console.log('  ✅ Dynamic import and import.meta are not static dependencies');
+  assert.deepEqual(record.dependencies, ['./lazy.js'], 'a dynamic import is a dependency');
+  assert.equal(record.imports.length, 0, 'but not a static import declaration');
+  assert.equal(record.dynamicImports.length, 1);
+  assert.equal(record.dynamicImports[0].specifier, './lazy.js');
+  console.log('  ✅ A dynamic import is a dependency; import.meta is not');
+}
+
+{
+  // A computed specifier cannot be resolved by anyone at build time, so it is
+  // recorded with a null specifier for the graph to report.
+  const record = read("const name = './x.js';\nconst p = import(name);\nvoid p;");
+  assert.deepEqual(record.dependencies, [], 'a computed specifier names no module');
+  assert.equal(record.dynamicImports.length, 1);
+  assert.equal(record.dynamicImports[0].specifier, null, 'and is recorded so it can be reported');
+  console.log('  ✅ A computed dynamic import is recorded rather than passed through');
 }
 
 // ---------------------------------------------------------------- exports ---
