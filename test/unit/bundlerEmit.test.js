@@ -182,7 +182,7 @@ try {
 
   // ------------------------------------------------------------ entry access ---
   {
-    const entry = write('expose/entry.js', "export const value = 7;");
+    const entry = write('expose/entry.js', 'export const value = 7;');
     const { code } = emit(entry, { footer: 'globalThis.result = __avx_entry.value;' });
     assert.equal(run(code).result, 7, 'a footer can read the entry exports through __avx_entry');
     console.log('  ✅ A footer can publish the entry namespace');

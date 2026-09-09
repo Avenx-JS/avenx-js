@@ -6,10 +6,10 @@ import '../helpers/register-happy-dom.js';
 import AvenxCompiler from '../../lib/compiler.js';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
 import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
+import { bridgeModule } from '../../lib/compiler/modules.js';
 import {
   analyzeBridge,
   bridgeNameFromFile,
-  emitBridge,
   extractEmittedEvents,
   extractSubscriptions,
   findBridgeImports,
@@ -304,17 +304,24 @@ function testEmission() {
   console.log('🧪 Testing bundle emission...');
 
   const descriptor = analyzeBridge('/p/src/bridges/auth.bridge.js', AUTH_BRIDGE);
-  const emitted = emitBridge(descriptor, AUTH_BRIDGE, new Map());
+  const emitted = bridgeModule({
+    name: descriptor.name,
+    binding: descriptor.binding,
+    source: AUTH_BRIDGE,
+  });
 
-  assert.ok(emitted.includes('const __avx_bridge_auth = (() => {'), 'the module becomes a scoped IIFE');
+  // A bridge file is already valid JavaScript, so emission does almost nothing
+  // to it. What used to happen -- wrapping it in an IIFE, stripping its runtime
+  // import, deleting its bridge imports and replacing them with aliases -- was
+  // all in service of concatenation, and the graph does it properly now.
+  assert.ok(emitted.includes(`const ${descriptor.binding} = bridge({`), 'the default export is given a name');
   assert.ok(emitted.includes("const GUEST_NAME = 'Guest'"), 'a constant above the export survives');
   assert.ok(emitted.includes('function normalize(raw)'), 'a helper above the export survives');
-  assert.ok(emitted.includes('return bridge({'), 'the default export becomes the return value');
-  assert.ok(!emitted.includes('export default'), 'the export keyword is gone');
-  assert.ok(!emitted.includes("from 'avenx-core/runtime'"), 'the runtime import is stripped');
-  assert.ok(emitted.includes('defineBridgeName("auth"'), 'the bridge is labelled for diagnostics');
+  assert.ok(emitted.includes("from 'avenx-core/runtime'"), 'the runtime import survives, to be resolved');
+  assert.ok(emitted.includes(`__avx_defineBridgeName("auth", ${descriptor.binding})`), 'the bridge is labelled');
+  assert.ok(emitted.includes(`export default ${descriptor.binding};`), 'and it is exported for importers');
 
-  console.log('  ✅ The whole module body survives compilation.');
+  console.log('  ✅ A bridge module keeps its body and gains a name.');
 }
 
 // ---------------------------------------------------------------------------

@@ -195,10 +195,16 @@ async function runTest() {
 
     assert.match(buildOutput, /bundle\.js: \d+\.\d{2} KB/, 'prints bundle.js asset size');
 
-    assert.match(
-      buildOutput,
-      /WARNING: bundle\.js exceeds 50 KB \(\d+\.\d{2} KB\)/,
-      'warns when bundle.js exceeds threshold',
+    // The transferred size is reported beside the raw one: it is what a browser
+    // actually pays, and the number a developer should be reading.
+    assert.match(buildOutput, /bundle\.js: \d+\.\d{2} KB \(\d+\.\d{2} KB gzipped\)/, 'prints the transferred size');
+
+    // A scaffolded project no longer trips AVX_W01. The threshold used to be
+    // 50 KB, which nothing could satisfy, so the warning fired on every build
+    // including this one and told a developer nothing.
+    assert.ok(
+      !buildOutput.includes('AVX_W01'),
+      `a scaffolded project builds without a size warning:\n${buildOutput}`,
     );
 
     assert.match(buildOutput, /bundle\.css: \d+\.\d{2} KB/, 'prints bundle.css size');

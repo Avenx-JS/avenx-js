@@ -21,12 +21,7 @@ import assert from 'assert';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import AvenxCompiler from '../../lib/compiler.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 console.log('🧪 Testing component tree-shaking through the module graph...');
 
