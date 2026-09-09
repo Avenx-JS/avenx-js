@@ -79,8 +79,9 @@ try {
   fs.writeFileSync(path.join(sharedDir, 'profile-card.component.js'), profileCardTemplate);
 
   assert.doesNotThrow(() => {
-    const result = compiler.processComponents();
-    assert.ok(typeof result === 'string', 'processComponents() should return a string when names are unique');
+    const modules = new Map();
+    compiler.processComponents(modules);
+    assert.ok(modules.size > 0, 'processComponents() should generate a module per component when names are unique');
   }, 'processComponents() should not throw when all component class names are unique');
 
   cleanUp();

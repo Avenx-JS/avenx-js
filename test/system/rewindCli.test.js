@@ -134,8 +134,10 @@ try {
       const result = avenx(['build']);
       assert.strictEqual(result.status, 0, `the build succeeds: ${result.stderr}`);
       const bundle = fs.readFileSync(path.join(fixture, 'dist', 'bundle.js'), 'utf8');
+      // The configuration is its own module now, importing `journal` from the
+      // runtime rather than reaching it through a global namespace object.
       assert.ok(
-        bundle.includes('Avenx.journal.configure({"onConflict":"abort","maxSnapshotItems":500})'),
+        bundle.includes('journal.configure({"onConflict":"abort","maxSnapshotItems":500})'),
         'the project configuration reaches the runtime',
       );
     } finally {

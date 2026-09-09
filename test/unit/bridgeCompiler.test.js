@@ -38,8 +38,48 @@ function makeProject(files) {
  * @param {Record<string, string>} files - The project files.
  * @returns {{bundle: string, output: string, error: Error|null, root: string}} The result.
  */
+/**
+ * Adds the component registrations a fixture's `main.app.js` implies.
+ *
+ * A component reaches the bundle when something imports it, and it can only
+ * render when something registers it -- which is the same act, since
+ * registration names an imported binding. These fixtures write components and
+ * reference them from a page template, so the helper writes the import and the
+ * `app.register` call a real application would have. Before the bundler, an
+ * unregistered component was still concatenated into the output, where it was
+ * dead code that could never be instantiated.
+ * @param {object} files - The fixture's files, keyed by relative path.
+ * @returns {object} The same files, with registrations added to main.app.js.
+ */
+function registerComponents(files) {
+  const main = files['src/main.app.js'];
+  if (typeof main !== 'string' || main.includes('app.register(')) {
+    return files;
+  }
+
+  const components = Object.keys(files)
+    .filter((file) => file.endsWith('.component.js'))
+    .map((file) => {
+      const base = path.basename(file, '.component.js');
+      const className = base
+        .split(/[-_]/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+      return { className, specifier: `./${file.replace(/^src\//, '')}` };
+    });
+
+  if (components.length === 0) {
+    return files;
+  }
+
+  const imports = components.map((entry) => `import ${entry.className} from '${entry.specifier}';`).join('\n');
+  const calls = components.map((entry) => `app.register('${entry.className}', ${entry.className});`).join('\n');
+
+  return { ...files, 'src/main.app.js': `${imports}\n\n${main}\n${calls}\n` };
+}
+
 function build(files) {
-  const root = makeProject(files);
+  const root = makeProject(registerComponents(files));
   const lines = [];
   const capture = (...args) => lines.push(args.map(String).join(' '));
   const original = {
@@ -307,12 +347,15 @@ function testEndToEndCompilation() {
     /class Plain extends AvenxComponent[\s\S]*?super\([^)]*?, bridges,/.test(bundle),
     'a component that imports nothing gets no bridge bindings',
   );
-  assert.ok(!bundle.includes('import auth from'), 'the import statement does not reach the bundle');
+  // The import statement itself is resolved by the bundler rather than deleted,
+  // so what must not appear is the *unresolved* specifier and, as always, the
+  // import leaking into the emitted template string.
+  assert.ok(!/from '\.\.\/bridges\/auth\.bridge\.js'/.test(bundle), 'the specifier is resolved, not carried');
   assert.ok(
     !/"[^"]*import auth from/.test(bundle),
     'the import statement does not leak into the template string',
   );
-  assert.ok(bundle.includes("app.registerBridge('auth', __avx_bridge_auth)"), 'the bridge is registered for devtools');
+  assert.ok(/registerBridge\("auth", __avx_bridge_\d+\)/.test(bundle), 'the bridge is registered for devtools');
 
   console.log('  ✅ Imports become compile-time scope bindings.');
 }
@@ -339,10 +382,13 @@ function testImportAliases() {
   assert.strictEqual(error, null, 'the build should succeed');
   assert.ok(bundle.includes('"session": __avx_bridge_auth'), 'the aliased name is bound');
   assert.ok(bundle.includes('"auth": __avx_bridge_auth'), 'the plain name is bound');
+  // Each importing module aliases the binding into its own scope, so the name
+  // appears once per importer. What must happen exactly once is the thing the
+  // assertion was always about: the bridge being *constructed*.
   assert.strictEqual(
-    (bundle.match(/const __avx_bridge_auth = /g) || []).length,
+    (bundle.match(/= bridge\(/g) || []).length,
     1,
-    'the bridge itself is only emitted once',
+    'the bridge itself is only constructed once, however many components import it',
   );
 
   console.log('  ✅ Each component sees the bridge under the name it chose.');
@@ -401,7 +447,12 @@ export default bridge({
     bundle.indexOf('const __avx_bridge_http') < bundle.indexOf('const __avx_bridge_auth'),
     'the dependency is emitted before the bridge that imports it',
   );
-  assert.ok(bundle.includes('const http = __avx_bridge_http;'), 'the import is re-bound inside the IIFE');
+  // The bridge-to-bridge import is a real module edge now, resolved by the
+  // bundler, rather than an alias the compiler wrote by hand.
+  assert.ok(
+    /var http = __avx\d+\.default;/.test(bundle),
+    `the composed bridge binds its dependency through the module graph:\n${bundle.slice(0, 0)}`,
+  );
   assert.ok(
     bundle.includes('__avx_bridge_http'),
     'a bridge reachable only through another bridge is still bundled',
@@ -698,14 +749,24 @@ export default bridge({
 
 <div>[{{ counter.count }}/{{ counter.doubled }}]<button id="inc" @click="counter.increment()">+</button></div>`,
     'src/pages/home.page.js': `<div><Display /></div>`,
-    'src/main.app.js': `const app = new AvenxApp({ target: '#app' });`,
+    // A module's declarations are private to it now, so the test reaches the
+    // component and the bridge the way an application would: by importing them
+    // in main.app.js. Reading them out of bundle scope worked only because
+    // concatenation had no module boundaries to respect.
+    'src/main.app.js': `import Display from './components/display.component.js';
+import counter from './bridges/counter.bridge.js';
+
+const app = new AvenxApp({ target: '#app' });
+app.register('Display', Display);
+globalThis.__avxTestExports = { Display, counter };`,
   });
 
   assert.strictEqual(error, null, 'the build should succeed');
 
   // The bundle's entry point constructs an AvenxApp against '#app'.
   document.body.innerHTML = '<div id="app"></div><div id="bundle-root"></div>';
-  const exported = new Function(`${bundle}\n; return { Display, counter: __avx_bridge_counter };`)();
+  new Function(bundle)();
+  const exported = globalThis.__avxTestExports;
 
   assert.strictEqual(exported.counter.$name, 'counter', 'the bridge is labelled at runtime');
   assert.strictEqual(exported.counter.doubled, 0, 'the module-level constant survived compilation');
