@@ -114,6 +114,26 @@ try {
     console.log('  ✅ A package declaring `sideEffects: false` is taken at its word');
   }
 
+  {
+    // `entryNeeds` is the counterpart to the emitter publishing `__avx_entry`:
+    // a footer that reads the entry's namespace needs those exports kept, and
+    // nothing else in the graph asks for them. Without it a footer would
+    // compile against exports that had been shaken away.
+    const entry = write('needs/entry.js', "export { wanted } from './lib.js';\nexport { spare } from './lib.js';");
+    write('needs/lib.js', 'export const wanted = 1;\nexport const spare = 2;\nexport const never = 3;');
+
+    const resolver = new Resolver();
+    const { graph, order } = buildGraph({ entries: [entry], resolver });
+
+    const bare = shake({ graph, order });
+    assert.ok(!bare.has(path.join(root, 'needs/lib.js')), 'nothing asks for the entry exports, so the route is not followed');
+
+    const asked = shake({ graph, order, entryNeeds: new Map([[entry, ['wanted']]]) });
+    assert.ok(asked.has(path.join(root, 'needs/lib.js')), 'declaring what the consumer needs keeps the route');
+
+    console.log('  ✅ An entry export a consumer declares it needs is kept');
+  }
+
   // ------------------------------------------------ the runtime, measurably ---
   {
     const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
