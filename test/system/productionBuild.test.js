@@ -193,14 +193,53 @@ function testActionBodiesAreCompiled(production, development) {
     'the statement-bodied action was not compiled to a function',
   );
 
-  // The compiled body itself must not reach for dynamic evaluation.
-  const compiledTable = production.slice(production.indexOf('__axActions'));
-  const tableEnd = compiledTable.indexOf('\n};');
-  const table = compiledTable.slice(0, tableEnd === -1 ? 2000 : tableEnd);
-  assert.ok(!/\bnew\s+Function\s*\(/.test(table), 'a compiled action constructs a function from a string');
-  assert.ok(!/\bwith\s*\(/.test(table), 'a compiled action uses a with-statement');
-
   console.log('  ✅ Bodies compile to functions; the text stays in development.');
+}
+
+/**
+ * A production bundle contains no way to evaluate source at run time.
+ *
+ * This is the property the whole compile-the-expressions exercise exists to
+ * establish, so it is asserted on the emitted bundle rather than argued for in
+ * a comment. Every expression, handler and action body is a closure the engine
+ * compiled when it compiled the bundle; the parser, the tree-walking evaluator
+ * and the source-text sandbox that used to back them are unreachable from a
+ * production entry, so the bundler drops them.
+ *
+ * A development build still has them, and must: an expression the generator
+ * could not compile is reported as AVX_W48 and interpreted, so a template being
+ * edited keeps rendering.
+ * @param {string} production - The production bundle.
+ * @param {string} development - The development bundle.
+ */
+function testProductionNeedsNoUnsafeEval(production, development) {
+  console.log('🧪 Testing production carries no expression interpreter...');
+
+  assert.ok(
+    !/\bnew\s+Function\s*\(/.test(production),
+    'the production bundle can still construct a function from a string',
+  );
+  assert.ok(
+    !/\bwith\s*\(/.test(production),
+    'the production bundle still contains a with-statement',
+  );
+
+  for (const marker of ['AvenxSandbox', 'ExpressionParseError', 'parseExpressionProgram', 'function evalNode']) {
+    assert.ok(
+      !production.includes(marker),
+      `the production bundle still carries the interpreter (found ${marker})`,
+    );
+  }
+
+  // The development build keeps all of it, which is what makes the difference a
+  // matter of reachability rather than of a runtime flag.
+  assert.ok(development.includes('AvenxSandbox'), 'the development build lost the interpreter');
+  assert.ok(
+    /\bnew\s+Function\s*\(/.test(development),
+    'the development build lost the statement fallback it is meant to keep',
+  );
+
+  console.log('  ✅ No eval, no new Function, no parser; development keeps them.');
 }
 
 /**
@@ -389,6 +428,7 @@ function run() {
     testBuildsSuccessfully(bundle);
     testNoDevelopmentCode(bundle);
     testActionBodiesAreCompiled(bundle, devBundle);
+    testProductionNeedsNoUnsafeEval(bundle, devBundle);
     testMinified(bundle, devBundle);
     testSizeCeiling(bundle);
     const window = testExecutesInBrowser(bundle);

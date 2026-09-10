@@ -56,6 +56,14 @@ async function runTestFile(file) {
   console.log(`\n🏃 Running: ${relativePath}`);
 
   const execArgv = [...process.execArgv];
+
+  // Every tier runs with the expression interpreter installed, because a test
+  // constructs components directly and nothing compiled their expressions.
+  // This is what a development build does; a production bundle installs
+  // nothing, which is asserted on a real bundle in test/system.
+  const interpreterPath = path.resolve(__dirname, 'helpers/register-interpreter.js');
+  execArgv.push('--import', pathToFileURL(interpreterPath).href);
+
   const isUnitTest = file.includes(path.join('test', 'unit')) || file.includes('test/unit');
   if (isUnitTest) {
     const registratorPath = path.resolve(__dirname, 'helpers/register-happy-dom.js');
