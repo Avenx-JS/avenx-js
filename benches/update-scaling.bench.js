@@ -67,6 +67,18 @@ async function mount(size) {
   const component = new Bench();
   component.mount(el);
   await component.$nextTick();
+
+  // A benchmark that measures a binding which throws reports a near-zero and
+  // looks like an improvement, which is the worst way for one to fail. This
+  // costs one string compare per mount and makes that impossible: if the render
+  // did not produce the value, the benchmark stops instead of reporting.
+  if (!el.textContent.includes('row 0')) {
+    throw new Error(
+      'the component did not render its first row, so nothing below would be measuring a render. ' +
+        'Run this through benches/run.js, which installs the expression interpreter a benchmark needs.',
+    );
+  }
+
   return { component, el };
 }
 

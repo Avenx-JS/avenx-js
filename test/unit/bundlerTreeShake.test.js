@@ -52,6 +52,55 @@ function shakeFixture(entry) {
 }
 
 try {
+  // ------------------------------------- a name first wanted after the walk ---
+  {
+    // The bug this pins: a module resolves its own re-exports only while it is
+    // being walked. When a *later* module was the first to want one of those
+    // re-exported names, nothing put the barrel back on the queue, so the
+    // re-export was dropped and the importer destructured `undefined`.
+    //
+    // The shape below reproduces the ordering that exposed it. `entry` imports
+    // `early` first, which drags the barrel in and gets it walked for `first`
+    // only. `late` then asks the same barrel for `second`, by which point the
+    // barrel has already been walked.
+    const entry = write('requeue/entry.js', [
+      "import { fromEarly } from './early.js';",
+      "import { fromLate } from './late.js';",
+      'globalThis.result = fromEarly + fromLate;',
+    ].join('\n'));
+    write('requeue/early.js', [
+      "import { first } from './barrel.js';",
+      'export const fromEarly = first;',
+    ].join('\n'));
+    write('requeue/late.js', [
+      "import { second } from './barrel.js';",
+      'export const fromLate = second;',
+    ].join('\n'));
+    write('requeue/barrel.js', [
+      "export { first } from './first.js';",
+      "export { second } from './second.js';",
+    ].join('\n'));
+    write('requeue/first.js', 'export const first = 1;');
+    write('requeue/second.js', 'export const second = 2;');
+
+    const { kept } = shakeFixture(entry);
+    assert.ok(
+      kept.includes('second.js'),
+      `a re-exported name wanted only by a later module was dropped: kept ${kept.join(', ')}`,
+    );
+    assert.ok(kept.includes('first.js'), 'the name wanted first should still be kept');
+
+    // And the bundle must actually evaluate, which is what the dropped
+    // re-export broke: the importer saw `undefined` rather than the value.
+    const output = bundle({ entries: [entry] });
+    const context = { globalThis: {} };
+    context.globalThis = context;
+    vm.runInNewContext(output.code, context);
+    assert.strictEqual(context.result, 3, 'the bundle evaluated with a dropped re-export');
+
+    console.log('  ✅ A re-export first wanted after its barrel was walked is kept.');
+  }
+
   // --------------------------------------------------------- barrel elision ---
   {
     const entry = write('barrel/entry.js', "import { wanted } from './barrel.js';\nglobalThis.result = wanted;");

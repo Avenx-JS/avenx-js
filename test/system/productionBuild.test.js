@@ -77,6 +77,12 @@ function makeHelloWorld() {
 
 <action name="increment"> count++; </action>
 
+<action name="tallyUp">
+  let running = 0;
+  for (const step of [1, 2, 3]) { running += step; }
+  count = running;
+</action>
+
 <div>
   <h1>{{ message }}</h1>
   <p class="count">Count: {{ count }}</p>
@@ -145,6 +151,95 @@ function testNoDevelopmentCode(bundle) {
   );
 
   console.log(`  ✅ None of the ${FORBIDDEN.length} development markers are present.`);
+}
+
+/**
+ * An action body reaches production as a compiled function and not as text.
+ *
+ * The body used to travel as source and run through `new Function("with(this)
+ * { … }")`, which is what made `'unsafe-eval'` a requirement. It is compiled
+ * now, and reached by name, so the text has no job left in a production bundle:
+ * nothing there can start a recording, which is the only thing that read it.
+ * A development build still carries it, because `avenx trace view` prints it.
+ * @param {string} production - The production bundle.
+ * @param {string} development - The development bundle.
+ */
+function testActionBodiesAreCompiled(production, development) {
+  console.log('🧪 Testing action bodies ship compiled, not as source...');
+
+  // The marker has to be a fragment the generator *rewrites*, so that finding
+  // it can only mean the body is present as written. Most of a compiled body is
+  // copied through verbatim -- that is the point of the design -- so a line
+  // containing no free identifiers would match both forms and prove nothing.
+  // `count` is state, so this line survives only as source.
+  const asWritten = 'count = running;';
+
+  assert.ok(
+    !production.includes(asWritten),
+    'the production bundle still carries an action body as source text',
+  );
+  assert.ok(
+    development.includes(asWritten),
+    'the development bundle dropped the body text that Trace reports',
+  );
+
+  // The compiled form is there, reached by name rather than by source.
+  assert.ok(
+    /__axActions\s*=\s*\{/.test(production),
+    'the production bundle has no compiled action table',
+  );
+  assert.ok(
+    /"tallyUp":\s*\(\$s\)\s*=>/.test(production),
+    'the statement-bodied action was not compiled to a function',
+  );
+
+  console.log('  ✅ Bodies compile to functions; the text stays in development.');
+}
+
+/**
+ * A production bundle contains no way to evaluate source at run time.
+ *
+ * This is the property the whole compile-the-expressions exercise exists to
+ * establish, so it is asserted on the emitted bundle rather than argued for in
+ * a comment. Every expression, handler and action body is a closure the engine
+ * compiled when it compiled the bundle; the parser, the tree-walking evaluator
+ * and the source-text sandbox that used to back them are unreachable from a
+ * production entry, so the bundler drops them.
+ *
+ * A development build still has them, and must: an expression the generator
+ * could not compile is reported as AVX_W48 and interpreted, so a template being
+ * edited keeps rendering.
+ * @param {string} production - The production bundle.
+ * @param {string} development - The development bundle.
+ */
+function testProductionNeedsNoUnsafeEval(production, development) {
+  console.log('🧪 Testing production carries no expression interpreter...');
+
+  assert.ok(
+    !/\bnew\s+Function\s*\(/.test(production),
+    'the production bundle can still construct a function from a string',
+  );
+  assert.ok(
+    !/\bwith\s*\(/.test(production),
+    'the production bundle still contains a with-statement',
+  );
+
+  for (const marker of ['AvenxSandbox', 'ExpressionParseError', 'parseExpressionProgram', 'function evalNode']) {
+    assert.ok(
+      !production.includes(marker),
+      `the production bundle still carries the interpreter (found ${marker})`,
+    );
+  }
+
+  // The development build keeps all of it, which is what makes the difference a
+  // matter of reachability rather than of a runtime flag.
+  assert.ok(development.includes('AvenxSandbox'), 'the development build lost the interpreter');
+  assert.ok(
+    /\bnew\s+Function\s*\(/.test(development),
+    'the development build lost the statement fallback it is meant to keep',
+  );
+
+  console.log('  ✅ No eval, no new Function, no parser; development keeps them.');
 }
 
 /**
@@ -332,6 +427,8 @@ function run() {
 
     testBuildsSuccessfully(bundle);
     testNoDevelopmentCode(bundle);
+    testActionBodiesAreCompiled(bundle, devBundle);
+    testProductionNeedsNoUnsafeEval(bundle, devBundle);
     testMinified(bundle, devBundle);
     testSizeCeiling(bundle);
     const window = testExecutesInBrowser(bundle);

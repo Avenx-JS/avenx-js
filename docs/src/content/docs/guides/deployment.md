@@ -464,46 +464,56 @@ The `bundle.css.map` file is a debugging and source-map artifact. It is **not** 
 
 ### Content Security Policy (CSP)
 
-**Template expressions do not require `'unsafe-eval'`.** Interpolations,
-computed values, directive bindings and list keys are parsed by Avenx and
-evaluated by walking the resulting tree — no `eval`, no `new Function`. An
-expression the parser cannot read fails the **build** (`AVX_R32`), so this is a
-property of what ships rather than something that degrades quietly at runtime.
+**A production build never needs `'unsafe-eval'`.**
 
 ```text
 Content-Security-Policy: script-src 'self';
 ```
 
-### When you still need `'unsafe-eval'`
+Everything executable in an Avenx application — template interpolations,
+computed values, directive bindings, list keys, inline event handlers,
+`<action>` bodies and `<resource>` handlers — is compiled to ordinary
+JavaScript functions **at build time** and linked into your bundle. The
+browser's own engine compiles them when it compiles the rest of your code.
+Nothing in a production bundle calls `eval`, constructs a function from a
+string, or uses a `with` statement.
 
-`<action>` bodies and inline event handlers are JavaScript **statements**, and a
-body using real statement syntax — `if`, `for`, `while`, `try`, `return`, a
-declaration — is compiled with `new Function` when it first runs. Bodies that are
-runs of expressions (`count++`, `busy = true; save()`) are not.
+That is checked rather than claimed: the test suite builds a real application
+and asserts the emitted bundle contains no `new Function`, no `with`, and none
+of the parser or evaluator that used to back them.
 
-Inline event handlers used to be compiled unconditionally, whatever they
-contained, which meant an application needed `'unsafe-eval'` as soon as it
-contained a single `@click` and `getFallbackReport()` never said so. They now
-take the same path as any other statement body.
+#### What changed
 
-So:
+Earlier versions shipped expressions and action bodies to the browser as
+**source text** and interpreted them there. Expressions were walked as a tree,
+which needed no `eval` — but an action body using real statement syntax (`if`,
+`for`, `try`, `return`, a declaration) was compiled with `new Function` the
+first time it ran. In practice that meant most non-trivial applications needed
+`'unsafe-eval'` after all.
 
-- If every action body and inline handler in your application is
-  expression-only, `script-src 'self'` is enough.
-- If any of them uses statement syntax, that page needs `'unsafe-eval'`:
+Nothing about the security checks was lost in the move. A member read still
+passes through one function with the key already resolved, so
+`x['const'+'ructor']` and `x.constructor` are the same check; the `Function`
+constructor and built-in prototypes are still unreachable. Two checks moved
+*earlier*: naming a restricted global (`window`, `fetch`, `localStorage`) or
+writing a forbidden key (`__proto__`, `constructor`, `prototype`) now fails the
+build with a file and a line rather than throwing when that branch first runs.
 
-  ```text
-  Content-Security-Policy: script-src 'self' 'unsafe-eval';
-  ```
+#### Development builds
 
-Both examples show only the `script-src` implication and are not complete
-production policies.
+`avenx build --dev` and `avenx serve` do include the expression interpreter, so
+that a template you are still editing keeps rendering when it contains something
+the compiler could not compile. A development build therefore does contain
+`new Function`, and is not intended to be deployed.
 
-To find out which applies to your application, call `getFallbackReport()` from
-`avenx-core/runtime` after exercising it — it lists every source that was
-compiled rather than parsed, with the reason. An empty report means nothing in
-that session needed `eval`. Exercise the handlers you care about: a body is
-only classified when it first runs.
+#### If the build reports AVX_W48
+
+`AVX_W48` lists every expression or body the compiler could not turn into a
+function. Those are the only things that would need an interpreter at run time,
+and a production bundle has none — so they will throw when they first evaluate.
+Rewrite them in the supported expression language, or move the logic into an
+`<action>`, and the warning goes away. A build with no `AVX_W48` needs no
+interpreter, which is the normal case.
 
 ### Hosting Configuration
 
