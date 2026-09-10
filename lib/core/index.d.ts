@@ -1605,16 +1605,23 @@ export function isRecording(): boolean;
 export const TRACE_ENDPOINT: string;
 
 /**
- * Every expression source that was compiled with `new Function` rather than
- * parsed, with the parser's reason.
+ * Every source the development interpreter had to parse at run time, with the
+ * reason, in the order it first met them.
  *
- * Template expressions are never in this list -- an unsupported one fails the
- * build. What can appear is an `<action>` body using statement syntax. An empty
- * report means nothing evaluated so far required `'unsafe-eval'`.
+ * A production build has no interpreter, so this is always empty there: what
+ * would have appeared in it is reported by the build as `AVX_W48` instead, well
+ * before anything runs. It remains useful in development as a way to see which
+ * of your expressions the compiler did not cover, from the running application
+ * rather than from build output.
  */
 export function getFallbackReport(): Array<{ source: string; reason: string }>;
 
-/** Whether an expression can be evaluated without `new Function`. */
+/**
+ * Whether an expression is inside the supported template expression language.
+ *
+ * Development only: it consults the parser, which a production bundle does not
+ * carry.
+ */
 export function isCompilable(source: string): boolean;
 
 /** Whether a URL may be placed in a navigating attribute. */

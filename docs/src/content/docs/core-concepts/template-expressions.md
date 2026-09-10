@@ -30,11 +30,23 @@ re-render this component.
 ## What an expression may contain
 
 Template expressions, computed values, directive bindings and list keys are
-**parsed and evaluated by Avenx**, not handed to the JavaScript engine. Two
+**parsed and compiled by Avenx at build time**, into ordinary JavaScript
+functions that go into your bundle. `{{ price * 1.1 }}` becomes a closure the
+browser's own engine compiled when it compiled the rest of your code. Two
 things follow from that, and both are worth knowing before you write one.
 
-**They need no `'unsafe-eval'`.** A page carrying only Avenx expressions runs
-under `script-src 'self'`. See [Deployment](/guides/deployment/).
+**They need no `'unsafe-eval'`.** Nothing calls `eval` or `new Function`, in the
+compiler or in the runtime, so a production page runs under `script-src 'self'`.
+This is checked on the emitted bundle by the test suite rather than asserted
+here. See [Deployment](/guides/deployment/).
+
+**Every property access is still checked.** Compiling does not hand the
+expression to the engine unsupervised: a member read is emitted as a call that
+receives the key already resolved, so `x.constructor` and `x['const'+'ructor']`
+arrive at the same check as the same string, and neither reaches the `Function`
+constructor or a built-in prototype. Naming a restricted global such as `window`
+or `fetch` is now refused **at build time**, with the file and the line, rather
+than when that branch first runs.
 
 **They are expressions, not statements.** Supported:
 
