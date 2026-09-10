@@ -25,16 +25,21 @@ Every team pays the same tax on every bug report: reproducing it, then writing
 a test so it stays fixed. The second half is the expensive one, and the
 information needed to do it was all present the moment the bug happened.
 
-Avenx can capture that information because of how it is built. Template
-expressions, computed properties and action bodies stay **source text** right
-through to evaluation, and every identifier they resolve passes through a
-single sandbox. Every state write goes through one Proxy trap; every DOM change
-goes through one patcher. So the framework can say *which expression read which
+Avenx can capture that information because of how it is built. Every state
+write goes through one Proxy trap; every DOM change goes through one patcher;
+and every global an expression resolves — `Date`, `Math.random` — goes through
+one substitution point. So the framework can say *which expression read which
 property, and which state change moved which DOM node* — and it can feed the
 same inputs back in to reproduce the run.
 
-A framework that compiles expressions into closures has thrown that away before
-the code runs.
+Expressions and action bodies are compiled to closures at build time rather than
+interpreted in the browser, and that does **not** cost Trace anything, because
+the property the recorder depends on is the substitution point rather than the
+interpreter. A compiled expression that names `Date` emits a call to the same
+resolver the interpreter used, so a recording still observes the
+non-deterministic values it saw and a replay still hands the same ones back.
+What compiling does remove is the parser and the tree-walking evaluator from
+your production bundle, which the recorder never needed.
 
 ---
 
