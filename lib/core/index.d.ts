@@ -1622,3 +1622,46 @@ export function isSafeUrl(value: string): boolean;
 
 /** Whether an attribute's value is treated as a URL by the renderer. */
 export function isUrlAttribute(name: string): boolean;
+
+/**
+ * The primitives a compiled expression calls.
+ *
+ * These are emitted by the compiler, not written by hand. A generated component
+ * module imports them by these names and its compiled closures call them; every
+ * property read, write and call an expression makes passes through one of them,
+ * which is where the sandbox boundary lives now that expressions are compiled
+ * rather than interpreted.
+ *
+ * Declared because they are reachable from `avenx-core/runtime`, not because an
+ * application is expected to use them.
+ */
+
+/** Reads a property with the key already resolved, refusing forbidden keys. */
+export function axRead(object: any, key: any, optional?: boolean): any;
+
+/** Writes a property with the key already resolved, refusing forbidden keys. */
+export function axWrite(object: any, key: any, value: any): any;
+
+/** Calls a function on behalf of an expression, refusing dynamic-code constructors. */
+export function axCall(fn: any, thisArg: any, args: any[], description: string): any;
+
+/** Constructs a value on behalf of an expression. */
+export function axNew(ctor: any, args: any[], description: string): any;
+
+/** Resolves a free identifier against the scope, then the allowed globals. */
+export function axGet(scope: object, name: string): any;
+
+/** Assigns to a free identifier, refusing to shadow a restricted global. */
+export function axSet(scope: object, name: string, value: any): any;
+
+/** `typeof` applied to a free identifier, which must not throw when unbound. */
+export function axTypeof(scope: object, name: string): string;
+
+/** Validates a computed object-literal key. */
+export function axKey(key: any): any;
+
+/** `in`, with the right-hand side coerced the way the interpreter coerced it. */
+export function axIn(key: any, target: any): boolean;
+
+/** Every expression primitive, keyed by the name the compiler emits for it. */
+export const EXPRESSION_OPS: Record<string, Function>;

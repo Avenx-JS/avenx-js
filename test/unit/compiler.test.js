@@ -179,7 +179,14 @@ try {
       bridgeBindings: [{ local: 'cart', binding: '__avenx_bridge_cart', bridge: 'cart' }],
     });
 
-    assert.ok(module.includes("import { AvenxComponent } from 'avenx-core/runtime';"), 'the base class is imported');
+    assert.ok(
+      /^import \{ AvenxComponent, [^}]*\} from "avenx-core\/runtime";$/m.test(module),
+      'the base class is imported',
+    );
+    assert.ok(
+      module.includes('axGet') && module.includes('axRead'),
+      'the expression primitives the compiled closures call are imported alongside it',
+    );
     assert.ok(module.includes("import cart from '../bridges/cart.bridge.js';"), 'the bridge import is preserved');
     assert.ok(
       module.includes('const __avenx_bridge_cart = cart;'),
@@ -194,7 +201,10 @@ try {
       imports: [],
       bridgeBindings: [],
     });
-    assert.ok(page.includes("import { AvenxPage } from 'avenx-core/runtime';"), 'a page extends AvenxPage');
+    assert.ok(
+      /^import \{ AvenxPage, [^}]*\} from "avenx-core\/runtime";$/m.test(page),
+      'a page extends AvenxPage',
+    );
   }
 
   {

@@ -1,3 +1,5 @@
+import { runtimeImportStatement } from '../../../lib/compiler/codegen/expression.js';
+
 /**
  * Builds the side-effect import that pulls a module's scoped stylesheet into
  * the graph, so Vite's CSS pipeline emits it the way the CLI build emits
@@ -20,7 +22,7 @@ function styleImport(stylePath) {
  */
 export function wrapComponent(code, className, stylePath = null) {
   return `
-import { AvenxComponent } from 'avenx-core/core';
+${runtimeImportStatement('AvenxComponent', 'avenx-core/core')}
 ${styleImport(stylePath)}
 ${code}
 
@@ -37,7 +39,7 @@ export default ${className};
  */
 export function wrapPage(code, className, stylePath = null) {
   return `
-import { AvenxPage } from 'avenx-core/runtime';
+${runtimeImportStatement('AvenxPage')}
 ${styleImport(stylePath)}
 ${code}
 
