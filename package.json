@@ -79,6 +79,9 @@
     "url": "https://github.com/avenx-js/avenx-js/issues"
   },
   "homepage": "https://avenx-js.com/",
+  "dependencies": {
+    "acorn": "^8.15.0"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.0",
