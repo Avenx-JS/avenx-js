@@ -178,3 +178,14 @@ app.mixin({
 | **Global Plugins (`app.use`)** | External libraries, third-party services, application setup packages. | Use plugins to encapsulate modular setup logic and pass options cleanly. |
 | **Global Mixins (`app.mixin`)** | Utility functions, global formatting helpers, app-wide lifecycle tracking. | Use global mixins sparingly to avoid cluttering component namespaces with unused properties. |
 | **State Bridges (`bridge()`)** | Shared reactive domain state (User Auth, Shopping Cart, Notifications). | Use a [Bridge](/core-concepts/bridges) instead of mixins when components need to share reactive state that changes over time. |
+
+---
+
+## Authoring Plugins
+
+Looking to build, package, or distribute your own plugin? See the [Plugin Authoring Guide](/guides/plugin-authoring) for details on:
+
+* The `install(app, options)` installer contract
+* Declaring template helpers via `templateGlobals`
+* Subscribing to reactive state with bridge `setup()` hooks
+* Compiler preprocessors and packaging standards

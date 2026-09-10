@@ -58,6 +58,14 @@ export default defineConfig({
 				},
 
 				{
+                    label: 'Guides',
+                    items: [
+                        { label: 'Plugin Authoring', slug: 'guides/plugin-authoring' },
+                    ],
+                },
+
+
+				{
 					label: 'CLI Reference',
 					items: [
 						{ label: 'CLI Commands', slug: 'cli-reference/commands' },
