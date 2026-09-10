@@ -89,6 +89,7 @@ export interface MountTestComponentResult<C = AvenxComponent<any>> {
     findAll(selector: string): any[];
     findComponent(ComponentClassOrName: any): AvenxComponent<any> | null;
     trigger(selectorOrEl: any, eventName: string, detail?: Record<string, any>): Promise<void>;
+    toMatchSnapshot(name?: string, options?: SnapshotOptions): void;
 }
 
 export function mountTestComponent<C extends AvenxComponent<any> = AvenxComponent<any>>(
@@ -239,3 +240,26 @@ export const Determinism: {
 
 /** Validates that a value is a trace this build can read. */
 export function validateTrace(trace: unknown): { ok: boolean; error?: string };
+
+export interface SnapshotMask {
+    match: RegExp | string;
+    replace: string;
+}
+
+export interface SnapshotOptions {
+    testFile?: string;
+    masks?: SnapshotMask[];
+}
+
+export function assertSnapshot(
+    received: any,
+    name?: string,
+    options?: SnapshotOptions
+): void;
+
+export function serializeSnapshot(
+    input: any,
+    options?: { masks?: SnapshotMask[] }
+): string;
+
+export function getObsoleteSnapshots(testFile: string): string[];

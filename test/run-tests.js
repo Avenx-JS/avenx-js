@@ -6,12 +6,19 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Parse command line arguments to detect watch flag and isolate the filter
+// Parse command line arguments to detect watch and snapshot update flags
 const args = process.argv.slice(2);
 const isWatchMode = args.includes('--watch') || args.includes('-w');
-const filterArgs = args.filter((arg) => arg !== '--watch' && arg !== '-w');
+const isUpdateSnapshots = args.includes('--update-snapshots') || args.includes('-u');
+if (isUpdateSnapshots) {
+  process.env.AVENX_UPDATE_SNAPSHOTS = '1';
+}
+const filterArgs = args.filter((arg) => 
+  arg !== '--watch' && arg !== '-w' && arg !== '--update-snapshots' && arg !== '-u'
+);
 const filter = filterArgs[0] || '';
 const baseDir = path.join(__dirname, filter);
+
 
 if (filter === 'e2e') {
   console.log('🎭 Delegating E2E testing to Playwright...\n');

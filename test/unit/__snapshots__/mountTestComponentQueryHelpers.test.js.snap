@@ -1,0 +1,3 @@
+{
+  "initial button render": "<div>\n  <button @click=\"state.clicks++\" class=\"go\">Click</button>\n</div>"
+}
