@@ -16,6 +16,9 @@
       "types": "./lib/core/index.d.ts",
       "default": "./lib/core/index.js"
     },
+    "./runtime/interpreter": {
+      "default": "./lib/core/expression/interpreter.js"
+    },
     "./core": {
       "types": "./lib/core/index.d.ts",
       "default": "./lib/core/index.js"
