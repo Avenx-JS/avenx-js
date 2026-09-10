@@ -73,11 +73,22 @@ try {
   assert.ok(templateNested.includes('data-ax-as="category"'));
   assert.ok(templateNested.includes('<h2>{% category.name %}</h2>'));
 
-  // Inner loop checks
+  // Inner loop checks.
+  //
+  // The inner body is escaped to depth two, not one. Its markers have to
+  // survive being rendered as part of an outer row *and* then be resolved once
+  // per inner item, so each nesting level adds a `%` and each render pass
+  // removes one. This assertion used to expect `{% item.name %}`, which was the
+  // shape that made every nested list render empty: the outer row's render
+  // unescaped it and evaluated `item.name` in the category's scope, where
+  // `item` does not exist.
   assert.ok(templateNested.includes('template data-ax-for="category.items"'));
   assert.ok(templateNested.includes('data-ax-as="item"'));
   assert.ok(templateNested.includes('data-ax-key="item.id"'));
-  assert.ok(templateNested.includes('<li>{% item.name %}</li>'));
+  assert.ok(
+    templateNested.includes('<li>{%% item.name %%}</li>'),
+    'a doubly nested interpolation is escaped once per enclosing loop',
+  );
 
   console.log('  ✅ Nested List Rendering Compiler tests passed!');
 
