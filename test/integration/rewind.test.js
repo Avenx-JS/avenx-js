@@ -13,6 +13,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
+import { EXPRESSION_OPS } from '../../lib/core/expression/ops.js';
 import { bridge, defineBridgeName } from '../../lib/core/runtime/bridge.js';
 import { atomic } from '../../lib/core/runtime/atomic.js';
 import { journal } from '../../lib/core/reactive/journal.js';
@@ -287,8 +288,12 @@ async function testCompiledComponentRewinds() {
   assert.ok(generated.includes('atomic: {"bump":{}}'), `the declaration reaches the generated code: ${generated}`);
 
   // Evaluate the generated class against the real runtime, the way a bundle does.
-  const Factory = new Function('AvenxComponent', `${generated}\nreturn Counter;`);
-  const Counter = Factory(AvenxComponent);
+  // The generated class body calls the expression primitives its compiled
+  // closures were emitted against. A real build imports them; framing the body
+  // by hand here has to inject them for the same reason.
+  const opNames = Object.keys(EXPRESSION_OPS);
+  const Factory = new Function('AvenxComponent', ...opNames, `${generated}\nreturn Counter;`);
+  const Counter = Factory(AvenxComponent, ...opNames.map((name) => EXPRESSION_OPS[name]));
   const component = new Counter({}, {});
 
   const el = await mount(component);

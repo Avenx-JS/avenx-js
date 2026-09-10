@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import AvenxCompiler from '../../lib/compiler.js';
+import { runtimeImportStatement } from '../../lib/core/tooling/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,9 @@ const __dirname = path.dirname(__filename);
 test('Suspense and Error Boundaries Integration', async (t) => {
   const compiler = new AvenxCompiler();
   const avenxComponentUrl = pathToFileURL(path.resolve('lib/core/runtime/AvenxComponent.js')).href;
+  // The base class comes from its own module here, but the primitives the
+  // compiled closures call live on the runtime index, so the framing needs both.
+  const avenxRuntimeUrl = pathToFileURL(path.resolve('lib/core/index.js')).href;
   const tempDir = path.join(__dirname, 'temp_suspense_test');
 
   if (!fs.existsSync(tempDir)) {
@@ -43,7 +47,7 @@ test('Suspense and Error Boundaries Integration', async (t) => {
     const tempSrcPath = path.join(tempDir, 'SuspenseTestComponent.component.js');
     fs.writeFileSync(tempSrcPath, rawComponent);
     const parsedBody = compiler.compileComponent(tempSrcPath);
-    const fullModuleCode = `import { AvenxComponent } from '${avenxComponentUrl}';\n${parsedBody}\nexport default SuspenseTestComponent;`;
+    const fullModuleCode = `${runtimeImportStatement('AvenxComponent', avenxComponentUrl, avenxRuntimeUrl)}\n${parsedBody}\nexport default SuspenseTestComponent;`;
     
     const tmpPath = path.join(tempDir, 'SuspenseTestComponentModule.js');
     fs.writeFileSync(tmpPath, fullModuleCode);
@@ -88,7 +92,7 @@ test('Suspense and Error Boundaries Integration', async (t) => {
     fs.writeFileSync(tempSrcPath, rawComponent);
     const parsedBody = compiler.compileComponent(tempSrcPath);
     
-    const fullModuleCode = `import { AvenxComponent } from '${avenxComponentUrl}';\n${parsedBody}\nexport default ErrorBoundaryTestComponent;`;
+    const fullModuleCode = `${runtimeImportStatement('AvenxComponent', avenxComponentUrl, avenxRuntimeUrl)}\n${parsedBody}\nexport default ErrorBoundaryTestComponent;`;
     
     const tmpPath = path.join(tempDir, 'ErrorBoundaryTestComponentModule.js');
     fs.writeFileSync(tmpPath, fullModuleCode);
