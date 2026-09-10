@@ -17,6 +17,8 @@ This guide provides a structural breakdown of the Avenx‑JS codebase to help co
 | `lib/bundler/` | Avenx's own bundler: module reading (`parseModule.js`), specifier resolution (`resolve.js`), the dependency graph (`graph.js`), tree shaking (`treeshake.js`), emission and source maps (`emit.js`), minification (`minify.js`). | Changing how modules are resolved, linked, shaken or emitted. Never for anything Avenx-specific — the bundler knows nothing about components. |
 | `lib/compiler/atlas/` | The retained semantic model: nodes, edges, expression resolution, source locations, the fragment cache and the two Atlas diagnostics. | Teaching Atlas about a new template construct, or changing what a query reports. |
 | `lib/compiler/render/` | Template → render program: the op vocabulary, and the compiler that emits one or reports why it could not. | Teaching the compiled renderer a construct that currently falls back. |
+| `lib/compiler/codegen/` | Expression and action bodies → JavaScript: the scan that finds every expression an application will evaluate (`collect.js`), the expression generator (`expression.js`), the acorn-based action compiler (`actions.js`), and the tables they are emitted into (`table.js`). | Changing what an expression compiles to, or teaching the scan about a new place an expression can hide. |
+| `lib/core/expression/` | What a compiled expression calls at run time (`ops.js`), where the interpreter plugs in (`fallback.js`), and the development-only interpreter itself (`interpreter.js`, plus `parser.js`, `evaluator.js`, `compile.js`). | Changing a security guard, or the development fallback. `ops.js` ships to production; nothing else here does. |
 | `lib/core/renderer/program/` | The runtime that executes a render program: skeleton preparation, per-op DOM writes, per-binding effects. | Adding an op kind, or changing what one does to the DOM. |
 | `lib/core/` | Zero‑dependency client runtime (`reactive/`, `renderer/`, `runtime/`, `events/`, `security/`, `validation/`, `tooling/`, `utils/`). | Modifying reactivity proxies, DOM patcher, component lifecycle, or error codes. |
 | `bin/` | CLI command entry points and dispatch logic (`avenx generate`, `build`, `doctor`, etc.). | Adding or modifying CLI flags, subcommands, or scaffolding behavior. |
@@ -40,6 +42,46 @@ When `avenx build` executes, `lib/compiler/compiler.js` orchestrates the source�
 6. **Render program** – Compiles the finished template into a static skeleton plus a list of binding ops (`lib/compiler/render/compileTemplate.js`). Runs last, on exactly the template the runtime will receive, because every rewrite above changes the markup the bindings have to address. A template containing a construct the program runtime does not implement produces no program and is reported as `AVX_W47`.
 7. **Module generation** – Frames each compiled class as an ES module: an import of the runtime, the developer's own imports verbatim, and a default export (`lib/compiler/modules.js`). `ComponentParser.parse()` still returns a bare `class X extends AvenxComponent`; how a unit is *linked* is not a reason to change how it is *compiled*, and that output shape is what `avenx-core/testing` and the Vite plugin consume.
 8. **Bundling** – `lib/bundler/` resolves every specifier, builds the dependency graph, drops what nothing reaches, and emits `dist/bundle.js` with a source map. The Avenx runtime is an ordinary dependency in that graph, resolved through `avenx-core/runtime`.
+
+### The compiler/runtime boundary
+
+The rule is that the compiler does the work and the runtime does as little as it
+can. Concretely, everything executable is turned into a real JavaScript function
+at build time:
+
+```text
+count * 2                ->  ($s) => (axGet($s, "count") * 2)
+item.qty                 ->  ($s) => axRead(axGet($s, "item"), "qty", false)
+if (!text) { return; }   ->  ($s) => { if (!axGet($s, "text")) { return; } … }
+```
+
+Those functions are written into the component's module and linked like any
+other code, so the browser's engine compiles them. Three things follow:
+
+- **No dynamic evaluation.** Nothing in a production bundle calls `eval`,
+  constructs a function from a string, or uses `with`. The parser, the
+  tree-walking evaluator and the source-text sandbox are development-only and
+  are not reachable from a production entry, so the bundler drops them.
+- **The security boundary did not move.** A member read is emitted as a call to
+  `readMember` with the key already resolved, exactly where the interpreter made
+  the same call, so `x['const'+'ructor']` still meets one check as one string.
+  Naming a restricted global or writing a forbidden key is refused at build time
+  instead.
+- **Trace is unaffected.** What the recorder needs is the *substitution point*
+  for globals, not the interpreter: a compiled expression naming `Date` emits a
+  call to the same resolver, so recording and deterministic replay work as they
+  did.
+
+What still travels as data rather than as code is the scope — the object a
+compiled closure is handed, which decides what its names resolve to
+(`lib/core/runtime/ComponentScope.js`).
+
+The one place the compiler *cannot* answer statically is which expressions exist
+at all, because they hide in template text, in `data-ax-*` attributes and in
+authored `@event` attributes. That scan lives in `lib/compiler/codegen/collect.js`,
+its failure mode is an absence rather than an error, and
+`test/system/expressionCoverage.test.js` exists solely to catch it: it compiles
+every fixture application and requires zero uncompiled expressions.
 
 ### The compiler/bundler boundary
 

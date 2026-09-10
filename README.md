@@ -51,6 +51,36 @@ partial mode: a template is compiled entirely or not at all.
 
 See the [rendering guide](docs/src/content/docs/core-concepts/rendering.md).
 
+### 🔒 Compiled Expressions — no `eval`, no `new Function`
+
+Every template interpolation, computed value, directive binding, inline handler
+and `<action>` body is compiled to an ordinary JavaScript function **at build
+time** and linked into the bundle, so the browser's own engine compiles it.
+
+```text
+count * 2                ->  ($s) => (axGet($s, "count") * 2)
+if (!text) { return; }   ->  ($s) => { if (!axGet($s, "text")) { return; } … }
+```
+
+A production bundle contains no `eval`, no `new Function` and no `with`, so it
+runs under `script-src 'self'` — checked on the emitted bundle by the test
+suite, not asserted here. Earlier versions shipped this code as **source text**
+and interpreted it in the browser, which put a JavaScript parser and a
+tree-walking evaluator in every bundle and still fell back to `new Function` for
+any action using `if`, `for`, `try` or a declaration.
+
+The security checks did not move, they are only called rather than interpreted:
+a member read still passes the key already resolved through one gate, so
+`x['const'+'ructor']` and `x.constructor` meet the same check. Two checks moved
+*earlier* — naming a restricted global, or writing `__proto__` / `constructor` /
+`prototype`, now fails the build with a file and a line.
+
+A development build still carries the interpreter, so a template you are editing
+keeps rendering; `AVX_W48` names anything the compiler could not compile.
+
+See the [template expressions guide](docs/src/content/docs/core-concepts/template-expressions.md)
+and the [deployment guide](docs/src/content/docs/guides/deployment.md).
+
 ### 🧩 Declarative Components
 
 Define your UI using standard HTML with added superpowers. Components support `state`, `computed` properties, and `actions` (methods) defined directly in the `.component.js` file.
@@ -263,12 +293,16 @@ Step 1 (click <button.qty-inc>) diverged at position 1:
   replayed: write count 0 -> 2
 ```
 
-Avenx can do this because template expressions, computed properties and action
-bodies stay **source text** right through to evaluation, and every identifier
-they resolve — including `Date` and `Math` — passes through one sandbox. That
-same choke point is what lets a recorded session be replayed deterministically.
-A framework that compiles expressions into closures has thrown that away before
-the code runs.
+Avenx can do this because every identifier an expression resolves — including
+`Date` and `Math` — passes through **one substitution point**, every state write
+through one Proxy trap, and every DOM change through one patcher. That is what
+lets a recorded session be replayed deterministically.
+
+Expressions and action bodies are compiled to closures at build time, and that
+costs Trace nothing: a compiled expression naming `Date` emits a call to the
+same resolver the recorder substitutes. What compiling removes is the parser and
+the tree-walking evaluator from your production bundle, neither of which the
+recorder needed.
 
 Recording is off by default and never reaches a production build — with tracing
 off, each instrumented site is a single boolean check. Determinism is **verified

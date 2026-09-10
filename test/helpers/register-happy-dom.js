@@ -1,4 +1,7 @@
 import { Window } from 'happy-dom';
+// Also installs the expression interpreter, for a file that imports this helper
+// directly rather than being launched by the runner.
+import './register-interpreter.js';
 
 const window = new Window({
   url: 'http://localhost',

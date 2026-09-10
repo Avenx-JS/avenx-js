@@ -1,4 +1,7 @@
-<state submits="0" parentClicks="0" childClicks="0" onceClicks="0" backdropClicks="0" enterPresses="0" />
+<state submits="0" parentClicks="0" childClicks="0" onceClicks="0" backdropClicks="0" enterPresses="0"
+       picked="'none'" pickedIndex="-1" cell="'none'"
+       rows='[{ "id": "alpha" }, { "id": "beta" }, { "id": "gamma" }]'
+       groups='[{ "id": "g1", "cells": [{ "id": "c1" }, { "id": "c2" }] }, { "id": "g2", "cells": [{ "id": "c3" }] }]' />
 
 <action name="recordSubmit"> state.submits = state.submits + 1; </action>
 
@@ -12,8 +15,37 @@
 
 <action name="recordEnter"> state.enterPresses = state.enterPresses + 1; </action>
 
+<action name="pick"> state.picked = args[0]; </action>
+
 <main>
   <h1 data-testid="heading">Events</h1>
+
+  <!-- A handler inside a loop has to resolve the row it is attached to, not
+       whatever the component scope holds. Written the way the events guide
+       documents it: an inline write, and a call passing the loop variable. -->
+  <ul data-testid="rows">
+    <@for row in rows key="row.id">
+      <li>
+        <button class="row-inline" data-testid="row-inline-{{ row.id }}" @click="picked = row.id">{{ row.id }}</button>
+        <button class="row-call" data-testid="row-call-{{ row.id }}" @click="pick(row.id)">call {{ row.id }}</button>
+        <button class="row-index" data-testid="row-index-{{ row.id }}" @click="pickedIndex = index">index {{ row.id }}</button>
+      </li>
+    </@for>
+  </ul>
+  <p data-testid="picked">{{ picked }}</p>
+  <p data-testid="picked-index">{{ pickedIndex }}</p>
+
+  <!-- A handler in a nested loop has to see both loop variables. -->
+  <div data-testid="grid">
+    <@for group in groups key="group.id">
+      <section>
+        <@for gcell in group.cells key="gcell.id">
+          <button class="cell" data-testid="cell-{{ gcell.id }}" @click="cell = group.id + '/' + gcell.id">{{ gcell.id }}</button>
+        </@for>
+      </section>
+    </@for>
+  </div>
+  <p data-testid="cell">{{ cell }}</p>
 
   <!-- .prevent: the browser must not navigate on submit. -->
   <form data-testid="form" @submit.prevent="recordSubmit()">
