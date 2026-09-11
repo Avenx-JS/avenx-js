@@ -603,3 +603,67 @@ Exact hook names follow the component lifecycle documented in the [AvenxComponen
 :::
 
 
+## Snapshot Testing
+
+Avenx includes a zero-dependency DOM serializer and snapshot engine designed for component contract testing without external runners.
+
+### Usage in Mounted Components
+
+Use `.toMatchSnapshot()` directly on the wrapper returned by `mountTestComponent`:
+
+```javascript
+import { mountTestComponent } from 'avenx-core/testing';
+import { MyComponent } from './MyComponent.js';
+
+const wrapper = await mountTestComponent(MyComponent, {
+  props: { title: 'Welcome' }
+});
+
+// Asserts against __snapshots__/<testfile>.snap
+wrapper.toMatchSnapshot('initial render');
+
+
+## Snapshot Testing
+
+Avenx includes a zero-dependency DOM serializer and snapshot engine designed for component contract testing without external runners.
+
+### Usage in Mounted Components
+Use `.toMatchSnapshot()` directly on the wrapper returned by `mountTestComponent`:
+
+`/*
+avenx-core/testing exports matchers */
+import { mountTestComponent } from 'avenx-core/testing';
+import { MyComponent } from './MyComponent.js';
+
+const wrapper = await mountTestComponent(MyComponent, {
+  props: { title: 'Welcome' }
+});
+
+// Asserts against __snapshots__/<testfile>.snap
+wrapper.toMatchSnapshot('initial render');
+`` 
+
+### Standalone Assertion
+
+Use `assertSnapshot` to test raw markup or detached DOM nodes:
+
+``` 
+import { assertSnapshot } from 'avenx-core/testing';
+
+assertSnapshot(myElement, 'custom element state', {
+  masks: [
+    { match: /id-[0-9]+/g, replace: 'id-[mask]' }
+  ]
+});
+``` 
+
+### Dynamic Content & Masking
+
+Volatile attributes such as internal scoped CSS hashes (`ax-[hash]`) and generated IDs
+are automatically masked to prevent brittle snapshots. Custom masking rules can be
+provided via the `masks` option.
+
+### Updating Snapshots & CI Behavior
+
+- **Update flag**: Pass `-u` or `--update-snapshots` to rewrite stale snapshots.
+- **CI Mode**: When `process.env.CI` becomes active, missing or mismatched snapshots immediately fail tests to prevent accidental baseline drift.

@@ -28,6 +28,8 @@ import { setupDOMMock, teardownDOMMock } from '../helpers/dom-mock.js';
     assert.ok(typeof wrapper.findAll === 'function');
     assert.ok(typeof wrapper.findComponent === 'function');
     assert.ok(typeof wrapper.trigger === 'function');
+    assert.ok(typeof wrapper.toMatchSnapshot === 'function');
+    wrapper.toMatchSnapshot('initial button render');
 
     const btn = wrapper.find('button');
     assert.ok(btn, 'find should locate button');
