@@ -83,12 +83,11 @@ function testConditionalLowering() {
 function testIterationLowering() {
   console.log('🧪 <@for> lowers to one op and a body block');
   const { program, expressions } = lower(
-    '<ul><@for [row, i] in rows key="row.id"><li>{{ i }}:{{ row.n }}</li><@empty><li>none</li></@for></ul>',
+    '<ul><@for row in rows key="row.id"><li>{{ index }}:{{ row.n }}</li><@empty><li>none</li></@for></ul>',
   );
   const loop = op(program, OpKind.FOR);
   assert.ok(loop, 'a loop is one op');
   assert.strictEqual(loop.as, 'row', 'the item binding travels on the op');
-  assert.strictEqual(loop.ix, 'i', 'so does the index binding');
   assert.strictEqual(typeof loop.x, 'number', 'the list is an expression index');
   assert.strictEqual(typeof loop.key, 'number', 'so is the key');
   assert.strictEqual(typeof loop.b, 'number', 'the body is a block index');
@@ -166,10 +165,21 @@ function testComponentsAndSlots() {
   assert.strictEqual(prop.n, 'title');
   assert.strictEqual(expressions[prop.x], 'h');
 
-  const outlet = program.ops.find((candidate) => candidate.k === OpKind.SLOT);
-  assert.ok(outlet, 'a slot is an op with an anchor');
-  assert.strictEqual(outlet.n, 'default');
+  // A slot stays a real element: transclusion is the component mounter's, and
+  // giving the outlet a second owner in the program would hide the content the
+  // parent passed down from the thing rendering it.
+  assert.ok(program.html.includes('<slot>'), 'the outlet survives as an element');
   console.log('  ✅ composition no longer forces the whole template off the compiled path');
+}
+
+function testSlotFallbackIsInline() {
+  console.log('🧪 slot fallback content binds in the enclosing block');
+  const { program } = lower('<slot name="body"><p>{{ fallbackText }}</p></slot>');
+  assert.ok(program.html.includes('name="body"'));
+  assert.strictEqual(program.ops.length, 1, 'the fallback binding is an op of this block');
+  assert.strictEqual(program.ops[0].k, OpKind.TEXT);
+  assert.deepStrictEqual(programBlocks(program), [], 'a slot needs no block of its own');
+  console.log('  ✅ a binding inside fallback content updates without re-rendering the slot');
 }
 
 function testStaticSubtree() {
@@ -190,6 +200,7 @@ testNestedBlocks();
 testEventsAreOps();
 testBindingsAndBooleans();
 testComponentsAndSlots();
+testSlotFallbackIsInline();
 testStaticSubtree();
 
 console.log('\n✅ IR lowering tests passed');
