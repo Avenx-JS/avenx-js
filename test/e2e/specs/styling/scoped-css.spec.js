@@ -59,22 +59,14 @@ test.describe('scoped styles', () => {
   });
 });
 
-test.describe('known gap: reactive style bindings (data-ax-style)', () => {
-  // Runs and is expected to fail. The directive is documented in
-  // docs/core-concepts/directives.md as
-  //   data-ax-style="{{ { color: state.textColor } }}"
-  // but no style reaches the element at all -- the `style` attribute stays
-  // null on the first render, before any state change is involved, with both
-  // the bare and the `state.`-prefixed form of the expression.
-  //
-  // Kept under test.fail() rather than deleted: the directive is public API,
-  // so the suite should say it is broken rather than quietly not cover it.
-  test.fail();
-
+test.describe('reactive style bindings (data-ax-style)', () => {
+  // This was a `test.fail()` known gap for as long as the directive existed:
+  // documented public API that applied nothing, because the string renderer
+  // never implemented it. The compiled path does, so the expectation is an
+  // ordinary one again.
   test('applies the inline style declared by data-ax-style', async ({ page, app }) => {
     await app.open('styling');
 
-    // Fails today: nothing is applied, so this resolves to the default 400.
     await expect.poll(() => computed(page, 'emphasis', 'font-weight')).toBe('700');
   });
 });

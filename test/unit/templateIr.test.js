@@ -128,19 +128,26 @@ function testIteration() {
   const loop = find(root, IRKind.FOR);
   assert.strictEqual(loop.list, 'rows');
   assert.strictEqual(loop.item, 'row');
-  assert.strictEqual(loop.index, null);
+  assert.strictEqual(loop.destructure, null);
   assert.strictEqual(loop.key, 'row.id');
   assert.strictEqual(loop.body.kind, IRKind.FRAGMENT);
   assert.ok(loop.empty, 'the <@empty> block is its own fragment');
   console.log('  ✅ a loop records its list, binding and key');
 }
 
-function testIterationIndex() {
-  console.log('🧪 <@for> with an index binding');
-  const loop = find(ir('<@for [row, i] in rows><p>{{ i }}</p></@for>'), IRKind.FOR);
-  assert.strictEqual(loop.item, 'row');
-  assert.strictEqual(loop.index, 'i');
-  console.log('  ✅ destructured bindings are parsed');
+function testIterationDestructuring() {
+  console.log('🧪 <@for> destructuring an element');
+  // `[a, b] in pairs` destructures each *element*, which is an array. It does
+  // not mean `(item, index)`, and preserving that is why the IR keeps the two
+  // forms apart instead of normalising them.
+  const loop = find(ir('<@for [name, count] in pairs><p>{{ name }}</p></@for>'), IRKind.FOR);
+  assert.strictEqual(loop.item, null);
+  assert.deepStrictEqual(loop.destructure, ['name', 'count']);
+
+  const plain = find(ir('<@for row in rows><p>{{ row }}</p></@for>'), IRKind.FOR);
+  assert.strictEqual(plain.item, 'row');
+  assert.strictEqual(plain.destructure, null);
+  console.log('  ✅ the two binding forms stay distinct');
 }
 
 function testIterationHeaderWithComparison() {
@@ -159,10 +166,10 @@ function testIterationHeaderWithComparison() {
 
 function testForHeaderParsing() {
   console.log('🧪 <@for> header parsing in isolation');
-  assert.deepStrictEqual(parseForHeader('a in b'), { item: 'a', index: null, list: 'b', key: null });
+  assert.deepStrictEqual(parseForHeader('a in b'), { item: 'a', destructure: null, list: 'b', key: null });
   assert.deepStrictEqual(parseForHeader('[a, i] in b key="a.id"'), {
-    item: 'a',
-    index: 'i',
+    item: null,
+    destructure: ['a', 'i'],
     list: 'b',
     key: 'a.id',
   });
@@ -232,7 +239,7 @@ testEvents();
 testConditional();
 testConditionalNesting();
 testIteration();
-testIterationIndex();
+testIterationDestructuring();
 testIterationHeaderWithComparison();
 testForHeaderParsing();
 testAmbiguousConditionalHeader();
