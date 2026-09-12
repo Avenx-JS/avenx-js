@@ -35,7 +35,7 @@ Maintain and optimize the Avenx-JS core runtime, reactivity engine, state manage
 
 * **Batch state updates**: Batch state modifications when modifying multiple properties concurrently to minimize redundant render cycles.
 * **Proxy containment**: When returning proxy handlers, always clean up listeners if a target component/key is destroyed or garbage-collected.
-* **Error Handling**: Before implementing runtime validation errors, warnings, or exception handling, review `errors.md` and reuse 	existing Avenx warning/error codes whenever applicable. Follow the centralized warning format instead of creating custom logging 	formats.
+* **Error Handling**: Before implementing runtime validation errors, warnings, or exception handling, review `docs/src/content/docs/troubleshooting/errors.md` (and `lib/core/runtime/AvenxError.js` / `lib/core/diagnostics/catalogue.js`) and reuse 	existing Avenx warning/error codes whenever applicable. Follow the centralized warning format instead of creating custom logging 	formats.
 * **List Diffing**: When updating list components, use unique keys to allow correct recycling of DOM elements instead of fully re-creating nodes.
 
 ## Success Criteria
