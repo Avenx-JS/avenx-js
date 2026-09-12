@@ -121,9 +121,9 @@ When color styling is active, styling helpers wrap strings with their correspond
 import { bold, green, red, yellow, cyan } from './bin/colors.js';
 
 console.log(bold(cyan('=== Avenx Custom Build Step ===')));
-console.log(green('✔ Assets compiled successfully.'));
-console.log(yellow('⚠ Bundle budget threshold reached.'));
-console.log(red('✖ Critical compilation failure.'));
+console.log(green('âœ” Assets compiled successfully.'));
+console.log(yellow('âš  Bundle budget threshold reached.'));
+console.log(red('âœ– Critical compilation failure.'));
 ```
 
 #### Custom Script Example
@@ -306,9 +306,9 @@ Running `avenx build` with the above configuration produces:
 
 ```text
 dist/
-├── app.bundle.js
-├── app.bundle.css
-└── app.bundle.css.map
+â”œâ”€â”€ app.bundle.js
+â”œâ”€â”€ app.bundle.css
+â””â”€â”€ app.bundle.css.map
 ```
 
 Be sure to reference the customized bundle filenames in your `index.html` entry point:
@@ -412,13 +412,13 @@ The `avenx inspect` command analyzes application architecture, route mappings, a
 
 `avenx inspect` categorizes the project structure into three tree branches:
 
-- **📄 Pages**: Lists page components (`src/pages/*.page.js`) alongside their mapped route paths (e.g. `/home`, `/user/:id`).
-- **🧩 Components**: Lists UI components (`src/components/*`) annotated with `(⚠️ Unused)` warnings when unreferenced.
-- **🌉 Bridges**: Lists global reactive state bridges (`src/bridges/*` or `src/global/*.bridge.js`).
+- **ðŸ“„ Pages**: Lists page components (`src/pages/*.page.js`) alongside their mapped route paths (e.g. `/home`, `/user/:id`).
+- **ðŸ§© Components**: Lists UI components (`src/components/*`) annotated with `(âš ï¸ Unused)` warnings when unreferenced.
+- **ðŸŒ‰ Bridges**: Lists global reactive state bridges (`src/bridges/*` or `src/global/*.bridge.js`).
 
 #### Unused Component Detection
 
-`avenx inspect` scans application templates, scripts, and `app.mount()` calls. If a component defined in `src/components/` is not referenced in any template tags or mount declarations, `avenx inspect` automatically flags it with `(⚠️ Unused)` in the hierarchy view.
+`avenx inspect` scans application templates, scripts, and `app.mount()` calls. If a component defined in `src/components/` is not referenced in any template tags or mount declarations, `avenx inspect` automatically flags it with `(âš ï¸ Unused)` in the hierarchy view.
 
 #### Usage Example & Output Sample
 
@@ -433,15 +433,15 @@ npx avenx i
 **Sample Output:**
 
 ```text
-📦 Avenx Project Hierarchy (src/)
-├── 📄 Pages (2)
-│   ├── HomePage (/home) -> src/pages/home.page.js
-│   └── UserPage (/user/:id) -> src/pages/user.page.js
-├── 🧩 Components (2)
-│   ├── Header -> src/components/header/header.component.js
-│   └── UnusedBtn -> src/components/unused-btn/unused-btn.component.js (⚠️ Unused)
-└── 🌉 Bridges (1)
-    └── AuthBridge -> src/bridges/auth.bridge.js
+ðŸ“¦ Avenx Project Hierarchy (src/)
+â”œâ”€â”€ ðŸ“„ Pages (2)
+â”‚   â”œâ”€â”€ HomePage (/home) -> src/pages/home.page.js
+â”‚   â””â”€â”€ UserPage (/user/:id) -> src/pages/user.page.js
+â”œâ”€â”€ ðŸ§© Components (2)
+â”‚   â”œâ”€â”€ Header -> src/components/header/header.component.js
+â”‚   â””â”€â”€ UnusedBtn -> src/components/unused-btn/unused-btn.component.js (âš ï¸ Unused)
+â””â”€â”€ ðŸŒ‰ Bridges (1)
+    â””â”€â”€ AuthBridge -> src/bridges/auth.bridge.js
 ```
 
 ---
@@ -569,7 +569,7 @@ The terminal output includes summary metrics after the file table:
 The template reduction percentage is calculated as:
 
 ```text
-((Raw Template Payload - Compiled Template Payload) / Raw Template Payload) × 100
+((Raw Template Payload - Compiled Template Payload) / Raw Template Payload) Ã— 100
 ```
 
 ---
@@ -601,9 +601,9 @@ The command organizes variables and file statuses into three distinct groups:
 
 ##### 1. Source Files
 Reports the path and parsing status of the project's `.env` file:
-* **Successful read**: Displays the absolute path of the `.env` file prefixed with a green checkmark (`✔`).
-* **Missing file**: Prints a warning prefixed with a yellow warning symbol (`⚠ No .env file found (only process env AVX_PUBLIC_* shown)`).
-* **Unparseable/Invalid file**: Displays an error prefixed with a yellow cross (`✖ Failed to read <absolute-path-to-.env>: <error-message>`) and sets a non-zero exit code (`1`).
+* **Successful read**: Displays the absolute path of the `.env` file prefixed with a green checkmark (`âœ”`).
+* **Missing file**: Prints a warning prefixed with a yellow warning symbol (`âš  No .env file found (only process env AVX_PUBLIC_* shown)`).
+* **Unparseable/Invalid file**: Displays an error prefixed with a yellow cross (`âœ– Failed to read <absolute-path-to-.env>: <error-message>`) and sets a non-zero exit code (`1`).
 
 ##### 2. Public Variables
 Lists variables prefixed with `AVX_PUBLIC_`.
@@ -652,15 +652,15 @@ Avenx Environment
 Project: /path/to/avenx-js
 
 Source Files
-  ✔ /path/to/avenx-js/.env
+  âœ” /path/to/avenx-js/.env
 
-Public Variables (AVX_PUBLIC_* — inlined at build time)
+Public Variables (AVX_PUBLIC_* â€” inlined at build time)
   Key                          Value                    Notes
   AVX_PUBLIC_API_URL           https://api.example.com  inlined
   AVX_PUBLIC_APP_NAME                                   empty
   AVX_PUBLIC_EXTERNAL_VAR      external_val             inlined
 
-System Variables (from .env — values masked)
+System Variables (from .env â€” values masked)
   Key                          Value
   API_KEY                      ****
   DB_PASSWORD                  secr********
@@ -702,18 +702,18 @@ npx avenx trace view latest
 ```
 
 ```text
-▸ click <button.qty-inc> CartItem
-  └─ action CartItem.incQty()  src/components/cart-item/cart-item.component.js:3
-     └─ bridge cart · addQty("a", 1)
-        ├─ write cart.items.0.qty 2 → 3
-        │  ├─ woke CartItem#render
-        │  │  └─ patched <span.qty> text "2" → "3"
-        │  └─ woke CartSummary#render
-        │     ├─ getter cart.total 36 → 48
-        │     └─ patched <strong.total> text "$36.00" → "$48.00"
-        └─ emit cart:changed → 0 listeners
+â–¸ click <button.qty-inc> CartItem
+  â””â”€ action CartItem.incQty()  src/components/cart-item/cart-item.component.js:3
+     â””â”€ bridge cart Â· addQty("a", 1)
+        â”œâ”€ write cart.items.0.qty 2 â†’ 3
+        â”‚  â”œâ”€ woke CartItem#render
+        â”‚  â”‚  â””â”€ patched <span.qty> text "2" â†’ "3"
+        â”‚  â””â”€ woke CartSummary#render
+        â”‚     â”œâ”€ getter cart.total 36 â†’ 48
+        â”‚     â””â”€ patched <strong.total> text "$36.00" â†’ "$48.00"
+        â””â”€ emit cart:changed â†’ 0 listeners
 
-Determinism: deterministic — this trace can be exported as a regression test.
+Determinism: deterministic â€” this trace can be exported as a regression test.
 ```
 
 Options:
@@ -779,7 +779,7 @@ The code argument is normalized before lookup, so you can type it however it app
 - **Shorthand prefix**: `W29`
 - **Lowercase**: `w29`
 
-All three resolve to the same diagnostic. Normalization uppercases the input and prepends `AVX_` when it is missing (`w29` → `AVX_W29`, `AVXW29` → `AVX_W29`).
+All three resolve to the same diagnostic. Normalization uppercases the input and prepends `AVX_` when it is missing (`w29` â†’ `AVX_W29`, `AVXW29` â†’ `AVX_W29`).
 
 #### Options & Flags
 
@@ -835,13 +835,13 @@ Summary:
   A repeated list item in <@for> does not specify a unique @key attribute.
 
 Common Causes:
-  • <@for ...> rendering dynamic lists without unique tracking keys.
+  â€¢ <@for ...> rendering dynamic lists without unique tracking keys.
 
 How to Fix:
-  • Add a unique @key attribute to the root repeated item (e.g., @key="item.id").
+  â€¢ Add a unique @key attribute to the root repeated item (e.g., @key="item.id").
 
 Documentation:
-  https://avenx.dev/docs/troubleshooting#avx-w29
+  https://avenx-js.com/troubleshooting/errors#avx-w29-compiler-circular-dependency
 ```
 
 **Sample Output (`--json`):**
@@ -859,14 +859,14 @@ Documentation:
   "remedies": [
     "Break recursive mutations or add termination conditions to reactive watchers."
   ],
-  "docsUrl": "https://avenx.dev/docs/troubleshooting#avx-r18"
+  "docsUrl": "https://avenx-js.com/troubleshooting/errors#avx-r18-reactive-deadlock-detected"
 }
 ```
 
 **Unknown Code with Suggestions:**
 
 ```text
-❌ Unknown diagnostic code: 'C0'
+âŒ Unknown diagnostic code: 'C0'
 
 Did you mean: AVX_C01, AVX_C02, AVX_C03, AVX_C04, AVX_C05, AVX_C06?
 ```
@@ -899,7 +899,7 @@ npx avenx atlas --json    # the whole model
 
 | Flag / Option | Description |
 | :--- | :--- |
-| `--json`, `-j` | Outputs the complete model — nodes, edges, unresolved entries and summary — as structured JSON. |
+| `--json`, `-j` | Outputs the complete model â€” nodes, edges, unresolved entries and summary â€” as structured JSON. |
 
 #### Generated Artifact
 
@@ -909,7 +909,7 @@ npx avenx atlas --json    # the whole model
 
 ### 17. `avenx impact`
 
-What can be affected if a symbol changes. Follows relationships *into* it — every computed, action, template binding, handler, component, page and route that depends on it, transitively.
+What can be affected if a symbol changes. Follows relationships *into* it â€” every computed, action, template binding, handler, component, page and route that depends on it, transitively.
 
 #### Command Syntax
 
@@ -957,7 +957,7 @@ Every answer ends with the number of unresolved relationships bearing on it, **i
 
 ### 18. `avenx why`
 
-Where a value comes from — the same traversal as [`avenx impact`](#17-avenx-impact) in the opposite direction, following relationships *out of* a symbol to everything it is derived from.
+Where a value comes from â€” the same traversal as [`avenx impact`](#17-avenx-impact) in the opposite direction, following relationships *out of* a symbol to everything it is derived from.
 
 #### Command Syntax
 
