@@ -828,17 +828,17 @@ npx avenx explain AVX_R18 --json
 **Sample Output (warning):**
 
 ```text
-AVX_W29: MissingKeyInLoop [WARNING]
+AVX_W29: CompilerCircularDependency [WARNING]
 Category: compiler
 
 Summary:
-  A repeated list item in <@for> does not specify a unique @key attribute.
+  The compiler detected a circular dependency in the component import graph.
 
 Common Causes:
-  â€¢ <@for ...> rendering dynamic lists without unique tracking keys.
+  â€¢ Two components import each other, or a longer import chain loops back.
 
 How to Fix:
-  â€¢ Add a unique @key attribute to the root repeated item (e.g., @key="item.id").
+  â€¢ Remove imports that close a cycle, or extract shared code into a separate module.
 
 Documentation:
   https://avenx-js.com/troubleshooting/errors#avx-w29-compiler-circular-dependency
