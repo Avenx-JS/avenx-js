@@ -33,7 +33,7 @@ Maintain and optimize the Avenx-JS build-time compiler system, including compone
 ## Best Practices
 
 * **Robust Regex & AST**: Rely on AST parsing where possible to avoid fragile regex matching on complex template syntax.
-* **Error Context**: Before implementing compiler validation errors, warnings, or exception handling, review `errors.md` and reuse existing Avenx warning/error codes whenever applicable. Throw detailed compiler exceptions referencing target files and line counts to help developers debug syntax errors.
+* **Error Context**: Before implementing compiler validation errors, warnings, or exception handling, review `docs/src/content/docs/troubleshooting/errors.md` (and `lib/core/runtime/AvenxError.js` / `lib/core/diagnostics/catalogue.js`) and reuse existing Avenx warning/error codes whenever applicable. Throw detailed compiler exceptions referencing target files and line counts to help developers debug syntax errors.
 * **Hashed Selection**: When processing scoped styles, verify that all selectors (excluding global blocks) are appended with the correct component scope hash.
 
 ## Success Criteria
