@@ -174,25 +174,24 @@ server and live reload, and trace capture under `avenx serve --trace`.
 
 ## Known gaps this suite documents
 
-Six tests are written as `test.fail()`. They **run**, they are **expected to
-fail**, and Playwright reports the suite as green while they do. If one starts
-passing, the run turns red and says so — which is the point: a fixed bug should
-not leave a stale expectation behind.
+None, currently. Every test in this suite is expected to pass.
 
-None of these were reachable from a unit test. Each compiles correctly in
-isolation; the damage only appears once the output reaches a browser.
+The suite previously carried six `test.fail()` tests -- expected failures kept
+under test so a broken piece of public API could not quietly go uncovered. All
+six have since been fixed, four of them by the rendering-core refactor:
 
-| Gap | Effect |
+| Former gap | How it was closed |
 | :--- | :--- |
-| `<computed value="count * 2" />` | The bare-identifier form that `README.md` and the component docs both show renders its initial value and never recomputes. Only `state.count * 2` registers a dependency. |
-| Two guard modules | Each emits its own `const { AvenxGuard } = Avenx;` into one bundle scope, so the bundle fails to parse and the app never starts. **The build still reports success.** Any project with an auth guard and a role guard ships broken. |
-| A guard reading a bridge | The relative import is stripped without the binding being rewired, so the router reports `AVX_R07`. There is no supported alternative: `AvenxGuard` takes no injection and the sandbox blocks `window` inside actions. |
-| A component inside `<@defer>` | The trigger fires and the marker is inserted, but nothing mounts it. This is the headline use of the feature. |
-| `<@defer>` in a stateful component | Any unrelated state change discards the deferred container, so the block can never load. This makes `<@defer>` unusable in most components. |
-| `data-ax-style` | Documented public API that applies nothing at all — the `style` attribute stays null on first render, with both the bare and `state.`-prefixed expression. |
+| `<computed value="count * 2" />` never recomputed | Scope resolution made lazy and layered |
+| Two guard modules broke the bundle | Guard emission no longer repeats the destructuring |
+| A guard reading a bridge | Guard imports are resolved rather than stripped |
+| A component inside `<@defer>` never mounted | `<@defer>` is a compiled block, and a mounted block is announced to the child-component pass |
+| `<@defer>` in a stateful component | A block is owned by its binding rather than by a diff, so an unrelated update cannot discard it |
+| `data-ax-style` applied nothing | Implemented as a render-program op |
 
-The fixtures work around each of these where they have to, and say so in a
-comment at the point of the workaround.
+When the next gap appears, add it back the same way: a `test.fail()` test and a
+row here. A pinned gap turns the run red the moment it starts passing, which is
+how all six of these were noticed.
 
 ## CI
 
