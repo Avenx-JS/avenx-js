@@ -33,9 +33,10 @@ if (!isJson) {
 
 files.forEach((file) => {
   if (!isJson) console.log(`[Running] ${file}`);
-  // Every benchmark runs with the expression interpreter installed. A benchmark
-  // builds components directly, so nothing compiled their expressions the way a
-  // build would -- without this, a render benchmark measures a binding that
+  // Every benchmark runs with the expression interpreter and the string
+  // renderer installed. A benchmark builds components directly, so nothing
+  // compiled their expressions and no build decided whether the string renderer
+  // belongs here -- without them, a render benchmark measures a binding that
   // throws and reports the resulting near-zero as an improvement.
   const result = spawnSync(
     'node',
