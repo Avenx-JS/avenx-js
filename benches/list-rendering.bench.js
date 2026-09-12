@@ -121,11 +121,13 @@ async function time(size, compiled, mutate) {
   return elapsed / ITERATIONS;
 }
 
+let renameCounter = 0;
+
 /**
  * Renames one row: the smallest change a list can undergo.
  * @param {object} component - The mounted component.
+ * @returns {void}
  */
-let renameCounter = 0;
 function renameOneRow(component) {
   component.state.rows[0].label = `renamed ${renameCounter++}`;
 }
@@ -134,6 +136,7 @@ function renameOneRow(component) {
  * Moves the last row to the front, which a keyed reconciler should handle by
  * moving one node.
  * @param {object} component - The mounted component.
+ * @returns {void}
  */
 function reorder(component) {
   const rows = component.state.rows.slice();
@@ -141,11 +144,13 @@ function reorder(component) {
   component.state.rows = rows;
 }
 
+let appendCounter = 100000;
+
 /**
  * Appends a row.
  * @param {object} component - The mounted component.
+ * @returns {void}
  */
-let appendCounter = 100000;
 function append(component) {
   component.state.rows.push({ id: appendCounter++, label: 'appended' });
 }
