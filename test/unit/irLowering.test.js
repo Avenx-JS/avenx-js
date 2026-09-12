@@ -158,12 +158,21 @@ function testBindingsAndBooleans() {
 
 function testComponentsAndSlots() {
   console.log('🧪 components and slots lower into the program');
-  const { program, expressions } = lower('<Card :title="h" flat="1"><slot /></Card>');
+  const { program, expressions } = lower('<Card :title="h" flat="1" kind="wide"><slot /></Card>');
   assert.ok(program.html.includes('data-avenx-comp="Card"'), 'the mount point keeps the shape the mounter expects');
-  assert.ok(program.html.includes('data-props-flat="1"'), 'a literal prop is written into the skeleton');
-  const prop = op(program, OpKind.PROP);
-  assert.strictEqual(prop.n, 'title');
-  assert.strictEqual(expressions[prop.x], 'h');
+  assert.ok(
+    !program.html.includes('data-props-'),
+    'no prop travels as an attribute holding its own expression source',
+  );
+
+  const props = program.ops.filter((candidate) => candidate.k === OpKind.PROP);
+  const byName = Object.fromEntries(props.map((candidate) => [candidate.n, expressions[candidate.x]]));
+  assert.strictEqual(byName.title, 'h', 'a bound prop is an op');
+  // A literal prop is an op too, and reaches the table as the expression that
+  // produces it: a number stays a number, and anything else is quoted so it
+  // does not resolve as an identifier.
+  assert.strictEqual(byName.flat, '1');
+  assert.strictEqual(byName.kind, "'wide'");
 
   // A slot stays a real element: transclusion is the component mounter's, and
   // giving the outlet a second owner in the program would hide the content the
