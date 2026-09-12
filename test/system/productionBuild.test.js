@@ -24,10 +24,15 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * therefore larger and the *transferred* figure much closer, which is why
  * GZIPPED_CEILING_KB below is the number that actually matters. Tree shaking
  * moved the other way and now removes what the blob could not: the trace
- * recorder no longer ships to an application that never records.
+ * recorder no longer ships to an application that never records, and neither
+ * does the string renderer when every template compiled.
+ *
+ * Ratcheted from 430 when that became true. A ceiling well above the measured
+ * size is a ceiling nothing can hit, and the point of one is to catch the
+ * change that puts the weight back.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 430;
+const PRODUCTION_SIZE_CEILING_KB = 350;
 
 /**
  * Ceiling for the same bundle over the wire, in KB.
@@ -35,9 +40,11 @@ const PRODUCTION_SIZE_CEILING_KB = 430;
  * Comments and indentation are what gzip compresses best, so this is where the
  * gap between a conservative minifier and a mangling one nearly closes -- and
  * it is what a browser actually downloads. A regression here is a real one.
+ *
+ * Ratcheted from 100 alongside the raw ceiling.
  * @type {number}
  */
-const GZIPPED_CEILING_KB = 100;
+const GZIPPED_CEILING_KB = 80;
 
 /**
  * Source that must never appear in a production bundle.
@@ -301,6 +308,90 @@ function testSizeCeiling(bundle) {
 }
 
 /**
+ * A build where every template compiled does not carry the string renderer.
+ *
+ * This is the property the whole conditional-linking arrangement exists for,
+ * and it is asserted on an emitted bundle rather than by reasoning about
+ * imports -- reachability is exactly the thing that was wrong before, when the
+ * four classes were behind lazy getters and still in every bundle because
+ * AvenxComponent named them at the top of the file.
+ * @param {string} bundle - The production bundle source.
+ */
+function testStringRendererIsAbsent(bundle) {
+  console.log('🧪 Testing a fully compiled build leaves the string renderer out...');
+
+  for (const marker of ['class DomPatcher', 'class ListManager', 'class DeferManager', 'class TemplateRenderer']) {
+    assert.ok(
+      !bundle.includes(marker),
+      `${marker} is in a bundle whose every template compiled; something still reaches it`,
+    );
+  }
+
+  // The seam itself is tiny and may well be present; what must not be present
+  // is anything it would have pulled in.
+  console.log('  ✅ the patcher, the list manager, the defer manager and the template renderer are all gone.');
+}
+
+/**
+ * A built-in nobody referenced is not in the bundle either.
+ * @param {string} bundle - The production bundle source.
+ */
+function testUnusedBuiltinIsAbsent(bundle) {
+  console.log('🧪 Testing an unreferenced built-in component is not linked...');
+
+  assert.ok(
+    !bundle.includes('class VirtualList'),
+    'VirtualList is in a bundle whose templates never mention it',
+  );
+  console.log('  ✅ <VirtualList> is linked by use, not by default.');
+}
+
+/**
+ * No op in any emitted program carries expression source text.
+ *
+ * The addressing invariant. A program that carried source would mean the
+ * compiler and the runtime were agreeing by string identity again, which is
+ * unverifiable, and it would mean every expression shipped twice.
+ * @param {string} bundle - The production bundle source.
+ */
+function testProgramsAddressExpressionsByIndex(bundle) {
+  console.log('🧪 Testing render programs address expressions by index...');
+
+  const programs = [...bundle.matchAll(/__axProgram = (\{.*?\});\n/g)].map((match) => JSON.parse(match[1]));
+  assert.ok(programs.length > 0, 'the fixture must produce at least one program, or this checks nothing');
+
+  /**
+   * @param {object[]} ops - Ops to check.
+   * @param {string} where - A label for the failure message.
+   */
+  const check = (ops, where) => {
+    for (const op of ops) {
+      if (op.x !== undefined && op.x !== null) {
+        assert.strictEqual(typeof op.x, 'number', `${where}: op ${op.k} carries expression source`);
+      }
+      for (const part of op.p || []) {
+        if (typeof part !== 'string') {
+          assert.strictEqual(typeof part.x, 'number', `${where}: an attribute part carries expression source`);
+        }
+      }
+      for (const arm of op.arms || []) {
+        assert.ok(arm.x === null || typeof arm.x === 'number', `${where}: an arm carries expression source`);
+      }
+    }
+  };
+
+  for (const program of programs) {
+    assert.strictEqual(program.v, 2, 'programs are emitted at the current format version');
+    check(program.ops, 'root');
+    for (const [index, block] of (program.blocks || []).entries()) {
+      check(block.ops, `block ${index}`);
+    }
+  }
+
+  console.log(`  ✅ ${programs.length} program(s), every expression addressed by index.`);
+}
+
+/**
  * The production bundle runs in a browser-like environment: it mounts the
  * application, and installs the documented global surface and only that.
  * @param {string} bundle - The production bundle.
@@ -431,6 +522,9 @@ function run() {
     testProductionNeedsNoUnsafeEval(bundle, devBundle);
     testMinified(bundle, devBundle);
     testSizeCeiling(bundle);
+    testStringRendererIsAbsent(bundle);
+    testUnusedBuiltinIsAbsent(bundle);
+    testProgramsAddressExpressionsByIndex(bundle);
     const window = testExecutesInBrowser(bundle);
     testRuntimeStillWorks(window);
     testDevelopmentBuild(devBundle);
