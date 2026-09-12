@@ -15,8 +15,29 @@
  * belongs to the string renderer has a test asserting the compiler declines it.
  */
 import assert from 'assert';
-import { compileTemplateProgram } from '../../lib/compiler/render/compileTemplate.js';
+import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
+import { lowerToProgram } from '../../lib/compiler/ir/lower.js';
 import { OpKind, PROGRAM_VERSION, isProgram } from '../../lib/compiler/render/program.js';
+
+/**
+ * Compiles a template through the IR and the lowering pass.
+ *
+ * These tests predate the IR, when a single `compileTemplateProgram` read
+ * already-rewritten markup. They are kept rather than replaced because what
+ * they assert -- which op each construct produces, what the skeleton keeps,
+ * what the compiler refuses -- is still exactly the contract. Only the route
+ * to the program changed.
+ * @param {string} template - The template source.
+ * @returns {{program: object|null, expressions: string[], fallback: object|null}}
+ *   The program and its interned sources, or the reason it was refused.
+ */
+function compileProgram(template) {
+  const built = buildTemplateIR(template, {});
+  if (built.refusal) return { program: null, fallback: built.refusal };
+  const lowered = lowerToProgram(built.ir, {});
+  if (lowered.refusal) return { program: null, fallback: lowered.refusal };
+  return { program: lowered.program, expressions: lowered.expressions, fallback: null };
+}
 
 /**
  * Compiles a template and asserts it produced a program.
@@ -24,12 +45,46 @@ import { OpKind, PROGRAM_VERSION, isProgram } from '../../lib/compiler/render/pr
  * @returns {object} The program.
  */
 function compiled(template) {
-  const result = compileTemplateProgram(template);
+  const result = compileProgram(template);
   assert.ok(
     result.program,
     `expected a program, got fallback: ${result.fallback && result.fallback.reason} (${result.fallback && result.fallback.detail})`,
   );
+  programSources.set(result.program, result.expressions);
   return result.program;
+}
+
+/**
+ * The interned expression sources for each compiled program.
+ * @type {WeakMap<object, string[]>}
+ */
+const programSources = new WeakMap();
+
+/**
+ * A program's ops with their expression indices resolved back to source.
+ *
+ * Ops address expressions by index, which is the point of the format and is
+ * asserted directly in irLowering.test.js. These tests are about *which op*
+ * each construct produces, and reading `x: 'count'` says that far better than
+ * `x: 0` -- so the index is resolved here rather than spelled out in every
+ * assertion.
+ * @param {object} program - A compiled program.
+ * @returns {object[]} The ops, in source terms.
+ */
+function ops(program) {
+  const sources = programSources.get(program) || [];
+  /**
+   * @param {any} part - An attribute part.
+   * @returns {any} The part in source terms.
+   */
+  const readablePart = (part) => (typeof part === 'string' ? part : { x: sources[part.x] });
+
+  return program.ops.map((op) => {
+    const out = { ...op };
+    if (typeof out.x === 'number') out.x = sources[out.x];
+    if (Array.isArray(out.p)) out.p = out.p.map(readablePart);
+    return out;
+  });
 }
 
 /**
@@ -38,7 +93,7 @@ function compiled(template) {
  * @returns {{reason: string, detail: string}} The fallback.
  */
 function refused(template) {
-  const result = compileTemplateProgram(template);
+  const result = compileProgram(template);
   assert.strictEqual(result.program, null, `expected a fallback, got a program for: ${template}`);
   assert.ok(result.fallback, 'a refusal must carry a reason');
   return result.fallback;
@@ -58,8 +113,8 @@ function testTextOps() {
   assert.strictEqual(program.ops.length, 2);
   assert.strictEqual(program.texts, 2);
 
-  assert.deepStrictEqual(program.ops[0], { k: OpKind.TEXT, t: 0, x: 'count' });
-  assert.deepStrictEqual(program.ops[1], { k: OpKind.TEXT, t: 1, x: 'total' });
+  assert.deepStrictEqual(ops(program)[0], { k: OpKind.TEXT, t: 0, x: 'count' });
+  assert.deepStrictEqual(ops(program)[1], { k: OpKind.TEXT, t: 1, x: 'total' });
 
   // The literal text survives verbatim, and each expression leaves a marker in
   // its place so the runtime can address exactly that position.
@@ -76,7 +131,7 @@ function testRawOps() {
   console.log('🧪 Testing raw interpolation compiles to a distinct op...');
 
   const program = compiled('<div>{{{ body }}}</div>');
-  assert.deepStrictEqual(program.ops[0], { k: OpKind.RAW, t: 0, x: 'body' });
+  assert.deepStrictEqual(ops(program)[0], { k: OpKind.RAW, t: 0, x: 'body' });
 }
 
 /**
@@ -88,8 +143,8 @@ function testWholeAttributeOps() {
 
   const program = compiled('<a href="{{ url }}" title="{{ label }}">x</a>');
 
-  assert.deepStrictEqual(program.ops[0], { k: OpKind.ATTR, e: 0, a: 'href', x: 'url' });
-  assert.deepStrictEqual(program.ops[1], { k: OpKind.ATTR, e: 0, a: 'title', x: 'label' });
+  assert.deepStrictEqual(ops(program)[0], { k: OpKind.ATTR, e: 0, a: 'href', x: 'url' });
+  assert.deepStrictEqual(ops(program)[1], { k: OpKind.ATTR, e: 0, a: 'title', x: 'label' });
 
   // Both ops address the same element, so the element is marked exactly once.
   assert.strictEqual(program.elements, 1);
@@ -106,8 +161,8 @@ function testBooleanAttributeOps() {
   console.log('🧪 Testing boolean attributes compile to bool ops...');
 
   const program = compiled('<button disabled="{{ isBusy }}" checked="{{ on }}">x</button>');
-  assert.deepStrictEqual(program.ops[0], { k: OpKind.BOOL, e: 0, a: 'disabled', x: 'isBusy' });
-  assert.deepStrictEqual(program.ops[1], { k: OpKind.BOOL, e: 0, a: 'checked', x: 'on' });
+  assert.deepStrictEqual(ops(program)[0], { k: OpKind.BOOL, e: 0, a: 'disabled', x: 'isBusy' });
+  assert.deepStrictEqual(ops(program)[1], { k: OpKind.BOOL, e: 0, a: 'checked', x: 'on' });
 }
 
 /**
@@ -119,7 +174,7 @@ function testAttributePartsOps() {
   console.log('🧪 Testing mixed literal/expression attributes...');
 
   const program = compiled('<div class="avenx-ab12 card {{ kind }} {{ size }}-wide">x</div>');
-  const op = program.ops[0];
+  const op = ops(program)[0];
 
   assert.strictEqual(op.k, OpKind.ATTR_PARTS);
   assert.strictEqual(op.a, 'class');
@@ -137,9 +192,9 @@ function testDirectiveOps() {
     '<div><span data-ax-show="open">a</span><i data-ax-class="cls"></i><em data-ax-html="body"></em></div>',
   );
 
-  assert.deepStrictEqual(program.ops[0], { k: OpKind.SHOW, e: 0, x: 'open' });
-  assert.deepStrictEqual(program.ops[1], { k: OpKind.CLASS, e: 1, x: 'cls' });
-  assert.deepStrictEqual(program.ops[2], { k: OpKind.HTML, e: 2, x: 'body' });
+  assert.deepStrictEqual(ops(program)[0], { k: OpKind.SHOW, e: 0, x: 'open' });
+  assert.deepStrictEqual(ops(program)[1], { k: OpKind.CLASS, e: 1, x: 'cls' });
+  assert.deepStrictEqual(ops(program)[2], { k: OpKind.HTML, e: 2, x: 'body' });
   assert.ok(!program.html.includes('data-ax-show'), 'a consumed directive leaves the skeleton');
 }
 
@@ -189,21 +244,23 @@ function testStaticSubtrees() {
 function testRefusals() {
   console.log('🧪 Testing constructs that must fall back...');
 
+  // Written in the syntax an author writes, not in the rewritten markup the
+  // previous compiler read. Lists, slots, components and `<@defer>` have left
+  // this table because they lower now; what remains is what the IR still does
+  // not model, and each entry is a construct with a named reason rather than a
+  // catch-all.
   const cases = [
-    ['a list', '<ul><template data-ax-for="items" data-ax-as="i"><li>x</li></template></ul>'],
     ['a dynamic component', '<div data-avenx-comp-dynamic="which"></div>'],
-    ['a slot', '<div><slot></slot></div>'],
-    ['a suspense boundary', '<div data-ax-suspense="true"></div>'],
-    ['an error boundary', '<div data-ax-error-boundary="true"></div>'],
-    ['a deadlock boundary', '<div data-ax-deadlock="true"></div>'],
-    ['a defer block', '<div data-ax-defer="true"></div>'],
-    ['a transition', '<div data-ax-transition="fade"></div>'],
+    ['a suspense boundary', '<@suspense><p>x</p></@suspense>'],
+    ['an error boundary', '<@errorBoundary><p>x</p></@errorBoundary>'],
+    ['a deadlock boundary', '<@deadlock name="d"><p>x</p></@deadlock>'],
+    ['a transition', '<transition name="fade"><p>x</p></transition>'],
     ['a template ref', '<div data-ax-ref="box"></div>'],
     ['form validation', '<input data-ax-validate="required" />'],
     ['a router view', '<div data-ax-router-view="true"></div>'],
     ['a dynamic attribute name', '<div :[name]="value"></div>'],
-    ['an unresolved component tag', '<div><MyThing /></div>'],
     ['an interpolation in a comment', '<div><!-- {{ secret }} --></div>'],
+    ['an unrecognised directive', '<@nonsense><p>x</p></@nonsense>'],
   ];
 
   for (const [label, template] of cases) {
@@ -233,13 +290,15 @@ function testRefusals() {
 function testChildComponentProps() {
   console.log('🧪 Testing child component props compile to prop ops...');
 
+  // Written as the author writes it. The previous compiler read the rewritten
+  // `<div data-avenx-comp="StatCard" data-props-label="title">` form, because
+  // component tags had already been turned into markup by the time it ran.
   const program = compiled(
     '<main><h1>{{ title }}</h1>' +
-      '<div data-avenx-comp="StatCard" data-props-label="title" data-props-value="revenue">' +
-      '<span>{{ note }}</span></div></main>',
+      '<StatCard :label="title" :value="revenue"><span>{{ note }}</span></StatCard></main>',
   );
 
-  const props = program.ops.filter((op) => op.k === OpKind.PROP);
+  const props = ops(program).filter((op) => op.k === OpKind.PROP);
   assert.deepStrictEqual(props, [
     { k: OpKind.PROP, e: 0, n: 'label', x: 'title' },
     { k: OpKind.PROP, e: 0, n: 'value', x: 'revenue' },
@@ -255,7 +314,7 @@ function testChildComponentProps() {
 
   // Transcluded content is compiled in the *parent's* scope, because that is
   // where its expressions are evaluated -- the child only moves the nodes.
-  const texts = program.ops.filter((op) => op.k === OpKind.TEXT);
+  const texts = ops(program).filter((op) => op.k === OpKind.TEXT);
   assert.deepStrictEqual(
     texts.map((op) => op.x),
     ['title', 'note'],
@@ -272,9 +331,12 @@ function testChildComponentProps() {
 function testRefusalDiscardsPartialWork() {
   console.log('🧪 Testing a refusal discards partial work...');
 
-  const result = compileTemplateProgram('<div><p>{{ a }}</p><ul><template data-ax-for="x" data-ax-as="i"><li>y</li></template></ul></div>');
+  const result = compileProgram('<div><p>{{ a }}</p><@suspense><p>{{ b }}</p></@suspense></div>');
   assert.strictEqual(result.program, null, 'no program may escape a refusal');
-  assert.ok(result.fallback.reason.includes('@for'), `expected the list reason, got: ${result.fallback.reason}`);
+  assert.ok(
+    result.fallback.reason.includes('suspense'),
+    `expected the suspense reason, got: ${result.fallback.reason}`,
+  );
 }
 
 /**
