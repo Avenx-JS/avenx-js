@@ -50,7 +50,13 @@
         { "name": "isolated", "description": "The component reads no bridges.", "valueSet": "v" }
       ]
     },
-    { "name": "@for", "description": "Repeats its contents for each item: <@for item in items>. Use `key` for stable identity across reorders." },
+    { "name": "@if", "description": "Renders its contents when the condition is truthy: <@if user.isAdmin>. Bracket a top-level comparison -- <@if (count > 3)> -- because a bare `>` cannot be told apart from the end of the tag. Close the whole chain with </@if>." },
+    { "name": "@elseif", "description": "Continues an <@if> chain with another condition. Ends the arm before it; the chain closes with </@if>." },
+    { "name": "@else", "description": "The arm of an <@if> chain taken when no condition matched. Must be last." },
+    { "name": "@for", "description": "Repeats its contents for each item: <@for item in items>. Use `key` for stable identity across reorders. `index` is bound in every loop." },
+    { "name": "@empty", "description": "Inside a <@for>, the content rendered when the list is empty." },
+    { "name": "@defer", "description": "Renders its contents once `when` fires: idle, visible, hover, click, interaction, timer(1500), 1500ms, or an expression." },
+    { "name": "@placeholder", "description": "Inside a <@defer>, the content shown until the trigger fires." },
     { "name": "@suspense", "description": "Shows its <@fallback> while a <resource> inside it is pending." },
     { "name": "@errorBoundary", "description": "Shows its <@fallback> when a descendant throws." },
     { "name": "@deadlock", "description": "A named boundary whose <@fallback> can replace its contents after a reactive cycle." },
