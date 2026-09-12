@@ -76,6 +76,13 @@ function normalise(markup) {
       // comparing them here would drown the differences that matter.
       .replace(/\s+data-ax-(show|class|html|static)="[^"]*"/g, '')
       .replace(/\s+data-props-[\w-]+="[^"]*"/g, '')
+      // `data-ax-event` is the same story and the clearest case of it. The
+      // string renderer needs the handler source in the document, because it
+      // re-reads it off the DOM when an event fires. A program attaches the
+      // listener at mount from an op carrying a statement index, so the source
+      // is not in the bundle at all, let alone in the markup. Asserted on its
+      // own in testBookkeepingIsConsumed.
+      .replace(/\s+data-ax-event="[^"]*"/g, '')
       .replace(/>\s+</g, '><')
       .replace(/\s+/g, ' ')
       .replace(/\s*=\s*/g, '=')
