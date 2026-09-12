@@ -21,7 +21,8 @@ import assert from 'assert';
 import { CompiledTemplate, getCompiledTemplate } from '../../lib/core/renderer/program/CompiledTemplate.js';
 import { TemplateInstance } from '../../lib/core/renderer/program/TemplateInstance.js';
 import { PROGRAM_VERSION } from '../../lib/compiler/render/program.js';
-import { compileTemplateProgram } from '../../lib/compiler/render/compileTemplate.js';
+import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
+import { lowerToProgram } from '../../lib/compiler/ir/lower.js';
 import { StateFactory } from '../../lib/core/reactive/createState.js';
 import { html } from '../../lib/core/security/escapeHtml.js';
 import { nextTick } from '../../lib/core/reactive/scheduler.js';
@@ -40,20 +41,25 @@ import { AvenxComponent, bridge } from '../../lib/core/index.js';
  * @returns {{host: Element, instance: TemplateInstance, state: object}} The mount.
  */
 function mount(template, state = {}) {
-  const result = compileTemplateProgram(template);
-  assert.ok(result.program, `template did not compile: ${result.fallback && result.fallback.detail}`);
+  const built = buildTemplateIR(template, {});
+  assert.strictEqual(built.refusal, null, `template did not compile: ${built.refusal && built.refusal.detail}`);
+  const lowered = lowerToProgram(built.ir, {});
+  assert.strictEqual(lowered.refusal, null, `template did not lower: ${lowered.refusal && lowered.refusal.detail}`);
 
   const reactive = new StateFactory().create(state);
   const host = document.createElement('div');
   document.body.appendChild(host);
 
-  const instance = new TemplateInstance(result.program, {
-    evaluate: (expression) => {
+  const instance = new TemplateInstance(lowered.program, {
+    program: lowered.program,
+    // Ops address expressions by index now, so the harness resolves the index
+    // back to the source the lowering interned and reads it off state.
+    evaluate: (index, locals) => {
       // A deliberately tiny scope: property access on state, nothing else. The
       // real evaluator is tested elsewhere; substituting it here would make
       // these tests fail for reasons that have nothing to do with rendering.
-      const path = expression.trim().split('.');
-      let value = reactive;
+      const path = lowered.expressions[index].trim().split('.');
+      let value = locals && path[0] in locals ? locals : reactive;
       for (const part of path) {
         if (value === null || value === undefined) return undefined;
         value = value[part];
@@ -485,13 +491,16 @@ async function testBatching() {
 function testBindingErrorIsIsolated() {
   console.log('🧪 Testing a failing binding does not take the template with it...');
 
-  const result = compileTemplateProgram('<div><p>{{ good }}</p><p>{{ bad.deep.deeper }}</p></div>');
+  const built = buildTemplateIR('<div><p>{{ good }}</p><p>{{ bad.deep.deeper }}</p></div>', {});
+  assert.strictEqual(built.refusal, null);
+  const result = lowerToProgram(built.ir, {});
   assert.ok(result.program);
 
   const host = document.createElement('div');
   const instance = new TemplateInstance(result.program, {
-    evaluate: (expression) => {
-      if (expression.startsWith('bad')) {
+    program: result.program,
+    evaluate: (index) => {
+      if (result.expressions[index].startsWith('bad')) {
         throw new Error('boom');
       }
       return 'fine';
@@ -529,10 +538,13 @@ async function testBridgeBackedBindings() {
     },
   });
 
-  const result = compileTemplateProgram(
-    '<div><span id="c">{{ cart.count }}</span><span id="l">{{ cart.label }}</span><b id="own">{{ own }}</b></div>',
-  );
+  const consumerTemplate =
+    '<div><span id="c">{{ cart.count }}</span><span id="l">{{ cart.label }}</span><b id="own">{{ own }}</b></div>';
+  const consumerBuilt = buildTemplateIR(consumerTemplate, {});
+  assert.strictEqual(consumerBuilt.refusal, null);
+  const result = lowerToProgram(consumerBuilt.ir, {});
   assert.ok(result.program);
+
 
   /** A component reading a bridge and one local value. */
   class Consumer extends AvenxComponent {
@@ -554,6 +566,21 @@ async function testBridgeBackedBindings() {
       );
     }
   }
+
+  // The component evaluates its own bindings, so it needs the closures the
+  // build would have emitted for them. Built here from the interned sources so
+  // the test exercises the indexed path the runtime actually takes.
+  Consumer.__axProgramExprs = result.expressions.map((source) => {
+    const path = source.trim().split('.');
+    return (scope) => {
+      let value = scope;
+      for (const part of path) {
+        if (value === null || value === undefined) return undefined;
+        value = value[part];
+      }
+      return value;
+    };
+  });
 
   const host = document.createElement('div');
   document.body.appendChild(host);

@@ -128,3 +128,59 @@ test.describe('a <state> tag written across several lines', () => {
     await expect(page.getByTestId('count')).toHaveText('1');
   });
 });
+
+test.describe('conditional rendering', () => {
+  test.beforeEach(async ({ app }) => {
+    await app.open('rendering', { hash: '#/conditional' });
+  });
+
+  test('renders only the matching branch', async ({ page }) => {
+    await expect(page.getByTestId('branch')).toHaveText('none');
+    await expect(page.getByTestId('branch')).toHaveCount(1);
+  });
+
+  test('moves through the chain as the condition changes', async ({ page }) => {
+    await page.getByTestId('inc').click();
+    await expect(page.getByTestId('branch')).toHaveText('some');
+
+    for (let i = 0; i < 3; i += 1) {
+      await page.getByTestId('inc').click();
+    }
+    await expect(page.getByTestId('count')).toHaveText('4');
+    await expect(page.getByTestId('branch')).toHaveText('many');
+
+    await page.getByTestId('reset').click();
+    await expect(page.getByTestId('branch')).toHaveText('none');
+  });
+
+  test('leaves the surrounding markup alone', async ({ page }) => {
+    // A branch occupies a range between its siblings. Getting that wrong shows
+    // up as the content after the chain disappearing on the first switch.
+    await expect(page.getByTestId('after')).toBeVisible();
+    await page.getByTestId('inc').click();
+    await expect(page.getByTestId('after')).toBeVisible();
+  });
+
+  test('keeps live DOM inside a branch that did not change', async ({ page }) => {
+    await page.getByTestId('inc').click();
+    const typed = page.getByTestId('typed');
+    await typed.fill('still here');
+
+    // `name` is read by a different chain, so this updates the page without
+    // changing which arm is selected. Rebuilding the arm anyway would lose
+    // what the user typed, which is the reason the binding compares arm
+    // indices rather than re-rendering.
+    await page.getByTestId('rename').click();
+    await expect(page.getByTestId('greeting')).toHaveText('hello everyone');
+    await expect(typed).toHaveValue('still here');
+  });
+
+  test('tears the branch down when it stops matching', async ({ page }) => {
+    await page.getByTestId('inc').click();
+    await expect(page.getByTestId('typed')).toHaveCount(1);
+
+    await page.getByTestId('reset').click();
+    await expect(page.getByTestId('typed')).toHaveCount(0);
+    await expect(page.getByTestId('greeting')).toHaveCount(0);
+  });
+});

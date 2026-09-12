@@ -12,8 +12,8 @@
  * @module benches/support/dom
  */
 import { Window } from 'happy-dom';
-// Also installs the expression interpreter, for a benchmark run directly
-// rather than through benches/run.js.
+// Also installs the expression interpreter and the string renderer, for a
+// benchmark run directly rather than through benches/run.js.
 import './environment.js';
 
 const window = new Window({ url: 'http://localhost' });
