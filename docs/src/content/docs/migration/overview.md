@@ -54,7 +54,7 @@ Instead of inline hooks or methods, derived values and methods use declarative c
 - **Loops**: Use `<@for item in state.items key="item.id">` with an implicit zero-indexed `index` variable.
 - **Visibility**: Use `data-ax-show="state.isVisible"` (toggles inline CSS `display` while preserving original display style).
 - **Two-Way Binding**: Use `data-ax-bind="state.username"` on inputs, textareas and selects. Text controls bind through `value`; checkboxes and radios bind through `checked`.
-- **Conditional Templates**: Conditional rendering is achieved using inline ternary expressions inside interpolations (`{{{ state.show ? '<div>...</div>' : '' }}}`) or `data-ax-show`.
+- **Conditional Templates**: `<@if>` / `<@elseif>` / `<@else>` render a branch; `data-ax-show` keeps an element mounted and toggles its visibility.
 
 ### 5. Async Data Loading with Resources
 Async data operations use the built-in `<resource>` tag and runtime `Resource` API:

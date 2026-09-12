@@ -228,7 +228,70 @@ When `state.isSubmitting` is `true`, the `disabled` attribute is present on the 
 
 When binding conditional flags to inputs or buttons, bind your expression directly to the boolean attribute. Avenx-JS automatically handles adding/removing the attribute and setting the DOM property based on evaluated truthiness.
 
-## 4. Conditional Visibility (`data-ax-show`)
+## 4. Conditional Rendering (`<@if>`)
+
+`<@if>` renders one of several branches, and renders nothing for the branches it
+does not take. Use it when a branch should not exist; use
+[`data-ax-show`](#4b-conditional-visibility-data-ax-show) when it should exist
+but be hidden.
+
+```html
+<@if user.isAdmin>
+  <AdminPanel />
+<@elseif user.isMember>
+  <p>Welcome back, {{ user.name }}.</p>
+<@else>
+  <a href="/signup">Create an account</a>
+</@if>
+```
+
+`<@elseif>` and `<@else>` are optional, and `</@if>` closes the whole chain --
+the arms are siblings, not a nest, so anything after `</@if>` is outside the
+conditional.
+
+### Comparisons must be bracketed
+
+A `>` in a bare header cannot be told apart from the end of the tag, because
+they are the same character:
+
+```html
+<!-- Refused at build time -->
+<@if count > 3>
+
+<!-- Write this -->
+<@if (count > 3)>
+```
+
+The compiler detects the truncation and names the bracketed form rather than
+silently testing `count`. Brackets are only needed for a top-level `>`; a
+comparison already inside a call -- `<@for r in rows.filter(x => x.n > 2)>` --
+is unambiguous and needs nothing.
+
+### What it costs
+
+Each arm is compiled as its own block: a skeleton parsed once for the life of
+the page, cloned when the arm is entered, torn down when it is left. Switching
+arms is the only thing that rebuilds DOM -- an update that leaves the same arm
+selected touches nothing, so focus, text selection and scroll position inside
+the branch survive.
+
+### Do not use `{{{ }}}` for this
+
+Older documentation suggested raw HTML interpolation with a ternary:
+
+```html
+<!-- Don't. -->
+{{{ state.isLoggedIn ? '<p>Welcome back!</p>' : '' }}}
+```
+
+`{{{ }}}` inserts its value as markup without sanitising it, so the moment any
+part of that string comes from user data it is an injection. `<@if>` is the
+supported way to render conditionally, and it escapes everything inside it
+normally.
+
+---
+
+## 4b. Conditional Visibility (`data-ax-show`)
 
 The `data-ax-show` directive reactively toggles the visibility of an element by modifying its inline CSS `display` property based on the evaluated expression.
 
@@ -358,7 +421,7 @@ Pass an object whose **truthy** keys become class names (quote keys that are not
 
 ## 7. Loops (`<@for>`)
 
-Render lists, objects, sets, maps, or numeric ranges using the custom `<@for>` loop tag. Loop blocks are translated to `<template>` tags and managed via the `ListManager` for efficient DOM updates:
+Render lists, objects, sets, maps, or numeric ranges using the custom `<@for>` loop tag. Loop bodies are compiled to their own block -- a skeleton parsed once for the life of the page and cloned per row -- and reconciled by key:
 
 ```html
 <@for item in state.todos key="item.id">

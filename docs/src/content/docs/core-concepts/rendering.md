@@ -3,10 +3,11 @@ title: 'How Rendering Works'
 description: 'The compiled render program: what the Avenx compiler emits, what the runtime executes, and why an update costs what it costs.'
 ---
 
-Avenx compiles a component's template into a **render program**: a static HTML
-skeleton plus a list of binding operations. The skeleton is parsed once per
-component class. Each binding becomes its own reactive effect, so a state change
-updates only the bindings that read it.
+Avenx compiles a component's template through a **typed intermediate
+representation** into a **render program**: a static HTML skeleton, a list of
+binding operations, and a list of blocks for control flow. The skeleton is
+parsed once per component class. Each binding becomes its own reactive effect,
+so a state change updates only the bindings that read it.
 
 This page explains what changed, why, and what it means for code you write.
 
@@ -15,7 +16,8 @@ This page explains what changed, why, and what it means for code you write.
 ## The short version
 
 Nothing in your components changes. `{{ }}`, `@click`, `data-ax-class`,
-`<@for>`, props and slots all mean exactly what they meant before.
+`<@for>`, `<@defer>`, props and slots all mean exactly what they meant before.
+`<@if>` is new, and `data-ax-style` now applies.
 
 What changed is what happens between a state write and the DOM:
 
@@ -79,31 +81,82 @@ the parsed tree were both rebuilt every time; it now allocates **13.4 KB**.
 
 ## The new model
 
-### What the compiler emits
+### The pipeline
 
-At the end of the component pipeline — after every directive has been rewritten
-and static subtrees marked — the compiler compiles the template into a program:
+```text
+.component.js
+  → tokenizer + tree parser      where each tag begins and ends; what tree they form
+  → template IR                  what each construct means
+  → lowering                     skeleton, ops and blocks
+  → expression codegen           one closure per expression, addressed by index
+  → bundler
+```
+
+The IR is the layer that carries meaning. `<@for row in rows key="row.id">`
+becomes a node with a list expression, a binding name, a key and a body
+fragment. Nothing downstream has to re-read markup to find out what it was.
+
+This matters because of what it replaced. The compiler used to record a
+construct by rewriting it into *different markup* — `<@for>` became
+`<template data-ax-for="rows" data-ax-as="row">` — and the runtime rediscovered
+the meaning by reading those attributes back off the live DOM with
+`querySelectorAll`. Every expensive consequence followed from that: a list could
+not be compiled at all, because by the time the backend ran the list was an
+anonymous element carrying strings.
+
+### What the compiler emits
 
 ```js
 {
-  v: 1,
-  html: '<p><!--axt:0--></p><p data-axb="0"><!--axt:1--></p>',
+  v: 2,
+  html: '<p><!--axt:0--></p><ul><!--axt:1--></ul>',
   ops: [
-    { k: 'text', t: 0, x: 'count' },
-    { k: 'attr', e: 0, a: 'title', x: 'doubled' },
-    { k: 'text', t: 1, x: 'doubled' }
+    { k: 'text', t: 0, x: 0 },
+    { k: 'for',  t: 1, x: 1, as: 'row', key: 2, b: 0 }
   ],
-  elements: 1,
-  texts: 2
+  elements: 0,
+  texts: 2,
+  blocks: [
+    { html: '<li><!--axt:0--></li>', ops: [{ k: 'text', t: 0, x: 3 }], elements: 0, texts: 1 }
+  ]
 }
 ```
 
 The **skeleton** (`html`) is the template with every dynamic part removed.
-Interpolations become comment markers; bound attributes are dropped. It is
-valid HTML with no expressions in it.
+Interpolations become comment markers; bound attributes are dropped; control
+flow becomes a single comment marker that the block renders at. It is valid
+HTML with no expressions in it.
 
-The **ops** say what to do and where. `{ k: 'text', t: 0, x: 'count' }` reads
-"evaluate `count`, write it to text marker 0".
+The **ops** say what to do and where. `{ k: 'text', t: 0, x: 0 }` reads
+"evaluate expression 0, write it to text marker 0".
+
+The **blocks** are the bodies control flow owns. A block has the same shape as
+the root — skeleton, ops, marker counts — and is parsed once for the life of
+the page and cloned per arm or per row.
+
+### Bindings are addressed by index
+
+An op carries `x: 0`, not `x: "cart.total"`. The sources are compiled to
+closures and emitted as a positional array beside the program:
+
+```js
+Counter.__axProgramExprs = [
+  ($s) => axGet($s, 'count'),
+  ($s) => axRead(axGet($s, 'row'), 'label', false)
+];
+```
+
+The previous format keyed the compiled table by the expression's own source
+text, which meant every expression shipped twice — once as a key and once as
+compiled code — and made the contract between compiler and runtime string
+identity, which nothing could check. An index is checkable and smaller, and it
+means a program is self-contained: the runtime never needs the template source
+to work out what a binding meant.
+
+One consequence is worth knowing: if any expression in a template fails to
+compile, the **whole program is withdrawn** and the component keeps the string
+renderer. An index names a closure and nothing else, so a missing entry would
+be a binding the runtime could neither evaluate nor name.
 
 The program travels in the constructor's existing options object, referenced
 through a class static:
@@ -114,7 +167,8 @@ class Counter extends AvenxComponent {
     super({ count: 0 }, ..., { program: Counter.__axProgram });
   }
 }
-Counter.__axProgram = { v: 1, html: '...', ops: [...] };
+Counter.__axProgram = { v: 2, html: '...', ops: [...] };
+Counter.__axProgramExprs = [ ($s) => axGet($s, 'count') ];
 ```
 
 It is a static rather than an inline literal because the runtime caches one
@@ -137,6 +191,20 @@ tokeniser, no attribute parsing and no error recovery.
 **Once per binding.** Each op gets a reactive effect that evaluates its
 expression and writes the result. Evaluating registers the dependencies, so a
 write to `count` wakes the bindings that read `count` and nothing else.
+
+**Per block, on demand.** A control-flow op owns a *range* of sibling nodes
+anchored at its marker, and remembers exactly which nodes it inserted — clearing
+by emptying the parent would take the siblings belonging to other bindings.
+
+- `<@if>` renders the first arm whose test is truthy, and swaps only when the
+  arm index changes. An unrelated update does not tear down live DOM, so focus,
+  selection and scroll position survive.
+- `<@for>` reconciles by key: rows are reused in place, moved as the new order
+  is walked, and torn down when their key disappears.
+- `<@defer>` arms its trigger once and renders its block when it fires.
+
+An event op is attached once at mount rather than re-bound on every update,
+because a compiled element is created once and never replaced.
 
 ### Why markers rather than paths
 
@@ -167,30 +235,36 @@ Compiled today:
 - text interpolation, `{{ }}` and `{{{ }}}`
 - attribute bindings, whole-value and mixed with literals
 - boolean attributes
-- `data-ax-show`, `data-ax-class`, `data-ax-html`
-- event handlers (see below)
+- `data-ax-show`, `data-ax-class`, `data-ax-html`, `data-ax-style`
+- event handlers and their modifiers
+- `<@if>` / `<@elseif>` / `<@else>`
+- `<@for>` / `<@empty>`, keyed and unkeyed
+- `<@defer>` / `<@placeholder>`, every trigger
+- `<slot>`, named and default, with fallback content
 - static subtrees
 - child component mount points and their props
+- arbitrary nesting of all of the above
 
 Falls back today:
 
 | Construct | Why |
 | --- | --- |
-| `<@for>` | Keyed list reconciliation lives in `ListManager`, which the program does not drive. |
-| `<slot>` | Slot filling moves nodes between trees at runtime. |
-| `<@suspense>`, `<@errorBoundary>`, `<@deadlock>`, `<@defer>` | Each replaces a subtree with a fallback; the program has no equivalent. |
+| `<@suspense>`, `<@errorBoundary>` | Each replaces a subtree in response to a thrown promise or a thrown error, which the block runtime has no equivalent for yet. |
+| `<@deadlock>` | Same, plus boundary state the scheduler reaches into. |
 | Transitions | Enter/leave hooks are driven by the patcher. |
 | A dynamic component tag | Its class can change between renders, which means unmounting one instance and mounting another. |
 | A dynamic attribute name (`:[expr]`) | There is no attribute for the program to address until the name is evaluated. |
-| `data-ax-ref`, `data-ax-validate`, `data-ax-style` | Not yet implemented on the program path. |
+| `data-ax-ref` | Refs are collected by scanning the subtree after a render, which a program does not do. |
+| `data-ax-validate` | Declarative validation is driven by the same post-render scan. |
+| An expression the code generator cannot compile | The program is withdrawn rather than shipped with a hole in its expression table. |
 
 `avenx build` reports what did not compile, grouped by reason:
 
 ```text
 [AVX_W47] 2 template(s) could not be compiled to a render program and will
 render through the string renderer:
-  a <@for> block: ProductList
-  a <slot>: StatCard
+  a <@suspense> boundary: ProductList
+  a template ref: SearchBox
 ```
 
 Those components still work. They cost time proportional to their whole
@@ -208,9 +282,19 @@ component.$compiled; // true when a render program is driving the DOM
 
 ## Events
 
-Event handlers produce no ops. Avenx delegates events from the component root
-and reads `data-ax-event` off the DOM when one fires, so the attribute survives
-into the skeleton and there is nothing for a per-binding effect to do.
+Event handlers are ops now. `@click.prevent="save()"` becomes
+`{ k: 'event', e: 0, n: 'click', m: ['prevent'], x: 0 }`, where `x` indexes the
+compiled statement table, and the listener is attached once when the element is
+created.
+
+The handler source leaves the markup entirely. The string renderer needs it in
+the document, because it re-reads `data-ax-event` off the DOM when an event
+fires and re-binds every handler on every update; a compiled element is created
+once and never replaced, so one `addEventListener` at mount is both correct and
+the whole cost.
+
+Modifiers are applied around the handler rather than inside it, so the compiled
+statement stays exactly what you wrote.
 
 One thing did change, and it matters for Content Security Policy. `EventExecutor`
 used to compile every handler with `new Function` before passing it on, which
@@ -289,26 +373,45 @@ is worth looking at.
 
 ## What it costs
 
-Both renderers ship. The string one is not going anywhere while `<@for>` and
-`<slot>` fall back to it, so the runtime carries the program renderer *in
-addition to* what was already there: about **3 KB gzipped**.
+**Only one renderer ships, when only one is needed.** The string renderer is
+now linked into a bundle only if some component in that build fell back — the
+compiler already knows, because it produced the AVX_W47 list. A build where
+every template compiles does not reference the patcher, the list manager, the
+defer manager or the template renderer, and the bundler drops all four.
 
-Measured against the same component on both paths, at 800 bindings:
+Measured on a scaffolded hello-world, production build:
 
-| | String | Compiled |
+| | Raw | Gzipped |
 | --- | ---: | ---: |
-| Update one binding | 27.7 ms | 0.027 ms |
-| Mount | 28.6 ms | 24.8 ms |
-| Retained per instance | 9026 KB | 9463 KB |
+| Before the refactor | 366,780 | 82,654 |
+| After | 320,431 | 72,636 |
 
-Mount was expected to be the loser — one reactive effect per binding is more
-allocation than one per component — and is 16% cheaper instead, because the
-skeleton is parsed once per component *class* rather than once per instance and
-the first render is a clone plus direct writes rather than a serialise, a parse
-and a diff against an empty tree.
+That is 12.6% smaller raw and 12.1% smaller gzipped, while `<@if>`, compiled
+lists, compiled slots and compiled `<@defer>` were added. A compiled component
+also stops carrying its own template in production, which it never rendered
+from.
 
-The measured cost is 5% more retained heap per mounted instance, plus the 3 KB.
-`benches/render-paths.bench.js` produces this table.
+`<VirtualList>` moved the same way: it used to be registered by `AvenxApp`'s
+constructor, which put it and everything it drives into every bundle whether or
+not the application wrote the tag.
+
+Measured against the same keyed list on both paths
+(`benches/list-rendering.bench.js`, happy-dom — read the ratios, not the
+milliseconds):
+
+| Scenario | 20 rows | 100 rows | 500 rows |
+| --- | ---: | ---: | ---: |
+| One row renamed | 8.0x | 8.5x | 6.0x |
+| Last row moved first | 4.1x | 4.6x | 3.4x |
+| One row appended | 8.6x | 9.1x | 6.3x |
+
+The compiled column is faster at every size but does not stay flat as rows
+grow, and the reason is worth stating plainly: `trigger()` propagates a write up
+the parent chain, so writing `rows[0].label` also triggers `rows`, which wakes
+the loop's own effect and re-runs the whole reconcile. Fixing that means
+changing how propagation works in the reactive core.
+
+`benches/render-paths.bench.js` produces the single-binding comparison.
 
 ---
 
@@ -316,12 +419,18 @@ The measured cost is 5% more retained heap per mounted instance, plus the 3 KB.
 
 | Module | Role |
 | --- | --- |
+| `lib/compiler/parser/tokenizer.js` | Where each tag begins and ends in the source. |
+| `lib/compiler/parser/htmlTree.js` | What tree those tags describe. |
+| `lib/compiler/ir/nodes.js` | The IR vocabulary, and the refusal reasons. |
+| `lib/compiler/ir/build.js` | Template → IR, or a named refusal. |
+| `lib/compiler/ir/lower.js` | IR → program: skeleton, ops, blocks, interned expressions. |
 | `lib/compiler/render/program.js` | The program format and the op vocabulary. |
-| `lib/compiler/render/compileTemplate.js` | Template → program, or a reason it refused. |
-| `lib/compiler/parser/htmlTree.js` | The tree parser both halves of the compiler share. |
+| `lib/compiler/codegen/table.js` | Expressions and statements → positional closure tables. |
 | `lib/core/renderer/program/CompiledTemplate.js` | Parses a skeleton once, clones it per instance. |
-| `lib/core/renderer/program/bindings.js` | What each op does to the DOM. |
-| `lib/core/renderer/program/TemplateInstance.js` | One mounted program and its effects. |
+| `lib/core/renderer/program/bindings.js` | What each leaf op does to the DOM. |
+| `lib/core/renderer/program/blocks.js` | What each control-flow op does: `<@if>`, `<@for>`, `<slot>`, `<@defer>`. |
+| `lib/core/renderer/program/TemplateInstance.js` | One mounted program or block, and its effects. |
+| `lib/core/renderer/stringRenderer.js` | The seam that lets the string renderer leave a bundle. |
 | `lib/core/renderer/domPatch.js` | The string renderer, still used for templates that do not compile. |
 
 Benchmarks: `benches/render-scenarios.bench.js` is the regression matrix,
