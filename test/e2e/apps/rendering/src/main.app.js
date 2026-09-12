@@ -7,4 +7,5 @@ app.initRouter({
   '#/': 'Rendering',
   // Drives a documented compiler bug; see multiline-state.page.js.
   '#/multiline-state': 'MultilineState',
+  '#/conditional': 'Conditional',
 });
