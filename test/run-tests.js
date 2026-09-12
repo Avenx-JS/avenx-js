@@ -17,10 +17,8 @@ const filterArgs = args.filter((arg) =>
   arg !== '--watch' && arg !== '-w' && arg !== '--update-snapshots' && arg !== '-u'
 );
 const filter = filterArgs[0] || '';
-const baseDir = path.join(__dirname, filter);
 
-
-if (filter === 'e2e') {
+if (filter === 'e2e' || filter === 'test/e2e') {
   console.log('🎭 Delegating E2E testing to Playwright...\n');
   const res = spawnSync('npx', ['playwright', 'test'], { stdio: 'inherit', shell: true });
   process.exit(res.status ?? 0);
@@ -37,13 +35,18 @@ let debounceTimeout = null;
  */
 function findTestFiles(dir) {
   let results = [];
+  if (!fs.existsSync(dir)) return results;
+  const stat = fs.statSync(dir);
+  if (stat.isFile()) {
+    return dir.endsWith('.test.js') ? [dir] : [];
+  }
   const list = fs.readdirSync(dir);
   list.forEach((file) => {
     const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    if (stat && stat.isDirectory()) {
-      // Recurse, but avoid traversing test-project if it wasn't cleaned up
-      if (file !== 'test-project') {
+    const s = fs.statSync(filePath);
+    if (s && s.isDirectory()) {
+      // Recurse, but avoid traversing test-project or node_modules if present
+      if (file !== 'test-project' && file !== 'node_modules') {
         results = results.concat(findTestFiles(filePath));
       }
     } else if (file.endsWith('.test.js')) {
@@ -51,6 +54,40 @@ function findTestFiles(dir) {
     }
   });
   return results;
+}
+
+/**
+ * Resolves matching test files given a filter path or substring.
+ * @param {string} filterPath
+ * @returns {string[]}
+ */
+function resolveTestFiles(filterPath) {
+  if (!filterPath) {
+    return findTestFiles(__dirname);
+  }
+
+  // Check direct file/dir existence from various base paths
+  const candidates = [
+    path.resolve(process.cwd(), filterPath),
+    path.resolve(__dirname, filterPath),
+    path.resolve(__dirname, filterPath.replace(/^(\.\/)?test\/?/, '')),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const stat = fs.statSync(candidate);
+      if (stat.isFile()) {
+        return candidate.endsWith('.test.js') ? [candidate] : [];
+      }
+      if (stat.isDirectory()) {
+        return findTestFiles(candidate);
+      }
+    }
+  }
+
+  // Substring match across all discovered test files
+  const allFiles = findTestFiles(__dirname);
+  return allFiles.filter((f) => f.includes(filterPath));
 }
 
 /**
@@ -118,13 +155,13 @@ function rebuild() {
  * @returns {Promise<{success: boolean, count: number}>}
  */
 async function runOnce() {
-  const files = findTestFiles(baseDir);
+  const files = resolveTestFiles(filter);
 
   // Exclude the runner itself if it was matched (it shouldn't be as it's not .test.js)
   const testFiles = files.filter((f) => f !== __filename);
 
   if (testFiles.length === 0) {
-    console.log('No tests found.');
+    console.log(filter ? `No tests found matching filter: "${filter}"` : 'No tests found.');
     return { success: true, count: 0 };
   }
 
@@ -253,8 +290,9 @@ function startWatcher() {
 
 (async () => {
   try {
-    if (!fs.existsSync(baseDir)) {
-      console.error(`Error: Directory does not exist: ${baseDir}`);
+    const matchedFiles = resolveTestFiles(filter);
+    if (filter && matchedFiles.length === 0) {
+      console.error(`Error: No tests found matching: ${filter}`);
       process.exit(1);
     }
 
