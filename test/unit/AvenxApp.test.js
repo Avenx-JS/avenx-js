@@ -24,10 +24,24 @@ console.log('Testing registered component names...');
 app.register('TestComponent', TestComponent);
 app.register('AnotherComponent', AnotherComponent);
 
+// `VirtualList` used to appear here unconditionally, because AvenxApp imported
+// and registered it in its constructor -- which put it, the template renderer
+// and the DOM patcher into every bundle whether or not the application wrote
+// the tag. Built-ins now come from a registry the compiler fills when it sees
+// the tag, so an app that registers two components has two components.
 assert.deepStrictEqual(
   app.getRegisteredComponents(),
-  ['VirtualList', 'TestComponent', 'AnotherComponent'],
+  ['TestComponent', 'AnotherComponent'],
   'getRegisteredComponents() should return registered component names',
+);
+
+// The built-in is still available; it arrives with the module that registers
+// it, which is what the compiler links when a template references the tag.
+await import('../../lib/core/runtime/installVirtualList.js');
+const appWithBuiltins = new AvenxApp({ target: '#app' });
+assert.ok(
+  appWithBuiltins.getRegisteredComponents().includes('VirtualList'),
+  'a built-in is registered once its install module has been imported',
 );
 
 console.log('Registered component names returned correctly.');

@@ -16,7 +16,8 @@ This guide provides a structural breakdown of the Avenx‑JS codebase to help co
 | `lib/compiler/` | Template parsing, AST transformation, style scoping, and turning compiled units into ES modules (`modules.js`). | Adding template syntax, or changing what a generated module looks like. |
 | `lib/bundler/` | Avenx's own bundler: module reading (`parseModule.js`), specifier resolution (`resolve.js`), the dependency graph (`graph.js`), tree shaking (`treeshake.js`), emission and source maps (`emit.js`), minification (`minify.js`). | Changing how modules are resolved, linked, shaken or emitted. Never for anything Avenx-specific — the bundler knows nothing about components. |
 | `lib/compiler/atlas/` | The retained semantic model: nodes, edges, expression resolution, source locations, the fragment cache and the two Atlas diagnostics. | Teaching Atlas about a new template construct, or changing what a query reports. |
-| `lib/compiler/render/` | Template → render program: the op vocabulary, and the compiler that emits one or reports why it could not. | Teaching the compiled renderer a construct that currently falls back. |
+| `lib/compiler/ir/` | The typed template IR: the node vocabulary, the builder that reads a template into it, and the lowering pass that turns it into a render program. | Teaching the compiler a construct that currently falls back. |
+| `lib/compiler/render/` | The render program format and the op vocabulary. | Adding an op kind. |
 | `lib/compiler/codegen/` | Expression and action bodies → JavaScript: the scan that finds every expression an application will evaluate (`collect.js`), the expression generator (`expression.js`), the acorn-based action compiler (`actions.js`), and the tables they are emitted into (`table.js`). | Changing what an expression compiles to, or teaching the scan about a new place an expression can hide. |
 | `lib/core/expression/` | What a compiled expression calls at run time (`ops.js`), where the interpreter plugs in (`fallback.js`), and the development-only interpreter itself (`interpreter.js`, plus `parser.js`, `evaluator.js`, `compile.js`). | Changing a security guard, or the development fallback. `ops.js` ships to production; nothing else here does. |
 | `lib/core/renderer/program/` | The runtime that executes a render program: skeleton preparation, per-op DOM writes, per-binding effects. | Adding an op kind, or changing what one does to the DOM. |
@@ -39,7 +40,9 @@ When `avenx build` executes, `lib/compiler/compiler.js` orchestrates the source�
 3. **StyleProcessor** – Parses companion CSS files, generates deterministic scope IDs, and hashes class names for CSS isolation (`lib/compiler/StyleProcessor.js`).
 4. **ContractValidator** – Performs static analysis against declared state variables, action definitions, and template expressions, using `AvenxErrorCodes` for diagnostics (`lib/compiler/ContractValidator.js`).
 5. **Atlas** – Retains what the parser just produced as a semantic model (`lib/compiler/atlas/`). Nothing is re‑parsed: `addComponentUnit` receives the same objects step 2 produced. The model is emitted as `dist/bundle.atlas.json` and never referenced by the bundle.
-6. **Render program** – Compiles the finished template into a static skeleton plus a list of binding ops (`lib/compiler/render/compileTemplate.js`). Runs last, on exactly the template the runtime will receive, because every rewrite above changes the markup the bindings have to address. A template containing a construct the program runtime does not implement produces no program and is reported as `AVX_W47`.
+6. **Template IR** – Reads the *semantic* template — after styles and two-way bindings, before any directive rewrite — into typed nodes (`lib/compiler/ir/build.js`). `<@for row in rows key="row.id">` becomes a node with a list expression, a binding name, a key and a body fragment, so nothing downstream has to re-read markup to find out what it was. A construct the IR does not model is refused by name.
+7. **Lowering** – Turns the IR into a render program: a skeleton, a list of ops, and a list of blocks for control flow (`lib/compiler/ir/lower.js`). Expressions are interned and addressed by index. A template that could not be built or lowered produces no program and is reported as `AVX_W47`.
+8. **Expression codegen** – Compiles the interned sources into positional closure tables (`lib/compiler/codegen/table.js`). If any of them will not compile, the whole program is withdrawn: an index names a closure and nothing else, so a missing entry would be a binding the runtime could neither evaluate nor name.
 7. **Module generation** – Frames each compiled class as an ES module: an import of the runtime, the developer's own imports verbatim, and a default export (`lib/compiler/modules.js`). `ComponentParser.parse()` still returns a bare `class X extends AvenxComponent`; how a unit is *linked* is not a reason to change how it is *compiled*, and that output shape is what `avenx-core/testing` and the Vite plugin consume.
 8. **Bundling** – `lib/bundler/` resolves every specifier, builds the dependency graph, drops what nothing reaches, and emits `dist/bundle.js` with a source map. The Avenx runtime is an ordinary dependency in that graph, resolved through `avenx-core/runtime`.
 
@@ -132,12 +135,18 @@ There are two paths, chosen per component at build time. See
 2. **Proxy Trap** – `ProxyHandlerFactory` (`lib/core/reactive/proxyHandler.js`) intercepts it and `trigger()` wakes the watchers registered for that target and key.
 3. **Per‑binding wake** – Each woken watcher is one binding's effect. It marks itself dirty and queues its own job.
 4. **Microtask Batching** – `scheduler.js` drains the queue in one flush, ordered by component uid so parents run before children.
-5. **Write** – Each job re‑evaluates its expression through `DynamicEvaluator` and writes to exactly one node (`lib/core/renderer/program/bindings.js`).
+5. **Write** – Each job re‑evaluates its expression through `DynamicEvaluator.evaluateIndexed` and writes to exactly one node (`lib/core/renderer/program/bindings.js`), or reconciles a DOM range (`blocks.js`, for `<@if>`, `<@for>`, `<slot>` and `<@defer>`).
 6. **Coalesced lifecycle** – `onUpdate`, `avenx:update` and injected‑child notification fire once per flush, not once per binding.
 
 Nothing is serialised, parsed or diffed. `DomPatcher` is not involved.
 
 ### String path (a component that did not compile)
+
+The string renderer is only linked into a bundle when at least one component in
+the build fell back. `lib/core/renderer/stringRenderer.js` is the registry that
+makes that possible, and `installStringRenderer.js` is the module the compiler
+adds to the entry graph. Both are migration scaffolding: when the last
+unmodelled construct lowers, the string renderer goes and they go with it.
 
 1–4 as above, except that the whole component is one reactive unit, so any
 dependency of any binding schedules one component‑level job.
@@ -151,8 +160,8 @@ dependency of any binding schedules one component‑level job.
 
 | I Want To Add... | Primary Target Files / Directories |
 | :--- | :--- |
-| **New template directive / tag** | `lib/compiler/ComponentParser.js`, `lib/compiler/templateEvents.js` (so Atlas sees it too), `lib/core/renderer/`, and `lib/compiler/render/compileTemplate.js` — a new construct must either compile to an op or be added to the blocking list, never be silently ignored |
-| **New render op** | `lib/compiler/render/program.js` (the vocabulary), `compileTemplate.js` (emit it), `lib/core/renderer/program/bindings.js` (apply it), `TemplateInstance.js` (dispatch it) |
+| **New template directive / tag** | `lib/compiler/ir/nodes.js` (a node kind, or a refusal reason), `lib/compiler/ir/build.js` (read it), `lib/compiler/ir/lower.js` (emit it), `lib/compiler/templateEvents.js` (so Atlas sees it too) — a new construct must either lower to an op or be refused by name, never be silently ignored |
+| **New render op** | `lib/compiler/render/program.js` (the vocabulary), `lib/compiler/ir/lower.js` (emit it), `lib/core/renderer/program/bindings.js` (apply it, for a leaf op) or `blocks.js` (for one that owns a DOM range), `TemplateInstance.js` (dispatch it) |
 | **New component instance method / API** | `lib/core/runtime/component.js` and `lib/core/index.d.ts` |
 | **New CLI command or option flag** | `bin/commands/<command>.js`, `bin/cli.js`, and `bin/commands/help.js` |
 | **New diagnostic error / warning code** | `lib/core/runtime/AvenxError.js` (code + message template), `lib/core/diagnostics/catalogue.js` (so `avenx explain` answers), plus `docs/src/content/docs/troubleshooting/errors.md` |

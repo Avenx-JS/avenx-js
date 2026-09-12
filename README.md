@@ -44,10 +44,32 @@ template. Changing one text binding, measured in happy-dom:
 | 500 | 16.758 ms | 0.019 ms |
 | 1500 | 161.018 ms | 0.050 ms |
 
-A template using a construct the program does not implement yet — a `<@for>`, a
-`<slot>`, a suspense or error boundary — renders through the previous string
-renderer instead, and `avenx build` says which and why (`AVX_W47`). There is no
-partial mode: a template is compiled entirely or not at all.
+The compiler reads the template through a typed **intermediate representation**,
+so `<@if>`, `<@for>`, `<slot>`, `<@defer>` and component tags arrive at the
+backend as the constructs they are rather than as markup a previous pass rewrote
+them into. Control flow compiles to a **block**: a skeleton parsed once for the
+life of the page and cloned per arm or per row, reconciled by key.
+
+A template using a construct the IR does not model yet — a suspense or error
+boundary, a deadlock boundary, a transition, a template ref — renders through
+the previous string renderer instead, and `avenx build` says which and why
+(`AVX_W47`). There is no partial mode: a template is compiled entirely or not at
+all.
+
+That renderer is only linked into a bundle when something in the build needs it,
+so an application whose every template compiles does not carry it. Measured on a
+scaffolded hello-world, production build: **366,780 → 320,431 bytes raw,
+82,654 → 72,636 gzipped**, with `<@if>`, compiled lists, compiled slots and
+compiled `<@defer>` added over the same period.
+
+A keyed list update, measured against the same component on both paths
+(`benches/list-rendering.bench.js`, happy-dom — ratios, not milliseconds):
+
+| Rows | Rename one | Move one | Append one |
+| ---: | ---: | ---: | ---: |
+| 20 | 8.0x | 4.1x | 8.6x |
+| 100 | 8.5x | 4.6x | 9.1x |
+| 500 | 6.0x | 3.4x | 6.3x |
 
 See the [rendering guide](docs/src/content/docs/core-concepts/rendering.md).
 
@@ -80,6 +102,27 @@ keeps rendering; `AVX_W48` names anything the compiler could not compile.
 
 See the [template expressions guide](docs/src/content/docs/core-concepts/template-expressions.md)
 and the [deployment guide](docs/src/content/docs/guides/deployment.md).
+
+### 🔀 Conditional Rendering (`<@if>`)
+
+```html
+<@if user.isAdmin>
+  <AdminPanel />
+<@elseif user.isMember>
+  <p>Welcome back, {{ user.name }}.</p>
+<@else>
+  <a href="/signup">Create an account</a>
+</@if>
+```
+
+Each arm is its own compiled block, so switching arms is the only thing that
+rebuilds DOM — an update that leaves the same arm selected touches nothing, and
+focus, selection and scroll position inside the branch survive.
+
+Bracket a top-level comparison: `<@if (count > 3)>`, not `<@if count > 3>`. The
+`>` that means "greater than" and the `>` that ends the tag are the same
+character, so the compiler refuses the ambiguous form and names the one that
+works rather than silently testing `count`.
 
 ### 🧩 Declarative Components
 

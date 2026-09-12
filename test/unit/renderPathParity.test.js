@@ -2,11 +2,18 @@
  * @file renderPathParity.test.js
  * @description The same component, rendered both ways, compared.
  *
- * Avenx now has two renderers. The compiled one drives templates it can compile
- * exhaustively; the string one drives everything else, and will keep doing so
- * for as long as `<@for>` and `<slot>` exist. Two renderers is a maintenance
- * hazard exactly to the extent that they can disagree, so this file is the
- * seam between them.
+ * Avenx has two renderers. The compiled one drives templates it can compile
+ * exhaustively; the string one drives what is left -- suspense and error
+ * boundaries, deadlock boundaries, transitions, refs, declarative validation
+ * and dynamic component tags -- and will keep doing so until the IR models
+ * those too. Two renderers is a maintenance hazard exactly to the extent that
+ * they can disagree, so this file is the seam between them.
+ *
+ * The cases below matter most for the constructs that have *moved* across.
+ * `<@if>`, `<@for>` and `<slot>` are executed by the block runtime now and were
+ * executed by ListManager and the slot filler before; asserting that one
+ * component produces the same DOM under both is the strongest available
+ * statement that the move did not change behaviour.
  *
  * Each case compiles one component with the real compiler, mounts it twice --
  * once with its render program, once with the program removed so the same class
@@ -76,6 +83,14 @@ function normalise(markup) {
       // comparing them here would drown the differences that matter.
       .replace(/\s+data-ax-(show|class|html|static)="[^"]*"/g, '')
       .replace(/\s+data-props-[\w-]+="[^"]*"/g, '')
+      // The string renderer leaves its list bookkeeping in the document: the
+      // `<template data-ax-for>` holding the un-rendered body, the
+      // `<template data-ax-empty>` beside it, and a key marker on every row it
+      // produced. A compiled list keeps the body in a block the document never
+      // sees and identifies rows by the key it evaluated, so none of it is
+      // there. The rendered rows themselves are what this file compares.
+      .replace(/<template\s+data-ax-[^>]*>[\s\S]*?<\/template>/g, '')
+      .replace(/\s+data-ax-(list-item|key-val|key)="[^"]*"/g, '')
       // `data-ax-event` is the same story and the clearest case of it. The
       // string renderer needs the handler source in the document, because it
       // re-reads it off the DOM when an event fires. A program attaches the
@@ -538,6 +553,137 @@ async function testBoundBooleanWithNoValue() {
   component.unmount();
   host.remove();
 }
+
+/**
+ * `<@if>` has no string-path implementation, and the compiler says so.
+ *
+ * Every other construct here can be compared across both renderers because
+ * both implement it. `<@if>` only ever existed on the compiled path, so a
+ * template that refuses to compile *and* contains one cannot fall back safely:
+ * the string renderer has no rewrite for the tag and would put it in the
+ * document as a literal element.
+ *
+ * So there is nothing to compare, and the thing worth pinning is that the
+ * compiler refuses rather than producing that. This is the compile-or-refuse
+ * rule at the point where it is load-bearing.
+ */
+function testConditionalCannotFallBack() {
+  console.log('🧪 Testing a template that cannot compile may not contain <@if>...');
+
+  assert.throws(
+    () =>
+      compileComponent(
+        `<state a="1" />\n<div><@if a><b>x</b></@if><@suspense><p>y</p></@suspense></div>`,
+        `ParityIfFallback${seq++}`,
+      ),
+    (error) => {
+      assert.match(error.message, /AVX_C22/, 'the refusal is a coded build error');
+      assert.match(error.message, /<@if>/, 'it names the construct that cannot fall back');
+      assert.match(error.message, /<@suspense> boundary/, 'and the construct that caused the refusal');
+      return true;
+    },
+    'a template mixing <@if> with an uncompilable construct must fail the build',
+  );
+
+  // The same conditional on its own compiles, which is what makes the refusal
+  // above about the combination rather than about `<@if>`.
+  const Fine = compileComponent(
+    `<state a="1" />\n<div><@if a><b>x</b><@else><i>y</i></@if></div>`,
+    `ParityIfAlone${seq++}`,
+  );
+  assert.ok(Fine.__axProgram, '<@if> on its own compiles');
+  console.log('  ✅ the build fails with a located reason rather than rendering a literal tag.');
+}
+
+/**
+ * Keyed lists: the construct that used to force the string renderer outright.
+ */
+async function testListParity() {
+  await parity(
+    'a keyed list',
+    `<state rows='[{"id":1,"label":"a"},{"id":2,"label":"b"},{"id":3,"label":"c"}]' />
+<ul><@for row in rows key="row.id"><li data-id="{{ row.id }}">{{ index }}:{{ row.label }}</li><@empty><li class="none">none</li></@for></ul>`,
+    async (component) => {
+      component.state.rows[0].label = 'renamed';
+      await component.$nextTick();
+      component.state.rows = [component.state.rows[2], component.state.rows[0], component.state.rows[1]];
+      await component.$nextTick();
+      component.state.rows = [component.state.rows[1]];
+      await component.$nextTick();
+      component.state.rows = [];
+      await component.$nextTick();
+      component.state.rows = [{ id: 9, label: 'z' }];
+      await component.$nextTick();
+    },
+  );
+}
+
+/**
+ * A loop whose body contains a conditional, driven through the real compiler.
+ *
+ * Not a parity case, because `<@if>` has no string-path implementation to
+ * compare against -- see testConditionalCannotFallBack. What it covers that the
+ * block-runtime unit tests do not is the whole pipeline: the real compiler
+ * produced the nested blocks and the real component evaluated them against its
+ * own scope.
+ */
+async function testNestedBlocksThroughTheCompiler() {
+  console.log('🧪 Testing a conditional inside a loop, compiled end to end...');
+
+  const Nested = compileComponent(
+    `<state rows='[{"id":1,"on":true},{"id":2,"on":false}]' />
+<ul><@for row in rows key="row.id"><li data-id="{{ row.id }}"><@if row.on><b>on</b><@else><i>off</i></@if></li></@for></ul>`,
+    `ParityNested${seq++}`,
+  );
+  assert.ok(Nested.__axProgram, 'the nested template must compile, or this tests nothing');
+
+  const { host, component } = mount(Nested, true);
+  const rowText = () => [...host.querySelectorAll('li')].map((li) => li.textContent);
+
+  assert.deepStrictEqual(rowText(), ['on', 'off'], 'each row evaluates the condition against its own item');
+
+  component.state.rows[1].on = true;
+  await component.$nextTick();
+  assert.deepStrictEqual(rowText(), ['on', 'on']);
+
+  component.state.rows[0].on = false;
+  await component.$nextTick();
+  assert.deepStrictEqual(rowText(), ['off', 'on']);
+
+  // Reordering must carry each row's own branch with it.
+  component.state.rows = [component.state.rows[1], component.state.rows[0]];
+  await component.$nextTick();
+  assert.deepStrictEqual(rowText(), ['on', 'off'], 'a reordered row keeps its own condition');
+  assert.deepStrictEqual(
+    [...host.querySelectorAll('li')].map((li) => li.getAttribute('data-id')),
+    ['2', '1'],
+  );
+
+  component.unmount();
+  host.remove();
+  console.log('  ✅ nested blocks render, update and reorder through the real compiler.');
+}
+
+/**
+ * A slot with fallback content, rendered by a component with no parent, so the
+ * fallback is what both paths must produce.
+ */
+async function testSlotFallbackParity() {
+  await parity(
+    'slot fallback content',
+    `<state label="none yet" />
+<div><slot><p data-testid="fb">{{ label }}</p></slot><slot name="side"><span>side</span></slot></div>`,
+    async (component) => {
+      component.state.label = 'still none';
+      await component.$nextTick();
+    },
+  );
+}
+
+testConditionalCannotFallBack();
+await testListParity();
+await testNestedBlocksThroughTheCompiler();
+await testSlotFallbackParity();
 
 await testKnownDifference();
 await testBoundBooleanWithNoValue();

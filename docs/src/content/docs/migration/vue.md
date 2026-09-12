@@ -221,7 +221,7 @@ Vue templates heavily rely on built-in directives such as `v-model`, `v-show`, `
 | :--- | :--- | :--- |
 | `v-model="text"` | `data-ax-bind="state.text"` | Two-way data binding for text inputs, textareas, and select elements. |
 | `v-show="isVisible"` | `data-ax-show="state.isVisible"` | Toggles `display` property (`none` vs original) to show/hide DOM elements. |
-| `v-if="condition"` | Inline Ternary `{{{ condition ? '...' : '' }}}` | Avenx has **no `v-if` directive**. Use raw ternary interpolation or `data-ax-show`. |
+| `v-if="condition"` | `<@if condition>` | Chain with `<@elseif>` / `<@else>`; `</@if>` closes the chain. Bracket a top-level comparison: `<@if (n > 3)>`. |
 | `:class="{ active: isAct }"` | `data-ax-class="{ active: state.isAct }"` | Dynamically adds or removes CSS class names based on truthy expressions. |
 | `:style="{ color: c }"` | `data-ax-style="{{ { color: state.c } }}"` | Dynamically applies inline CSS style properties. |
 | `@click="logout"` | `@click="logout()"` | Binds DOM event listeners to `<action>` handlers (requires parentheses). |
@@ -270,8 +270,8 @@ Vue templates heavily rely on built-in directives such as `v-model`, `v-show`, `
     Visible Content
   </div>
 
-  <!-- Conditional rendering using inline ternary expression -->
-  {{{ state.isLoggedIn ? '<p>Welcome back!</p>' : '' }}}
+  <!-- Conditional rendering -->
+  <@if state.isLoggedIn><p>Welcome back!</p></@if>
 
   <!-- Event listener call -->
   <button @click="logout()">Logout</button>
@@ -282,15 +282,32 @@ Vue templates heavily rely on built-in directives such as `v-model`, `v-show`, `
 
 ### Key Conceptual Differences & Migration Pitfalls
 
-#### 1. No `v-if` Directive
+#### 1. `v-if` is `<@if>`
 
-Avenx-JS deliberately does **not** include a `v-if` or `<@if>` directive tag. Conditional markup is handled in one of two ways:
+```html
+<!-- Vue -->
+<p v-if="a">A</p>
+<p v-else-if="b">B</p>
+<p v-else>C</p>
 
-1. **Inline Ternary Expressions (`{{{ ... }}}`):** To dynamically insert or destroy DOM elements based on state, use raw HTML interpolation with a JS ternary condition:
-   ```html
-   {{{ state.isLoggedIn ? '<p>Welcome back!</p>' : '' }}}
-   ```
-2. **`data-ax-show` Directive:** If the DOM element should remain mounted in the DOM tree while toggling visibility, use `data-ax-show="state.isVisible"`.
+<!-- Avenx-JS -->
+<@if a><p>A</p><@elseif b><p>B</p><@else><p>C</p></@if>
+```
+
+`</@if>` closes the whole chain; the arms are siblings rather than a nest.
+
+One difference worth knowing: a top-level `>` in a bare header has to be
+bracketed, because `>` is also the end of the tag. Write `<@if (count > 3)>`,
+not `<@if count > 3>`. The compiler refuses the ambiguous form and names the
+one that works rather than silently testing the wrong thing.
+
+`v-show` is `data-ax-show`, and means the same thing: the element stays mounted
+and its `display` is toggled.
+
+Earlier versions of this guide suggested raw HTML interpolation
+(`{{{ cond ? '<p>…</p>' : '' }}}`) for conditional markup. Do not use it.
+`{{{ }}}` inserts markup without sanitising it, so it becomes an injection as
+soon as any part of the string comes from user data.
 
 #### 2. Checkbox & Radio Two-Way Binding
 

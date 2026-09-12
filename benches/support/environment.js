@@ -3,7 +3,9 @@
  * @description What every benchmark process needs before it measures anything.
  *
  * A benchmark builds components directly rather than through `avenx build`, so
- * nothing compiled their expressions. Without the interpreter installed, every
+ * nothing compiled their expressions, and no build decided whether the string
+ * renderer belongs in this process. Both are installed here, which is what a
+ * development build does. Without the interpreter installed, every
  * binding throws, the renderer reports AVX_R08 and does no work, and the
  * benchmark records the resulting near-zero as an improvement — which is the
  * most dangerous kind of benchmark failure, because it looks like success.
@@ -15,3 +17,4 @@
  * @module benches/support/environment
  */
 import '../../lib/core/expression/interpreter.js';
+import '../../lib/core/renderer/installStringRenderer.js';
