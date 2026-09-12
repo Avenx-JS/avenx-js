@@ -209,17 +209,30 @@ function testRefusals() {
   console.log('🧪 unmodelled constructs are refused by name');
   const cases = [
     ['<@suspense><p>x</p></@suspense>', RefusalReason.SUSPENSE],
-    ['<@defer><p>x</p></@defer>', RefusalReason.DEFER],
     ['<@deadlock name="d"><p>x</p></@deadlock>', RefusalReason.DEADLOCK],
     ['<div data-ax-ref="box">x</div>', RefusalReason.REF],
     ['<div data-ax-validate="x">y</div>', RefusalReason.VALIDATION],
     ['<@else><p>x</p></@else>', RefusalReason.MALFORMED],
     ['<@empty><p>x</p></@empty>', RefusalReason.MALFORMED],
+    ['<@placeholder><p>x</p></@placeholder>', RefusalReason.MALFORMED],
   ];
   for (const [template, reason] of cases) {
     assert.strictEqual(refusal(template).reason, reason, `for ${template}`);
   }
   console.log(`  ✅ ${cases.length} constructs refused with a specific reason`);
+}
+
+function testDeferredBlocks() {
+  console.log('🧪 <@defer> with a placeholder');
+  const node = find(
+    ir('<@defer when="visible"><@placeholder><p>loading</p></@placeholder><b>{{ x }}</b></@defer>'),
+    IRKind.DEFER,
+  );
+  assert.strictEqual(node.when, 'visible');
+  assert.strictEqual(node.body.kind, IRKind.FRAGMENT);
+  assert.ok(node.placeholder, 'the placeholder is its own fragment');
+  assert.strictEqual(node.placeholder.children[0].tag, 'p');
+  console.log('  ✅ the trigger, the content and the placeholder are all modelled');
 }
 
 function testStaticAndComments() {
@@ -245,6 +258,7 @@ testForHeaderParsing();
 testAmbiguousConditionalHeader();
 testComponentsAndSlots();
 testRefusals();
+testDeferredBlocks();
 testStaticAndComments();
 
 console.log('\n✅ template IR tests passed');

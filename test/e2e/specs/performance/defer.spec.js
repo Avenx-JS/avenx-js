@@ -77,19 +77,12 @@ test.describe('deferred content', () => {
   });
 });
 
-test.describe('known gap: a component inside a deferred block', () => {
-  // Runs and is expected to fail. Deferring an expensive component is the
-  // headline use of the feature and the example its documentation opens with.
-  //
-  // The trigger fires and the swap happens -- the placeholder is removed and
-  // the compiled marker <div data-avenx-comp="HeavyPanel" data-props-label="..."/>
-  // is inserted -- but nothing ever mounts it, so the div stays empty. Component
-  // markers appear to be resolved only during the initial mount pass, and
-  // content inserted later is never handed to it.
-  //
-  // Plain markup inside <@defer> works, which is what the passing tests above
-  // cover, so the deferral machinery itself is sound.
-  test.fail();
+test.describe('a component inside a deferred block', () => {
+  // This was a pinned known gap: the trigger fired and the marker was
+  // inserted, but nothing mounted it, so deferring a component -- the headline
+  // use of the feature -- produced an empty div. The compiled path announces
+  // every block it mounts, so the pass that instantiates child components is
+  // told the subtree grew.
 
   test('mounts a component that was revealed by a defer trigger', async ({ page, app }) => {
     await app.open('defer', { hash: '#/component' });
@@ -102,18 +95,11 @@ test.describe('known gap: a component inside a deferred block', () => {
   });
 });
 
-test.describe('known gap: a deferred block in a component that holds state', () => {
-  // Runs and is expected to fail. A <@defer> block survives only while its
-  // host component never re-renders: any unrelated state change patches the
-  // host and discards the deferred container along with its placeholder and
-  // content templates. The block can then never load, and an already-loaded
-  // one disappears.
-  //
-  // This is the most consequential of the defer findings, because it makes the
-  // feature effectively unusable in any component that holds state -- which is
-  // most components. The passing defer fixtures above avoid reactive state
-  // entirely, which is the only reason they are stable.
-  test.fail();
+test.describe('a deferred block in a component that holds state', () => {
+  // This was a pinned known gap. An unrelated state change re-rendered the
+  // enclosing template, which replaced the deferred container and threw away
+  // the trigger attached to it. A block is owned by its binding rather than
+  // by a diff, so an unrelated update cannot reach it.
 
   test('keeps a deferred block usable after unrelated state has changed', async ({ page, app }) => {
     await app.open('defer', { hash: '#/stateful' });
