@@ -19,6 +19,12 @@
     "./runtime/interpreter": {
       "default": "./lib/core/expression/interpreter.js"
     },
+    "./runtime/string-renderer": {
+      "default": "./lib/core/renderer/installStringRenderer.js"
+    },
+    "./runtime/virtual-list": {
+      "default": "./lib/core/runtime/installVirtualList.js"
+    },
     "./core": {
       "types": "./lib/core/index.d.ts",
       "default": "./lib/core/index.js"
