@@ -116,6 +116,47 @@ function resolve(routes, hash) {
   console.log('  ✅ a namespace prefix still scopes a router');
 }
 
+// --- a prefix matches whole segments, not a string prefix ----------------
+{
+  // `/widget` owns `#/widget` and `#/widget/...`. It does not own `#/widgets`,
+  // which belongs to whichever router declares it -- usually the host. The
+  // gate compared strings, so the widget router stripped `/widget` off
+  // `#/widgets/list`, matched the leftover `#/s/list` against its own table
+  // and mounted its `*` fallback over a page in someone else's namespace.
+  assert.strictEqual(
+    RouteMatcher.normalizeHash('#/widgets/list', '/widget'),
+    null,
+    'a hash that only shares a text prefix is not in the namespace',
+  );
+  assert.strictEqual(
+    RouteMatcher.normalizeHash('#/widget/home', '/widget'),
+    '#/home',
+    'a hash inside the namespace still normalizes relative to the prefix',
+  );
+  assert.strictEqual(RouteMatcher.normalizeHash('#/widget', '/widget'), '#/', 'the namespace root is the prefix itself');
+  assert.strictEqual(
+    RouteMatcher.normalizeHash('#/widget?tab=a', '/widget'),
+    '#/?tab=a',
+    'a query string directly after the prefix stays in the namespace',
+  );
+
+  assert.strictEqual(
+    RouteMatcher.matches({ '/s/list': 'Leftover' }, '#/widgets/list', { prefix: '/widget' }),
+    false,
+    'a prefixed router must not claim a foreign hash from another router',
+  );
+
+  const strayFallback = RouteMatcher.matchRoute({ '/home': 'WidgetHome', '*': 'WidgetNotFound' }, '#/widgets/list', {
+    prefix: '/widget',
+  });
+  assert.strictEqual(
+    strayFallback.matchedRoute,
+    null,
+    'a foreign hash must not trigger the prefixed router\'s wildcard fallback',
+  );
+  console.log('  ✅ a namespace prefix only claims whole path segments');
+}
+
 // --- the wildcard fallback is unaffected ---------------------------------
 {
   assert.strictEqual(resolve({ '/': 'Home', '*': 'NotFound' }, '#/nowhere'), 'NotFound');
