@@ -424,6 +424,7 @@ const app = new AvenxApp({
 | `[AVX_W51]` | State "{1}" in <{0}> looks like an object or array initialiser but contains {2}, so it stays a string. | **Identifier:** `COMPILER_STATE_NOT_LITERAL`.<br />**Cause:** A `<state>` value starting with `[` or `{` is a JavaScript expression but not a constant literal — it refers to a variable, calls a function, spreads, or uses a computed key. State initialisers are evaluated at build time.<br />**Resolution:** Use constants only, set the value in `onMount`, or declare a `<computed>`. See [Attribute Coercion & Types](/core-concepts/components/#attribute-coercion--types). |
 | `[AVX_C28]` | <{0}> binds the inline event handler "{1}" to an interpolated value. | **Identifier:** `COMPILER_BOUND_EVENT_ATTRIBUTE`.<br />**Cause:** An `on*` attribute on an HTML element has an interpolated value (`onclick="{{ handler }}"`). Its value runs as JavaScript, so a state value would become code, and it does not run under a strict CSP.<br />**Resolution:** Use the event directive: `@click="handler"` or `@click="handler()"`. An `on*` attribute on a child component is a prop and is unaffected. See [Events](/core-concepts/events/). |
 | `[AVX_C29]` | <{0}> writes a dynamic attribute binding whose {1} is an interpolation. | **Identifier:** `COMPILER_INTERPOLATED_DYNAMIC_ATTRIBUTE`.<br />**Cause:** A dynamic attribute binding was written as `:[key]="{{ value }}"` or `:[{{ key }}]="value"`. Both slots of `:[name]="value"` are expressions, so the braces become part of the expression: it resolves to nothing and the attribute is never set, in development and in production alike.<br />**Resolution:** Drop the braces: `:[key]="value"`. To interpolate into an attribute whose name is fixed, write an ordinary attribute instead: `data-tone="{{ value }}"`. See [Dynamic attributes](/api-reference/utils/). |
+| `[AVX_C30]` | Unhandled template AST node type "{0}"{1} in {2}. | **Identifier:** `COMPILER_UNHANDLED_AST_NODE`.<br />**Cause:** A compiler pass over the template AST reached a node type it has no branch for — normally because a change to the template parser introduced a node kind an existing pass was never taught to read.<br />**Resolution:** Add an explicit branch for the reported node type to the pass named in the message. This is an internal invariant rather than a mistake in your template: a node type with no branch would otherwise be mis-handled silently and emit output that looks valid, so the build stops instead. |
 | `[AVX_W52]` | <{0}> uses the inline event handler "{1}". | **Identifier:** `COMPILER_INLINE_EVENT_ATTRIBUTE`.<br />**Cause:** An HTML element has a static inline handler (`onclick="doThing()"`). It bypasses the event system and does not run under a strict CSP.<br />**Resolution:** Prefer `@click="doThing()"`. Kept as a capability; silence with `"warnings": { "AVX_W52": "off" }`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
@@ -1124,6 +1125,24 @@ export default {
 };
 </script>
 ```
+
+### AVX_C30 — COMPILER_UNHANDLED_AST_NODE
+
+
+**Error Message**
+Unhandled template AST node type "{0}"{1} in {2}.
+
+**Cause:** Each compiler pass that walks a component's template AST handles every node type the parser produces — today `element`, `text` and `comment` — with an explicit branch. This error is raised when a pass reaches a node whose type it has no branch for. In practice that means the template parser gained a node kind and a pass downstream of it was never updated to read it.
+
+**Impact:** The build stops. That is deliberate, and it is why the check exists: a pass that silently ignores a node type it does not recognise produces output that is structurally valid and quietly wrong — the very failure mode that let unhandled `<slot>` tags through in an earlier release. Note that `optimizeStaticSubtrees` normally degrades to the unoptimized template when its analysis fails (see `AVX_W06`); an unhandled node type is deliberately exempt from that fallback, because swallowing it would reintroduce the silence.
+
+**Resolution:** This diagnostic is aimed at contributors to Avenx-JS rather than at application authors:
+
+1. Add a branch for the reported node type to the pass named in the message.
+2. Check the sibling passes over the same AST — a new node kind usually needs teaching to more than one of them.
+3. If you reached this by handing a hand-built node to a compiler pass, give the node a `type` the parser actually produces.
+
+If you see this while building an ordinary application, it is a bug in Avenx-JS. Please report it with the node type and location from the message.
 
 ### AVX_W06 — COMPILER_STATIC_SUBTREE_OPTIMIZATION_FAILED
 
