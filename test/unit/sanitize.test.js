@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { Sanitizer } from '../../lib/core/security/sanitize.js';
+import { logger } from '../../lib/core/runtime/AvenxLogger.js';
 import { MockDOMElement, setupDOMMock, teardownDOMMock } from '../helpers/dom-mock.js';
 
 function testSanitizerWithDOM() {
@@ -243,6 +244,78 @@ function testConfigurablePolicyOptions() {
   }
 }
 
+function testSanitizerWarningsUseLogger() {
+  console.log('🧪 Testing sanitizer warnings use the shared logger...');
+
+  const originalConfig = {
+    ...logger.config,
+    transports: Array.isArray(logger.config.transports) ? [...logger.config.transports] : logger.config.transports,
+  };
+  const originalConsoleWarn = console.warn;
+
+  try {
+    // The DOM path must respect silent logging instead of writing directly to console.warn.
+    const rawWarnings = [];
+    console.warn = (...args) => rawWarnings.push(args);
+    logger.configure({ level: 'info', silent: true });
+
+    const silentRoot = new MockDOMElement('div');
+    silentRoot.appendChild(new MockDOMElement('script'));
+    new Sanitizer()._sanitizeNode(silentRoot);
+
+    assert.deepStrictEqual(rawWarnings, [], 'silent logging should suppress DOM sanitizer warnings');
+
+    // Sanitizer warnings must also flow through formatter and transport customization.
+    const formattedWarnings = [];
+    logger.configure({
+      level: 'info',
+      silent: false,
+      formatter: (level, args) => [`[SANITIZER-${level}]`, ...args],
+      transports: [
+        {
+          log(level, formattedArgs) {
+            formattedWarnings.push({ level, formattedArgs });
+          },
+        },
+      ],
+    });
+
+    const formattedRoot = new MockDOMElement('div');
+    const disallowedTag = new MockDOMElement('marquee');
+    formattedRoot.appendChild(disallowedTag);
+
+    const allowedTag = new MockDOMElement('a');
+    allowedTag.setAttribute('onclick', 'evil()');
+    formattedRoot.appendChild(allowedTag);
+
+    new Sanitizer()._sanitizeNode(formattedRoot);
+
+    assert.ok(
+      formattedWarnings.some(
+        ({ level, formattedArgs }) =>
+          level === 'warn' &&
+          formattedArgs[0] === '[SANITIZER-warn]' &&
+          formattedArgs.some((value) => String(value).includes('Sanitized tag')),
+      ),
+      'custom formatter should apply to sanitized-tag warnings',
+    );
+    assert.ok(
+      formattedWarnings.some(
+        ({ level, formattedArgs }) =>
+          level === 'warn' &&
+          formattedArgs[0] === '[SANITIZER-warn]' &&
+          formattedArgs.some((value) => String(value).includes('Sanitized attribute')),
+      ),
+      'custom formatter should apply to sanitized-attribute warnings',
+    );
+
+    console.log('  ✅ Sanitizer warnings respect logger configuration');
+  } finally {
+    console.warn = originalConsoleWarn;
+    logger.configure(originalConfig);
+  }
+}
+
 function testStripTags() {
   console.log('🧪 Testing Sanitizer.stripTags static method...');
 
@@ -263,6 +336,7 @@ try {
   testCustomVoidTags();
   testConfigurablePolicyOptions();
   testSanitizeUrl();
+  testSanitizerWarningsUseLogger();
   testStripTags();
   console.log('✅ All Sanitizer tests successfully completed!');
   process.exit(0);
