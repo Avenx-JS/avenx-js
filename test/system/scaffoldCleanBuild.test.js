@@ -27,15 +27,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 
 const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-scaffold-'));
+const routingRoot = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-routing-scaffold-'));
 
 /**
  * Runs the CLI in the scaffolded project.
  * @param {string[]} args - CLI arguments.
  * @returns {{status: number, output: string}} The result.
  */
-function avenx(args) {
+function avenx(args, cwd = root) {
   const res = spawnSync(process.execPath, [BIN_PATH, ...args], {
-    cwd: root,
+    cwd,
     encoding: 'utf8',
     env: { ...process.env, NO_COLOR: '1' },
   });
@@ -131,7 +132,55 @@ try {
     console.log('  ✅ the page and component scaffolds both use named style blocks');
   }
 
+  // --- routing scaffold builds without warnings ---------------------------
+  {
+    const init = avenx(['init', '--layout', 'routing'], routingRoot);
+    assert.strictEqual(init.status, 0, `routing init should succeed:\n${init.output}`);
+
+    const navbarPath = path.join(
+      routingRoot,
+      'src/components/navbar/navbar.component.js',
+    );
+    const navbar = fs.readFileSync(navbarPath, 'utf8');
+    assert.ok(
+      navbar.includes(
+        'aria-current="{{ activeRoute === \'#/\' ? \'page\' : \'\' }}"',
+      ),
+      'the Home link should expose aria-current="page" when #/ is active',
+    );
+    assert.ok(
+      navbar.includes(
+        'aria-current="{{ activeRoute === \'#/about\' ? \'page\' : \'\' }}"',
+      ),
+      'the About link should expose aria-current="page" when #/about is active',
+    );
+
+    const routingBuild = avenx(['build'], routingRoot);
+    assert.strictEqual(
+      routingBuild.status,
+      0,
+      `the routing scaffold must build:\n${routingBuild.output}`,
+    );
+
+    const routingCodes = [
+      ...new Set(routingBuild.output.match(/AVX_[A-Z]\d+/g) || []),
+    ];
+    assert.deepStrictEqual(
+      routingCodes,
+      [],
+      `a fresh routing scaffold must build without diagnostics, but reported ` +
+        `${routingCodes.join(', ')}:\n${routingBuild.output}`,
+    );
+    assert.ok(
+      !/\bwarning\b/i.test(routingBuild.output),
+      `a fresh routing scaffold must build without warnings:\n${routingBuild.output}`,
+    );
+
+    console.log('  ✅ routing scaffold builds with no warnings');
+  }
+
   console.log('✅ Scaffold clean-build tests passed!');
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
+  fs.rmSync(routingRoot, { recursive: true, force: true });
 }
