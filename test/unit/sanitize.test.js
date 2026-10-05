@@ -261,9 +261,12 @@ function testSanitizerWarningsUseLogger() {
 
     const silentRoot = new MockDOMElement('div');
     silentRoot.appendChild(new MockDOMElement('script'));
+    const silentLink = new MockDOMElement('a');
+    silentLink.setAttribute('onclick', 'evil()');
+    silentRoot.appendChild(silentLink);
     new Sanitizer()._sanitizeNode(silentRoot);
 
-    assert.deepStrictEqual(rawWarnings, [], 'silent logging should suppress DOM sanitizer warnings');
+    assert.deepStrictEqual(rawWarnings, [], 'silent logging should suppress all DOM sanitizer warnings');
 
     // Sanitizer warnings must also flow through formatter and transport customization.
     const formattedWarnings = [];
