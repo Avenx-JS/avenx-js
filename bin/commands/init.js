@@ -182,7 +182,7 @@ export async function initProject(cli, args = []) {
         '<state title="Home" />\n\n' +
         '<Navbar />\n\n' +
         '<div class="page-container">\n' +
-        '    <h1>Home Page</h1>\n' +
+        '    <h1>{{ title }} Page</h1>\n' +
         '    <p>Welcome to the home page of your new Avenx application!</p>\n' +
         '    <p>This layout template demonstrates hash-based routing using AvenxRouter.</p>\n' +
         '</div>\n',
@@ -211,7 +211,7 @@ export async function initProject(cli, args = []) {
         '<state title="About" />\n\n' +
         '<Navbar />\n\n' +
         '<div class="page-container">\n' +
-        '    <h1>About Page</h1>\n' +
+        '    <h1>{{ title }} Page</h1>\n' +
         '    <p>Welcome to the about page.</p>\n' +
         '</div>\n',
       );
@@ -237,10 +237,13 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         navbarJsPath,
         '<state activeRoute="" />\n\n' +
+        '<action name="onMount">\n' +
+        "    this.state.activeRoute = window.location.hash || '#/';\n" +
+        '</action>\n\n' +
         '<nav>\n' +
         '    <@css container />\n' +
-        '    <a @css link href="#/">Home</a>\n' +
-        '    <a @css link href="#/about">About</a>\n' +
+        '    <a @css link href="#/" aria-current="{{ activeRoute === \'#/\' ? \'page\' : \'\' }}">Home</a>\n' +
+        '    <a @css link href="#/about" aria-current="{{ activeRoute === \'#/about\' ? \'page\' : \'\' }}">About</a>\n' +
         '</nav>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.js`);
