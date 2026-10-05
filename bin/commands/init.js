@@ -181,7 +181,7 @@ export async function initProject(cli, args = []) {
         homePageJsPath,
         '<state title="Home" />\n\n' +
         '<Navbar />\n\n' +
-        '<div class="page-container">\n' +
+        '<div @css pageContainer>\n' +
         '    <h1>{{ title }} Page</h1>\n' +
         '    <p>Welcome to the home page of your new Avenx application!</p>\n' +
         '    <p>This layout template demonstrates hash-based routing using AvenxRouter.</p>\n' +
@@ -193,7 +193,7 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         homePageCssPath,
         '<@css>\n' +
-        '.page-container {\n' +
+        'pageContainer {\n' +
         '    padding: 20px;\n' +
         '    font-family: sans-serif;\n' +
         '    max-width: 800px;\n' +
@@ -210,7 +210,7 @@ export async function initProject(cli, args = []) {
         aboutPageJsPath,
         '<state title="About" />\n\n' +
         '<Navbar />\n\n' +
-        '<div class="page-container">\n' +
+        '<div @css pageContainer>\n' +
         '    <h1>{{ title }} Page</h1>\n' +
         '    <p>Welcome to the about page.</p>\n' +
         '</div>\n',
@@ -221,7 +221,7 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         aboutPageCssPath,
         '<@css>\n' +
-        '.page-container {\n' +
+        'pageContainer {\n' +
         '    padding: 20px;\n' +
         '    font-family: sans-serif;\n' +
         '    max-width: 800px;\n' +
@@ -269,9 +269,9 @@ export async function initProject(cli, args = []) {
         '        text-decoration: none;\n' +
         '        font-weight: 500;\n' +
         '        font-family: sans-serif;\n' +
-        '    }\n\n' +
-        '    link:hover {\n' +
-        '        color: @primary;\n' +
+        '        &:hover {\n' +
+        '            color: @primary;\n' +
+        '        }\n' +
         '    }\n' +
         '</@css>\n',
       );
