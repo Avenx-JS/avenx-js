@@ -1,5 +1,8 @@
-# Good First Issue: Document avenx doctor Command in CLI Reference
-The Avenx CLI includes an `avenx doctor` command that performs automated diagnostic checks on the project configuration, Node environment, dependency versions, and output directory permissions. However, this command is missing from the CLI Reference documentation table in `README.md` and the online docs. By dividing responsibilities, we ensure consistent standards, prevent regression bugs, and speed up software development.
+# Agent Instructions
+
+These instructions help contributors and coding agents choose a specialized agent for work on Avenx.js. See
+[CONTRIBUTING.md](../CONTRIBUTING.md) for the general contribution workflow. By dividing responsibilities, we ensure
+consistent standards, prevent regression bugs, and speed up software development.
 
 ## Directory Overview
 
@@ -17,13 +20,15 @@ The `.agents/` folder contains specific instructions for the specialized agents 
 
 Depending on your current branch, task, or targeted file path, choose the corresponding agent:
 
+Paths in the table are relative to the repository root.
+
 | Agent Name | Target Files / Scope | Example Tasks |
 | :--- | :--- | :--- |
 | **Core Runtime & Renderer** | `lib/core/runtime/`, `lib/core/renderer/`, `lib/core/reactive/`, `lib/core/events/` | Optimizing DOM diffs, adding runtime lifecycle hooks, refining reactivity handlers, implementing route guards. |
 | **Compiler & Parser** | `lib/compiler/`, `lib/compiler.js` | Adding new component tag parsing support, upgrading css scope hashes, expression parsing. |
-| **CLI & Tooling** | `bin/avenx.js`, `vite-plugin-avenx/` | Scaffolding templates, modifying Vite plugin build triggers, HMR handler adjustments. |
+| **CLI & Tooling** | `bin/avenx.js`, `plugins/avenx-vite/` | Scaffolding templates, modifying Vite plugin build triggers, HMR handler adjustments. |
 | **Testing & Performance** | `test/`, `benches/`, CI workflows (`.github/workflows`) | Creating unit/integration tests, performance profiling, tracking bundle size regressions. |
-| **Documentation & DevRel** | `docs/`, examples/ | Creating API tutorials, modifying markdown pages, refining frontmatter Astro configurations. |
+| **Documentation & DevRel** | `docs/`, `plugins/*/example/` | Creating API tutorials, modifying markdown pages, refining frontmatter Astro configurations. |
 
 ---
 

@@ -7,7 +7,7 @@ Build and maintain CLI helpers, build configurations, and bundling plugins (like
 ## Responsibilities
 
 * **CLI Orchestration**: Core executable terminal commands including project creation (`init`), generators (`g component`, `g bridge`, `g page`), and local serving configuration (`bin/avenx.js`, `bin/cli.js`).
-* **Vite Integration**: High-efficiency Vite plugins supporting HMR, asset compilation, and dev server proxying (`vite-plugin-avenx/src`).
+* **Vite Integration**: High-efficiency Vite plugins supporting HMR, asset compilation, and dev server proxying (`plugins/avenx-vite/src/`).
 * **Local Development Server**: Serving static files, local routing fallback support, and watch-mode reload events.
 
 ## Out of Scope
