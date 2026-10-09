@@ -23,7 +23,158 @@ Angular applications use TypeScript classes with `@Component` decorators, depend
 
 ## 2. Component Anatomy and Template Syntax
 
-*This section will document replacing `@Component` classes and Angular directives (`*ngFor`, `[ngClass]`, `(click)`) with Avenx companion files and template syntax.*
+Angular groups a component class, its template, and styles through an `@Component` decorator. Avenx-JS instead pairs a `.component.js` file (HTML plus compiler tags for state and actions) with a same-named `.component.css` file (scoped style blocks). There is no TypeScript decorator or Angular module declaration to migrate.
+
+An Avenx component's markup lives directly in its `.component.js` file, without an Angular `templateUrl` or a surrounding `<template>` element. Put local reactive values in `<state />`, behavior in `<action>`, and optional derived values in `<computed />`. In the companion CSS file, define named styles inside `<@css>` and attach them with `@css blockName`.
+
+### Angular Template to Avenx-JS Mapping
+
+| Angular | Avenx-JS | Important difference |
+| :--- | :--- | :--- |
+| `@Component({ template, styleUrls })` | `name.component.js` and `name.component.css` | HTML and compiler tags live in the JavaScript-named template file; scoped styles are named blocks. |
+| `*ngIf="condition"` | `<@if condition>...</@if>` | Use `<@elseif>` / `<@else>` for extra branches; one `</@if>` ends the chain. |
+| `*ngFor="let item of items"` | `<@for item in items key="item.id">...</@for>` | `index` is implicit; keyed lists compile to a template with `data-ax-key`. |
+| `[ngClass]="{ active: selected }"` | `data-ax-class="{ active: state.selected }"` | Evaluates an expression to add/remove classes. |
+| `[style]="styleMap"` | `data-ax-style="{{ styleMap }}"` | Supplies an expression that evaluates to an inline-style object. |
+| `[hidden]="isHidden"` | `data-ax-show="!state.isHidden"` | **Invert the condition:** Avenx's `show` displays the element when truthy. |
+| `(click)="save()"` | `@click="save()"` | Use Avenx event directives, not HTML `onclick` attributes. |
+| `[(ngModel)]="name"` | `data-ax-bind="state.name"` | Two-way binds a form control to component state. |
+| `{{ value }}` | `{{ value }}` | Both interpolate expressions; Avenx component state is a proxy, not an Angular class field. |
+| `@Input()` | Parent `data-props-*` attributes; child `this.props.*` | Declare/pass data at the call site rather than through a decorator. |
+| `@Output()` + `EventEmitter` | `$emit('name', detail)` | Avenx emits a component event; parents handle its `event.detail`. |
+| `<ng-content>` | `<slot></slot>` | `<slot name="header">` supports named content and fallback markup. |
+
+For full syntax and supported directive behavior, refer to [Templates & Slots](/core-concepts/templates/), [Components](/core-concepts/components/), [Events](/core-concepts/events/), and [Styling](/core-concepts/styling/). Avenx also accepts `data-ax-key` on its compiled list template; when authoring `<@for>` directly, write its `key="..."` attribute as above.
+
+### Worked Example: An Angular Item Picker
+
+This example migrates input data, a selected-item event, conditional rendering, an item loop, reactive classes, a click action, projected content, and a scoped stylesheet.
+
+**Before — Angular component (`item-picker.component.ts`)**
+
+```typescript
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+
+@Component({
+  selector: 'app-item-picker',
+  template: `
+    <section class="picker">
+      <h2>{{ title }}</h2>
+      <p *ngIf="items.length === 0">No items yet.</p>
+      <ul>
+        <li *ngFor="let item of items"
+            [ngClass]="{ active: item.id === selectedId }">
+          <button type="button" (click)="choose(item.id)">
+            {{ item.name }}
+          </button>
+        </li>
+      </ul>
+      <ng-content></ng-content>
+    </section>
+  `,
+  styleUrls: ['./item-picker.component.css'],
+})
+export class ItemPickerComponent {
+  @Input() title = 'Choose an item';
+  @Input() items: Array<{ id: string; name: string }> = [];
+  @Output() picked = new EventEmitter<string>();
+
+  selectedId = '';
+
+  choose(id: string) {
+    this.selectedId = id;
+    this.picked.emit(id);
+  }
+}
+```
+
+```css
+/* item-picker.component.css (Angular) */
+.picker {
+  padding: 1rem;
+  border: 1px solid #ddd;
+}
+```
+
+**After — Avenx-JS companion template (`src/components/item-picker/item-picker.component.js`)**
+
+```html
+<state selectedId="" />
+
+<action name="choose">
+  const [id] = args;
+  state.selectedId = id;
+  $emit('picked', { id });
+</action>
+
+<section @css picker>
+  <h2>{{ this.props.title }}</h2>
+
+  <@if (this.props.items.length === 0)>
+    <p>No items yet.</p>
+  </@if>
+
+  <ul>
+    <@for item in this.props.items key="item.id">
+      <li data-ax-class="{ active: item.id === state.selectedId }">
+        <button type="button" @click="choose(item.id)">
+          {{ item.name }}
+        </button>
+      </li>
+    </@for>
+  </ul>
+
+  <slot></slot>
+</section>
+```
+
+**Companion stylesheet (`src/components/item-picker/item-picker.component.css`)**
+
+```css
+<@css>
+  picker {
+    padding: 1rem;
+    border: 1px solid #ddd;
+  }
+</@css>
+```
+
+The `@css picker` attribute attaches the CSS block named `picker` to the section. The active class is still toggled by `data-ax-class`, and can be styled separately as needed.
+
+**Use from a parent page or component**
+
+Import and register the component in `src/main.app.js` (alongside the existing application setup):
+
+```javascript
+import ItemPicker from './components/item-picker/item-picker.component.js';
+
+app.register('ItemPicker', ItemPicker);
+```
+
+Pass items and a title through props, listen for the emitted event, and project child content into the default slot:
+
+```html
+<!-- In a parent template with state.items and an onPicked action -->
+<ItemPicker
+  data-props-title="Choose an item"
+  data-props-items="{{ state.items }}"
+  @picked="onPicked(event.detail.id)"
+>
+  <p>Select an item from the list.</p>
+</ItemPicker>
+```
+
+The parent handler receives the selected ID in `event.detail.id`. Unlike Angular's `@Output()`, the Avenx action emits a normal component event with a detail object, so the payload is shaped explicitly.
+
+### Migration Notes
+
+- **`*ngIf` versus hidden elements:** `<@if>` mounts only the chosen branch. Use `data-ax-show` when an element should stay mounted and merely toggle its display; invert an Angular `[hidden]` condition.
+- **List identity:** Add a stable `key` to `<@for>` for predictable DOM reuse. Do not copy Angular's `trackBy` function syntax into the tag.
+- **Component props and events:** Use `data-props-*` attributes for inputs and `$emit` for output events. Avenx does not use Angular's dependency injection or component decorators.
+- **Two-way form binding:** Use `data-ax-bind="state.field"`, not `data-ax-model`; the state property must exist. See [Two-Way Bindings](/core-concepts/templates/#2-two-way-bindings-data-ax-bind).
+- **Styles:** Avenx scoped `<@css>` blocks are named without a leading dot and bound with `@css`; copying a selector from Angular CSS without adjusting it will not bind that block.
+
+Routing and guard migration is covered separately in [issue #1402](https://github.com/Avenx-JS/avenx-js/issues/1402).
 
 ---
 
