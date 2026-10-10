@@ -62,7 +62,9 @@ export async function initProject(cli, args = []) {
 
   const { stylePreprocessor, layoutTemplate, isInteractive } = await runWizard(args);
 
-  console.log(bold(cyan(`🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`)));
+  console.log(
+    bold(cyan(`🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`)),
+  );
 
   // Write avenx.config.json if preprocessor option is configured
   const configPath = path.join(cli.baseDir, 'avenx.config.json');
@@ -145,13 +147,13 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         mainAppPath,
         "import { AvenxApp } from 'avenx-core/runtime';\n" +
-        "import Navbar from './components/navbar/navbar.component.js';\n\n" +
-        "const app = new AvenxApp({ target: '#app' });\n\n" +
-        "app.register('Navbar', Navbar);\n\n" +
-        'app.initRouter({\n' +
-        "  '': 'Home',\n" +
-        "  '#/about': 'About',\n" +
-        '});\n',
+          "import Navbar from './components/navbar/navbar.component.js';\n\n" +
+          "const app = new AvenxApp({ target: '#app' });\n\n" +
+          "app.register('Navbar', Navbar);\n\n" +
+          'app.initRouter({\n' +
+          "  '': 'Home',\n" +
+          "  '#/about': 'About',\n" +
+          '});\n',
       );
     } else {
       fs.writeFileSync(
@@ -180,12 +182,12 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         homePageJsPath,
         '<state title="Home" />\n\n' +
-        '<Navbar />\n\n' +
-        '<div @css pageContainer>\n' +
-        '    <h1>{{ title }} Page</h1>\n' +
-        '    <p>Welcome to the home page of your new Avenx application!</p>\n' +
-        '    <p>This layout template demonstrates hash-based routing using AvenxRouter.</p>\n' +
-        '</div>\n',
+          '<Navbar />\n\n' +
+          '<div @css pageContainer>\n' +
+          '    <h1>{{ title }} Page</h1>\n' +
+          '    <p>Welcome to the home page of your new Avenx application!</p>\n' +
+          '    <p>This layout template demonstrates hash-based routing using AvenxRouter.</p>\n' +
+          '</div>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/pages/home.page.js`);
     }
@@ -193,13 +195,13 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         homePageCssPath,
         '<@css>\n' +
-        'pageContainer {\n' +
-        '    padding: 20px;\n' +
-        '    font-family: sans-serif;\n' +
-        '    max-width: 800px;\n' +
-        '    margin: 0 auto;\n' +
-        '}\n' +
-        '</@css>\n',
+          'pageContainer {\n' +
+          '    padding: 20px;\n' +
+          '    font-family: sans-serif;\n' +
+          '    max-width: 800px;\n' +
+          '    margin: 0 auto;\n' +
+          '}\n' +
+          '</@css>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/pages/home.page.css`);
     }
@@ -209,11 +211,11 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         aboutPageJsPath,
         '<state title="About" />\n\n' +
-        '<Navbar />\n\n' +
-        '<div @css pageContainer>\n' +
-        '    <h1>{{ title }} Page</h1>\n' +
-        '    <p>Welcome to the about page.</p>\n' +
-        '</div>\n',
+          '<Navbar />\n\n' +
+          '<div @css pageContainer>\n' +
+          '    <h1>{{ title }} Page</h1>\n' +
+          '    <p>Welcome to the about page.</p>\n' +
+          '</div>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/pages/about.page.js`);
     }
@@ -221,13 +223,13 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         aboutPageCssPath,
         '<@css>\n' +
-        'pageContainer {\n' +
-        '    padding: 20px;\n' +
-        '    font-family: sans-serif;\n' +
-        '    max-width: 800px;\n' +
-        '    margin: 0 auto;\n' +
-        '}\n' +
-        '</@css>\n',
+          'pageContainer {\n' +
+          '    padding: 20px;\n' +
+          '    font-family: sans-serif;\n' +
+          '    max-width: 800px;\n' +
+          '    margin: 0 auto;\n' +
+          '}\n' +
+          '</@css>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/pages/about.page.css`);
     }
@@ -237,14 +239,14 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         navbarJsPath,
         '<state activeRoute="" />\n\n' +
-        '<action name="onMount">\n' +
-        "    this.state.activeRoute = window.location.hash || '#/';\n" +
-        '</action>\n\n' +
-        '<nav>\n' +
-        '    <@css container />\n' +
-        '    <a @css link href="#/" aria-current="{{ activeRoute === \'#/\' ? \'page\' : \'\' }}">Home</a>\n' +
-        '    <a @css link href="#/about" aria-current="{{ activeRoute === \'#/about\' ? \'page\' : \'\' }}">About</a>\n' +
-        '</nav>\n',
+          '<action name="onMount">\n' +
+          "    this.state.activeRoute = window.location.hash || '#/';\n" +
+          '</action>\n\n' +
+          '<nav>\n' +
+          '    <@css container />\n' +
+          "    <a @css link href=\"#/\" aria-current=\"{{ activeRoute === '#/' ? 'page' : '' }}\">Home</a>\n" +
+          "    <a @css link href=\"#/about\" aria-current=\"{{ activeRoute === '#/about' ? 'page' : '' }}\">About</a>\n" +
+          '</nav>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.js`);
     }
@@ -252,34 +254,34 @@ export async function initProject(cli, args = []) {
       fs.writeFileSync(
         navbarCssPath,
         '<@global>\n' +
-        '    @def primary #6366f1;\n' +
-        '    @def dark #1e1b4b;\n' +
-        '    @def gray #e2e8f0;\n' +
-        '</@global>\n\n' +
-        '<@css>\n' +
-        '    container {\n' +
-        '        display: flex;\n' +
-        '        gap: 1.5rem;\n' +
-        '        padding: 1rem 2rem;\n' +
-        '        background: @dark;\n' +
-        '        border-bottom: 2px solid @primary;\n' +
-        '    }\n\n' +
-        '    link {\n' +
-        '        color: white;\n' +
-        '        text-decoration: none;\n' +
-        '        font-weight: 500;\n' +
-        '        font-family: sans-serif;\n' +
-        '        &:hover {\n' +
-        '            color: @primary;\n' +
-        '        }\n' +
-        '    }\n' +
-        '</@css>\n',
+          '    @def primary #6366f1;\n' +
+          '    @def dark #1e1b4b;\n' +
+          '    @def gray #e2e8f0;\n' +
+          '</@global>\n\n' +
+          '<@css>\n' +
+          '    container {\n' +
+          '        display: flex;\n' +
+          '        gap: 1.5rem;\n' +
+          '        padding: 1rem 2rem;\n' +
+          '        background: @dark;\n' +
+          '        border-bottom: 2px solid @primary;\n' +
+          '    }\n\n' +
+          '    link {\n' +
+          '        color: white;\n' +
+          '        text-decoration: none;\n' +
+          '        font-weight: 500;\n' +
+          '        font-family: sans-serif;\n' +
+          '        &:hover {\n' +
+          '            color: @primary;\n' +
+          '        }\n' +
+          '    }\n' +
+          '</@css>\n',
       );
       console.log(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.css`);
     }
   }
 
-  // Create initial package.json
+  // Create or update package.json
   const packageJsonPath = path.join(cli.baseDir, 'package.json');
   if (!fs.existsSync(packageJsonPath)) {
     const projectName =
@@ -301,7 +303,18 @@ export async function initProject(cli, args = []) {
       },
     };
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageContent, null, 2) + '\n');
-    console.log('  Created: package.json');
+    console.log('   Created: package.json');
+  } else {
+    try {
+      const existingPkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      if (existingPkg.type !== 'module') {
+        existingPkg.type = 'module';
+        fs.writeFileSync(packageJsonPath, JSON.stringify(existingPkg, null, 2) + '\n');
+        console.log('   Updated: package.json (set type: module)');
+      }
+    } catch {
+      // If parsing fails, leave the file as is
+    }
   }
 
   // Create initial .gitignore

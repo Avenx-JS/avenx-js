@@ -1,3 +1,17 @@
+/**
+ * Note: Running component tests requires Vitest and @avenx/vite.
+ *
+ * Setup instructions:
+ * 1. Install dependencies:
+ *      npm install -D vitest @avenx/vite
+ * 2. Ensure vitest.config.js includes:
+ *      import { defineConfig } from 'vitest/config';
+ *      import avenx from '@avenx/vite';
+ *      export default defineConfig({ plugins: [avenx()] });
+ * 3. Run:
+ *      npx vitest run
+ */
+
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { mountTestComponent, fireEvent } from 'avenx-core/testing';
