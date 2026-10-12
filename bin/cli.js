@@ -2,7 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import loadConfig, { getClosestKey } from '../lib/config.js';
 import { loadEnv } from '../lib/env.js';
-import { checkGitStatus } from './utils.js';
+import { checkGitStatus, validateComponentName } from './utils.js';
 import { createSeverityFormatter, cyan, gray, red } from './colors.js';
 import { initProject } from './commands/init.js';
 import { generateComponent, generatePage, generateBridge, generateGuard } from './commands/generate.js';
@@ -56,6 +56,27 @@ function refuseUnknownScaffoldType(command, type, name) {
   process.exitCode = 1;
   return true;
 }
+/**
+ * Refuses a scaffold command whose name is invalid, contains whitespace,
+ * starts with a digit, or attempts directory traversal.
+ *
+ * @param {string} command The command being run ('g' or 'd').
+ * @param {string} name The component/item name to validate.
+ * @returns {boolean} True when the command should not proceed.
+ */
+function refuseInvalidScaffoldName(command, name) {
+  if (!name) return false;
+
+  const result = validateComponentName(name);
+  if (!result.valid) {
+    console.error(red(`❌ Error: Invalid name "${name}".`));
+    console.error(gray(`   ${result.reason}`));
+    process.exitCode = 1;
+    return true;
+  }
+
+  return false;
+}
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,9 +91,32 @@ const findProjectRoot = loadConfig.findProjectRoot;
  * @type {string[]}
  */
 export const KNOWN_COMMANDS = [
-  'init', 'generate', 'g', 'destroy', 'd', 'build', 'b', 'clean', 'check', 'lint',
-  'doctor', 'env', 'explain', 'inspect', 'i', 'stats', 's', 'atlas', 'impact', 'why',
-  'trace', 'serve', 'watch', 'w', 'format', 'help',
+  'init',
+  'generate',
+  'g',
+  'destroy',
+  'd',
+  'build',
+  'b',
+  'clean',
+  'check',
+  'lint',
+  'doctor',
+  'env',
+  'explain',
+  'inspect',
+  'i',
+  'stats',
+  's',
+  'atlas',
+  'impact',
+  'why',
+  'trace',
+  'serve',
+  'watch',
+  'w',
+  'format',
+  'help',
 ];
 
 /**
@@ -203,6 +247,15 @@ export class AvenxCLI {
             process.exit(1);
           }
         }
+        if (refuseUnknownScaffoldType('g', type, name)) {
+          break;
+        }
+
+        const targetName = SCAFFOLD_TYPES.includes(type) ? name : type;
+        if (refuseInvalidScaffoldName('g', targetName)) {
+          break;
+        }
+
         if (type === 'bridge') {
           generateBridge(this, name, dryRun, force, templateName);
         } else if (type === 'guard') {
@@ -211,8 +264,6 @@ export class AvenxCLI {
           generatePage(this, name, dryRun, force, templateName);
         } else if (type === 'component' || type === 'c') {
           generateComponent(this, name, dryRun, force, templateName, withTest, noTest);
-        } else if (refuseUnknownScaffoldType('g', type, name)) {
-          break;
         } else {
           // Default to component if type is not specified (e.g., `avenx g MyButton`)
           generateComponent(this, type, dryRun, force, templateName, withTest, noTest);
@@ -230,6 +281,15 @@ export class AvenxCLI {
             process.exit(1);
           }
         }
+        if (refuseUnknownScaffoldType('d', type, name)) {
+          break;
+        }
+
+        const targetDestroyName = SCAFFOLD_TYPES.includes(type) ? name : (name || type);
+        if (refuseInvalidScaffoldName('d', targetDestroyName)) {
+          break;
+        }
+
         if (type === 'bridge') {
           destroyBridge(this, name, dryRun);
         } else if (type === 'guard') {
@@ -238,8 +298,6 @@ export class AvenxCLI {
           destroyPage(this, name, dryRun);
         } else if (type === 'component' || type === 'c') {
           destroyComponent(this, name, dryRun);
-        } else if (refuseUnknownScaffoldType('d', type, name)) {
-          break;
         } else {
           // Default to component if only one arg or type is 'component'
           destroyComponent(this, name || type, dryRun);
@@ -285,8 +343,12 @@ export class AvenxCLI {
         // than from config alone so that turning it on is always a visible,
         // deliberate act at the command line.
         this.traceEnabled = args.includes('--trace');
-        const portIdx = args.findIndex((a) => a === '--port' || a === '-p' || a.startsWith('--port=') || a.startsWith('-p='));
-        const hostIdx = args.findIndex((a) => a === '--host' || a === '-h' || a.startsWith('--host=') || a.startsWith('-h='));
+        const portIdx = args.findIndex(
+          (a) => a === '--port' || a === '-p' || a.startsWith('--port=') || a.startsWith('-p='),
+        );
+        const hostIdx = args.findIndex(
+          (a) => a === '--host' || a === '-h' || a.startsWith('--host=') || a.startsWith('-h='),
+        );
         const open = args.includes('--open') || args.includes('-o');
 
         if (args.includes('--no-live-reload') || args.includes('--live-reload=false')) {
@@ -307,17 +369,25 @@ export class AvenxCLI {
           (arg, idx) => !arg.startsWith('-') && !flagValueIndexes.has(idx) && /^\d+$/.test(arg.trim()),
         );
 
-        const rawPortVal = portIdx !== -1
-          ? (args[portIdx].includes('=') ? args[portIdx].split('=').slice(1).join('=') : args[portIdx + 1])
-          : (positionalPort ?? null);
+        const rawPortVal =
+          portIdx !== -1
+            ? args[portIdx].includes('=')
+              ? args[portIdx].split('=').slice(1).join('=')
+              : args[portIdx + 1]
+            : (positionalPort ?? null);
         const rawPort = rawPortVal?.replace(/[^0-9]/g, '');
         const port = rawPort
           ? parseInt(rawPort, 10)
-          : (process.env.PORT ? parseInt(String(process.env.PORT).replace(/[^0-9]/g, ''), 10) : null) || this.config.server?.port || 3000;
+          : (process.env.PORT ? parseInt(String(process.env.PORT).replace(/[^0-9]/g, ''), 10) : null) ||
+            this.config.server?.port ||
+            3000;
 
-        const rawHostVal = hostIdx !== -1
-          ? (args[hostIdx].includes('=') ? args[hostIdx].split('=').slice(1).join('=') : args[hostIdx + 1])
-          : null;
+        const rawHostVal =
+          hostIdx !== -1
+            ? args[hostIdx].includes('=')
+              ? args[hostIdx].split('=').slice(1).join('=')
+              : args[hostIdx + 1]
+            : null;
         const host = rawHostVal ? rawHostVal.trim().replace(/\/+$/g, '') : 'localhost';
 
         this.serveProject(port, host, open);
