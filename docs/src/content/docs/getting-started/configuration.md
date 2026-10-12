@@ -44,6 +44,8 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
 | `templateGlobals` | `string[]` | `[]`                 | Identifiers a plugin publishes into every component's template scope through `app.mixin()`. Declaring them lets template validation accept `{{ t('home.title') }}` without weakening the check for anything else. See [Plugin-provided template globals](#plugin-provided-template-globals). |
 | `warnings`     | `object`   | `{}`                   | Map of compiler warning codes (`AVX_W01`, `AVX_W03`, etc.) to severity overrides (`"off"`, `"ignore"`, `"warn"`, or `"error"`). |
+| `expressionCacheCapacity` | `number` | `1000` | Sets the maximum capacity of the compiled-expression cache. Must be a positive integer. Increasing it can reduce recompilation but uses more memory. |
+| `sourcesContent` | `boolean` | `true` | Includes original source code in generated source maps. Set to `false` to omit the original source content. |
 | `incremental`  | `boolean`  | `false`                | Lets `avenx serve`, `avenx watch` and `avenx check --watch` reuse the compilation of a file that has not changed, so a rebuild after one edit does not recompile the project. See [Incremental rebuilds](#incremental-rebuilds-incremental). |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
