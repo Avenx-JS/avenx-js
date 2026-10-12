@@ -59,7 +59,6 @@ function refuseUnknownScaffoldType(command, type, name) {
 /**
  * Refuses a scaffold command whose name is invalid, contains whitespace,
  * starts with a digit, or attempts directory traversal.
- *
  * @param {string} command The command being run ('g' or 'd').
  * @param {string} name The component/item name to validate.
  * @returns {boolean} True when the command should not proceed.
@@ -236,14 +235,10 @@ export class AvenxCLI {
         process.exit(0);
         break;
       case 'generate':
-      case 'g':
+      case 'g': {
         if (!force) {
           const proceed = await checkGitStatus(this.baseDir);
           if (!proceed) {
-            // Declining is a refusal to run, not a successful no-op. Exiting 0
-            // here made `avenx build && deploy` deploy whatever was already in
-            // dist/, which contradicts the documented contract that build exits
-            // 0 only on a successful build.
             process.exit(1);
           }
         }
@@ -265,19 +260,15 @@ export class AvenxCLI {
         } else if (type === 'component' || type === 'c') {
           generateComponent(this, name, dryRun, force, templateName, withTest, noTest);
         } else {
-          // Default to component if type is not specified (e.g., `avenx g MyButton`)
           generateComponent(this, type, dryRun, force, templateName, withTest, noTest);
         }
         break;
+      }
       case 'destroy':
-      case 'd':
+      case 'd': {
         if (!force) {
           const proceed = await checkGitStatus(this.baseDir);
           if (!proceed) {
-            // Declining is a refusal to run, not a successful no-op. Exiting 0
-            // here made `avenx build && deploy` deploy whatever was already in
-            // dist/, which contradicts the documented contract that build exits
-            // 0 only on a successful build.
             process.exit(1);
           }
         }
@@ -299,10 +290,10 @@ export class AvenxCLI {
         } else if (type === 'component' || type === 'c') {
           destroyComponent(this, name, dryRun);
         } else {
-          // Default to component if only one arg or type is 'component'
           destroyComponent(this, name || type, dryRun);
         }
         break;
+      }
       case 'build':
       case 'b':
         if (!force) {
