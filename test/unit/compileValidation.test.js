@@ -197,6 +197,20 @@ function runTests() {
   });
   assert.strictEqual(warningsIdDynamic.length, 0);
 
+  // A static id only in a loop's <@empty> branch renders at most once
+  const warningsIdEmpty = captureWarnings(() => {
+    cp.extractTemplate(
+      '<@for it in items><li>{{ it }}</li><@empty><li id="none">leer</li></@empty></@for>',
+      {},
+      'MyComp',
+      'my-component.js',
+      { items: [] },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsIdEmpty.length, 0);
+
   // Unique static IDs should NOT trigger warnings
   const warningsIdUnique = captureWarnings(() => {
     cp.extractTemplate(
