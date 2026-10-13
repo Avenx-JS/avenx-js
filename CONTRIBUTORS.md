@@ -194,6 +194,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/AK-Lmn"><img src="https://avatars.githubusercontent.com/u/179229555?v=4?s=100" width="100px;" alt="AK-Lmn"/><br /><sub><b>AK-Lmn</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=AK-Lmn" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.linkedin.com/in/rs-janani-47b882326/?isSelfProfile=true"><img src="https://avatars.githubusercontent.com/u/223864652?v=4?s=100" width="100px;" alt="JANANI-RS06"/><br /><sub><b>JANANI-RS06</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=JANANI-RS06" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/sricharanreddycheruku"><img src="https://avatars.githubusercontent.com/u/185475071?v=4?s=100" width="100px;" alt="Cheruku Sri Charan Reddy "/><br /><sub><b>Cheruku Sri Charan Reddy </b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=sricharanreddycheruku" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jay23606"><img src="https://avatars.githubusercontent.com/u/4602056?v=4?s=100" width="100px;" alt="Jay"/><br /><sub><b>Jay</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=jay23606" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
