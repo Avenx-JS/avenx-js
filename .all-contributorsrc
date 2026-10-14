@@ -1216,6 +1216,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "CreedTech",
+      "name": "Ayodele Ayoola",
+      "avatar_url": "https://avatars.githubusercontent.com/u/76216787?v=4",
+      "profile": "https://ayodeleayoola.com",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
