@@ -185,6 +185,61 @@ this page documented that limitation as a rule and recommended composing every
 component as a sibling in a page. That is no longer necessary.
 :::
 
+## Dynamic Components
+
+Use `<Component :is="{{ name }}" />` when one place in a template should render
+different registered components as state changes. For a few fixed branches with
+different surrounding markup, `<@if>` may be clearer.
+
+This page starts with a profile card and swaps to a settings card when the user
+selects Settings:
+
+```html
+<!-- src/pages/home.page.js -->
+<state currentView="ProfileCard" />
+<action name="showProfile"> state.currentView = 'ProfileCard'; </action>
+<action name="showSettings"> state.currentView = 'SettingsCard'; </action>
+
+<div>
+  <button @click="showProfile()">Profile</button>
+  <button @click="showSettings()">Settings</button>
+  <Component :is="{{ currentView }}" />
+</div>
+```
+
+The two component templates can be as small as:
+
+```html
+<!-- src/components/profile-card/profile-card.component.js -->
+<section><h2>Profile</h2></section>
+
+<!-- src/components/settings-card/settings-card.component.js -->
+<section><h2>Settings</h2></section>
+```
+
+Register both names in `src/main.app.js` and route to the page:
+
+```javascript
+import { AvenxApp } from 'avenx-core/runtime';
+import ProfileCard from './components/profile-card/profile-card.component.js';
+import SettingsCard from './components/settings-card/settings-card.component.js';
+
+const app = new AvenxApp({ target: '#app' });
+app.register('ProfileCard', ProfileCard);
+app.register('SettingsCard', SettingsCard);
+app.initRouter({ '/': 'Home' });
+```
+
+The name in `currentView` must match a registered component. If it names one
+that is not registered, the mount point stays empty and the browser reports
+`AVX_W13`. Use the interpolation braces shown above: the bare spelling
+`<Component :is="currentView" />` currently renders nothing (see
+[#1490](https://github.com/Avenx-JS/avenx-js/issues/1490)).
+
+For now, a template with a dynamic component also emits `AVX_W47` at build time
+and uses the string renderer. It still updates, but reparses and diffs the
+whole template on each update instead of updating only changed bindings.
+
 ## Slot Fallback Content
 
 Avenx components support **fallback content** inside `<slot>` elements. Fallback content is rendered automatically whenever the parent component does not provide content for that slot.
