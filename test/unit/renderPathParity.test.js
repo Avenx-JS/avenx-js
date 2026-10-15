@@ -33,8 +33,40 @@
  */
 import assert from 'assert';
 import { compileComponent } from '../../benches/support/compileFixture.js';
-
+import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
 let seq = 0;
+/**
+ * Dynamic component tags must use the string-renderer fallback.
+ */
+function testDynamicComponentIRFallback() {
+  console.log('🧪 Testing dynamic component IR fallback...');
+
+for (const template of [
+  '<Component :is="currentView" />',
+  '<Component is="currentView" />',
+]) {
+  const result = buildTemplateIR(template);
+
+    assert.strictEqual(
+      result.ir,
+      null,
+      `${template} must not compile as a static component reference`,
+    );
+
+    assert.ok(
+      result.refusal,
+      `${template} must provide a compilation refusal`,
+    );
+
+    assert.strictEqual(
+      result.refusal.reason,
+      'DYNAMIC_COMPONENT',
+      `${template} must report the dynamic-component refusal`,
+    );
+  }
+
+  console.log('  ✅ Dynamic component IR fallback tests passed.');
+}
 
 /**
  * Mounts a compiled class, optionally with its render program removed.
@@ -688,5 +720,7 @@ await testSlotFallbackParity();
 await testKnownDifference();
 await testBoundBooleanWithNoValue();
 await testBookkeepingIsConsumed();
+
+testDynamicComponentIRFallback();
 
 console.log('✅ Render path parity tests passed.');
