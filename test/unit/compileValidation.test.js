@@ -225,6 +225,87 @@ function runTests() {
   });
   assert.strictEqual(warningsIdUnique.length, 0);
 
+  // 7. Name-valued directives should NOT trigger expression warnings
+  console.log('  Testing name-valued directive validation...');
+
+  const warningsRef = captureWarnings(() => {
+    cp.extractTemplate(
+      '<state a="1" /><div><input data-ax-ref="myInput" /><p>{{ a }}</p></div>',
+      {},
+      'MyComp',
+      'my-component.js',
+      { a: 1 },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsRef.length, 0);
+
+  const warningsValidationRules = captureWarnings(() => {
+    cp.extractTemplate(
+      '<state email="" password="" /><div><input data-ax-bind="email" data-ax-validate="required|email" /><input data-ax-bind="password" data-ax-validate="required|min:8:Mindestens 8 Zeichen" /></div>',
+      {},
+      'MyComp',
+      'my-component.js',
+      { email: '', password: '' },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsValidationRules.length, 0);
+  assert.ok(!warningsValidationRules.some((warning) => warning.includes('"required"')));
+  assert.ok(!warningsValidationRules.some((warning) => warning.includes('"Mindestens"')));
+  assert.ok(!warningsValidationRules.some((warning) => warning.includes('"Zeichen"')));
+
+  // 8. Expression-valued directives should still trigger warnings
+  console.log('  Testing expression-valued directive validation...');
+
+  const warningsUndeclaredBind = captureWarnings(() => {
+    cp.extractTemplate(
+      '<input data-ax-bind="missingField" data-ax-validate="required|email" />',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsUndeclaredBind.length, 1);
+  assert.ok(warningsUndeclaredBind[0].includes('AVX_W03'));
+  assert.ok(warningsUndeclaredBind[0].includes('missingField'));
+
+  const warningsKey = captureWarnings(() => {
+    cp.extractTemplate(
+      '<div data-ax-key="undeclaredKey"></div>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsKey.length, 1);
+  assert.ok(warningsKey[0].includes('AVX_W03'));
+  assert.ok(warningsKey[0].includes('undeclaredKey'));
+
+  const warningsSameTemplate = captureWarnings(() => {
+    cp.extractTemplate(
+      '<input data-ax-ref="myInput" /><p>{{ undeclaredVar }}</p>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsSameTemplate.length, 1);
+  assert.ok(warningsSameTemplate[0].includes('AVX_W03'));
+  assert.ok(warningsSameTemplate[0].includes('undeclaredVar'));
+  assert.ok(!warningsSameTemplate[0].includes('Undeclared variable or method "myInput"'));
+
   console.log('  ✅ Compile-time Static Validation tests passed!');
 }
 
