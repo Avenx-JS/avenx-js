@@ -712,10 +712,46 @@ async function testSlotFallbackParity() {
   );
 }
 
+/**
+ * A duplicate `data-ax-key` must warn on both paths, with the same message.
+ * The compiled path used to be silent here, so this is the parity assertion
+ * that keeps the diagnostic from diverging again.
+ */
+async function testDuplicateKeyWarningParity() {
+  const ComponentClass = compileComponent(
+    `<state rows='[{"id":1,"label":"a"},{"id":1,"label":"dup"}]' />
+<ul><@for row in rows key="row.id"><li>{{ row.label }}</li></@for></ul>`,
+    `Parity${seq++}`,
+  );
+  assert.ok(ComponentClass.__axProgram, 'duplicate-key list must compile, or this compares nothing');
+
+  const warningsFor = (compiled) => {
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      const mounted = mount(ComponentClass, compiled);
+      mounted.component.unmount();
+      mounted.host.remove();
+    } finally {
+      console.warn = originalWarn;
+    }
+    return warnings.filter((w) => w.includes('AVX_W20'));
+  };
+
+  const compiledWarnings = warningsFor(true);
+  const legacyWarnings = warningsFor(false);
+  assert.strictEqual(compiledWarnings.length, 1, 'compiled path must warn once for the duplicate key');
+  assert.strictEqual(legacyWarnings.length, 1, 'string path must warn once for the duplicate key');
+  assert.strictEqual(compiledWarnings[0], legacyWarnings[0], 'both paths must emit the same message');
+  console.log('  ✅ duplicate keys warn identically on both render paths.');
+}
+
 testConditionalCannotFallBack();
 await testListParity();
 await testNestedBlocksThroughTheCompiler();
 await testSlotFallbackParity();
+await testDuplicateKeyWarningParity();
 
 await testKnownDifference();
 await testBoundBooleanWithNoValue();
