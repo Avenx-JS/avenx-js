@@ -34,6 +34,7 @@
 import assert from 'assert';
 import { compileComponent } from '../../benches/support/compileFixture.js';
 import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
+import { RefusalReason } from '../../lib/compiler/ir/nodes.js';
 let seq = 0;
 /**
  * Dynamic component tags must use the string-renderer fallback.
@@ -41,11 +42,11 @@ let seq = 0;
 function testDynamicComponentIRFallback() {
   console.log('🧪 Testing dynamic component IR fallback...');
 
-for (const template of [
-  '<Component :is="currentView" />',
-  '<Component is="currentView" />',
-]) {
-  const result = buildTemplateIR(template);
+  for (const template of [
+    '<Component :is="currentView" />',
+    '<Component is="currentView" />',
+  ]) {
+    const result = buildTemplateIR(template);
 
     assert.strictEqual(
       result.ir,
@@ -60,7 +61,7 @@ for (const template of [
 
     assert.strictEqual(
       result.refusal.reason,
-      'DYNAMIC_COMPONENT',
+      RefusalReason.DYNAMIC_COMPONENT,
       `${template} must report the dynamic-component refusal`,
     );
   }
