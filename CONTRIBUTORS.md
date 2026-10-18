@@ -198,7 +198,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://ayodeleayoola.com"><img src="https://avatars.githubusercontent.com/u/76216787?v=4?s=100" width="100px;" alt="Ayodele Ayoola"/><br /><sub><b>Ayodele Ayoola</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=CreedTech" title="Documentation">📖</a></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rishav-raj-genx"><img src="https://avatars.githubusercontent.com/u/258543216?v=4?s=100" width="100px;" alt="Rishav Raj"/><br /><sub><b>Rishav Raj</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=rishav-raj-genx" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rishav-raj-genx"><img src="https://avatars.githubusercontent.com/u/258543216?v=4?s=100" width="100px;" alt="Rishav Raj"/><br /><sub><b>Rishav Raj</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=rishav-raj-genx" title="Code">💻</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=rishav-raj-genx" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
