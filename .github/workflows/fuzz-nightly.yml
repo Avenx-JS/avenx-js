@@ -1,0 +1,44 @@
+name: Template Parser Fuzz Testing (Nightly)
+
+# Property-based fuzz testing for template parser and compiler invariants.
+# Kept off the pull-request path deliberately to avoid slowing down every PR,
+# and executed nightly and on demand via workflow_dispatch.
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      num_runs:
+        description: 'Number of fuzz iterations per invariant'
+        required: false
+        default: '1000'
+        type: string
+
+jobs:
+  fuzz:
+    name: Template Parser Fuzz (${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run template parser property tests
+        run: npm run test:fuzz
+        env:
+          FAST_CHECK_NUM_RUNS: ${{ inputs.num_runs || '1000' }}
+          CI_FUZZ: '1'

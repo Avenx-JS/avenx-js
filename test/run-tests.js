@@ -13,8 +13,8 @@ const isUpdateSnapshots = args.includes('--update-snapshots') || args.includes('
 if (isUpdateSnapshots) {
   process.env.AVENX_UPDATE_SNAPSHOTS = '1';
 }
-const filterArgs = args.filter((arg) => 
-  arg !== '--watch' && arg !== '-w' && arg !== '--update-snapshots' && arg !== '-u'
+const filterArgs = args.filter(
+  (arg) => arg !== '--watch' && arg !== '-w' && arg !== '--update-snapshots' && arg !== '-u',
 );
 const filter = filterArgs[0] || '';
 
@@ -31,9 +31,10 @@ let debounceTimeout = null;
 /**
  * Finds all test files recursively under a directory.
  * @param {string} dir
+ * @param {boolean} [skipFuzz] - Whether to exclude fuzz tests from root test runs.
  * @returns {string[]}
  */
-function findTestFiles(dir) {
+function findTestFiles(dir, skipFuzz = false) {
   let results = [];
   if (!fs.existsSync(dir)) return results;
   const stat = fs.statSync(dir);
@@ -45,9 +46,9 @@ function findTestFiles(dir) {
     const filePath = path.join(dir, file);
     const s = fs.statSync(filePath);
     if (s && s.isDirectory()) {
-      // Recurse, but avoid traversing test-project or node_modules if present
-      if (file !== 'test-project' && file !== 'node_modules') {
-        results = results.concat(findTestFiles(filePath));
+      // Recurse, but avoid traversing test-project, node_modules, or fuzz (on default runs)
+      if (file !== 'test-project' && file !== 'node_modules' && !(skipFuzz && file === 'fuzz')) {
+        results = results.concat(findTestFiles(filePath, skipFuzz));
       }
     } else if (file.endsWith('.test.js')) {
       results.push(filePath);
@@ -63,7 +64,7 @@ function findTestFiles(dir) {
  */
 function resolveTestFiles(filterPath) {
   if (!filterPath) {
-    return findTestFiles(__dirname);
+    return findTestFiles(__dirname, true);
   }
 
   // Check direct file/dir existence from various base paths
@@ -80,13 +81,13 @@ function resolveTestFiles(filterPath) {
         return candidate.endsWith('.test.js') ? [candidate] : [];
       }
       if (stat.isDirectory()) {
-        return findTestFiles(candidate);
+        return findTestFiles(candidate, false);
       }
     }
   }
 
   // Substring match across all discovered test files
-  const allFiles = findTestFiles(__dirname);
+  const allFiles = findTestFiles(__dirname, false);
   return allFiles.filter((f) => f.includes(filterPath));
 }
 
@@ -142,7 +143,11 @@ async function runTestFile(file) {
   const interpreterPath = path.resolve(__dirname, 'helpers/register-interpreter.js');
   execArgv.push('--import', pathToFileURL(interpreterPath).href);
 
-  const isUnitTest = file.includes(path.join('test', 'unit')) || file.includes('test/unit');
+  const isUnitTest =
+    file.includes(path.join('test', 'unit')) ||
+    file.includes('test/unit') ||
+    file.includes(path.join('test', 'fuzz')) ||
+    file.includes('test/fuzz');
   if (isUnitTest) {
     const registratorPath = path.resolve(__dirname, 'helpers/register-happy-dom.js');
     execArgv.push('--import', pathToFileURL(registratorPath).href);
