@@ -474,7 +474,8 @@ Available lifecycle hooks:
 - `onBeforeUpdate()` — Runs before DOM patching upon state changes.
 - `onUpdate()` — Runs when the component updates and finishes DOM patching.
 - `onUnmount()` — Runs when the component is removed from the DOM.
-- `onActivate(params)` / `onDeactivate()` — Runs for cached `keepAlive: true` pages.
+- `onActivate(params)` — Runs after `onMount()` and optional `onEnter()` on the first page-route activation, and whenever returning to a cached `keepAlive` page, receiving the latest route parameters.
+- `onDeactivate()` — Runs when navigating away from an active `keepAlive` page.
 - `onErrorCaptured(error, instance, info)` — Captures unhandled errors from descendant components.
 
 ---
