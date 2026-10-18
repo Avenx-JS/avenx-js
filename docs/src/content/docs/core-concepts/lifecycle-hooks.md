@@ -14,7 +14,13 @@ graph TD
     A["Instantiation & State Setup"] --> B["onBeforeMount()"]
     B --> C["Initial DOM Template Compilation"]
     C --> D["onMount()"]
-    D --> E{"State or Props Changed?"}
+    D --> N{"onEnter() Defined?"}
+    N -- "Yes" --> O["onEnter()"]
+    N -- "No" --> M{"Active Page Route?"}
+    O --> M
+    M -- "Yes" --> K["onActivate(params)"]
+    M -- "No" --> E{"State or Props Changed?"}
+    K --> E
     E -- "Yes" --> F["onBeforeUpdate()"]
     F --> G["DOM Patch Session"]
     G --> H["onUpdate()"]
@@ -37,7 +43,7 @@ graph TD
 | `onBeforeLeave()` | Pre-Unmount Transition | ✅ Yes | Postpone unmounting by returning a `Promise` (e.g. exit animations or confirm dialogs). |
 | `onLeave()` | Unmount Transition | ✅ Yes | Execute final transition cleanup immediately before internal teardown begins. |
 | `onUnmount()` | Teardown | ✅ Yes (pre-removal) | Clear timers (`clearInterval`), remove `window` listeners, close WebSockets. |
-| `onActivate(params)` | KeepAlive Active | ✅ Yes | Triggered when returning to a cached `keepAlive` page route. |
+| `onActivate(params)` | Page Route Activation | ✅ Yes | Runs on every page-route activation: after `onMount()` and optional `onEnter()` on the first activation, and when returning to a cached `keepAlive` page, with the latest route parameters. |
 | `onDeactivate()` | KeepAlive Inactive | ✅ Yes | Triggered when navigating away from a cached `keepAlive` page route. |
 | `onErrorCaptured()` | Error Handling | ✅ Yes | Catches unhandled errors thrown by descendant components. |
 
@@ -172,13 +178,24 @@ onUpdate() {
 
 ### 6. `onActivate(params)` & `onDeactivate()`
 
-- **Trigger:** Used exclusively for pages configured with `keepAlive: true` in the router.
-- `onDeactivate()`: Runs when navigating away from a cached page instead of `onUnmount()`. The page instance remains in the LRU cache.
-- `onActivate(params)`: Runs when returning to a cached page, receiving the latest route parameters.
+- `onDeactivate()`: Runs when navigating away from an active `keepAlive` page instead of `onUnmount()`. The page instance then remains in the LRU cache.
+- `onActivate(params)`: Runs on the first page-route activation after `onMount()` and optional `onEnter()`, and whenever the user returns to a cached `keepAlive` page. It receives the latest route parameters.
+
+For a page configured with `keepAlive: true` and no `onEnter()` hook, the measured cumulative hook sequence is:
+
+```text
+1. Initial load (no prior navigation): onBeforeMount -> onMount -> onActivate
+2. Navigate away:                    onBeforeMount -> onMount -> onActivate -> onDeactivate
+3. Navigate back:                    onBeforeMount -> onMount -> onActivate -> onDeactivate -> onActivate
+```
 
 ```javascript
+onMount() {
+  this.setupFeedSubscriptions();
+}
+
 async onActivate(params) {
-  console.log(`Restored cached page for user ID: ${params.id}`);
+  console.log(`Activated page for user ID: ${params.id}`);
   await this.refreshUserFeed(params.id);
 }
 
@@ -186,6 +203,22 @@ onDeactivate() {
   console.log('Page deactivated and saved to keepAlive cache.');
 }
 ```
+
+> [!IMPORTANT]
+> Both `onMount()` and `onActivate(params)` run on the initial load. Putting the same fetch in both hooks fetches the data twice on a cold entry. Perform activation data fetching in `onActivate()` alone and reserve `onMount()` for one-time setup.
+>
+> The runtime passes only `params` to `onActivate(params)`; it does not provide a first-activation or cached-return flag. Hook arguments therefore cannot distinguish a cached return from every other later activation. If skipping the first activation is sufficient for the route flow, track activation on the component instance:
+>
+> ```javascript
+> async onActivate(params) {
+>   const isReturn = this._hasActivated === true;
+>   this._hasActivated = true;
+>
+>   if (isReturn) {
+>     await this.refreshUserFeed(params.id);
+>   }
+> }
+> ```
 
 ---
 
