@@ -108,7 +108,7 @@
     "eslint": "^10.5.0",
     "eslint-plugin-jsdoc": "^63.0.7",
     "fast-check": "^4.10.2",
-    "happy-dom": "^20.10.6",
+    "happy-dom": "^21.0.3",
     "jsdoc": "^4.0.2",
     "prettier": "^3.8.4",
     "terser": "^5.48.0"
