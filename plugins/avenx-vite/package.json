@@ -38,6 +38,6 @@
     "avenx-core": ">=0.4.0"
   },
   "devDependencies": {
-    "vite": "^8.1.4"
+    "vite": "^8.3.4"
   }
 }
