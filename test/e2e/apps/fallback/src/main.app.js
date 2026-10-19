@@ -2,6 +2,7 @@ import { AvenxApp } from 'avenx-core/runtime';
 import Susp from './components/susp/susp.component.js';
 import Eb from './components/eb/eb.component.js';
 import Dl from './components/dl/dl.component.js';
+import Scoped from './components/scoped/scoped.component.js';
 
 const app = new AvenxApp({ target: '#app' });
 
@@ -11,7 +12,9 @@ const app = new AvenxApp({ target: '#app' });
 app.register('Susp', Susp);
 app.register('Eb', Eb);
 app.register('Dl', Dl);
+app.register('Scoped', Scoped);
 
 app.initRouter({
   '': 'Shell',
+  '/scoped': 'Scoped',
 });
