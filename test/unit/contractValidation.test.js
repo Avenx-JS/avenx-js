@@ -106,3 +106,29 @@ test('ContractValidator detects determinism and purity violations', () => {
   const res4 = ContractValidator.validate(nodes4, { name: 'RedundantTest' });
   assert.ok(res4.warnings.some((w) => w.code === AvenxErrorCodes.COMPILER_CONTRACT_REDUNDANT));
 });
+
+test('ContractValidator checks action bodies for purity and determinism', () => {
+  // 1. Purity violation in an action body
+  const pure = ContractValidator.validate(ComponentParser.parseHTML('<div>{{ n }}</div>'), {
+    name: 'PureAction',
+    contracts: new Set(['pure']),
+    methods: { reload: 'window.location.reload();' },
+  });
+  assert.ok(pure.warnings.some((w) => w.code === AvenxErrorCodes.COMPILER_CONTRACT_PURE_VIOLATION));
+
+  // 2. Determinism violation in an action body
+  const det = ContractValidator.validate(ComponentParser.parseHTML('<div>{{ n }}</div>'), {
+    name: 'DetAction',
+    contracts: new Set(['deterministic']),
+    methods: { roll: 'return Math.random();' },
+  });
+  assert.ok(det.warnings.some((w) => w.code === AvenxErrorCodes.COMPILER_CONTRACT_DETERMINISTIC_VIOLATION));
+
+  // 3. A clean action body raises no warning
+  const clean = ContractValidator.validate(ComponentParser.parseHTML('<div>{{ n }}</div>'), {
+    name: 'CleanAction',
+    contracts: new Set(['pure', 'deterministic']),
+    methods: { double: 'return n * 2;' },
+  });
+  assert.equal(clean.warnings.length, 0);
+});
