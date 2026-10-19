@@ -390,12 +390,12 @@ Parent components receive the child's exposed data by wrapping the transcluded s
 
 ### 3. Named Scoped Slots
 
-When using named slots together with scoped slot props, specify both the `name` attribute and `data-slot-props` on the `<template>` tag:
+When using named slots together with scoped slot props, set `slot` on the `<template>` tag to match the outlet's `name`, alongside `data-slot-props`:
 
 ```html
 <CardWidget>
   <!-- Consuming a named scoped slot -->
-  <template name="header" data-slot-props="headerProps">
+  <template slot="header" data-slot-props="headerProps">
     <h2>{{ headerProps.title }}</h2>
     <span class="count-pill">{{ headerProps.badgeCount }} new</span>
   </template>

@@ -22,6 +22,20 @@ const ENTRIES = [
 ];
 
 for (const { label, entry } of ENTRIES) {
+  test(`scoped slots survive the ${label}`, async ({ page, app }) => {
+    await app.open('fallback', { entry, hash: '#/scoped' });
+    await expect(page.getByTestId('scoped-heading')).toHaveText('Scoped slots');
+    await expect(page.getByTestId('slot-label')).toHaveText('Avenx');
+    await expect(page.getByTestId('slot-comparison')).toHaveText('true');
+    await expect(page.getByTestId('slot-entity')).toHaveText('&lt;');
+    await expect(page.getByTestId('slot-literal')).toHaveText('<em>literal</em>');
+    await expect(page.getByTestId('slot-literal').locator('em')).toHaveCount(0);
+    await expect(page.getByTestId('empty-slot').getByTestId('slot-fallback')).toHaveText('Fallback: Avenx');
+    await page.getByTestId('update-slot').first().click();
+    await expect(page.getByTestId('slot-label')).toHaveText('Updated');
+    await expect(page.getByTestId('slot-comparison')).toHaveText('false');
+  });
+
   test.describe(`fallback rendering (${label})`, () => {
     test.beforeEach(async ({ app }) => {
       await app.open('fallback', { entry });
