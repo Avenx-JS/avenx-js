@@ -1252,7 +1252,8 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/154056414?v=4",
       "profile": "https://github.com/sandeepj-git567",
       "contributions": [
-        "doc"
+        "doc",
+        "test"
       ]
     }
   ],
