@@ -200,7 +200,7 @@ If you have questions or want to contribute, feel free to reach out.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rishav-raj-genx"><img src="https://avatars.githubusercontent.com/u/258543216?v=4?s=100" width="100px;" alt="Rishav Raj"/><br /><sub><b>Rishav Raj</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=rishav-raj-genx" title="Code">💻</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=rishav-raj-genx" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://erfouni.ir"><img src="https://avatars.githubusercontent.com/u/232311059?v=4?s=100" width="100px;" alt="erfouni"/><br /><sub><b>erfouni</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Erfouni" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sandeepj-git567"><img src="https://avatars.githubusercontent.com/u/154056414?v=4?s=100" width="100px;" alt="Sandeep J"/><br /><sub><b>Sandeep J</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=sandeepj-git567" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sandeepj-git567"><img src="https://avatars.githubusercontent.com/u/154056414?v=4?s=100" width="100px;" alt="Sandeep J"/><br /><sub><b>Sandeep J</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=sandeepj-git567" title="Documentation">📖</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=sandeepj-git567" title="Tests">⚠️</a></td>
     </tr>
   </tbody>
 </table>
