@@ -66,6 +66,18 @@ try {
 
   console.log('  ✅ Nested elements format correctly');
 
+  // Standard HTML attributes and void elements remain intact alongside formatting.
+  const standardHtml =
+    '<div id="main" class="container" data-custom="value">' +
+    '<input type="checkbox" checked disabled />' +
+    '<p title="summary">Details</p>' +
+    '</div>\n';
+  const standardHtmlOutput = await roundTrip(standardHtml);
+  assert.ok(standardHtmlOutput.includes('checked disabled'), 'boolean attributes are preserved');
+  assert.ok(standardHtmlOutput.includes('data-custom="value"'), 'data attributes are preserved');
+
+  console.log('  ✅ Standard HTML attributes and nested markup remain valid');
+
   // Round-trip: formatting an already-formatted file is a no-op.
   const again = await format(nested);
   assert.strictEqual(again, nested);
@@ -129,6 +141,10 @@ try {
   const interpolations = '<p title="{{ user.name }}">{{ count + 1 }} / {{ user.name }}</p>';
   await roundTrip(interpolations);
 
+  const complexInterpolations =
+    '<div><p>{{ count + 1 * 2 }}</p><span data-label="{{ user.name }}">{{ user.bio }}</span></div>\n';
+  await roundTrip(complexInterpolations);
+
   console.log('  ✅ Event/style bindings and text/attribute interpolations retain their contents');
 
   for (const filepath of ['card.component.js', 'home.page.js']) {
@@ -149,6 +165,28 @@ try {
   assert.strictEqual(await format(formattedCss, cssOptions), formattedCss);
 
   console.log('  ✅ Standalone Avenx CSS formats declarations and is idempotent');
+
+  // Multiple CSS blocks interspersed with raw CSS outside Avenx blocks.
+  const mixedCss =
+    '.header { color: red; }\n' +
+    '<@global>\nbody { margin: 0; }\n</@global>\n' +
+    '.footer { display: flex; }\n' +
+    '<@css>\ncard { padding: 4px; }\n</@css>\n';
+  const formattedMixedCss = await format(mixedCss, cssOptions);
+  const expectedMixedCss =
+    '.header {\n  color: red;\n}\n' +
+    '<@global>\n  body {\n    margin: 0;\n  }\n</@global>\n\n' +
+    '.footer {\n  display: flex;\n}\n' +
+    '<@css>\n  card {\n    padding: 4px;\n  }\n</@css>\n\n';
+  assert.strictEqual(formattedMixedCss, expectedMixedCss, 'mixed raw and block CSS formats declarations');
+  assert.ok(!/avenx-|data-avenx-/.test(formattedMixedCss), 'no placeholders in mixed CSS');
+  assert.strictEqual(
+    await format(formattedMixedCss, cssOptions),
+    formattedMixedCss,
+    'mixed CSS formatting is idempotent',
+  );
+
+  console.log('  ✅ Multiple CSS blocks and raw CSS outside Avenx blocks format correctly and are idempotent');
 
   console.log('All Avenx Prettier plugin tests passed!');
 } catch (error) {
