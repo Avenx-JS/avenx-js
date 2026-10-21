@@ -211,6 +211,52 @@ function runTests() {
   });
   assert.strictEqual(warningsIdUnique.length, 0);
 
+  // 7. Test warning when .component.js is a JavaScript module instead of a template (#1517)
+  console.log('  Testing warning on JavaScript module as component template (#1517)...');
+  const warningsJsModule = captureWarnings(() => {
+    cp.extractTemplate(
+      "export const x = 1;export function hello() { return 'hi'; }",
+      {},
+      'HelpersComp',
+      'helpers.component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsJsModule.length, 1);
+  assert.ok(warningsJsModule[0].includes('AVX_W58'));
+  assert.ok(warningsJsModule[0].includes('helpers.component.js'));
+  assert.ok(warningsJsModule[0].includes('single-file component template was expected'));
+
+  const warningsClassModule = captureWarnings(() => {
+    cp.extractTemplate(
+      'export default class T extends AvenxComponent { constructor() {} }',
+      {},
+      'ClassComp',
+      'class-comp.component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsClassModule.length, 1);
+  assert.ok(warningsClassModule[0].includes('AVX_W58'));
+
+  // Negative tests: templates with import/export words in text/expressions or starting with markup
+  const warningsNegative = captureWarnings(() => {
+    cp.extractTemplate(
+      '<div>Please import your file or export data: {{ isExport ? \'export\' : \'import\' }}</div>',
+      {},
+      'NormalComp',
+      'normal.component.js',
+      { isExport: true },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsNegative.length, 0);
+
   console.log('  ✅ Compile-time Static Validation tests passed!');
 }
 

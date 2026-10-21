@@ -426,6 +426,7 @@ const app = new AvenxApp({
 | `[AVX_C29]` | <{0}> writes a dynamic attribute binding whose {1} is an interpolation. | **Identifier:** `COMPILER_INTERPOLATED_DYNAMIC_ATTRIBUTE`.<br />**Cause:** A dynamic attribute binding was written as `:[key]="{{ value }}"` or `:[{{ key }}]="value"`. Both slots of `:[name]="value"` are expressions, so the braces become part of the expression: it resolves to nothing and the attribute is never set, in development and in production alike.<br />**Resolution:** Drop the braces: `:[key]="value"`. To interpolate into an attribute whose name is fixed, write an ordinary attribute instead: `data-tone="{{ value }}"`. See [Dynamic attributes](/api-reference/utils/). |
 | `[AVX_C30]` | Unhandled template AST node type "{0}"{1} in {2}. | **Identifier:** `COMPILER_UNHANDLED_AST_NODE`.<br />**Cause:** A compiler pass over the template AST reached a node type it has no branch for — normally because a change to the template parser introduced a node kind an existing pass was never taught to read.<br />**Resolution:** Add an explicit branch for the reported node type to the pass named in the message. This is an internal invariant rather than a mistake in your template: a node type with no branch would otherwise be mis-handled silently and emit output that looks valid, so the build stops instead. |
 | `[AVX_W52]` | <{0}> uses the inline event handler "{1}". | **Identifier:** `COMPILER_INLINE_EVENT_ATTRIBUTE`.<br />**Cause:** An HTML element has a static inline handler (`onclick="doThing()"`). It bypasses the event system and does not run under a strict CSP.<br />**Resolution:** Prefer `@click="doThing()"`. Kept as a capability; silence with `"warnings": { "AVX_W52": "off" }`. |
+| `[AVX_W58]` | "{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected. | **Identifier:** `COMPILER_JS_MODULE_AS_TEMPLATE`.<br />**Cause:** A `.component.js` file contains a JavaScript module (export, import, class, etc.) instead of component markup.<br />**Resolution:** Use `.component.js` only for single-file component templates, or rename ordinary JavaScript files to `.js`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
 | `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
@@ -3041,6 +3042,48 @@ Declaring the property in `<state>` so it is reactive:
 
 <div>{{ count }} (Total: {{ total }})</div>
 ```
+
+### AVX_W58 — COMPILER_JS_MODULE_AS_TEMPLATE
+
+**Warning Message**
+
+```text
+"{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected.
+```
+
+**Cause:** A file named `.component.js` contains a JavaScript module instead of single-file component template markup. In Avenx-JS, `.component.js` files are compiled as single-file components where top-level content is parsed as template markup. When a standard JavaScript module (such as a helper module or class-based component) is saved under a `.component.js` filename, the compiler reads the JavaScript code as raw template text and renders it verbatim into the DOM.
+
+Common reasons this happens:
+- Renaming or mis-saving an ordinary JavaScript helper (e.g. `helpers.js` saved as `helpers.component.js`).
+- Migrating a class-based component into a project that uses single-file components.
+- Following an example for class-based components and inadvertently giving it a `.component.js` filename.
+
+**Resolution:**
+1. If the file is a utility or helper module, rename it to end in `.js` (e.g., `helpers.js`).
+2. If the file is intended to be a single-file component, replace the JavaScript module code with component markup (HTML elements and Avenx declaration tags like `<state>`, `<computed>`, `<action>`).
+3. If using class-based components, save them as `.js` files and register them manually with `app.register()`.
+
+**Incorrect**
+
+```javascript
+// src/components/math.component.js
+export const add = (a, b) => a + b;
+export function multiply(a, b) {
+  return a * b;
+}
+```
+
+**Correct**
+
+```html
+<!-- src/components/calculator.component.js -->
+<state a="0" b="0" />
+
+<div>
+  <p>Result: {{ a + b }}</p>
+</div>
+```
+
 
 ## Runtime Codes (`AVX_R*`)
 
