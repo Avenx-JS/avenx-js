@@ -55,10 +55,7 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-watch');
     const testCompPath = path.join(FIXTURE_DIR, 'src', 'components', 'card.component.js');
     fs.writeFileSync(
       testCompPath,
-      `export default {
-  name: 'CardComponent',
-  template: '<div>{{ invalidVar }}</div>'
-};`
+      '<div>{{ invalidVar }}</div>'
     );
 
     // Wait for watch debounce timeout (100ms)
@@ -72,10 +69,7 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-watch');
     fs.writeFileSync(
       testCompPath,
       `<state validVar="OK" />
-export default {
-  name: 'CardComponent',
-  template: '<div>{{ validVar }}</div>'
-};`
+<div>{{ validVar }}</div>`
     );
 
 

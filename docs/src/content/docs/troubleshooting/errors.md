@@ -435,6 +435,7 @@ const app = new AvenxApp({
 | `[AVX_W54]` | Unterminated interpolation in template of {0}: {1} | **Identifier:** `COMPILER_UNTERMINATED_INTERPOLATION`.<br />**Cause:** A template opens an interpolation with `{{` but never closes it with `}}`. The unmatched expression is emitted as literal text, so visitors can see its braces and source instead of the intended value.<br />**Resolution:** Close the interpolation with `}}`, or escape the braces when they are intended as text. Silence with `"warnings": { "AVX_W54": "off" }` in `avenx.config.json` only when the literal output is intentional. |
 | `[AVX_W56]` | A template renders a component that the application never registers. | **Identifier:** `ATLAS_UNREGISTERED_COMPONENT`.<br />**Cause:** A page or component uses a component tag that was not registered with the app. Pages under `src/pages` are auto-registered by the compiler, but components are not. The runtime may also report `AVX_W13` when the page opens; the missing component renders as an empty element.<br />**Resolution:** Import the component and call `app.register("ComponentName", ComponentName)` in `src/main.app.js` (using its real path and name). Silence with `"warnings": { "AVX_W56": "off" }` in `avenx.config.json` only if the missing component is deliberate. |
 | `[AVX_W52]` | <{0}> uses the inline event handler "{1}". | **Identifier:** `COMPILER_INLINE_EVENT_ATTRIBUTE`.<br />**Cause:** An HTML element has a static inline handler (`onclick="doThing()"`). It bypasses the event system and does not run under a strict CSP.<br />**Resolution:** Prefer `@click="doThing()"`. Kept as a capability; silence with `"warnings": { "AVX_W52": "off" }`. |
+| `[AVX_W63]` | "{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected. | **Identifier:** `COMPILER_JS_MODULE_AS_TEMPLATE`.<br />**Cause:** A `.component.js` file contains a JavaScript module (export, import, class, etc.) instead of component markup.<br />**Resolution:** Use `.component.js` only for single-file component templates, or rename ordinary JavaScript files to `.js`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
 | `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
@@ -3103,7 +3104,7 @@ The variable is set neither in the environment nor in .env. Fix the name, or set
 
 This typically happens because:
 
-- The variable name is misspelled (`process.env.AVX_PUBLIC_API_URLL` instead of `process.env.AVX_PUBLIC_API_URL`). When a similarly named variable is set, the warning suggests it.
+- The variable name is misspelled (`process.env.AVX_PUBLIC_API_URLL` instead of `process.env.AVX_PUBLIC_API_URL`). When a practical variable is set, the warning suggests it.
 - The variable is in a local `.env` but missing from the CI or deployment environment the build ran in.
 
 The warning is reported once per variable per file.
@@ -3140,6 +3141,47 @@ chain is checked independently, so `@touchstart.passive.capture` is accepted.
 
 Run `avenx explain AVX_W61` for details. To suppress this warning intentionally,
 set `"warnings": { "AVX_W61": "off" }` in `avenx.config.json`.
+
+### AVX_W63 — COMPILER_JS_MODULE_AS_TEMPLATE
+
+**Warning Message**
+
+```text
+"{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected.
+```
+
+**Cause:** A file named `.component.js` contains a JavaScript module instead of single-file component template markup. In Avenx-JS, `.component.js` files are compiled as single-file components where top-level content is parsed as template markup. When a standard JavaScript module (such as a helper module or class-based component) is saved under a `.component.js` filename, the compiler reads the JavaScript code as raw template text and renders it verbatim into the DOM.
+
+Common reasons this happens:
+- Renaming or mis-saving an ordinary JavaScript helper (e.g. `helpers.js` saved as `helpers.component.js`).
+- Migrating a class-based component into a project that uses single-file components.
+- Following an example for class-based components and inadvertently giving it a `.component.js` filename.
+
+**Resolution:**
+1. If the file is a utility or helper module, rename it to end in `.js` (e.g., `helpers.js`).
+2. If the file is intended to be a single-file component, replace the JavaScript module code with component markup (HTML elements and Avenx declaration tags like `<state>`, `<computed>`, `<action>`).
+3. If using class-based components, save them as `.js` files and register them manually with `app.register()`.
+
+**Incorrect**
+
+```javascript
+// src/components/math.component.js
+export const add = (a, b) => a + b;
+export function multiply(a, b) {
+  return a * b;
+}
+```
+
+**Correct**
+
+```html
+<!-- src/components/calculator.component.js -->
+<state a="0" b="0" />
+
+<div>
+  <p>Result: {{ a + b }}</p>
+</div>
+```
 
 ## Runtime Codes (`AVX_R*`)
 
