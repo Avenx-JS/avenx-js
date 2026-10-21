@@ -19,7 +19,6 @@ const COMPONENT_CSS_PATH =
 
 /**
  * Reads a file from the scratch project.
- *
  * @param {string} projectDir - Scratch project directory.
  * @param {string} relativePath - Project-relative path.
  * @returns {Promise<string>} File contents.
@@ -33,7 +32,6 @@ async function readProjectFile(projectDir, relativePath) {
 
 /**
  * Writes a file in the scratch project.
- *
  * @param {string} projectDir - Scratch project directory.
  * @param {string} relativePath - Project-relative path.
  * @param {string} content - New contents.
@@ -49,7 +47,6 @@ async function writeProjectFile(projectDir, relativePath, content) {
 
 /**
  * Creates a reload counter that survives browser reloads.
- *
  * @param {import('@playwright/test').Page} page - Browser page.
  * @returns {Promise<number>} Current reload count.
  */

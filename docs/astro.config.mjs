@@ -91,6 +91,7 @@ export default defineConfig({
 						{ label: 'ESLint Template Validation', slug: 'guides/eslint' },
 						{ label: 'Deployment & Production Builds', slug: 'guides/deployment' },
 						{ label: 'State Persistence (@avenx/persistence)', slug: 'guides/persistence' },
+						{ label: 'Charts (@avenx/charts)', slug: 'guides/charts' },
 						{ label: 'Internationalization (@avenx/i18n)', slug: 'guides/i18n' },
 					],
 				},

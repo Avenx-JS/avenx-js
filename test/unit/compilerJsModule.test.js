@@ -1,7 +1,7 @@
 /**
  * @file compilerJsModule.test.js
  * @description Verifies that a JavaScript module saved under a .component.js name
- * is reported with AVX_W58 at build time rather than rendered as literal template text (#1517).
+ * is reported with AVX_W63 at build time rather than rendered as literal template text (#1517).
  */
 import assert from 'node:assert';
 import fs from 'node:fs';
@@ -39,14 +39,14 @@ try {
   const cp = new ComponentParser(sp);
 
   // 1. Diagnostic registration checks
-  console.log('  Checking AVX_W58 code and catalogue registration...');
-  assert.strictEqual(AvenxErrorCodes.COMPILER_JS_MODULE_AS_TEMPLATE, 'AVX_W58');
+  console.log('  Checking AVX_W63 code and catalogue registration...');
+  assert.strictEqual(AvenxErrorCodes.COMPILER_JS_MODULE_AS_TEMPLATE, 'AVX_W63');
   assert.ok(AvenxErrorMessages[AvenxErrorCodes.COMPILER_JS_MODULE_AS_TEMPLATE]);
   assert.ok(AvenxErrorMessages[AvenxErrorCodes.COMPILER_JS_MODULE_AS_TEMPLATE].includes('single-file component template was expected'));
 
-  const diagnostic = getDiagnostic('AVX_W58');
-  assert.ok(diagnostic, 'AVX_W58 must be present in the diagnostic catalogue');
-  assert.strictEqual(diagnostic.code, 'AVX_W58');
+  const diagnostic = getDiagnostic('AVX_W63');
+  assert.ok(diagnostic, 'AVX_W63 must be present in the diagnostic catalogue');
+  assert.strictEqual(diagnostic.code, 'AVX_W63');
   assert.strictEqual(diagnostic.name, 'CompilerJsModuleAsTemplate');
   assert.strictEqual(diagnostic.severity, 'warning');
   assert.strictEqual(diagnostic.category, 'compiler');
@@ -60,7 +60,7 @@ try {
     cp.parse(plainJsFile);
   });
 
-  assert.ok(run1Warnings.some((w) => w.includes('AVX_W58')), 'Expected AVX_W58 for plain JS module');
+  assert.ok(run1Warnings.some((w) => w.includes('AVX_W63')), 'Expected AVX_W63 for plain JS module');
   assert.ok(run1Warnings.some((w) => w.includes('helpers.component.js')), 'Warning must name the file');
   assert.ok(
     run1Warnings.some((w) => w.includes('single-file component template was expected')),
@@ -79,7 +79,7 @@ try {
     cp.parse(classCompFile);
   });
 
-  assert.ok(run2Warnings.some((w) => w.includes('AVX_W58')), 'Expected AVX_W58 for class-based component');
+  assert.ok(run2Warnings.some((w) => w.includes('AVX_W63')), 'Expected AVX_W63 for class-based component');
   assert.ok(run2Warnings.some((w) => w.includes('classComp.component.js')), 'Warning must name the file');
   assert.ok(
     run2Warnings.some((w) => w.includes('single-file component template was expected')),
@@ -98,7 +98,7 @@ try {
     cp.parse(bareClassFile);
   });
 
-  assert.ok(run3Warnings.some((w) => w.includes('AVX_W58')), 'Expected AVX_W58 for bare class component');
+  assert.ok(run3Warnings.some((w) => w.includes('AVX_W63')), 'Expected AVX_W63 for bare class component');
 
   // 5. Negative Case 1: Template legitimately beginning with declaration tags or plain markup
   console.log('  Testing negative case: template starting with <state>, <computed>, <action>, etc. or plain markup...');
@@ -112,7 +112,7 @@ try {
     cp.parse(validSfcFile);
   });
 
-  assert.ok(!sfcWarnings.some((w) => w.includes('AVX_W58')), 'Valid SFC must NOT trigger AVX_W58');
+  assert.ok(!sfcWarnings.some((w) => w.includes('AVX_W63')), 'Valid SFC must NOT trigger AVX_W63');
 
   // Control: plain markup <div><button>OK</button></div>
   const plainMarkupFile = path.join(workDir, 'plainMarkup.component.js');
@@ -122,7 +122,7 @@ try {
     cp.parse(plainMarkupFile);
   });
 
-  assert.ok(!markupWarnings.some((w) => w.includes('AVX_W58')), 'Plain markup must NOT trigger AVX_W58');
+  assert.ok(!markupWarnings.some((w) => w.includes('AVX_W63')), 'Plain markup must NOT trigger AVX_W63');
 
   // 6. Negative Case 2: Template containing words "import" or "export" in text or expressions
   console.log('  Testing negative case: template containing "import" or "export" in text or expressions...');
@@ -137,8 +137,8 @@ try {
   });
 
   assert.ok(
-    !wordsWarnings.some((w) => w.includes('AVX_W58')),
-    'Template with "import" or "export" in text/expressions must NOT trigger AVX_W58',
+    !wordsWarnings.some((w) => w.includes('AVX_W63')),
+    'Template with "import" or "export" in text/expressions must NOT trigger AVX_W63',
   );
 
   console.log('  ✅ JS Module as .component.js Detection tests passed!');

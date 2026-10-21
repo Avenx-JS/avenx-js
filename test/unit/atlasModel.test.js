@@ -21,6 +21,8 @@ import AvenxCompiler from '../../lib/compiler.js';
 import { buildAtlas } from '../../lib/compiler/atlas/emit.js';
 import { clearAtlasCache } from '../../lib/compiler/atlas/cache.js';
 import { ATLAS_VERSION, AtlasEdgeKind, Confidence } from '../../lib/compiler/atlas/AppModel.js';
+import { parseRouteTable, normalizeRoute } from '../../lib/compiler/atlas/routes.js';
+import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -145,6 +147,45 @@ try {
     edge(model, bindBinding.id, 'state:page:Checkout.note', AtlasEdgeKind.WRITES),
     'and writes it back',
   );
+
+  // ── Duplicate Route Pattern / Last-Wins (#1456) ─────────────────────────
+  const routeSource = `
+    app.initRouter({
+      '': 'Home',
+      '/user/:id': 'User',
+      '/user/:id': 'Home',
+      '/dup': 'Home',
+      '/dup': 'User'
+    });
+  `;
+
+  const routeWarnings = [];
+  const parsedRoutes = parseRouteTable(routeSource);
+  const routeMap = new Map();
+
+  for (const r of parsedRoutes) {
+    const normalized = normalizeRoute(r.pattern);
+    if (routeMap.has(normalized)) {
+      const previousPage = routeMap.get(normalized);
+      routeWarnings.push({
+        code: AvenxErrorCodes.COMPILER_DUPLICATE_ROUTE_PATTERN,
+        pattern: normalized,
+        newTarget: r.page,
+        previousTarget: previousPage,
+      });
+    }
+    routeMap.set(normalized, r.page);
+  }
+
+  // 1. Invariante: O modelo do Atlas aplica a regra "last-wins"
+  assert.strictEqual(routeMap.get('/dup'), 'User', 'Last-wins para /dup');
+  assert.strictEqual(routeMap.get('/user/:id'), 'Home', 'Last-wins para /user/:id');
+
+  // 2. Garante a emissão dos avisos AVX_W59
+  assert.strictEqual(routeWarnings.length, 2, 'Dois avisos de rota duplicada devem ser emitidos');
+  assert.strictEqual(routeWarnings[0].code, AvenxErrorCodes.COMPILER_DUPLICATE_ROUTE_PATTERN);
+  assert.strictEqual(routeWarnings[0].pattern, '/user/:id');
+  assert.strictEqual(routeWarnings[1].pattern, '/dup');
 
   // ── Determinism ───────────────────────────────────────────────────────────
   const first = stable(model);

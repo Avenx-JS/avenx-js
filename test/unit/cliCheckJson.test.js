@@ -61,10 +61,7 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-json');
     const invalidCompPath = path.join(FIXTURE_DIR, 'src', 'components', 'header.component.js');
     fs.writeFileSync(
       invalidCompPath,
-      `export default {
-  name: 'HeaderComponent',
-  template: '<div>Hello {{ undeclaredUser }}</div>'
-};`
+      '<div>Hello {{ undeclaredUser }}</div>'
     );
 
     const warningReport = checkProject(mockCli, ['-j']);
@@ -84,18 +81,12 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-json');
     // user-card.component.js -> UserCard.
     fs.writeFileSync(
       path.join(FIXTURE_DIR, 'src', 'components', 'user-card.component.js'),
-      `export default {
-        name: 'UserCard',
-        template: '<div>card</div>'
-      };`
+      '<div>card</div>'
     );
     // A component that references it with a typo.
     fs.writeFileSync(
       path.join(FIXTURE_DIR, 'src', 'components', 'home.component.js'),
-      `export default {
-        name: 'Home',
-        template: '<div><UserCrad /></div>'
-      };`
+      '<div><UserCrad /></div>'
     );
 
     const unresolvedReport = checkProject(mockCli, ['--json']);

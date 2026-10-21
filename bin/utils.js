@@ -22,6 +22,46 @@ export function parseName(inputName) {
 }
 
 /**
+ * Validates that a scaffold name is a valid identifier / kebab / snake token
+ * and does not attempt path traversal or corrupt JS files.
+ */
+export function validateComponentName(name) {
+  if (!name || typeof name !== 'string') {
+    return {
+      valid: false,
+      reason: 'Name must not be empty. Example: "my-component" or "MyComponent".'
+    };
+  }
+
+  // Refuse whitespace
+  if (/\s/.test(name)) {
+    return {
+      valid: false,
+      reason: `Name "${name}" cannot contain whitespace. Example: "my-component" or "MyComponent".`
+    };
+  }
+
+  // Refuse leading digits
+  if (/^[0-9]/.test(name)) {
+    return {
+      valid: false,
+      reason: `Name "${name}" cannot start with a number. Example: "my-component" or "MyComponent".`
+    };
+  }
+
+  // Refuse path traversal, slashes, dots, or invalid identifier characters
+  // Only allow letters, digits, dashes, and underscores, starting with an ASCII letter
+  if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) {
+    return {
+      valid: false,
+      reason: `Name "${name}" contains invalid characters or path separators. Example: "my-component" or "MyComponent".`
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
  * Checks if git status is clean or prompts user if there are unstaged changes.
  *
  * Scoped to the project directory rather than to whatever the shell's working
@@ -205,7 +245,7 @@ export async function promptQuestion(query, defaultValue, validator = null, sess
  */
 export function readTemplate(baseDir, config, frameworkDir, subfolder, filename, templateName = null) {
   const dirs = [config?.templatesDir || '.avenxtemplates', 'templates'].filter(
-    (dir, idx, self) => dir && self.indexOf(dir) === idx
+    (dir, idx, self) => dir && self.indexOf(dir) === idx,
   );
 
   if (templateName) {
@@ -314,7 +354,9 @@ function createRecursiveWatcherFallback(rootPath, callback) {
           const relativeDir = path.relative(rootPath, currentDir);
           const relativeFile = filename
             ? (relativeDir ? path.join(relativeDir, filename) : filename).replace(/\\/g, '/')
-            : (relativeDir ? relativeDir.replace(/\\/g, '/') : '');
+            : relativeDir
+              ? relativeDir.replace(/\\/g, '/')
+              : '';
 
           const fullPath = filename ? path.join(currentDir, filename) : currentDir;
           try {
@@ -361,4 +403,3 @@ function createRecursiveWatcherFallback(rootPath, callback) {
     },
   };
 }
-

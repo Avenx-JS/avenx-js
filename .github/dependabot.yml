@@ -1,0 +1,32 @@
+# Dependabot: keeps our development tooling up to date.
+# Runs once a month (first of the month, UTC) and only looks at devDependencies.
+# Runtime dependencies are intentionally left out so published version ranges
+# stay under manual control.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directories:
+      # avenx-core: eslint, prettier, playwright, jsdoc, esbuild, terser, c8, ...
+      - "/"
+      # Vite plugin and its example app: vite
+      - "/plugins/avenx-vite"
+      - "/plugins/avenx-vite/example"
+    schedule:
+      interval: monthly
+    allow:
+      - dependency-type: development
+    # Bump the range in package.json, not just the lockfile.
+    versioning-strategy: increase
+    # One PR per month for all minor/patch bumps; majors get their own PR
+    # so breaking tooling changes can be reviewed on their own.
+    groups:
+      dev-dependencies:
+        applies-to: version-updates
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+      include: scope

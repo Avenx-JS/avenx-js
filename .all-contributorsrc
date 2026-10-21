@@ -997,7 +997,8 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/269666517?v=4",
       "profile": "https://github.com/Kiran2006-kn",
       "contributions": [
-        "doc"
+        "doc",
+        "code"
       ]
     },
     {
@@ -1188,6 +1189,71 @@
       "profile": "https://github.com/AK-Lmn",
       "contributions": [
         "doc"
+      ]
+    },
+    {
+      "login": "JANANI-RS06",
+      "name": "JANANI-RS06",
+      "avatar_url": "https://avatars.githubusercontent.com/u/223864652?v=4",
+      "profile": "https://www.linkedin.com/in/rs-janani-47b882326/?isSelfProfile=true",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "sricharanreddycheruku",
+      "name": "Cheruku Sri Charan Reddy ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/185475071?v=4",
+      "profile": "https://github.com/sricharanreddycheruku",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jay23606",
+      "name": "Jay",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4602056?v=4",
+      "profile": "https://github.com/jay23606",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "CreedTech",
+      "name": "Ayodele Ayoola",
+      "avatar_url": "https://avatars.githubusercontent.com/u/76216787?v=4",
+      "profile": "https://ayodeleayoola.com",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "rishav-raj-genx",
+      "name": "Rishav Raj",
+      "avatar_url": "https://avatars.githubusercontent.com/u/258543216?v=4",
+      "profile": "https://github.com/rishav-raj-genx",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "Erfouni",
+      "name": "erfouni",
+      "avatar_url": "https://avatars.githubusercontent.com/u/232311059?v=4",
+      "profile": "https://erfouni.ir",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "sandeepj-git567",
+      "name": "Sandeep J",
+      "avatar_url": "https://avatars.githubusercontent.com/u/154056414?v=4",
+      "profile": "https://github.com/sandeepj-git567",
+      "contributions": [
+        "doc",
+        "test"
       ]
     }
   ],

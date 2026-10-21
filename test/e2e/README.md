@@ -40,6 +40,9 @@ anything a test can see was put there by the framework.
 ```text
 test/e2e/
   apps/           real Avenx projects, one per feature cluster
+    browser-apis/    browser API access
+    fallback/        fallback renderer and boundary behaviour
+    security/        dynamic attribute names and srcdoc handling
     counter/        state, computed values, actions, bound attributes
     rendering/      interpolation, escaping, data-ax-show, keyed lists
     components/     nesting, props from parent state, slot projection
@@ -48,7 +51,7 @@ test/e2e/
     routing/        hash routes, params, query, wildcard, guards, a bridge
     forms/          data-ax-bind across input types, focus retention
     defer/          <@defer> and its triggers
-    guard-gaps/     pins two guard bugs; its bundle is expected not to parse
+    guard-gaps/     regression tests for previously fixed guard bugs
   specs/          tests, grouped by the behaviour they describe
     smoke/ reactivity/ rendering/ components/ events/
     styling/ routing/ forms/ performance/ build/
@@ -151,22 +154,23 @@ product running in a browser.
 
 ## Current coverage
 
-92 tests in 13 files. 86 assert behaviour that works; 6 are pinned failures
-documenting framework bugs, described below.
+148 tests across 23 spec files. All tests are expected to pass; the six previously pinned failures have been fixed.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
-| `smoke/` | 11 | Compiled boot, first render, per-app boot check, server 404s |
-| `reactivity/` | 7 | State to DOM, computed values, bound boolean attributes |
-| `rendering/` | 9 | Keyed lists, node identity on reorder, empty branch, `data-ax-show`, escaping |
-| `components/` | 9 | Nesting, props from state, reactive props, default and named slots |
-| `events/` | 7 | Bindings, bubbling, `.prevent`, `.stop`, `.once`, `.self`, `.enter` |
-| `styling/` | 6 | Scoped CSS via computed style, cross-component isolation, `@def` |
-| `routing/` | 18 | Hash routes, params, query, wildcard, deep links, history, guards, bridges |
-| `forms/` | 12 | `data-ax-bind` across every input type, focus, caret and selection retention |
-| `performance/` | 6 | `<@defer>` with interaction, idle, timer and visible triggers |
-| `build/` | 7 | Production and development runtime parity |
-| `rendering/fallback-renderer` | 10 | `<@suspense>`, `<@errorBoundary>`, `<@deadlock>` on both bundles |
+| `actions/` | 6 | Browser APIs |
+| `build/` | 4 | Production and development runtime parity |
+| `components/` | 12 | Component composition |
+| `events/` | 12 | Event bindings, modifiers and loop scope |
+| `forms/` | 12 | Focus retention and two-way binding |
+| `performance/` | 6 | `<@defer>` triggers |
+| `reactivity/` | 19 | Compiled rendering, fine-grained updates and state-to-DOM |
+| `rendering/` | 26 | Fallback renderer, lists, conditionals and state initialisers |
+| `routing/` | 21 | Navigation, guards and guard regression tests |
+| `security/` | 5 | Dynamic attribute names and `srcdoc` |
+| `serve/` | 9 | Development server |
+| `smoke/` | 4 | Application boot |
+| `styling/` | 12 | Attribute content and scoped CSS |
 
 `<@suspense>`, `<@errorBoundary>` and `<@deadlock>` are covered by
 `rendering/fallback-renderer.spec.js`, against both the production and the
@@ -178,7 +182,7 @@ for content.
 
 Not yet covered, in rough priority order: resources, rewind rollback, virtual
 list windowing, transitions, keep-alive, provide/inject, declarative form
-validation, the dev server and live reload, and trace capture under
+validation, live reload, and trace capture under
 `avenx serve --trace`.
 
 ## The failure mode that has no symptom

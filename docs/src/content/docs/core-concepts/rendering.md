@@ -249,6 +249,7 @@ Falls back today:
 
 | Construct | Why |
 | --- | --- |
+| Scoped slot outlets and authored `<template>` elements | The scoped-slot renderer owns the exposed props and template content. Inert template contents cannot use the enclosing program's DOM binding paths. |
 | `<@suspense>`, `<@errorBoundary>` | Each replaces a subtree in response to a thrown promise or a thrown error, which the block runtime has no equivalent for yet. |
 | `<@deadlock>` | Same, plus boundary state the scheduler reaches into. |
 | Transitions | Enter/leave hooks are driven by the patcher. |

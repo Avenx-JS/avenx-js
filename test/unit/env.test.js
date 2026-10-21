@@ -4,9 +4,35 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseEnv, loadEnv, replaceEnvVariables } from '../../lib/env.js';
 import AvenxCompiler from '../../lib/compiler.js';
+import { logger } from '../../lib/core/runtime/AvenxLogger.js';
+import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
+import { getDiagnostic } from '../../lib/core/diagnostics/catalogue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Runs `fn` and returns the text of every warning the logger received.
+ * @param {Function} fn - The work to run.
+ * @returns {string[]} The warnings, in order.
+ */
+function warningsFrom(fn) {
+  const seen = [];
+  const previous = logger.config.transports;
+  logger.configure({
+    transports: [
+      (level, formatted) => {
+        if (level === 'warn') seen.push(Array.isArray(formatted) ? formatted.join(' ') : String(formatted));
+      },
+    ],
+  });
+  try {
+    fn();
+  } finally {
+    logger.configure({ transports: previous });
+  }
+  return seen;
+}
 
 try {
   console.log('🧪 Testing Environment Variable Parser (parseEnv)...');
@@ -119,6 +145,63 @@ try {
 
   console.log('✅ replaceEnvVariables tests passed!');
 
+  console.log('🧪 Testing AVX_W60 (undefined AVX_PUBLIC_* reference)...');
+  process.env.AVX_PUBLIC_API_URL = 'https://api.example.com';
+
+  // Unset: one warning per variable, naming the variable and the file, with a
+  // suggestion when a similarly named variable is set.
+  const typoSource = `
+    const a = process.env.AVX_PUBLIC_API_URLL;
+    const b = process.env['AVX_PUBLIC_API_URLL'];
+    const c = process.env.AVX_PUBLIC_NEVER_SET_ANYWHERE;
+  `;
+  let typoOutput;
+  const unsetWarnings = warningsFrom(() => {
+    typoOutput = replaceEnvVariables(typoSource, 'src/api.bridge.js');
+  });
+  assert.ok(typoOutput.includes('const a = undefined;'), 'the reference is still inlined as undefined');
+  assert.strictEqual(unsetWarnings.length, 2, 'one warning per unset variable, not per reference');
+  assert.ok(unsetWarnings[0].includes('AVX_W60'));
+  assert.ok(unsetWarnings[0].includes('process.env.AVX_PUBLIC_API_URLL'), 'names the variable');
+  assert.ok(unsetWarnings[0].includes('src/api.bridge.js'), 'names the file');
+  assert.ok(unsetWarnings[0].includes('Did you mean "AVX_PUBLIC_API_URL"?'), 'suggests the close match');
+  assert.ok(unsetWarnings[0].includes('avenx env'), 'points at avenx env');
+  assert.ok(unsetWarnings[1].includes('process.env.AVX_PUBLIC_NEVER_SET_ANYWHERE'));
+
+  // Set: no warning.
+  const setWarnings = warningsFrom(() => {
+    replaceEnvVariables('const a = process.env.AVX_PUBLIC_API_URL;', 'src/api.bridge.js');
+  });
+  assert.deepStrictEqual(setWarnings, [], 'a build where every variable is set emits no AVX_W60');
+
+  // Without a file (a re-read of a file already reported): no warning.
+  const noFileWarnings = warningsFrom(() => {
+    replaceEnvVariables(typoSource);
+  });
+  assert.deepStrictEqual(noFileWarnings, [], 'callers that omit the file are not reported');
+
+  // Severity overrides apply like any other warning.
+  const offWarnings = warningsFrom(() => {
+    replaceEnvVariables(typoSource, 'src/api.bridge.js', { warnings: { AVX_W60: 'off' } });
+  });
+  assert.deepStrictEqual(offWarnings, [], '"off" silences AVX_W60');
+  assert.throws(
+    () => replaceEnvVariables(typoSource, 'src/api.bridge.js', { warnings: { AVX_W60: 'error' } }),
+    /AVX_W60/,
+    '"error" escalates AVX_W60',
+  );
+
+  delete process.env.AVX_PUBLIC_API_URL;
+
+  // Registered, and answered by `avenx explain`.
+  assert.strictEqual(AvenxErrorCodes.COMPILER_UNDEFINED_PUBLIC_ENV, 'AVX_W60');
+  const entry = getDiagnostic('AVX_W60');
+  assert.ok(entry && entry.code === 'AVX_W60', 'AVX_W60 is in the catalogue');
+  assert.ok(entry.summary && entry.causes.length > 0 && entry.remedies.length > 0, 'AVX_W60 is documented');
+  assert.strictEqual(getDiagnostic('W60').code, 'AVX_W60', 'the short form resolves too');
+
+  console.log('✅ AVX_W60 tests passed!');
+
   console.log('🧪 Testing AvenxCompiler environment integration...');
   // Verify that the compiler exposes publicEnv and replaces it in compilation
   const compilerTestDir = path.join(__dirname, 'temp_compiler_env_test');
@@ -158,9 +241,29 @@ try {
   // The entry module is assembled from main.app.js with the developer's own
   // imports intact; environment substitution happens on the way in.
   const virtualModules = new Map();
-  const entryId = compiler.buildEntryModule(virtualModules, []);
+  let entryId;
+  const entryWarnings = warningsFrom(() => {
+    entryId = compiler.buildEntryModule(virtualModules, []);
+  });
   const processedMain = virtualModules.get(entryId);
   assert.ok(processedMain.includes('const secret = "success_injection";'));
+  assert.ok(!entryWarnings.some((w) => w.includes('AVX_W60')), 'no AVX_W60 when the variable is set');
+
+  // An unset reference in main.app.js is reported against that file.
+  fs.writeFileSync(
+    path.join(srcDir, 'main.app.js'),
+    `
+    const app = new AvenxApp();
+    const missing = process.env.AVX_PUBLIC_COMPILER_MISSING;
+  `,
+  );
+  const missingWarnings = warningsFrom(() => {
+    compiler.buildEntryModule(new Map(), []);
+  });
+  const w60 = missingWarnings.filter((w) => w.includes('AVX_W60'));
+  assert.strictEqual(w60.length, 1, 'the build reports the unset variable once');
+  assert.ok(w60[0].includes('AVX_PUBLIC_COMPILER_MISSING'));
+  assert.ok(w60[0].includes(path.join('src', 'main.app.js')), 'the warning names main.app.js');
 
   // Clean up
   fs.rmSync(compilerTestDir, { recursive: true, force: true });

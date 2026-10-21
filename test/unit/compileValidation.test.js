@@ -197,6 +197,20 @@ function runTests() {
   });
   assert.strictEqual(warningsIdDynamic.length, 0);
 
+  // A static id only in a loop's <@empty> branch renders at most once
+  const warningsIdEmpty = captureWarnings(() => {
+    cp.extractTemplate(
+      '<@for it in items><li>{{ it }}</li><@empty><li id="none">leer</li></@empty></@for>',
+      {},
+      'MyComp',
+      'my-component.js',
+      { items: [] },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsIdEmpty.length, 0);
+
   // Unique static IDs should NOT trigger warnings
   const warningsIdUnique = captureWarnings(() => {
     cp.extractTemplate(
@@ -211,7 +225,88 @@ function runTests() {
   });
   assert.strictEqual(warningsIdUnique.length, 0);
 
-  // 7. Test warning when .component.js is a JavaScript module instead of a template (#1517)
+  // 7. Name-valued directives should NOT trigger expression warnings
+  console.log('  Testing name-valued directive validation...');
+
+  const warningsRef = captureWarnings(() => {
+    cp.extractTemplate(
+      '<state a="1" /><div><input data-ax-ref="myInput" /><p>{{ a }}</p></div>',
+      {},
+      'MyComp',
+      'my-component.js',
+      { a: 1 },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsRef.length, 0);
+
+  const warningsValidationRules = captureWarnings(() => {
+    cp.extractTemplate(
+      '<state email="" password="" /><div><input data-ax-bind="email" data-ax-validate="required|email" /><input data-ax-bind="password" data-ax-validate="required|min:8:Mindestens 8 Zeichen" /></div>',
+      {},
+      'MyComp',
+      'my-component.js',
+      { email: '', password: '' },
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsValidationRules.length, 0);
+  assert.ok(!warningsValidationRules.some((warning) => warning.includes('"required"')));
+  assert.ok(!warningsValidationRules.some((warning) => warning.includes('"Mindestens"')));
+  assert.ok(!warningsValidationRules.some((warning) => warning.includes('"Zeichen"')));
+
+  // 8. Expression-valued directives should still trigger warnings
+  console.log('  Testing expression-valued directive validation...');
+
+  const warningsUndeclaredBind = captureWarnings(() => {
+    cp.extractTemplate(
+      '<input data-ax-bind="missingField" data-ax-validate="required|email" />',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsUndeclaredBind.length, 1);
+  assert.ok(warningsUndeclaredBind[0].includes('AVX_W03'));
+  assert.ok(warningsUndeclaredBind[0].includes('missingField'));
+
+  const warningsKey = captureWarnings(() => {
+    cp.extractTemplate(
+      '<div data-ax-key="undeclaredKey"></div>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsKey.length, 1);
+  assert.ok(warningsKey[0].includes('AVX_W03'));
+  assert.ok(warningsKey[0].includes('undeclaredKey'));
+
+  const warningsSameTemplate = captureWarnings(() => {
+    cp.extractTemplate(
+      '<input data-ax-ref="myInput" /><p>{{ undeclaredVar }}</p>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsSameTemplate.length, 1);
+  assert.ok(warningsSameTemplate[0].includes('AVX_W03'));
+  assert.ok(warningsSameTemplate[0].includes('undeclaredVar'));
+  assert.ok(!warningsSameTemplate[0].includes('Undeclared variable or method "myInput"'));
+
+  // 9. Test warning when .component.js is a JavaScript module instead of a template (#1517)
   console.log('  Testing warning on JavaScript module as component template (#1517)...');
   const warningsJsModule = captureWarnings(() => {
     cp.extractTemplate(
@@ -225,7 +320,7 @@ function runTests() {
     );
   });
   assert.strictEqual(warningsJsModule.length, 1);
-  assert.ok(warningsJsModule[0].includes('AVX_W58'));
+  assert.ok(warningsJsModule[0].includes('AVX_W63'));
   assert.ok(warningsJsModule[0].includes('helpers.component.js'));
   assert.ok(warningsJsModule[0].includes('single-file component template was expected'));
 
@@ -241,7 +336,7 @@ function runTests() {
     );
   });
   assert.strictEqual(warningsClassModule.length, 1);
-  assert.ok(warningsClassModule[0].includes('AVX_W58'));
+  assert.ok(warningsClassModule[0].includes('AVX_W63'));
 
   // Negative tests: templates with import/export words in text/expressions or starting with markup
   const warningsNegative = captureWarnings(() => {

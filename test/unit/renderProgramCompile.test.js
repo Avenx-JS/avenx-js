@@ -250,6 +250,11 @@ function testRefusals() {
   // not model, and each entry is a construct with a named reason rather than a
   // catch-all.
   const cases = [
+    ['a scoped slot template', '<Card><template data-slot-props="row">{{ row.label }}</template></Card>'],
+    ['an inert named slot wrapper', '<Card><template slot="header">{{ title }}</template></Card>'],
+    ['an ordinary inert template', '<main><template><p>{{ title }}</p></template></main>'],
+    ['a scoped slot outlet', '<slot :label="label">Fallback</slot>'],
+    ['a rewritten scoped slot outlet', '<slot data-props-label="label">Fallback</slot>'],
     ['a dynamic component', '<div data-avenx-comp-dynamic="which"></div>'],
     ['a suspense boundary', '<@suspense><p>x</p></@suspense>'],
     ['an error boundary', '<@errorBoundary><p>x</p></@errorBoundary>'],

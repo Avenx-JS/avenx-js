@@ -33,8 +33,41 @@
  */
 import assert from 'assert';
 import { compileComponent } from '../../benches/support/compileFixture.js';
-
+import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
+import { RefusalReason } from '../../lib/compiler/ir/nodes.js';
 let seq = 0;
+/**
+ * Dynamic component tags must use the string-renderer fallback.
+ */
+function testDynamicComponentIRFallback() {
+  console.log('🧪 Testing dynamic component IR fallback...');
+
+  for (const template of [
+    '<Component :is="currentView" />',
+    '<Component is="currentView" />',
+  ]) {
+    const result = buildTemplateIR(template);
+
+    assert.strictEqual(
+      result.ir,
+      null,
+      `${template} must not compile as a static component reference`,
+    );
+
+    assert.ok(
+      result.refusal,
+      `${template} must provide a compilation refusal`,
+    );
+
+    assert.strictEqual(
+      result.refusal.reason,
+      RefusalReason.DYNAMIC_COMPONENT,
+      `${template} must report the dynamic-component refusal`,
+    );
+  }
+
+  console.log('  ✅ Dynamic component IR fallback tests passed.');
+}
 
 /**
  * Mounts a compiled class, optionally with its render program removed.
@@ -680,13 +713,51 @@ async function testSlotFallbackParity() {
   );
 }
 
+/**
+ * A duplicate `data-ax-key` must warn on both paths, with the same message.
+ * The compiled path used to be silent here, so this is the parity assertion
+ * that keeps the diagnostic from diverging again.
+ */
+async function testDuplicateKeyWarningParity() {
+  const ComponentClass = compileComponent(
+    `<state rows='[{"id":1,"label":"a"},{"id":1,"label":"dup"}]' />
+<ul><@for row in rows key="row.id"><li>{{ row.label }}</li></@for></ul>`,
+    `Parity${seq++}`,
+  );
+  assert.ok(ComponentClass.__axProgram, 'duplicate-key list must compile, or this compares nothing');
+
+  const warningsFor = (compiled) => {
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      const mounted = mount(ComponentClass, compiled);
+      mounted.component.unmount();
+      mounted.host.remove();
+    } finally {
+      console.warn = originalWarn;
+    }
+    return warnings.filter((w) => w.includes('AVX_W20'));
+  };
+
+  const compiledWarnings = warningsFor(true);
+  const legacyWarnings = warningsFor(false);
+  assert.strictEqual(compiledWarnings.length, 1, 'compiled path must warn once for the duplicate key');
+  assert.strictEqual(legacyWarnings.length, 1, 'string path must warn once for the duplicate key');
+  assert.strictEqual(compiledWarnings[0], legacyWarnings[0], 'both paths must emit the same message');
+  console.log('  ✅ duplicate keys warn identically on both render paths.');
+}
+
 testConditionalCannotFallBack();
 await testListParity();
 await testNestedBlocksThroughTheCompiler();
 await testSlotFallbackParity();
+await testDuplicateKeyWarningParity();
 
 await testKnownDifference();
 await testBoundBooleanWithNoValue();
 await testBookkeepingIsConsumed();
+
+testDynamicComponentIRFallback();
 
 console.log('✅ Render path parity tests passed.');

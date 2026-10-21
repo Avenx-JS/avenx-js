@@ -4,7 +4,6 @@
  * Each test gets a private copy of the components fixture in a temporary
  * directory. The checked-in fixture is therefore never modified by an E2E
  * test.
- *
  * @module test/e2e/support/dev-server
  */
 
@@ -23,7 +22,6 @@ const avenxCli = path.join(repoRoot, 'bin/avenx.js');
 
 /**
  * Finds an unused TCP port.
- *
  * @returns {Promise<number>} A free port.
  */
 async function findFreePort() {
@@ -57,7 +55,6 @@ async function findFreePort() {
 
 /**
  * Waits for a spawned Avenx process to announce its listening URL.
- *
  * @param {import('child_process').ChildProcess} child - Spawned process.
  * @returns {Promise<{port: number, output: () => string}>} Listening details.
  */
@@ -124,7 +121,6 @@ async function waitForServer(child) {
 
 /**
  * Terminates a child process and waits for it to exit.
- *
  * @param {import('child_process').ChildProcess} child - Process to terminate.
  * @returns {Promise<void>}
  */
@@ -167,7 +163,6 @@ async function terminate(child) {
 
 /**
  * Creates a private copy of the components fixture.
- *
  * @returns {Promise<string>} Scratch project directory.
  */
 async function createScratchProject() {
@@ -186,7 +181,6 @@ async function createScratchProject() {
 
 /**
  * Updates the scratch project's configuration.
- *
  * @param {string} projectDir - Scratch project directory.
  * @param {object} [server] - Optional server configuration.
  * @returns {Promise<void>}
@@ -211,7 +205,6 @@ async function configureProject(projectDir, server = {}) {
 
 /**
  * Starts the real Avenx development server.
- *
  * @param {string} projectDir - Project working directory.
  * @param {number} port - Requested port.
  * @returns {Promise<{child: import('child_process').ChildProcess, port: number, output: () => string}>}
@@ -245,7 +238,6 @@ async function startServer(projectDir, port) {
 
 /**
  * Checks whether a TCP port is currently occupied.
- *
  * @param {number} port - Port to occupy.
  * @returns {Promise<net.Server>} Listening server.
  */

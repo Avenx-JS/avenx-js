@@ -61,6 +61,8 @@ const COVERAGE = {
   ROUTER_VIEW: { uncovered: 'Exercised indirectly by every routing fixture, which mounts pages through the router.' },
   VALIDATION: { uncovered: 'Declarative form validation; covered on the string path by test/unit tests only.' },
   REF: { uncovered: 'Template refs; no browser coverage yet.' },
+  TEMPLATE: { covered: ['test/system/scopedSlotBuild.test.js'] },
+  SCOPED_SLOT: { covered: ['test/system/scopedSlotBuild.test.js'] },
   VIRTUAL_LIST: { uncovered: 'Covered by test/unit/virtualList.test.js; the tag also pulls in its own built-in module.' },
   MALFORMED: { uncovered: 'Not a construct a user writes deliberately; AVX_C22 covers the reachable case.' },
   UNKNOWN_DIRECTIVE: { uncovered: 'Not a construct a user writes deliberately.' },

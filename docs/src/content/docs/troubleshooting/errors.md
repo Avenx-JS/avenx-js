@@ -410,30 +410,42 @@ const app = new AvenxApp({
 | `[AVX_C12]` | "{0}" is not a bridge module. | **Cause:** A `*.bridge.js` file does not import the `bridge()` factory from the Avenx runtime and export the definition it returns. Class-based bridges were removed, so a class or plain-object default export no longer compiles.<br />**Resolution:** Convert the module to `export default bridge({ ... })` — see [Converting a class bridge](/core-concepts/bridges#converting-a-class-bridge) — or rename the file if it is not meant to be a bridge. |
 | `[AVX_C13]` | Retired. | **Cause:** The prebuilt runtime an application bundled was missing from the installed package. There is no prebuilt runtime anymore: the runtime is source, resolved through `avenx-core/runtime` and linked into each application's own graph.<br />**Resolution:** None needed. A missing or damaged install surfaces as `AVX_C17` on the runtime specifier instead. |
 | `[AVX_C14]` | The {0} hook failed: {1} | **Cause:** A `prebuild` or `postbuild` command configured under `hooks` in `avenx.config.json` exited non-zero. A hook is part of the build, so its failure fails the build.<br />**Resolution:** Run the hook command yourself to see its output. Remove it from `hooks` if it is not meant to gate the build. |
+| `[AVX_C15]` | The compiler produced "{0}", and it is not valid JavaScript: {1}. | **Identifier:** `COMPILER_INVALID_OUTPUT`.<br />**Cause:** The final generated JavaScript fails the compiler's parse check (for example, a generated binding or statement is syntactically invalid). This is a compiler-output defect, not necessarily an error in the source template; the staged build is rejected and the previous output stays intact.<br />**Resolution:** Inspect the reported artifact, syntax error, line and excerpt; rebuild from a clean output directory, then report a reproducible case with the triggering source and build output if it persists. |
+| `[AVX_C16]` | Two modules both compile to the bundle-scope name "{0}". | **Identifier:** `COMPILER_DUPLICATE_BUNDLE_BINDING`.<br />**Cause:** Two modules export mutable bindings under the same name, and those live bindings would collide when hoisted into the single bundle scope. The diagnostic identifies the conflicting modules.<br />**Resolution:** Rename one exported binding (or the defining module/class where appropriate) and update its imports so each bundle-scope name is unique; rebuild. |
 | `[AVX_C17]` | Cannot resolve "{0}" imported by {1}. | **Cause:** An import names a module that does not exist, a package that is not installed, a Node built-in (which no browser can load), or an asset such as a stylesheet, which Avenx does not bundle.<br />**Resolution:** Install the package, fix the path, or move the logic somewhere a browser can reach. For a stylesheet, use a matching `.component.css`, a `<@global>` block, or a `<link>` tag in `index.html`. |
 | `[AVX_C18]` | An import names something a module does not export. | **Cause:** `import { formt } from './format.js'` where `format.js` exports `format`. In a browser this is a link-time error; the build catches it first.<br />**Resolution:** The message lists what the module does export, and suggests the near miss. |
 | `[AVX_C19]` | Could not read the import and export declarations of {0}. | **Cause:** A module contains import or export syntax the bundler's module reader cannot describe.<br />**Resolution:** Simplify the declaration, or report it — the reader covers the ES module grammar and a gap in it is a bug. |
 | `[AVX_C20]` | A module cycle carries a binding that cannot cross it. | **Cause:** Two modules import each other, and one imports a value rather than a function. Only function declarations are initialised before a module body runs, so reading anything else across a cycle is a temporal dead zone in a browser too.<br />**Resolution:** Break the cycle, or move the value behind a function. A cycle between two bridges is reported as `AVX_C11`. |
+| `[AVX_C21]` | The expression "{0}" cannot be compiled: {1}. | **Identifier:** `COMPILER_EXPRESSION_REFUSED`.<br />**Cause:** A template expression violates the sandbox rules, such as naming restricted browser globals or accessing `__proto__`, `constructor`, or `prototype`. The compiler refuses to emit it instead of allowing an unsafe evaluation.<br />**Resolution:** Keep templates limited to supported state, props and expressions; move legitimate browser-API work into an `<action>` and expose only the safe result to the template. See [Template Expressions](/core-concepts/template-expressions/). |
+| `[AVX_C22]` | <{0}> uses <@{1}>, which only the compiled renderer implements, but this template cannot be compiled: {2}. | **Identifier:** `COMPILER_COMPILED_ONLY_CONSTRUCT`.<br />**Cause:** A template uses a compiled-renderer-only directive, but the template itself cannot be lowered to the compiled renderer. Falling back to the string renderer would display the unsupported directive as literal markup rather than applying its branch behavior, so the build stops.<br />**Resolution:** Fix the reported compilation refusal, move the conflicting construct into a separately compiled child component, or use `data-ax-show` where conditional visibility is sufficient. |
+| `[AVX_C23]` | The build decided this application needs {0}, and the bundle it produced does not contain it. | **Identifier:** `COMPILER_MISSING_RUNTIME_CAPABILITY`.<br />**Cause:** The compiler requires a runtime capability (such as the string renderer for a fallback template), but validation of the generated bundle finds no evidence that the capability was linked. Duplicated runtime modules or a split renderer registry, sometimes caused by linked or workspace dependencies, can contribute. The staged build is rejected without replacing the previous output.<br />**Resolution:** Rebuild after cleaning `dist/` and check that `avenx-core` resolves to a single runtime copy. If the generated bundle still lacks the capability, report the build and source that reproduce it; this is a compiler defect. |
 | `[AVX_C24]` | Invalid style directive in <{0}>: {1} | **Identifier:** `COMPILER_INVALID_STYLE_DIRECTIVE`.<br />**Cause:** An `@css` attribute has no block name after it (`<div @css>`) or is given a value (`@css="card"`); a `<@css />` tag names no block; or a `<@css> … </@css>` stylesheet block was written inside the template instead of the component stylesheet.<br />**Resolution:** Write `@css blockName` on the element, or `<@css blockName />`, and declare the block inside `<@css>` in the matching `.component.css` / `.page.css`. See [Styling](/core-concepts/styling/). |
 | `[AVX_C25]` | The template front-end left {1} in <{0}> after rewriting it. | **Identifier:** `COMPILER_TEMPLATE_REWRITE_INCOMPLETE`.<br />**Cause:** After scoped styles and two-way bindings were applied, an `@css` attribute, a `<@css />` tag or a `data-ax-bind` attribute was still present. Emitting it would render a component that silently lost its styling or binding.<br />**Resolution:** This is a compiler defect, not a template mistake. Nothing was written; please report it with the template. |
 | `[AVX_C26]` | Malformed template in <{0}>: {1} | **Identifier:** `COMPILER_MALFORMED_TEMPLATE`.<br />**Cause:** A tag is never closed with `>` (usually an attribute quote that never closes), a `<!--` comment has no `-->`, or an `<action>` / `<resource>` declaration has no closing tag. Everything after it would be read as part of that tag or comment.<br />**Resolution:** Close the tag, quote or comment at the location shown. |
 | `[AVX_W49]` | Style block "{1}" used in <{0}> is not declared in its stylesheet. | **Identifier:** `COMPILER_UNKNOWN_STYLE_BLOCK`.<br />**Cause:** `@css name` or `<@css name />` names a block the component stylesheet does not declare — a typo, a missing stylesheet, or a block that lives in another component.<br />**Resolution:** Declare the block inside `<@css>` or correct the name. The element renders without the class. |
 | `[AVX_W50]` | <@css {1} /> in <{0}> has no element to style. | **Identifier:** `COMPILER_STYLE_DIRECTIVE_NO_TARGET`.<br />**Cause:** A `<@css name />` tag follows text, an interpolation or a directive rather than an element, or is the first thing in the template.<br />**Resolution:** Place it as the first child of the element it styles or immediately after that element, or use the `@css name` attribute on the element. |
 | `[AVX_C27]` | {0} expression(s) cannot be compiled, and a production build has no interpreter to run them. | **Identifier:** `COMPILER_EXPRESSION_NOT_EXECUTABLE`.<br />**Cause:** A template expression, computed value, directive, event handler or action body could not be compiled — for example a destructuring arrow parameter, a regular-expression literal, `delete`, invalid JavaScript in a handler, or `<@defer when="visible; interaction">`. A production bundle links no interpreter, so the expression would throw `AVX_R32` when evaluated.<br />**Resolution:** The message lists each expression with its component, file, line and reason. Rewrite it in the [expression language](/core-concepts/template-expressions/), or move the logic into an `<action>`. `avenx build --dev` still builds, reporting `AVX_W48`. |
+| `[AVX_W47]` | {0} template(s) could not be compiled to a render program. | **Identifier:** `COMPILER_RENDER_NOT_COMPILED`.<br />**Cause:** The compiler could not lower the listed templates into an optimized render program. It keeps the **string renderer** in the build so those components still render correctly, but each update re-renders, reparses and diffs the entire template instead of updating only changed bindings. This increases work as the template grows.<br />**Resolution:** Inspect the listed templates for unsupported constructs and rewrite them into compilable syntax. You can silence the warning with `"warnings": { "AVX_W47": "off" }` in `avenx.config.json`, but that does **not** remove the fallback or its performance cost. |
 | `[AVX_W48]` | {0} expression(s) could not be compiled. | **Identifier:** `COMPILER_EXPRESSION_NOT_COMPILED`.<br />**Cause:** The same expressions as `AVX_C27`, in a development build. The rest of the component renders; the expressions themselves fail with `AVX_R32` when evaluated.<br />**Resolution:** As for `AVX_C27`. |
 | `[AVX_W51]` | State "{1}" in <{0}> looks like an object or array initialiser but contains {2}, so it stays a string. | **Identifier:** `COMPILER_STATE_NOT_LITERAL`.<br />**Cause:** A `<state>` value starting with `[` or `{` is a JavaScript expression but not a constant literal — it refers to a variable, calls a function, spreads, or uses a computed key. State initialisers are evaluated at build time.<br />**Resolution:** Use constants only, set the value in `onMount`, or declare a `<computed>`. See [Attribute Coercion & Types](/core-concepts/components/#attribute-coercion--types). |
 | `[AVX_C28]` | <{0}> binds the inline event handler "{1}" to an interpolated value. | **Identifier:** `COMPILER_BOUND_EVENT_ATTRIBUTE`.<br />**Cause:** An `on*` attribute on an HTML element has an interpolated value (`onclick="{{ handler }}"`). Its value runs as JavaScript, so a state value would become code, and it does not run under a strict CSP.<br />**Resolution:** Use the event directive: `@click="handler"` or `@click="handler()"`. An `on*` attribute on a child component is a prop and is unaffected. See [Events](/core-concepts/events/). |
 | `[AVX_C29]` | <{0}> writes a dynamic attribute binding whose {1} is an interpolation. | **Identifier:** `COMPILER_INTERPOLATED_DYNAMIC_ATTRIBUTE`.<br />**Cause:** A dynamic attribute binding was written as `:[key]="{{ value }}"` or `:[{{ key }}]="value"`. Both slots of `:[name]="value"` are expressions, so the braces become part of the expression: it resolves to nothing and the attribute is never set, in development and in production alike.<br />**Resolution:** Drop the braces: `:[key]="value"`. To interpolate into an attribute whose name is fixed, write an ordinary attribute instead: `data-tone="{{ value }}"`. See [Dynamic attributes](/api-reference/utils/). |
 | `[AVX_C30]` | Unhandled template AST node type "{0}"{1} in {2}. | **Identifier:** `COMPILER_UNHANDLED_AST_NODE`.<br />**Cause:** A compiler pass over the template AST reached a node type it has no branch for — normally because a change to the template parser introduced a node kind an existing pass was never taught to read.<br />**Resolution:** Add an explicit branch for the reported node type to the pass named in the message. This is an internal invariant rather than a mistake in your template: a node type with no branch would otherwise be mis-handled silently and emit output that looks valid, so the build stops instead. |
+| `[AVX_W53]` | Nothing in the application can reach its compiled pages. | **Identifier:** `ATLAS_NO_REACHABLE_PAGE`.<br />**Cause:** No route in `app.initRouter()` refers to a compiled page and no `app.mountPage()` call mounts one. The pages are included in the bundle but never displayed, potentially leaving the app container empty.<br />**Resolution:** Add a route such as `app.initRouter({ "": "Home" })` or call `app.mountPage("Home")` in `src/main.app.js` (use an actual page name). Silence with `"warnings": { "AVX_W53": "off" }` in `avenx.config.json` only if the unreachable pages are intentional. |
+| `[AVX_W54]` | Unterminated interpolation in template of {0}: {1} | **Identifier:** `COMPILER_UNTERMINATED_INTERPOLATION`.<br />**Cause:** A template opens an interpolation with `{{` but never closes it with `}}`. The unmatched expression is emitted as literal text, so visitors can see its braces and source instead of the intended value.<br />**Resolution:** Close the interpolation with `}}`, or escape the braces when they are intended as text. Silence with `"warnings": { "AVX_W54": "off" }` in `avenx.config.json` only when the literal output is intentional. |
+| `[AVX_W56]` | A template renders a component that the application never registers. | **Identifier:** `ATLAS_UNREGISTERED_COMPONENT`.<br />**Cause:** A page or component uses a component tag that was not registered with the app. Pages under `src/pages` are auto-registered by the compiler, but components are not. The runtime may also report `AVX_W13` when the page opens; the missing component renders as an empty element.<br />**Resolution:** Import the component and call `app.register("ComponentName", ComponentName)` in `src/main.app.js` (using its real path and name). Silence with `"warnings": { "AVX_W56": "off" }` in `avenx.config.json` only if the missing component is deliberate. |
 | `[AVX_W52]` | <{0}> uses the inline event handler "{1}". | **Identifier:** `COMPILER_INLINE_EVENT_ATTRIBUTE`.<br />**Cause:** An HTML element has a static inline handler (`onclick="doThing()"`). It bypasses the event system and does not run under a strict CSP.<br />**Resolution:** Prefer `@click="doThing()"`. Kept as a capability; silence with `"warnings": { "AVX_W52": "off" }`. |
-| `[AVX_W58]` | "{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected. | **Identifier:** `COMPILER_JS_MODULE_AS_TEMPLATE`.<br />**Cause:** A `.component.js` file contains a JavaScript module (export, import, class, etc.) instead of component markup.<br />**Resolution:** Use `.component.js` only for single-file component templates, or rename ordinary JavaScript files to `.js`. |
+| `[AVX_W63]` | "{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected. | **Identifier:** `COMPILER_JS_MODULE_AS_TEMPLATE`.<br />**Cause:** A `.component.js` file contains a JavaScript module (export, import, class, etc.) instead of component markup.<br />**Resolution:** Use `.component.js` only for single-file component templates, or rename ordinary JavaScript files to `.js`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
 | `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
+| `[AVX_W36]` | A bridge event listener threw while handling an event. | **Identifier:** `BRIDGE_LISTENER_ERROR`.<br />**Cause:** A handler registered with a bridge event listener throws when the bridge emits the event. The event dispatch catches and reports the listener error rather than allowing the exception to go unnoticed.<br />**Resolution:** Inspect the reported listener error and stack, correct the handler or handle expected failures inside it, and check the event payload passed by the emitting bridge. |
 | `[AVX_W37]` | Bridge "{0}" has no member "{1}". | **Cause:** A template or action reads a property the bridge does not declare — usually a typo. At runtime this would silently read `undefined`.<br />**Resolution:** Use one of the declared members. The warning lists them and suggests the closest match. |
 | `[AVX_W38]` | Bridge "{0}" never emits the event "{1}". | **Cause:** Code subscribes with `on()` to an event name that no `emit()` call in the bridge produces, so the handler would never run.<br />**Resolution:** Subscribe to an emitted event, or emit the one you meant. The warning lists the emitted events and suggests the closest match. |
+| `[AVX_W39]` | Failed to render list in component <{0}>. Expression "{1}" evaluates to a non-iterable value. | **Identifier:** `RENDER_LIST_INVALID_SOURCE`.<br />**Cause:** The source expression of a list directive evaluates to a value that cannot be iterated, such as a plain object or number, instead of a collection. The list cannot render its items.<br />**Resolution:** Return an array or another supported iterable from the expression; initialize list state to an empty array and guard values that may be missing or of the wrong type. |
 | `[AVX_W40]` | "{0}" is read nowhere in the application. | **Cause:** [Atlas](/core-concepts/atlas/) found no template binding, computed, action, resource or guard that reads this state key. Either it is dead, or the read it was meant to have is missing.<br />**Resolution:** Run `avenx impact <owner>.<key>` to see the relationships Atlas did find, then delete the declaration or add the missing read. Not reported when unresolved analysis in reach could be hiding a read. |
 | `[AVX_W41]` | "{0}" is never invoked. | **Cause:** [Atlas](/core-concepts/atlas/) found no template handler, action, computed, resource or guard that calls this action.<br />**Resolution:** Run `avenx why <owner>.<action>` to confirm, then wire up the call site or delete the action. Lifecycle actions the runtime invokes by name (`onMount` and the rest) are exempt, as are the members of a bridge nothing imports. |
+| `[AVX_W45]` | Refused a "{0}" attribute whose URL uses an executable scheme: "{1}". | **Identifier:** `SECURITY_BLOCKED_URL`.<br />**Cause:** A URL-valued attribute resolves to an unsafe scheme (for example, `javascript:`). Escaping interpolation does not make an executable URL safe. The runtime substitutes `about:blank` rather than applying that URL.<br />**Resolution:** Validate user-supplied URLs before they reach the attribute and allow only appropriate safe schemes (such as `https:` or relative URLs). Do not try to bypass the runtime URL check. |
 | `[AVX_W46]` | Component "<{0}>" does not resolve to a registered component, built-in, or HTML/SVG element. | **Cause:** A PascalCase template tag is misspelled or names a component that was never created or imported (e.g. `<UserCrad />` for `<UserCard />`).<br />**Resolution:** Fix the spelling (the warning suggests the closest name), create the component, or use a lowercase HTML element. Custom elements with a dash are never flagged. See [AVX_W46](#avx_w46--compiler_unresolved_component_reference). |
 | `[AVX_R19]` | bridge() expects a definition object, received {0}. | **Cause:** `bridge()` was called with no argument, or with something that is not a plain object.<br />**Resolution:** Pass a definition object, e.g. `bridge({ state: { count: 0 } })`. |
 | `[AVX_R20]` | Bridge definition declares "{0}", which is reserved by the Bridge API. | **Cause:** The definition declares `on`, `emit`, `$dispose` or `$name`, or a getter/action collides with a state key.<br />**Resolution:** Rename the member. |
@@ -3043,7 +3055,94 @@ Declaring the property in `<state>` so it is reactive:
 <div>{{ count }} (Total: {{ total }})</div>
 ```
 
-### AVX_W58 — COMPILER_JS_MODULE_AS_TEMPLATE
+### AVX_W59 — COMPILER_DUPLICATE_ROUTE_PATTERN
+
+**Warning Message**
+
+```text
+[AVX_W59] Duplicate route pattern "{0}" declared in initRouter(). The later definition targeting page "{1}" shadows "{2}".
+
+Cause: This warning is emitted during compilation/Atlas analysis when app.initRouter() declares the exact same route pattern path (e.g. '/user/:id' or '/dup') more than once in its route configuration object.
+
+Because JavaScript object literals use last-wins semantics for duplicate keys, the later route target overwrites earlier declarations at runtime. When Atlas encounters a duplicate pattern, it adopts the same last-wins resolution order to stay in agreement with the emitted bundle, and emits AVX_W59 to highlight the shadowed route definition.
+
+Resolution: To resolve this warning:
+
+1. Review the route table object passed to app.initRouter().
+
+2. Remove or rename the duplicated route pattern path so each route key is unique.
+
+3. Verify that each route pattern points to its intended target page class.
+
+Incorrect
+
+app.initRouter({
+  '': 'Home',
+  '/user/:id': 'User',
+  '/user/:id': 'Home', // ❌ Duplicate pattern '/user/:id'; shadows 'User' and emits AVX_W59
+});
+
+Correct
+
+app.initRouter({
+  '': 'Home',
+  '/user/:id': 'User',
+  '/user/home': 'Home', // ✅ Unique route paths
+});
+```
+
+### AVX_W60 — COMPILER_UNDEFINED_PUBLIC_ENV
+
+**Warning Message**
+
+```text
+process.env.{0} in {1} has no value, so the build inlined undefined in its place.{2}
+The variable is set neither in the environment nor in .env. Fix the name, or set it before building -- a variable missing from the CI environment ships as undefined. Run `avenx env` to list every AVX_PUBLIC_* value this build can see. Silence this class with "warnings": { "AVX_W60": "off" } in avenx.config.json.
+```
+
+**Cause:** The compiler inlines every `process.env.AVX_PUBLIC_*` reference with its value at build time. When the variable is set neither in the environment nor in the project's `.env`, the reference is replaced with the literal `undefined`. Nothing fails at build time: the application receives `undefined` where it expected a value, and the failure surfaces later as a request to `undefined/users` or a blank value in the UI.
+
+This typically happens because:
+
+- The variable name is misspelled (`process.env.AVX_PUBLIC_API_URLL` instead of `process.env.AVX_PUBLIC_API_URL`). When a practical variable is set, the warning suggests it.
+- The variable is in a local `.env` but missing from the CI or deployment environment the build ran in.
+
+The warning is reported once per variable per file.
+
+**Resolution:**
+
+1. Run `avenx env` to list every `AVX_PUBLIC_*` value the build can see.
+2. Correct the reference, or add the variable to `.env` or the build environment.
+3. If `undefined` is intended, silence the class with `"warnings": { "AVX_W60": "off" }` in `avenx.config.json`, or set it to `"error"` to fail the build instead.
+
+**Incorrect**
+
+```js
+// .env: AVX_PUBLIC_API_URL=https://api.example.com
+const base = process.env.AVX_PUBLIC_API_URLL; // ❌ inlined as undefined; emits AVX_W60
+```
+
+**Correct**
+
+```js
+// .env: AVX_PUBLIC_API_URL=https://api.example.com
+const base = process.env.AVX_PUBLIC_API_URL; // ✅ inlined as "https://api.example.com"
+```
+
+### AVX_W61: Compiler unknown event modifier
+
+An event attribute contains a modifier the framework does not recognise. The
+handler still runs, but the unknown modifier has no effect. For example,
+`@click.prevnt="save()"` does not prevent the browser's default action.
+
+Correct the modifier to `@click.prevent="save()"`, or remove the unknown name.
+The warning suggests a nearby supported name when possible. Each modifier in a
+chain is checked independently, so `@touchstart.passive.capture` is accepted.
+
+Run `avenx explain AVX_W61` for details. To suppress this warning intentionally,
+set `"warnings": { "AVX_W61": "off" }` in `avenx.config.json`.
+
+### AVX_W63 — COMPILER_JS_MODULE_AS_TEMPLATE
 
 **Warning Message**
 
@@ -3084,7 +3183,6 @@ export function multiply(a, b) {
 </div>
 ```
 
-
 ## Runtime Codes (`AVX_R*`)
 
 | Code        | Default Message                                                                         | Cause & Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -3107,6 +3205,10 @@ export function multiply(a, b) {
 | `[AVX_R15]` | SANDBOX_VIOLATION: A sandbox security violation occurred.                               | **Cause:** Template or runtime expressions attempted to access restricted properties such as `__proto__`, `constructor`, or `prototype`, or unauthorized global variables. This restriction prevents prototype pollution, template injection, and unauthorized global scope access.<br />**Resolution:** Restrict expressions to authorized variables only. Avoid accessing or modifying prototype-related properties and unauthorized globals. If necessary, wrap values securely before exposing them to expressions.      |
 | `[AVX_R16]` | Cannot reassign component state directly.                                               | **Cause:** Assigning a new object to `this.state`, such as `this.state = { count: 1 }`, replaces the reactive Proxy and breaks change detection.<br />**Resolution:** Mutate properties on the existing state object instead, such as `this.state.count = 1`, or update several properties with `Object.assign(this.state, { count: 1 })`.                                                                                                                                                                                   |
 | `[AVX_R18]` | Circular reactive update chain detected{0}. Update chain aborted to prevent infinite loop:\n{1} | **Cause:** The scheduler exceeded `maxFlushCount` recursive flush passes (default `25`), or a synchronous watcher cascade re-entered itself, forming a circular reactive update chain (A → B → A).<br />**Resolution:** Break the circular dependency shown in the causation chain (`{1}`), raise the threshold with `setSchedulerMaxFlushCount()`, or subscribe with `onSchedulerDeadlock()` and trip a `<@deadlock>` boundary. See the [<@deadlock> guide](/core-concepts/deadlock/). |
+| `[AVX_R30]` | Invalid component name "{0}". Component names must be non-empty strings. | **Identifier:** `COMPONENT_INVALID_NAME`.<br />**Cause:** Registration receives a missing, non-string or whitespace-only component name. The diagnostic code is defined in `AvenxErrorCodes`; currently `app.register()` and `app.registerPage()` reject this input with an ordinary `Error` rather than attaching `AVX_R30`.<br />**Resolution:** Pass a non-empty string name when registering a component or page, for example `app.register("Card", Card)`; verify the argument before registration. |
+| `[AVX_R31]` | Invalid component class for "{0}". Expected a constructor extending AvenxComponent, received "{1}". | **Identifier:** `COMPONENT_INVALID_CLASS`.<br />**Cause:** Component or page registration receives a plain object, an unrelated class, or another value that is not an `AvenxComponent` constructor. The diagnostic code is defined, but `app.register()` and `app.registerPage()` currently throw an ordinary `Error` for this condition.<br />**Resolution:** Import the intended constructor and make sure it extends `AvenxComponent`; pass the class itself to `app.register()` instead of an instance or object. |
+| `[AVX_R33]` | <{0}> failed to render and nothing handled the error, so it is showing nothing. | **Identifier:** `COMPONENT_RENDER_ABORTED`.<br />**Cause:** A component fails during rendering and neither a component/ancestor error capture hook nor an application error handler claims the failure. The component stays mounted but empty; failures already reported by a more specific diagnostic are not re-reported under this code.<br />**Resolution:** Inspect the recorded origin and cause, fix the failing render expression or hook, or handle the error with `onErrorCaptured`, an `<@errorBoundary>`, or `app.onError()`. |
+| `[AVX_R34]` | <{0}> needs {1}, and this bundle does not contain it. | **Identifier:** `RENDERER_UNAVAILABLE`.<br />**Cause:** A component requires the string renderer after a compilation fallback, but the running bundle has no usable renderer registered. The compiler normally links it when reporting `AVX_W47`; mismatched build artifacts or duplicate runtime copies can split its registry.<br />**Resolution:** Rebuild from a clean `dist/`, confirm the build reports `AVX_W47` if a fallback is needed, and ensure only one runtime copy is bundled. If a fresh bundle still fails, report it as a compiler/runtime defect. |
 
 ### AVX_R01 — MOUNT_TARGET_NOT_FOUND
 
