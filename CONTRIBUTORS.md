@@ -202,6 +202,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://erfouni.ir"><img src="https://avatars.githubusercontent.com/u/232311059?v=4?s=100" width="100px;" alt="erfouni"/><br /><sub><b>erfouni</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Erfouni" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/sandeepj-git567"><img src="https://avatars.githubusercontent.com/u/154056414?v=4?s=100" width="100px;" alt="Sandeep J"/><br /><sub><b>Sandeep J</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=sandeepj-git567" title="Documentation">📖</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=sandeepj-git567" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dbdefault"><img src="https://avatars.githubusercontent.com/u/246079841?v=4?s=100" width="100px;" alt="dbdefault"/><br /><sub><b>dbdefault</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=dbdefault" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rahul05ranjan"><img src="https://avatars.githubusercontent.com/u/11793455?v=4?s=100" width="100px;" alt="Rahul"/><br /><sub><b>Rahul</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=rahul05ranjan" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
