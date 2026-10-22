@@ -147,7 +147,7 @@ Do **not** write `(item, index) in list` inside `<@for>` like you would in Vue. 
 
 ### Slots: Default and Named
 
-Avenx supports both Vue-style **default** and **named** slots. The child component declares a `<slot>` element (with a fallback body); the parent supplies content with a `slot="name"` attribute. If the parent provides no content for a slot, the child's fallback content renders instead.
+Avenx supports both Vue-style **default** and **named** slots. The child component declares a `<slot>` element (with a fallback body); the parent supplies content with a `slot="name"` attribute. Vue's `<template slot="name">` grouping wrapper works too: it is unwrapped so each element inside behaves as if it carried the `slot` attribute itself. If the parent provides no content for a slot, the child's fallback content renders instead.
 
 #### Before — Vue Named Slot
 

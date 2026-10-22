@@ -251,7 +251,6 @@ function testRefusals() {
   // catch-all.
   const cases = [
     ['a scoped slot template', '<Card><template data-slot-props="row">{{ row.label }}</template></Card>'],
-    ['an inert named slot wrapper', '<Card><template slot="header">{{ title }}</template></Card>'],
     ['an ordinary inert template', '<main><template><p>{{ title }}</p></template></main>'],
     ['a scoped slot outlet', '<slot :label="label">Fallback</slot>'],
     ['a rewritten scoped slot outlet', '<slot data-props-label="label">Fallback</slot>'],
@@ -386,6 +385,49 @@ testRefusals();
 testChildComponentProps();
 testRefusalDiscardsPartialWork();
 testMarkerNumbering();
+testTemplateSlotWrapper();
+
+/**
+ * A `<template slot="name">` wrapper (the Vue-style spelling of the documented
+ * `<element slot="name">` assignment) unwraps into its children, each stamped
+ * with the slot attribute, so the compiled program is identical to the one the
+ * documented form produces (#1469). Bare inert <template> stays refused, and
+ * a child's own slot attribute wins over the wrapper's.
+ */
+function testTemplateSlotWrapper() {
+  const wrapper = compiled(
+    '<Card><template slot="header"><h2>Hi {{ title }}</h2><p>also header</p></template><p>Default</p></Card>',
+  );
+  const documented = compiled(
+    '<Card><h2 slot="header">Hi {{ title }}</h2><p slot="header">also header</p><p>Default</p></Card>',
+  );
+  assert.deepStrictEqual(
+    wrapper,
+    documented,
+    'the <template slot> wrapper must compile to exactly the program of the documented form',
+  );
+  assert.ok(
+    wrapper.html.includes('<h2 slot="header">'),
+    'the unwrapped children must carry the slot attribute',
+  );
+  assert.ok(
+    !wrapper.html.includes('<template'),
+    'the wrapper element must not survive into the skeleton',
+  );
+
+  // A child with its own slot attribute keeps it -- the inner assignment wins.
+  const own = compiled(
+    '<Card><template slot="header"><p slot="footer">F</p></template></Card>',
+  );
+  assert.ok(own.html.includes('<p slot="footer">'), 'an inner slot attribute must win');
+
+  // An empty wrapper contributes nothing and compiles.
+  compiled('<Card><template slot="header"></template><p>Default</p></Card>');
+
+  // Bare inert <template> and scoped-slot templates keep refusing (see #1505).
+  refused('<main><template><p>{{ title }}</p></template></main>');
+  refused('<Card><template data-slot-props="row">{{ row.label }}</template></Card>');
+}
 testEmptyTemplate();
 
 console.log('✅ Render program compilation tests passed.');
