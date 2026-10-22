@@ -523,6 +523,26 @@ Components can receive child HTML blocks using `<slot>` elements. Both default a
 </Card>
 ```
 
+For grouping several elements under one slot name — the spelling Vue and
+Svelte refugees reach for first — the `<template slot="...">` wrapper is
+supported as well. It is unwrapped at compile time: each element inside
+the wrapper behaves exactly as if it carried the `slot` attribute itself.
+
+```html
+<Card>
+  <template slot="header">
+    <h2>Special Title</h2>
+    <p>Also part of the header slot</p>
+  </template>
+  <p>This content goes directly into the default slot!</p>
+</Card>
+```
+
+One nuance: only element children can carry a slot assignment, so text
+directly inside a `<template slot="...">` wrapper (with no surrounding
+element) falls back to the default slot — wrap it in an element if it
+should land in the named slot.
+
 #### Fallback (Default) Slot Content
 
 If a component's caller does not provide content for a given slot, Avenx-JS automatically falls back to rendering the default content defined inside that `<slot>` element in the component's template. This applies to both named and default slots. For example, in the `Card` component above, if no `slot="header"` element is passed in, the header slot will render its fallback text, `Default Header`, instead of being left empty. This makes it easy to define sensible defaults for optional component content without requiring the caller to always supply every slot.

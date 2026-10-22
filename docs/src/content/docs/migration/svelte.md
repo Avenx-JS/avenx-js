@@ -297,7 +297,11 @@ Listening in parent component:
 
 ### Slots
 
-Both frameworks use the `<slot>` element:
+Both frameworks use the `<slot>` element. (Coming from Svelte you will not
+have used a slot wrapper, but note that the Vue-style
+`<template slot="name">` grouping wrapper is supported as well — it is
+unwrapped so each element inside behaves as if it carried the `slot`
+attribute itself):
 
 ```html
 <!-- Svelte & Avenx-JS: Default & Named Slots -->
