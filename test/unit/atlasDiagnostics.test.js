@@ -17,6 +17,7 @@ import AvenxCompiler from '../../lib/compiler.js';
 import { clearAtlasCache } from '../../lib/compiler/atlas/cache.js';
 import {
   RUNTIME_INVOKED_ACTIONS,
+  findUndeclaredSlots,
   findUnreachableActions,
   findUnreadState,
   reportAtlasDiagnostics,
@@ -335,6 +336,149 @@ export default bridge({
     }
     assert.strictEqual(AvenxErrorCodes.ATLAS_UNREAD_STATE, 'AVX_W40');
     assert.strictEqual(AvenxErrorCodes.ATLAS_UNREACHABLE_ACTION, 'AVX_W41');
+  }
+
+  // ── AVX_W62: caller addresses a slot the component does not declare ───────
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<div>
+  <slot name="header">FALLBACK-HEADER</slot>
+  <slot>FALLBACK-DEFAULT</slot>
+</div>
+`,
+      'src/pages/home.page.js': `<state n="7" />
+<div>
+  <Card>
+    <h2 slot="header">Header {{ n }}</h2>
+    <p>Default</p>
+    <em slot="typoSlot">this disappears</em>
+  </Card>
+</div>
+`,
+    });
+
+    const findings = findUndeclaredSlots(model);
+    assert.strictEqual(findings.length, 1, 'exactly one undeclared slot');
+    assert.strictEqual(findings[0].slot, 'typoSlot');
+    assert.strictEqual(findings[0].callee.name, 'Card');
+    assert.strictEqual(findings[0].suggestion, null, 'typoSlot is not close enough to header or default');
+    assert.ok(findings[0].declared.includes('header'));
+    assert.ok(findings[0].declared.includes('default'));
+  }
+
+  // ── AVX_W62 suggests the closest declared name ────────────────────────────
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<div>
+  <slot name="header"></slot>
+  <slot></slot>
+</div>
+`,
+      'src/pages/home.page.js': `<div>
+  <Card>
+    <h2 slot="headr">typo</h2>
+  </Card>
+</div>
+`,
+    });
+
+    const findings = findUndeclaredSlots(model);
+    assert.strictEqual(findings.length, 1);
+    assert.strictEqual(findings[0].slot, 'headr');
+    assert.strictEqual(findings[0].suggestion, 'header');
+  }
+
+  // ── Matching slots stay quiet ─────────────────────────────────────────────
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<div>
+  <slot name="header"></slot>
+  <slot></slot>
+</div>
+`,
+      'src/pages/home.page.js': `<div>
+  <Card>
+    <h2 slot="header">ok</h2>
+    <p>body</p>
+  </Card>
+</div>
+`,
+    });
+    assert.deepStrictEqual(findUndeclaredSlots(model), []);
+  }
+
+  // ── Default content against a component with no default slot ──────────────
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<div><slot name="header"></slot></div>`,
+      'src/pages/home.page.js': `<div><Card><p>orphan default</p></Card></div>`,
+    });
+    const findings = findUndeclaredSlots(model);
+    assert.strictEqual(findings.length, 1);
+    assert.strictEqual(findings[0].slot, 'default');
+  }
+
+  // ── AVX_W62 routes through the warning machinery ──────────────────────────
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<div>
+  <slot name="header"></slot>
+  <slot></slot>
+</div>
+`,
+      'src/pages/home.page.js': `<div>
+  <Card>
+    <em slot="typoSlot">gone</em>
+  </Card>
+</div>
+`,
+    });
+
+    logger.configure({ level: 'warn', silent: false, formatter: (level, args) => args });
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    let summary;
+    try {
+      summary = reportAtlasDiagnostics(model, {});
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    assert.ok(summary.undeclaredSlots >= 1);
+    assert.ok(
+      warnings.some((message) => message.includes('AVX_W62') && message.includes('typoSlot')),
+      `expected AVX_W62 naming typoSlot, got:\n${warnings.join('\n')}`,
+    );
+    assert.ok(
+      warnings.some((message) => message.includes('Card') && message.includes('header')),
+      'the message names the component and lists declared slots',
+    );
+    for (const message of warnings.filter((item) => item.includes('AVX_W62'))) {
+      assert.ok(!/\{\d\}/.test(message), `no placeholder survived into: ${message}`);
+    }
+
+    const silenced = [];
+    console.warn = (...args) => silenced.push(args.join(' '));
+    try {
+      reportAtlasDiagnostics(model, { warnings: { AVX_W62: 'off' } });
+    } finally {
+      console.warn = originalWarn;
+    }
+    assert.ok(
+      silenced.every((message) => !message.includes('AVX_W62')),
+      'AVX_W62 honours the warnings setting',
+    );
+
+    assert.throws(
+      () => reportAtlasDiagnostics(model, { warnings: { AVX_W62: 'error' } }),
+      /AVX_W62/,
+      'escalation works',
+    );
+
+    const entry = getDiagnostic('AVX_W62');
+    assert.ok(entry, 'AVX_W62 is registered in the catalogue');
+    assert.strictEqual(AvenxErrorCodes.COMPILER_UNDECLARED_SLOT, 'AVX_W62');
   }
 
   console.log('✅ Atlas diagnostics tests passed.');
