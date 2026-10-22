@@ -141,7 +141,9 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     window.location.hash = '#/';
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.strictEqual(mountedPageName, 'TestPage');
-    assert.deepStrictEqual(mountedParams, {});
+    // matchRoute always installs `query` (undefined when the URL has no `?`
+    // segment) so same-route query transitions stay reactive (#1524).
+    assert.deepStrictEqual(mountedParams, { query: undefined });
 
     // Reset tracking
     mountedPageName = null;
@@ -511,7 +513,11 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     window.location.hash = '#/guarded-redirect';
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    assert.strictEqual(window.location.hash, '#/login?reason=expired&code=401', 'Should redirect with state fields as query parameters');
+    assert.strictEqual(
+      window.location.hash,
+      '#/login?reason=expired&code=401',
+      'Should redirect with state fields as query parameters',
+    );
     assert.strictEqual(app.router.currentRoute.hash, '#/login?reason=expired&code=401');
     assert.strictEqual(mountedPageName, 'TestPage');
     assert.deepStrictEqual(mountedParams.query, { reason: 'expired', code: 401 });
@@ -522,7 +528,11 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     window.location.hash = '#/guarded-redirect';
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    assert.strictEqual(window.location.hash, '#/login?existing=1&extra=true', 'Should merge query parameters correctly');
+    assert.strictEqual(
+      window.location.hash,
+      '#/login?existing=1&extra=true',
+      'Should merge query parameters correctly',
+    );
 
     // Test E: Encoded route path parameters
     if (app.router) {
@@ -537,7 +547,11 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     assert.strictEqual(mountedPageName, 'TestPage', 'Should mount TestPage for encoded path parameter route');
-    assert.strictEqual(mountedParams.name, 'nathan schmid', 'Should correctly parse and decode path parameters containing %20');
+    assert.strictEqual(
+      mountedParams.name,
+      'nathan schmid',
+      'Should correctly parse and decode path parameters containing %20',
+    );
 
     // Test F: Guard undefined return warning
     if (app.router) {
@@ -606,4 +620,3 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
     process.exit(1);
   }
 })();
-
