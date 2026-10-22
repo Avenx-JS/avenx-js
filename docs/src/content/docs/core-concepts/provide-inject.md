@@ -5,6 +5,10 @@ description: 'Share reactive state, methods, and services down the component tre
 
 Avenx-JS provides a native **Provide & Inject** mechanism for ancestor-descendant component communication. It allows a parent or ancestor component to serve as a dependency provider for all its descendant components, regardless of how deeply nested they are, without having to pass props through intermediate components ("prop drilling").
 
+:::note[Class-based authoring]
+Provide and inject are configured on **class-based** components and pages: subclasses of `AvenxComponent` / `AvenxPage` saved as ordinary `.js` modules and registered with `app.register()` / `app.registerPage()`. Single-file templates (`.component.js` / `.page.js`) do not currently expose `<provide>` or `<inject>` tags. Saving a class module under a `.component.js` or `.page.js` name makes the compiler treat the file as template markup, so the class source can appear as visible text in the page.
+:::
+
 ## How Provide & Inject Works
 
 1. **Ancestor Component**: Defines `provide` (as an object, an array, or a function returning an object) to specify state, properties, or methods made available to descendants.
@@ -79,14 +83,7 @@ export default class ThemeBadge extends AvenxComponent {
   static inject = ['theme'];
 
   constructor(bridges, props) {
-    super(
-      {},
-      {},
-      bridges,
-      '<span class="badge {{ theme }}">Current Theme: {{ theme }}</span>',
-      {},
-      props
-    );
+    super({}, {}, bridges, '<span class="badge {{ theme }}">Current Theme: {{ theme }}</span>', {}, props);
   }
 }
 ```
@@ -108,14 +105,7 @@ export default class UserCard extends AvenxComponent {
   };
 
   constructor(bridges, props) {
-    super(
-      {},
-      {},
-      bridges,
-      '<div>User Role: {{ activeRole }} (Theme: {{ activeTheme }})</div>',
-      {},
-      props
-    );
+    super({}, {}, bridges, '<div>User Role: {{ activeRole }} (Theme: {{ activeTheme }})</div>', {}, props);
   }
 }
 ```
@@ -127,6 +117,7 @@ export default class UserCard extends AvenxComponent {
 ### Targeted Reactivity Updates
 
 When an ancestor component updates a provided property or reactive state:
+
 - All child components injecting that property receive targeted reactivity updates and re-render.
 - Intermediate components that do not inject the property are **not** re-rendered, optimizing runtime rendering performance.
 
@@ -147,35 +138,47 @@ Result: Child receives theme = 'light' (shadowed) and apiVersion = 'v1' (inherit
 
 ## Real-World Example: Theme & State Provider
 
-Below is an end-to-end example demonstrating how an application layout component provides theme state and toggle actions to a deeply nested child button.
+Below is an end-to-end example demonstrating how an application layout page provides theme state and a toggle action to a nested child button. Both files are ordinary `.js` modules (not `.page.js` / `.component.js` templates). Register them in `src/main.app.js` before routing.
 
-### Ancestor Provider (`AppLayout.page.js`)
+### Ancestor Provider (`src/pages/AppLayout.js`)
 
-```html
-<state theme="dark" username="Alice" />
+The page constructor receives the app's component registry (`Map`) as its second argument when the page is mounted through `app.registerPage`. Child tags resolve through that registry, so register `ThemeToggleButton` on the app (see below) rather than embedding it in the page file.
 
-<div>
+```javascript
+import { AvenxPage } from 'avenx-core/runtime';
+
+export default class AppLayout extends AvenxPage {
+  constructor(bridges, componentRegistry, props) {
+    super(
+      { theme: 'dark', username: 'Alice' },
+      {},
+      bridges,
+      `<div>
   <header>
     <h2>Welcome, {{ username }}</h2>
   </header>
   <main class="app-content">
-    <ChildWidget />
+    <div data-avenx-comp="ThemeToggleButton"></div>
   </main>
-</div>
+</div>`,
+      {},
+      componentRegistry,
+      props,
+    );
+  }
+
+  provide() {
+    return {
+      theme: this.state.theme,
+      toggleTheme: () => {
+        this.state.theme = this.state.theme === 'dark' ? 'light' : 'dark';
+      },
+    };
+  }
+}
 ```
 
-In the compiled component class or constructor initialization:
-
-```javascript
-this.provide = {
-  theme: this.state.theme,
-  toggleTheme: () => {
-    this.state.theme = this.state.theme === 'dark' ? 'light' : 'dark';
-  },
-};
-```
-
-### Deeply Nested Consumer (`ThemeToggleButton.component.js`)
+### Deeply Nested Consumer (`src/components/ThemeToggleButton.js`)
 
 ```javascript
 import { AvenxComponent } from 'avenx-core/runtime';
@@ -186,16 +189,28 @@ export default class ThemeToggleButton extends AvenxComponent {
   constructor(bridges, props) {
     super(
       {},
+      {},
+      bridges,
+      '<button @click="handleClick()">Switch theme (Current: {{ theme }})</button>',
       {
         handleClick() {
           this.toggleTheme();
         },
       },
-      bridges,
-      '<button @click="handleClick()">Switch theme (Current: {{ theme }})</button>',
-      {},
-      props
+      props,
     );
   }
 }
 ```
+
+### Registration (`src/main.app.js`)
+
+```javascript
+import AppLayout from './pages/AppLayout.js';
+import ThemeToggleButton from './components/ThemeToggleButton.js';
+
+app.register('ThemeToggleButton', ThemeToggleButton);
+app.registerPage('AppLayout', AppLayout);
+```
+
+Mount or route to `AppLayout`. The button renders `Switch theme (Current: dark)` and toggles the injected theme when clicked.
