@@ -1255,6 +1255,15 @@
         "doc",
         "test"
       ]
+    },
+    {
+      "login": "dbdefault",
+      "name": "dbdefault",
+      "avatar_url": "https://avatars.githubusercontent.com/u/246079841?v=4",
+      "profile": "https://github.com/dbdefault",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
