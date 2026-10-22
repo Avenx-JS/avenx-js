@@ -17,10 +17,12 @@ import AvenxCompiler from '../../lib/compiler.js';
 import { clearAtlasCache } from '../../lib/compiler/atlas/cache.js';
 import {
   RUNTIME_INVOKED_ACTIONS,
+  findCircularComputed,
   findUnreachableActions,
   findUnreadState,
   reportAtlasDiagnostics,
 } from '../../lib/compiler/atlas/diagnostics.js';
+import { walk, resolveSymbol } from '../../lib/compiler/atlas/query.js';
 import { getDiagnostic } from '../../lib/core/diagnostics/catalogue.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 import { logger } from '../../lib/core/runtime/AvenxLogger.js';
@@ -335,6 +337,100 @@ export default bridge({
     }
     assert.strictEqual(AvenxErrorCodes.ATLAS_UNREAD_STATE, 'AVX_W40');
     assert.strictEqual(AvenxErrorCodes.ATLAS_UNREACHABLE_ACTION, 'AVX_W41');
+  }
+
+  // ── AVX_W64: self-referential computed is reported at compile time (#1463) ─
+  {
+    const model = analyze({
+      'src/pages/home.page.js': `<state n='1' />
+<computed name='selfref' value='selfref + 1' />
+<computed name='dbl' value='n * 2' />
+<div><p id='out'>{{ selfref }}</p><p>{{ dbl }}</p></div>
+`,
+      'src/main.app.js': `import { createApp } from 'avenx-core/runtime';
+const app = createApp();
+app.mountPage('Home');
+`,
+    });
+
+    const findings = findCircularComputed(model);
+    assert.strictEqual(findings.length, 1, 'one self-loop cycle');
+    assert.deepStrictEqual(
+      findings[0].nodes.map((node) => node.id),
+      ['computed:page:Home.selfref'],
+      'the cycle is the selfref node alone',
+    );
+
+    const selfNode = resolveSymbol(model, 'Home.selfref')[0];
+    assert.ok(selfNode, 'Home.selfref resolves');
+    const why = walk(model, selfNode.id, { direction: 'out' });
+    assert.ok(
+      why.children.some((child) => child.node.id === selfNode.id && child.edge.kind === 'reads'),
+      'avenx why must surface the self-loop rather than claim it depends on nothing',
+    );
+
+    const dblFindings = findCircularComputed(model).filter((finding) =>
+      finding.nodes.some((node) => node.name === 'dbl'),
+    );
+    assert.deepStrictEqual(dblFindings, [], 'a non-circular computed is not reported');
+
+    logger.configure({ level: 'warn', silent: false, formatter: (level, args) => args });
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    let summary;
+    try {
+      summary = reportAtlasDiagnostics(model, {});
+    } finally {
+      console.warn = originalWarn;
+    }
+    assert.strictEqual(summary.circularComputed, 1);
+    assert.ok(
+      warnings.some((message) => message.includes('AVX_W64') && message.includes('Home.selfref')),
+      'the warning names the self-referential computed',
+    );
+    for (const message of warnings.filter((line) => line.includes('AVX_W64'))) {
+      assert.ok(!/\{\d\}/.test(message), `no placeholder survived into: ${message}`);
+    }
+
+    const silenced = [];
+    console.warn = (...args) => silenced.push(args.join(' '));
+    try {
+      reportAtlasDiagnostics(model, { warnings: { AVX_W64: 'off' } });
+    } finally {
+      console.warn = originalWarn;
+    }
+    assert.ok(
+      silenced.every((message) => !message.includes('AVX_W64')),
+      'AVX_W64 honours the warnings setting',
+    );
+  }
+
+  // ── AVX_W64: mutual computed cycle is the same class of bug ───────────────
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<state n="1" />
+
+<computed name="a" value="b + 1" />
+<computed name="b" value="a + 1" />
+
+<p>{{ a }}</p>
+`,
+    });
+    const findings = findCircularComputed(model);
+    assert.strictEqual(findings.length, 1, 'one mutual cycle');
+    const names = findings[0].nodes.map((node) => node.name).sort();
+    assert.deepStrictEqual(names, ['a', 'b']);
+  }
+
+  // ── AVX_W64 catalogue registration ────────────────────────────────────────
+  {
+    const entry = getDiagnostic('AVX_W64');
+    assert.ok(entry, 'AVX_W64 is registered in the catalogue');
+    assert.strictEqual(entry.code, 'AVX_W64');
+    assert.ok(entry.summary && entry.causes.length > 0 && entry.remedies.length > 0);
+    assert.strictEqual(AvenxErrorCodes.ATLAS_COMPUTED_CIRCULAR_DEPENDENCY, 'AVX_W64');
+    assert.strictEqual(getDiagnostic('W64').code, 'AVX_W64', 'the short form resolves too');
   }
 
   console.log('✅ Atlas diagnostics tests passed.');
