@@ -116,8 +116,6 @@ try {
   console.log('  ✅ CSS directive and forced-template parser preservation checks pass');
 
   // Keep fallback and empty in their enclosing boundary/loop contexts.
-  // Continuation arms (elseif/else) need the production fix tracked in #1365;
-  // inventing closing tags for them would test invalid Avenx syntax.
   const structural = [
     '<@if ready><p>Ready</p></@if>',
     '<@for item in items key="item.id"><p>{{ item.name }}</p><@empty><p>No items</p></@empty></@for>',
@@ -131,6 +129,30 @@ try {
   }
 
   console.log('  ✅ Supported structural tags preserve headers, nested content and closing tags');
+
+  // Issue #1365: `<@elseif>` / `<@else>` continue an `<@if>` chain and have no
+  // closing form, so the HTML parser cannot accept a structural encoding.
+  // Chains with continuations are preserved verbatim; a `>` inside a bracketed
+  // condition on a lone `<@if>` must still not end the open tag.
+  const ifChains = [
+    '<div><@if (n > 0)><p>y</p><@else><p>n</p></@if></div>\n',
+    '<@if a><p>1</p><@elseif b><p>2</p><@else><p>3</p></@if>\n',
+    '<@if (n > 0)><p>y</p><@elif (n > -1)><p>m</p><@else><p>n</p></@if>\n',
+    '<@if outer><@if (inner > 0)><p>y</p><@else><p>n</p></@if><@else><p>z</p></@if>\n',
+  ];
+  for (const source of ifChains) {
+    await roundTrip(source);
+  }
+
+  const reported = await format('<div><@if (n > 0)><p>y</p><@else><p>n</p></@if></div>\n');
+  assert.ok(reported.includes('<@if (n > 0)><p>y</p><@else><p>n</p></@if>'), 'if/else chain source is preserved');
+  assert.ok(!/avenx-|data-avenx-/.test(reported), 'no encoding placeholders leak from if/else chains');
+
+  const bracketedIf = await roundTrip('<@if (n > 0)><p>y</p></@if>\n');
+  assert.ok(bracketedIf.includes('<@if (n > 0)>'), 'bracketed if condition survives formatting');
+  assert.ok(!bracketedIf.includes('<@if (n>'), 'comparison > is not treated as the tag end');
+
+  console.log('  ✅ <@if> / <@elseif> / <@elif> / <@else> chains format and round-trip');
 
   const click = 'count > 1 ? count-- : count++';
   const bindings = `<button @css button @click="${click}">{{ count }}</button>`;
