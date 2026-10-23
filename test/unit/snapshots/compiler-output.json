@@ -1,0 +1,668 @@
+{
+  "basic-elements.html": {
+    "ir": {
+      "kind": "fragment",
+      "children": [
+        {
+          "kind": "element",
+          "tag": "main",
+          "attrs": {
+            "class": "page"
+          },
+          "bindings": [],
+          "events": [],
+          "children": [
+            {
+              "kind": "element",
+              "tag": "h1",
+              "attrs": {},
+              "bindings": [],
+              "events": [],
+              "children": [
+                {
+                  "kind": "interpolation",
+                  "expr": "title",
+                  "raw": false
+                }
+              ],
+              "selfClosing": false,
+              "isStatic": false
+            },
+            {
+              "kind": "element",
+              "tag": "a",
+              "attrs": {},
+              "bindings": [
+                {
+                  "type": "attr",
+                  "name": "href",
+                  "expr": "url"
+                }
+              ],
+              "events": [],
+              "children": [
+                {
+                  "kind": "text",
+                  "value": "Open"
+                }
+              ],
+              "selfClosing": false,
+              "isStatic": false
+            }
+          ],
+          "selfClosing": false,
+          "isStatic": false
+        },
+        {
+          "kind": "text",
+          "value": "\n"
+        }
+      ]
+    },
+    "program": {
+      "v": 2,
+      "html": "<main class=\"page\"><h1><!--axt:0--></h1><a data-axb=\"0\">Open</a></main>\n",
+      "ops": [
+        {
+          "k": "text",
+          "t": 0,
+          "x": 0
+        },
+        {
+          "k": "attr",
+          "e": 0,
+          "x": 1,
+          "a": "href"
+        }
+      ],
+      "elements": 1,
+      "texts": 1
+    },
+    "expressions": [
+      "title",
+      "url"
+    ],
+    "statements": [],
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"title\")),\n  ($s) => (axGet($s, \"url\"))\n];\n"
+  },
+  "components-with-slots.html": {
+    "ir": {
+      "kind": "fragment",
+      "children": [
+        {
+          "kind": "component",
+          "name": "Layout",
+          "props": [],
+          "children": [
+            {
+              "kind": "element",
+              "tag": "header",
+              "attrs": {
+                "slot": "header"
+              },
+              "bindings": [],
+              "events": [],
+              "children": [
+                {
+                  "kind": "interpolation",
+                  "expr": "heading",
+                  "raw": false
+                }
+              ],
+              "selfClosing": false,
+              "isStatic": false
+            },
+            {
+              "kind": "element",
+              "tag": "article",
+              "attrs": {},
+              "bindings": [],
+              "events": [],
+              "children": [
+                {
+                  "kind": "interpolation",
+                  "expr": "content",
+                  "raw": false
+                }
+              ],
+              "selfClosing": false,
+              "isStatic": false
+            },
+            {
+              "kind": "component",
+              "name": "Footer",
+              "props": [],
+              "children": [
+                {
+                  "kind": "slot",
+                  "name": "default",
+                  "fallback": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "text",
+          "value": "\n"
+        }
+      ]
+    },
+    "program": {
+      "v": 2,
+      "html": "<div data-avenx-comp=\"Layout\"><header slot=\"header\"><!--axt:0--></header><article><!--axt:1--></article><div data-avenx-comp=\"Footer\"><slot></slot></div></div>\n",
+      "ops": [
+        {
+          "k": "text",
+          "t": 0,
+          "x": 0
+        },
+        {
+          "k": "text",
+          "t": 1,
+          "x": 1
+        }
+      ],
+      "elements": 0,
+      "texts": 2
+    },
+    "expressions": [
+      "heading",
+      "content"
+    ],
+    "statements": [],
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"heading\")),\n  ($s) => (axGet($s, \"content\"))\n];\n"
+  },
+  "conditionals.html": {
+    "ir": {
+      "kind": "fragment",
+      "children": [
+        {
+          "kind": "element",
+          "tag": "div",
+          "attrs": {},
+          "bindings": [],
+          "events": [],
+          "children": [
+            {
+              "kind": "if",
+              "branches": [
+                {
+                  "test": "ready",
+                  "body": {
+                    "kind": "fragment",
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "strong",
+                        "attrs": {},
+                        "bindings": [],
+                        "events": [],
+                        "children": [
+                          {
+                            "kind": "interpolation",
+                            "expr": "message",
+                            "raw": false
+                          }
+                        ],
+                        "selfClosing": false,
+                        "isStatic": false
+                      }
+                    ]
+                  }
+                },
+                {
+                  "test": "loading",
+                  "body": {
+                    "kind": "fragment",
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "span",
+                        "attrs": {},
+                        "bindings": [],
+                        "events": [],
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Loading"
+                          }
+                        ],
+                        "selfClosing": false,
+                        "isStatic": false
+                      }
+                    ]
+                  }
+                },
+                {
+                  "test": null,
+                  "body": {
+                    "kind": "fragment",
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "em",
+                        "attrs": {},
+                        "bindings": [],
+                        "events": [],
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Unavailable"
+                          }
+                        ],
+                        "selfClosing": false,
+                        "isStatic": false
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "selfClosing": false,
+          "isStatic": false
+        },
+        {
+          "kind": "text",
+          "value": "\n"
+        }
+      ]
+    },
+    "program": {
+      "v": 2,
+      "html": "<div><!--axt:0--></div>\n",
+      "ops": [
+        {
+          "k": "if",
+          "t": 0,
+          "arms": [
+            {
+              "x": 0,
+              "b": 0
+            },
+            {
+              "x": 2,
+              "b": 1
+            },
+            {
+              "x": null,
+              "b": 2
+            }
+          ]
+        }
+      ],
+      "elements": 0,
+      "texts": 1,
+      "blocks": [
+        {
+          "html": "<strong><!--axt:0--></strong>",
+          "ops": [
+            {
+              "k": "text",
+              "t": 0,
+              "x": 1
+            }
+          ],
+          "elements": 0,
+          "texts": 1
+        },
+        {
+          "html": "<span>Loading</span>",
+          "ops": [],
+          "elements": 0,
+          "texts": 0
+        },
+        {
+          "html": "<em>Unavailable</em>",
+          "ops": [],
+          "elements": 0,
+          "texts": 0
+        }
+      ]
+    },
+    "expressions": [
+      "ready",
+      "message",
+      "loading"
+    ],
+    "statements": [],
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"ready\")),\n  ($s) => (axGet($s, \"message\")),\n  ($s) => (axGet($s, \"loading\"))\n];\n"
+  },
+  "for-empty.html": {
+    "ir": {
+      "kind": "fragment",
+      "children": [
+        {
+          "kind": "element",
+          "tag": "ul",
+          "attrs": {},
+          "bindings": [],
+          "events": [],
+          "children": [
+            {
+              "kind": "for",
+              "list": "rows",
+              "item": "row",
+              "destructure": null,
+              "key": "row.id",
+              "body": {
+                "kind": "fragment",
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "li",
+                    "attrs": {},
+                    "bindings": [],
+                    "events": [],
+                    "children": [
+                      {
+                        "kind": "interpolation",
+                        "expr": "index",
+                        "raw": false
+                      },
+                      {
+                        "kind": "text",
+                        "value": ": "
+                      },
+                      {
+                        "kind": "interpolation",
+                        "expr": "row.label",
+                        "raw": false
+                      }
+                    ],
+                    "selfClosing": false,
+                    "isStatic": false
+                  }
+                ]
+              },
+              "empty": {
+                "kind": "fragment",
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "li",
+                    "attrs": {},
+                    "bindings": [],
+                    "events": [],
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "No rows"
+                      }
+                    ],
+                    "selfClosing": false,
+                    "isStatic": false
+                  }
+                ]
+              }
+            }
+          ],
+          "selfClosing": false,
+          "isStatic": false
+        },
+        {
+          "kind": "text",
+          "value": "\n"
+        }
+      ]
+    },
+    "program": {
+      "v": 2,
+      "html": "<ul><!--axt:0--></ul>\n",
+      "ops": [
+        {
+          "k": "for",
+          "t": 0,
+          "x": 0,
+          "b": 0,
+          "as": "row",
+          "key": 3,
+          "emp": 1
+        }
+      ],
+      "elements": 0,
+      "texts": 1,
+      "blocks": [
+        {
+          "html": "<li><!--axt:0-->: <!--axt:1--></li>",
+          "ops": [
+            {
+              "k": "text",
+              "t": 0,
+              "x": 1
+            },
+            {
+              "k": "text",
+              "t": 1,
+              "x": 2
+            }
+          ],
+          "elements": 0,
+          "texts": 2
+        },
+        {
+          "html": "<li>No rows</li>",
+          "ops": [],
+          "elements": 0,
+          "texts": 0
+        }
+      ]
+    },
+    "expressions": [
+      "rows",
+      "index",
+      "row.label",
+      "row.id"
+    ],
+    "statements": [],
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"rows\")),\n  ($s) => (axGet($s, \"index\")),\n  ($s) => (axRead(axGet($s, \"row\"), \"label\", false)),\n  ($s) => (axRead(axGet($s, \"row\"), \"id\", false))\n];\n"
+  },
+  "nested-components.html": {
+    "ir": {
+      "kind": "fragment",
+      "children": [
+        {
+          "kind": "component",
+          "name": "Panel",
+          "props": [
+            {
+              "name": "title",
+              "kind": "bound",
+              "expr": "pageTitle"
+            },
+            {
+              "name": "mode",
+              "kind": "static",
+              "value": "wide"
+            }
+          ],
+          "children": [
+            {
+              "kind": "component",
+              "name": "Card",
+              "props": [
+                {
+                  "name": "user",
+                  "kind": "bound",
+                  "expr": "user"
+                },
+                {
+                  "name": "@click.stop",
+                  "kind": "event",
+                  "expr": "select(user)"
+                }
+              ],
+              "children": [
+                {
+                  "kind": "element",
+                  "tag": "span",
+                  "attrs": {},
+                  "bindings": [],
+                  "events": [],
+                  "children": [
+                    {
+                      "kind": "interpolation",
+                      "expr": "user.name",
+                      "raw": false
+                    }
+                  ],
+                  "selfClosing": false,
+                  "isStatic": false
+                },
+                {
+                  "kind": "element",
+                  "tag": "small",
+                  "attrs": {
+                    "slot": "footer"
+                  },
+                  "bindings": [],
+                  "events": [],
+                  "children": [
+                    {
+                      "kind": "interpolation",
+                      "expr": "footer",
+                      "raw": false
+                    }
+                  ],
+                  "selfClosing": false,
+                  "isStatic": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "text",
+          "value": "\n"
+        }
+      ]
+    },
+    "program": {
+      "v": 2,
+      "html": "<div data-avenx-comp=\"Panel\" data-axb=\"0\"><div data-avenx-comp=\"Card\" data-axb=\"1\"><span><!--axt:0--></span><small slot=\"footer\"><!--axt:1--></small></div></div>\n",
+      "ops": [
+        {
+          "k": "prop",
+          "e": 0,
+          "n": "title",
+          "x": 0
+        },
+        {
+          "k": "prop",
+          "e": 0,
+          "n": "mode",
+          "x": 1
+        },
+        {
+          "k": "prop",
+          "e": 1,
+          "n": "user",
+          "x": 2
+        },
+        {
+          "k": "event",
+          "e": 1,
+          "n": "click",
+          "m": [
+            "stop"
+          ],
+          "x": 0
+        },
+        {
+          "k": "text",
+          "t": 0,
+          "x": 3
+        },
+        {
+          "k": "text",
+          "t": 1,
+          "x": 4
+        }
+      ],
+      "elements": 2,
+      "texts": 2
+    },
+    "expressions": [
+      "pageTitle",
+      "'wide'",
+      "user",
+      "user.name",
+      "footer"
+    ],
+    "statements": [
+      "select(user)"
+    ],
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"pageTitle\")),\n  ($s) => (\"wide\"),\n  ($s) => (axGet($s, \"user\")),\n  ($s) => (axRead(axGet($s, \"user\"), \"name\", false)),\n  ($s) => (axGet($s, \"footer\"))\n];\nSnapshot.__axProgramStmts = [\n  ($s) => { axCall(axGet($s, \"select\"), undefined, [axGet($s, \"user\")], \"select\"); }\n];\n"
+  },
+  "slots.html": {
+    "ir": {
+      "kind": "fragment",
+      "children": [
+        {
+          "kind": "element",
+          "tag": "section",
+          "attrs": {},
+          "bindings": [],
+          "events": [],
+          "children": [
+            {
+              "kind": "slot",
+              "name": "heading",
+              "fallback": {
+                "kind": "fragment",
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "h2",
+                    "attrs": {},
+                    "bindings": [],
+                    "events": [],
+                    "children": [
+                      {
+                        "kind": "interpolation",
+                        "expr": "defaultHeading",
+                        "raw": false
+                      }
+                    ],
+                    "selfClosing": false,
+                    "isStatic": false
+                  }
+                ]
+              }
+            },
+            {
+              "kind": "slot",
+              "name": "default",
+              "fallback": null
+            }
+          ],
+          "selfClosing": false,
+          "isStatic": false
+        },
+        {
+          "kind": "text",
+          "value": "\n"
+        }
+      ]
+    },
+    "program": {
+      "v": 2,
+      "html": "<section><slot name=\"heading\"><h2><!--axt:0--></h2></slot><slot></slot></section>\n",
+      "ops": [
+        {
+          "k": "text",
+          "t": 0,
+          "x": 0
+        }
+      ],
+      "elements": 0,
+      "texts": 1
+    },
+    "expressions": [
+      "defaultHeading"
+    ],
+    "statements": [],
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"defaultHeading\"))\n];\n"
+  }
+}
