@@ -352,6 +352,66 @@ function runTests() {
   });
   assert.strictEqual(warningsNegative.length, 0);
 
+  // Fallback scope tests for AVX_W03
+  console.log('  Testing <@fallback> scope...');
+
+  // Deadlock fallback: name and custom alias are in scope
+  const warningsDeadlock = captureWarnings(() => {
+    cp.extractTemplate(
+      '<@deadlock name="a"><p>Body</p><@fallback as="err"><p>{{ name }} {{ err.message }}</p></@fallback></@deadlock>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsDeadlock.length, 0);
+
+  // Deadlock fallback: default alias is error
+  const warningsDefaultAlias = captureWarnings(() => {
+    cp.extractTemplate(
+      '<@deadlock name="a"><p>Body</p><@fallback><p>{{ name }} {{ error.message }}</p></@fallback></@deadlock>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsDefaultAlias.length, 0);
+
+  // Undeclared variables inside a fallback must still warn
+  const warningsMissing = captureWarnings(() => {
+    cp.extractTemplate(
+      '<@deadlock name="a"><@fallback as="err"><p>{{ err.message }} {{ missingInFallback }}</p></@fallback></@deadlock>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.strictEqual(warningsMissing.length, 1);
+  assert.ok(warningsMissing[0].includes('missingInFallback'));
+
+  // The fallback alias must not be available outside the fallback
+  const warningsOutside = captureWarnings(() => {
+    cp.extractTemplate(
+      '<div>{{ err.message }}</div><@deadlock name="a"><@fallback as="err"><p>{{ err.message }}</p></@fallback></@deadlock>',
+      {},
+      'MyComp',
+      'my-component.js',
+      {},
+      {},
+      {},
+    );
+  });
+  assert.ok(warningsOutside.some((warning) => warning.includes('"err"')));
+
   console.log('  ✅ Compile-time Static Validation tests passed!');
 }
 
