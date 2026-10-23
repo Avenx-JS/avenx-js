@@ -13,9 +13,8 @@ They review pull requests, manage releases, and handle issues.
 
 If you have questions or want to contribute, feel free to reach out.
 
-- [@nathanschmid08](https://github.com/nathanschmid08) — Founder & Core Maintainer
-- [@nathan-schmid](https://github.com/nathan-schmid) — Core Maintainer
-- [@Bimbelbumbel123](https://github.com/bimbelbumbel123) — Co-Founder & DevOps
+- [@nathanschmid08](https://github.com/nathanschmid08) — Core Maintainer & Feature Owner
+- [@Bimbelbumbel123](https://github.com/bimbelbumbel123) — DevOps, Core Maintainer & Community Leader
 
 ---
 
