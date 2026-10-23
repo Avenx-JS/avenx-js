@@ -1,18 +1,18 @@
 /**
- * @file compilerSnapshots.test.js
+ * @file compilerSnapshots.js
  * @description Snapshot the template IR and generated render-program output.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildProgramTables } from '../../lib/compiler/codegen/table.js';
-import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
-import { lowerToProgram } from '../../lib/compiler/ir/lower.js';
+import { buildProgramTables } from '../lib/compiler/codegen/table.js';
+import { buildTemplateIR } from '../lib/compiler/ir/build.js';
+import { lowerToProgram } from '../lib/compiler/ir/lower.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const fixtureDirectory = path.join(__dirname, '../fixtures/compiler-snapshots/templates');
-const snapshotPath = path.join(__dirname, 'snapshots/compiler-output.json');
+const fixtureDirectory = path.join(__dirname, '../test/fixtures/compiler-snapshots/templates');
+const snapshotPath = path.join(__dirname, '../test/unit/snapshots/compiler-output.json');
 const updateSnapshots = process.env.AVENX_UPDATE_SNAPSHOTS === '1';
 
 const fixtureFiles = fs
@@ -48,7 +48,7 @@ const output = Object.fromEntries(
 if (updateSnapshots) {
   fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
   fs.writeFileSync(snapshotPath, `${JSON.stringify(output, null, 2)}\n`);
-  console.log(`✅ Updated compiler snapshots: ${path.relative(path.join(__dirname, '../..'), snapshotPath)}`);
+  console.log(`✅ Updated compiler snapshots: ${path.relative(path.join(__dirname, '..'), snapshotPath)}`);
 } else {
   assert.ok(
     fs.existsSync(snapshotPath),

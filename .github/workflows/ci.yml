@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests, including compiler snapshots
+      - name: Run tests
         run: npm test
 
       - name: Run plugin tests
