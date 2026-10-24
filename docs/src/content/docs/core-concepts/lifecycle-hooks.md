@@ -242,6 +242,8 @@ onErrorCaptured(error, instance, info) {
 
 ### 8. `onEnter()`
 
+`onEnter`, `onBeforeLeave`, and `onLeave` work on both pages and components. In a single-file page or component, declare them with `<action name="onEnter">`, `<action name="onBeforeLeave">`, or `<action name="onLeave">`. Return the Promise from `onBeforeLeave` to keep the current content mounted until it resolves; returning nothing allows immediate teardown.
+
 - **Trigger:** Runs immediately after the component instance completes its initial mount and first render update (`LifecycleManager.mount()`).
 - **Use Cases:** Triggering entrance CSS transitions, Web Animations API sequences, tracking page view analytics/impressions, or setting initial focus.
 - **DOM Availability:** Fully mounted and accessible via `this.el`.
