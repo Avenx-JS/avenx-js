@@ -39,6 +39,137 @@ jobs:
         if: matrix.node-version != 18
         run: npm run lint
 
+  compiler-test-coverage:
+    name: Compiler test coverage
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      has_compiler_changes: ${{ steps.changed-files.outputs.has_compiler_changes }}
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changed files
+        id: changed-files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed_files="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+
+          if ! grep -Eq '^(lib/compiler/|lib/compiler\.js$)' <<< "$changed_files"; then
+            echo "No compiler source changes detected."
+            echo "has_compiler_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_compiler_changes=true" >> "$GITHUB_OUTPUT"
+
+          if grep -Eq '(^|/)[^/]+\.(test|spec)\.[^/]+$' <<< "$changed_files"; then
+            echo "has_test_changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_test_changes=false" >> "$GITHUB_OUTPUT"
+
+      - name: Warn if compiler changes have no test changes
+        if: steps.changed-files.outputs.has_compiler_changes == 'true' && steps.changed-files.outputs.has_test_changes == 'false'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if grep -Fqi '[no-test-needed]' <<< "$PR_BODY"; then
+            echo "::notice title=Compiler test coverage override::[no-test-needed] override acknowledged. Include the reason in the pull request description."
+          else
+            echo "::warning title=Compiler test coverage::Compiler source changed without a test file change. Add a regression test or document a [no-test-needed] override in the pull request description."
+          fi
+
+      - name: Setup Node.js
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        run: npm ci
+
+      - name: Run tests with compiler coverage
+        id: run-tests
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        continue-on-error: true
+        run: npx c8 --all --include="lib/compiler/**" --include="lib/compiler.js" --reporter=json npm test
+
+      - name: Generate compiler coverage report
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TEST_RESULT: ${{ steps.run-tests.outcome }}
+        run: node scripts/compilerCoverageReport.js "$BASE_SHA" "$HEAD_SHA" coverage/coverage-final.json compiler-coverage-report.md
+
+      - name: Add coverage report to job summary
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        run: cat compiler-coverage-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload compiler coverage report
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiler-coverage-report
+          path: compiler-coverage-report.md
+
+  compiler-test-coverage-comment:
+    name: Comment compiler test coverage
+    needs: compiler-test-coverage
+    if: needs.compiler-test-coverage.outputs.has_compiler_changes == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Download compiler coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: compiler-coverage-report
+
+      - name: Post or update PR coverage comment
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const commentBody = fs.readFileSync('compiler-coverage-report.md', 'utf8');
+            const { owner, repo, number } = context.issue;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: number,
+            });
+            const marker = '### Compiler Test Coverage';
+            const existingComment = comments.find((comment) => comment.body.includes(marker));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: commentBody,
+              });
+              console.log('Updated compiler coverage comment.');
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: commentBody,
+              });
+              console.log('Created compiler coverage comment.');
+            }
+
   e2e:
     name: E2E (Chromium)
     runs-on: ubuntu-latest
