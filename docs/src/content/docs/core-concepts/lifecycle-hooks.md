@@ -227,6 +227,8 @@ onDeactivate() {
 - **Trigger:** Called when an unhandled exception is caught from a descendant child component.
 - **Return Value:** Return `false` to stop error propagation up the component tree and prevent application crashes.
 
+Hooks run from the nearest component towards the page, then the application's error handler. Returning nothing lets the error continue to the next ancestor. This applies to lifecycle errors and, when no declarative error fallback handles them, rendering errors and rejected resources. The `instance` argument identifies the child that failed.
+
 ```javascript
 onErrorCaptured(error, instance, info) {
   console.error(`Captured error from ${instance.constructor.name} during ${info}:`, error);
