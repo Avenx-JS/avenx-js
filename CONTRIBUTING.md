@@ -89,6 +89,12 @@ A quick start for working on the codebase:
 
 Unit and integration tests belong in their matching `test/unit` and `test/integration` directories. Use E2E tests when the behavior needs a real compiled Avenx app running in a browser; see the E2E guide for the distinction.
 
+### Compiler changes and regression tests
+
+Changes under `lib/compiler/` (or to `lib/compiler.js`) should include a corresponding test file in the same pull request. CI checks the PR diff and posts a non-blocking warning when compiler source changes without a changed `*.test.*` or `*.spec.*` file. For compiler changes, CI also runs the tests with coverage instrumentation and posts or updates a PR comment showing the test result, overall compiler line and branch coverage, diff size, changed-line coverage, and any changed uncovered lines or branches. This report is based on the PR version of the code; changed executable lines not covered by its tests are identified as uncovered. For fork PRs where GitHub does not grant the workflow a write token, the report is available in the CI job summary instead.
+
+For a legitimate change that does not need new or updated tests, such as a pure refactor already covered by existing tests, add `[no-test-needed]` to the pull request description and explain why no test change is needed. This suppresses the reminder; it does not waive the usual expectation to maintain adequate compiler coverage.
+
 ## Plugin tests
 
 Official plugins under `plugins/` ship their own suites. From the repository root run:
