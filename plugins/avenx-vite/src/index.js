@@ -16,6 +16,11 @@ const version = pkg.version;
  * Creates the Avenx Vite plugin.
  * @param {object} options - Plugin configuration.
  * @param {boolean} [options.debug] - Enables debug logging.
+ * @param {{strict?: boolean}} [options.csp] - Content-Security-Policy posture.
+ *   With `strict: true` a module whose expressions did not all compile to
+ *   functions fails the transform, instead of being left to the runtime
+ *   interpreter -- which is what would need `'unsafe-eval'`. Equivalent to
+ *   `csp.strict` in avenx.config.json, and read from `options.config` too.
  * @returns {import('vite').Plugin}
  */
 export function avenxPlugin(options = {}) {

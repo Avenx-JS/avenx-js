@@ -68,6 +68,7 @@ export default defineConfig({
     avenxVite({
       debug: false,
       sourcemap: true,
+      csp: { strict: true },
       style: {
         scoped: true,
       },
@@ -81,6 +82,7 @@ export default defineConfig({
 | `debug`     | `boolean` | `false`       | When `true`, outputs `[avenx-vite]` logs to the terminal for file resolution, style loading, compilation phases, and HMR events. |
 | `sourcemap` | `boolean` | `true in dev` | Generates Source Map v3 mappings for component and page templates to assist DevTools breakpoint debugging.                       |
 | `style`     | `object`  | `{}`          | Configuration object forwarded directly to Avenx's internal `StyleProcessor` for style scoping and transformation rules.         |
+| `csp`       | `object`  | `{}`          | `{ strict: true }` fails the transform (AVX_C31) for a module whose expressions did not all compile to functions, instead of leaving them to the runtime interpreter — which is what would need `script-src 'unsafe-eval'`. The same option as `csp.strict` in `avenx.config.json`, and read from a config object passed as `config` too. |
 
 ---
 

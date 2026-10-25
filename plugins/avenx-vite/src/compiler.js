@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import StyleProcessor from '../../../lib/compiler/StyleProcessor.js';
 import ComponentParser from '../../../lib/compiler/ComponentParser.js';
+import { AvenxErrorCodes } from '../../../lib/core/runtime/AvenxError.js';
+import { BuildError } from '../../../lib/compiler/errors/index.js';
 import { wrapComponent, wrapPage } from './wrapper.js';
 import { generateTemplateSourceMap } from './sourcemap.js';
 import { COMPONENT_CSS_EXT, PAGE_CSS_EXT } from './constants.js';
@@ -20,6 +22,18 @@ const MODULE_EXTENSIONS = ['.js', '.html', '.avx'];
  */
 export function createCompiler(options = {}) {
   const debug = options.debug ?? false;
+
+  /**
+   * Whether this project asked for a build that needs no `'unsafe-eval'`.
+   *
+   * Accepted both as a plugin option and from a passed-through
+   * avenx.config.json, because a project using the Vite plugin may keep either
+   * as the source of truth and the two disagreeing silently is the failure
+   * worth avoiding.
+   * @type {boolean}
+   */
+  const cspStrict = (options.csp && options.csp.strict === true) ||
+    !!(options.config && options.config.csp && options.config.csp.strict === true);
 
   /**
    * Builds a parser backed by a dedicated StyleProcessor.
@@ -88,6 +102,46 @@ export function createCompiler(options = {}) {
   }
 
   /**
+   * Refuses a module whose expressions did not all compile to functions.
+   *
+   * The CLI compiler can make this decision once, over the whole application,
+   * because it owns the bundle. This plugin only ever sees one module at a
+   * time and Vite assembles the result, so the equivalent check has to happen
+   * per transform -- which is also when it is most useful, since the developer
+   * is looking at the file that caused it.
+   *
+   * What makes it necessary rather than merely tidy: an expression left out of
+   * the table falls back to the interpreter at run time, and interpreting a
+   * statement body reaches the Function constructor. A project running under
+   * `script-src 'self'` would see that as a blocked-eval console error on an
+   * interaction, long after the build it came from.
+   * @param {ComponentParser} parser - The parser that just compiled the module.
+   * @param {string} filePath - The module, for the diagnostic.
+   * @throws {BuildError} AVX_C31 when any expression did not compile.
+   */
+  function assertEveryExpressionCompiled(parser, filePath) {
+    const units = parser.expressionGaps || [];
+    const entries = [];
+    for (const unit of units) {
+      for (const refusal of unit.refusals || []) {
+        entries.push({ ...refusal, name: unit.name });
+      }
+      for (const gap of unit.gaps || []) {
+        entries.push({ ...gap, name: unit.name });
+      }
+    }
+    if (entries.length === 0) {
+      return;
+    }
+
+    const detail = entries
+      .map((entry) => `  <${entry.name}> ${filePath} ${JSON.stringify(entry.source)} - ${entry.reason}`)
+      .sort()
+      .join('\n');
+    throw new BuildError(AvenxErrorCodes.COMPILER_CSP_STRICT_EXPRESSION, entries.length, detail);
+  }
+
+  /**
    * Compiles a component or page module and its scoped styles.
    * @param {string} filePath - Path to the source file.
    * @param {'component'|'page'} type - Compilation type.
@@ -96,6 +150,9 @@ export function createCompiler(options = {}) {
   function compileModule(filePath, type) {
     const { parser, styleProcessor } = createParser();
     const parsedCode = parser.parse(filePath, type);
+    if (cspStrict) {
+      assertEveryExpressionCompiled(parser, filePath);
+    }
     return {
       template: parsedCode,
       css: styleProcessor.getGlobalStyles(),
