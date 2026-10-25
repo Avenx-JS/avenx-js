@@ -41,7 +41,13 @@ export const APPS_DIR = path.resolve(here, '../apps');
  * exists to pin a framework bug. Those are excluded from the smoke boot loop,
  * which would otherwise report a failure the suite already documents on
  * purpose.
- * @type {Array<{name: string, summary: string, developmentBuild?: boolean, documentsKnownGaps?: boolean}>}
+ *
+ * `headers` are response headers the server adds to every file under the app.
+ * Only the CSP fixture needs any: its whole point is to be served under a
+ * policy that forbids `'unsafe-eval'`, which cannot be expressed in the page
+ * itself -- a `<meta>` CSP is weaker than a header and is not what a
+ * deployment uses.
+ * @type {Array<{name: string, summary: string, developmentBuild?: boolean, documentsKnownGaps?: boolean, headers?: Object<string, string>}>}
  */
 export const APPS = [
   {
@@ -91,6 +97,29 @@ export const APPS = [
     summary: 'srcdoc and event-handler attributes: injection is neutralised, trusted opt-in works.',
   },
   {
+    name: 'csp',
+    summary: 'Built with csp.strict and served under script-src \'self\': every expression kind, with no \'unsafe-eval\'.',
+    // Both bundles are driven under the policy. The production one is the
+    // claim the framework already made; the development one is what the
+    // option adds, and is therefore the half of this fixture that is new.
+    developmentBuild: true,
+    headers: {
+      // Deliberately the policy a security review asks for, not a minimal one.
+      // `script-src 'self'` is what forbids eval and the Function
+      // constructor. The style relaxation is required and documented: a
+      // component stylesheet is mounted as a <style> element the runtime
+      // creates, and the alternative is a per-response nonce, which a static
+      // file server cannot issue.
+      'Content-Security-Policy': [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "object-src 'none'",
+        "base-uri 'none'",
+      ].join('; '),
+    },
+  },
+  {
     name: 'guard-gaps',
     summary: 'Pins two guard compilation bugs; its bundle is expected not to parse.',
     documentsKnownGaps: true,
@@ -106,6 +135,21 @@ export const APPS = [
  */
 export function workingApps() {
   return APPS.filter((app) => !app.documentsKnownGaps);
+}
+
+/**
+ * The response headers a fixture application is served with.
+ *
+ * Matched on the first path segment, which is how the server maps a request to
+ * an app. An unknown segment gets no headers rather than an error: the server
+ * answers those with a 404 anyway.
+ * @param {string} pathname - The decoded request path.
+ * @returns {Object<string, string>} Headers to add, possibly empty.
+ */
+export function headersFor(pathname) {
+  const segment = pathname.replace(/^\/+/, '').split('/')[0];
+  const app = APPS.find((entry) => entry.name === segment);
+  return (app && app.headers) || {};
 }
 
 /**

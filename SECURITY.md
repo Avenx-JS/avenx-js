@@ -90,6 +90,30 @@ When using Avenx.js, we recommend:
 - Never exposing secrets or API keys in client-side code.
 - Following general web security best practices (e.g. Content Security Policy, input validation, output escaping, HTTPS).
 
+### Content Security Policy
+
+A production build needs no `script-src 'unsafe-eval'`. Every template
+expression, directive binding, list key, inline event handler and `<action>`
+body is compiled to a real JavaScript function at build time, so nothing in the
+bundle evaluates source at run time.
+
+A development build (`avenx build --dev`, `avenx serve`) does carry the
+expression interpreter, so that a template being edited keeps rendering — and it
+therefore needs `'unsafe-eval'`. It is not meant to be deployed. Where a
+development build has to run under the production policy, build with
+`--csp-strict` (or set `"csp": { "strict": true }`), which leaves the
+interpreter out and then parses the emitted bundle and refuses it if it still
+contains `eval`, the `Function` constructor or a `with` statement.
+
+Component stylesheets are mounted as `<style>` elements the runtime creates, so
+an Avenx page needs `style-src 'self' 'unsafe-inline'` in every mode, unless
+you supply a per-response nonce via
+`Avenx.styleMountManager.setCspNonce(nonce)`.
+
+Every build prints the directives its output can run under. The [deployment
+guide](https://avenx-js.com/guides/deployment#content-security-policy-csp) has
+the per-mode table.
+
 ---
 
 ## Hall of Thanks

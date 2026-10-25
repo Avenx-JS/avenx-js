@@ -431,6 +431,8 @@ const app = new AvenxApp({
 | `[AVX_C28]` | <{0}> binds the inline event handler "{1}" to an interpolated value. | **Identifier:** `COMPILER_BOUND_EVENT_ATTRIBUTE`.<br />**Cause:** An `on*` attribute on an HTML element has an interpolated value (`onclick="{{ handler }}"`). Its value runs as JavaScript, so a state value would become code, and it does not run under a strict CSP.<br />**Resolution:** Use the event directive: `@click="handler"` or `@click="handler()"`. An `on*` attribute on a child component is a prop and is unaffected. See [Events](/core-concepts/events/). |
 | `[AVX_C29]` | <{0}> writes a dynamic attribute binding whose {1} is an interpolation. | **Identifier:** `COMPILER_INTERPOLATED_DYNAMIC_ATTRIBUTE`.<br />**Cause:** A dynamic attribute binding was written as `:[key]="{{ value }}"` or `:[{{ key }}]="value"`. Both slots of `:[name]="value"` are expressions, so the braces become part of the expression: it resolves to nothing and the attribute is never set, in development and in production alike.<br />**Resolution:** Drop the braces: `:[key]="value"`. To interpolate into an attribute whose name is fixed, write an ordinary attribute instead: `data-tone="{{ value }}"`. See [Dynamic attributes](/api-reference/utils/). |
 | `[AVX_C30]` | Unhandled template AST node type "{0}"{1} in {2}. | **Identifier:** `COMPILER_UNHANDLED_AST_NODE`.<br />**Cause:** A compiler pass over the template AST reached a node type it has no branch for — normally because a change to the template parser introduced a node kind an existing pass was never taught to read.<br />**Resolution:** Add an explicit branch for the reported node type to the pass named in the message. This is an internal invariant rather than a mistake in your template: a node type with no branch would otherwise be mis-handled silently and emit output that looks valid, so the build stops instead. |
+| `[AVX_C31]` | csp.strict is on, and {0} expression(s) could not be compiled to a function. | **Identifier:** `COMPILER_CSP_STRICT_EXPRESSION`.<br />**Cause:** The same expressions as `AVX_C27`, in a build with `"csp": { "strict": true }` — which refuses them in a development build too, because the fallback is the expression interpreter and interpreting a statement body needs the `Function` constructor.<br />**Resolution:** The message lists each expression with its component, file, line and reason. Rewrite it in the [expression language](/core-concepts/template-expressions/), or move the logic into an `<action>`. Dropping `csp.strict` goes back to `AVX_W48` in development. |
+| `[AVX_C32]` | csp.strict is on, but {0} still contains {1} at line {2}. | **Identifier:** `COMPILER_CSP_STRICT_DYNAMIC_CODE`.<br />**Cause:** The emitted bundle contains `eval`, the `Function` constructor or a `with` statement, so it would need `script-src 'unsafe-eval'`. It can come from a hand-written module in the project, from a dependency the bundle links, or — if neither — from framework code, which is a bug.<br />**Resolution:** The message names the artifact, the line and the source text. Rewrite the construct, or keep the dependency out of the bundle. Nothing was written, so the previous `dist/` is intact. |
 | `[AVX_W53]` | Nothing in the application can reach its compiled pages. | **Identifier:** `ATLAS_NO_REACHABLE_PAGE`.<br />**Cause:** No route in `app.initRouter()` refers to a compiled page and no `app.mountPage()` call mounts one. The pages are included in the bundle but never displayed, potentially leaving the app container empty.<br />**Resolution:** Add a route such as `app.initRouter({ "": "Home" })` or call `app.mountPage("Home")` in `src/main.app.js` (use an actual page name). Silence with `"warnings": { "AVX_W53": "off" }` in `avenx.config.json` only if the unreachable pages are intentional. |
 | `[AVX_W54]` | Unterminated interpolation in template of {0}: {1} | **Identifier:** `COMPILER_UNTERMINATED_INTERPOLATION`.<br />**Cause:** A template opens an interpolation with `{{` but never closes it with `}}`. The unmatched expression is emitted as literal text, so visitors can see its braces and source instead of the intended value.<br />**Resolution:** Close the interpolation with `}}`, or escape the braces when they are intended as text. Silence with `"warnings": { "AVX_W54": "off" }` in `avenx.config.json` only when the literal output is intentional. |
 | `[AVX_W56]` | A template renders a component that the application never registers. | **Identifier:** `ATLAS_UNREGISTERED_COMPONENT`.<br />**Cause:** A page or component uses a component tag that was not registered with the app. Pages under `src/pages` are auto-registered by the compiler, but components are not. The runtime may also report `AVX_W13` when the page opens; the missing component renders as an empty element.<br />**Resolution:** Import the component and call `app.register("ComponentName", ComponentName)` in `src/main.app.js` (using its real path and name). Silence with `"warnings": { "AVX_W56": "off" }` in `avenx.config.json` only if the missing component is deliberate. |
@@ -1157,6 +1159,45 @@ Unhandled template AST node type "{0}"{1} in {2}.
 3. If you reached this by handing a hand-built node to a compiler pass, give the node a `type` the parser actually produces.
 
 If you see this while building an ordinary application, it is a bug in Avenx-JS. Please report it with the node type and location from the message.
+
+### AVX_C31 — COMPILER_CSP_STRICT_EXPRESSION
+
+
+**Error Message**
+csp.strict is on, and {0} expression(s) could not be compiled to a function.
+
+**Cause:** The project has `"csp": { "strict": true }` in `avenx.config.json`, or the build was run with `--csp-strict`, and the code generator could not turn an expression into a JavaScript function. The expressions themselves are the same ones that produce `AVX_W48` in an ordinary development build and `AVX_C27` in a production one: syntax outside the [expression language](/core-concepts/template-expressions/), or a handler or action body that is not valid JavaScript.
+
+**Impact:** The build stops and nothing is written, in a development build as well as a production one. That is the point of the option rather than a side effect of it. An expression the generator could not compile is evaluated at run time by the expression interpreter, and interpreting a *statement* body means handing it to the `Function` constructor — which is exactly what `script-src 'self'` forbids. A CSP-strict build that accepted the expression and warned would be promising a policy it had already given up on, so it refuses instead.
+
+**Resolution:**
+
+1. Read the list in the message. Each entry names the component, the file, the line and why that expression could not be compiled.
+2. Rewrite it in the supported expression language, or move the logic into an `<action>`, whose body is ordinary JavaScript and is compiled by the action compiler.
+3. If you need to keep building while you work on it, remove `csp.strict` (or drop `--csp-strict`) and a development build will report `AVX_W48` and carry on. Note that such a build does need `'unsafe-eval'`.
+
+### AVX_C32 — COMPILER_CSP_STRICT_DYNAMIC_CODE
+
+
+**Error Message**
+csp.strict is on, but {0} still contains {1} at line {2}.
+
+**Cause:** With `csp.strict` on, the build parses the JavaScript it has just produced and looks for the constructs that require `script-src 'unsafe-eval'`: a call to `eval`, the `Function` constructor (as `new Function(...)` or as `Function(...)`), and a `with` statement. One of them is in the output. It comes from one of three places:
+
+- a module in your own project that calls one of them;
+- a dependency the bundle links that does;
+- framework code that was reachable from the entry graph, which is a defect in Avenx-JS.
+
+The check is deliberately performed on the emitted file rather than inferred from what the compiler chose to link, because the file your browser downloads is what a security review reads. It is also an AST scan rather than a text search: the strings `new Function(` and `eval` both appear in comments and diagnostic messages the runtime carries, and a build that failed on its own documentation would be a build everyone learned to switch the check off on.
+
+**Impact:** The build stops and nothing is written, so the previous `dist/` is left intact.
+
+**Resolution:**
+
+1. The message names the artifact, the line and the source text. Find it in the reported line of the emitted bundle, and work back to the module it came from.
+2. If it is your own code, rewrite it without `eval`, the `Function` constructor or `with`.
+3. If it is a dependency, keep it out of the bundle or replace it. A library that compiles templates or expressions at run time cannot be used in a CSP-strict application.
+4. If it is framework code, please report it with the message: a CSP-strict build is meant to be able to make this promise.
 
 ### AVX_W06 — COMPILER_STATIC_SUBTREE_OPTIMIZATION_FAILED
 

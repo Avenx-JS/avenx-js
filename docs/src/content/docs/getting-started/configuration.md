@@ -47,6 +47,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `expressionCacheCapacity` | `number` | `1000` | Sets the maximum capacity of the compiled-expression cache. Must be a positive integer. Increasing it can reduce recompilation but uses more memory. |
 | `sourcesContent` | `boolean` | `true` | Includes original source code in generated source maps. Set to `false` to omit the original source content. |
 | `incremental`  | `boolean`  | `false`                | Lets `avenx serve`, `avenx watch` and `avenx check --watch` reuse the compilation of a file that has not changed, so a rebuild after one edit does not recompile the project. See [Incremental rebuilds](#incremental-rebuilds-incremental). |
+| `csp.strict`   | `boolean`  | `false`                | Refuses to emit anything that would need `script-src 'unsafe-eval'`, in a development build as well as a production one. See [CSP-strict builds](#csp-strict-builds-cspstrict). |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
 
@@ -152,6 +153,61 @@ which names a plugin provides:
 Every other identifier in the template is still checked, which is the point of
 declaring the names rather than switching `AVX_W03` off.
 
+
+## CSP-strict builds (`csp.strict`)
+
+A production build already needs no `'unsafe-eval'`: every template
+expression, directive binding, list key, inline handler and `<action>` body is
+compiled to a real JavaScript function at build time, and the expression
+interpreter that used to evaluate them is not in the bundle. A *development*
+build does carry it, so that a template you are still editing keeps rendering
+when it contains something the compiler could not compile — and the interpreter
+is the framework's last `new Function`.
+
+If a development build has to run under the same policy as production — a
+browser extension, an Electron renderer with a hardened CSP, a staging
+environment that mirrors the production headers — turn on CSP-strict mode:
+
+```json
+{
+  "csp": {
+    "strict": true
+  }
+}
+```
+
+`avenx build --csp-strict` sets it for one invocation, and the Vite plugin takes
+it as `avenxVite({ csp: { strict: true } })`.
+
+### What it changes
+
+1. **A development build leaves the interpreter out**, which is what removes
+   `new Function` from it. The bundle is around 80 KB smaller (18 KB gzipped).
+2. **An expression the compiler could not turn into a function fails the
+   build** with `AVX_C31`, in development as well as production, naming the
+   component, the file, the line and the reason. It never falls back silently,
+   because the fallback is the interpreter.
+3. **The emitted bundle is parsed, and refused if it can still evaluate
+   source** — `eval`, the `Function` constructor or a `with` statement, from
+   anywhere in the graph, your own modules and dependencies included. That is
+   `AVX_C32`, and nothing is written when it fires.
+
+The third check is the one that is worth something even in production, where
+the first two change nothing: it is a statement about the file a browser
+downloads rather than about what the compiler meant to link.
+
+### What it does not change
+
+The default build path. With the option off — which is the default — output is
+byte-identical to a build from before the option existed, and a production
+build produces the same bytes whether it is on or off.
+
+It is also not about styles. A component stylesheet is mounted as a `<style>`
+element the runtime creates, so an Avenx page needs `style-src 'self'
+'unsafe-inline'` in every mode, or a per-response nonce passed to
+`Avenx.styleMountManager.setCspNonce()`. The [deployment
+guide](/guides/deployment#content-security-policy-csp) has the directives for
+each mode.
 
 ## Build mode (`mode`)
 

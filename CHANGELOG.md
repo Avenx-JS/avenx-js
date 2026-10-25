@@ -137,6 +137,30 @@ console. Four separate defects met there, each individually invisible.
 
 ### Added
 
+- **CSP-strict builds** (`"csp": { "strict": true }`, or `avenx build
+  --csp-strict`). A production build already needs no `script-src
+  'unsafe-eval'`; a development build carries the expression interpreter, which
+  is the framework's last `new Function`. The option declines it, so a project
+  whose deployment forbids `'unsafe-eval'` — a browser extension, a hardened
+  Electron renderer, a staging environment mirroring production headers — can
+  develop under the same policy it ships under. It also parses the emitted
+  bundle and refuses it if `eval`, the `Function` constructor or a `with`
+  statement survived anywhere in the graph, including in a dependency.
+
+  Off by default, and the default build path is byte-identical to before the
+  option existed. A strict development bundle is about 80 KB smaller (18 KB
+  gzipped) for an `avenx init` project, having linked one module fewer; a
+  production bundle is unchanged. New diagnostics: `AVX_C31` (an expression that
+  did not compile, which a strict build refuses in development too) and
+  `AVX_C32` (the emitted bundle can still evaluate source). Both ship their
+  message text in the runtime's error table, as every other compiler
+  diagnostic does, which costs a production bundle about 1 KB raw and 370 bytes
+  gzipped.
+- Every build now prints the Content-Security-Policy its output can run under,
+  including the `style-src 'unsafe-inline'` that runtime-mounted component
+  stylesheets need and the `Avenx.styleMountManager.setCspNonce()` call that
+  replaces it. The deployment guide has the per-mode table; it previously
+  described `script-src` only.
 - `AVX_W53` (no reachable page), `AVX_W54` (unterminated interpolation, which
   was rendered to the page as literal text), and `AVX_W55` (a style block no
   template names), each with a catalogue entry.
@@ -158,6 +182,7 @@ console. Four separate defects met there, each individually invisible.
 | Declining the working-tree prompt exits 1 | Pass `--force`, or commit first |
 | `AVX_W53`/`AVX_W54`/`AVX_W55` may appear on an existing project | Each is a warning and silenceable with `"warnings": { "AVX_W55": "off" }` |
 | `AVX_W01` no longer counts source maps | None, unless a build relied on failing there |
+| `csp.strict` is validated as a boolean | None; the option is new and off by default. A non-boolean value is refused rather than read as truthy |
 
 ### Fixed — compiler correctness
 

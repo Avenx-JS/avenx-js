@@ -43,6 +43,7 @@ ${bold(cyan('Options:'))}
   ${green('--style <none|sass|...>')}   ${gray('Specify CSS preprocessor for init (none, sass, less, postcss)')}
   ${green('--dev')}                     ${gray('Build for development: readable runtime, inline CSS source maps')}
   ${green('--prod')}                    ${gray('Build for production (the default for "build")')}
+  ${green('--csp-strict')}              ${gray('Refuse any output needing \'unsafe-eval\', in development builds too')}
   ${green('--dry-run, -d')}             ${gray('Preview actions without writing or deleting any files')}
   ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
