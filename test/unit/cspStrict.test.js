@@ -84,6 +84,18 @@ const located = scan('const a = 1;\nconst b = 2;\nconst f = new Function("x");')
 assert.ok(located.message.includes('line 3'), `the diagnostic did not name the line: ${located.message}`);
 assert.ok(located.message.includes('new Function'), 'the diagnostic did not quote the source line');
 
+// Output the scan cannot parse is a failure, not a skip. `assertValidOutputs`
+// has already compiled the artifact with V8 by this point, so acorn refusing it
+// means the two disagree -- and passing the artifact over would leave the build
+// claiming a guarantee it never checked.
+const unparseable = scan('const a = ;');
+assert.ok(unparseable, 'the scan silently accepted an artifact it could not parse');
+assert.strictEqual(
+  unparseable.code,
+  AvenxErrorCodes.COMPILER_INVALID_OUTPUT,
+  `an unparseable artifact should be reported as invalid output, not as ${unparseable.code}`,
+);
+
 // Source maps and stylesheets are not scanned: a map legitimately contains the
 // source text of anything it maps, including the interpreter's own.
 assert.strictEqual(
