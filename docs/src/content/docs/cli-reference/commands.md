@@ -23,6 +23,7 @@ The following flags can be passed globally to `avenx` commands:
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`. | `init`, `generate`, `destroy`, `build` |
 | `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
 | `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
+| `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
 | `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
@@ -283,6 +284,27 @@ npx avenx build --dev
 
 The active mode appears in the build header, and can also be set with `mode` in `avenx.config.json` or via `NODE_ENV=development`. See the [deployment guide](/guides/deployment#build-modes) for what the two modes differ in.
 
+**`--csp-strict`** is additive to the mode rather than a mode of its own. It
+holds the build to a bundle that needs no `script-src 'unsafe-eval'`: the
+expression interpreter is left out even of a development build, an expression
+the compiler could not turn into a function fails the build (`AVX_C31`) instead
+of being interpreted at run time, and the emitted JavaScript is parsed and
+refused if it can still evaluate source (`AVX_C32`).
+
+```bash
+npx avenx build --dev --csp-strict
+```
+
+Every build prints the policy its output can run under, whether or not the flag
+was passed:
+
+```text
+Content-Security-Policy: script-src 'self'; style-src 'self' 'unsafe-inline'
+```
+
+See [CSP-strict builds](/getting-started/configuration#csp-strict-builds-cspstrict)
+and the [deployment guide](/guides/deployment#content-security-policy-csp).
+
 **Exit codes.** An unrecognised command exits `1` and names the closest match, so a mistyped command in a script never passes as success. `avenx build` exits `0` only on a successful build. Any fatal compiler error, a warning escalated to `"error"`, a failing lifecycle hook, or declining the working-tree prompt exits non-zero, so `avenx build && deploy` never deploys a failed build. See [Build Failures and Exit Codes](/guides/deployment#build-failures-and-exit-codes).
 
 #### Features & Distribution Files
@@ -292,6 +314,7 @@ The active mode appears in the build header, and can also be set with `mode` in 
 - Performs automatic component tree-shaking when `treeShakeComponents: true`.
 - Evaluates build-time template validation rules.
 - Minifies the bundled runtime in production mode.
+- Verifies, with `csp.strict`, that the emitted bundle contains no `eval`, no `Function` constructor and no `with` statement.
 - Generates JavaScript (`<outputName>.js`) and CSS (`<outputName>.css`) distribution bundles.
 
 #### Custom Output Bundle Names (`outputName`)

@@ -470,13 +470,37 @@ The `bundle.css.map` file is a debugging and source-map artifact. It is **not** 
 
 ### Content Security Policy (CSP)
 
-**A production build never needs `'unsafe-eval'`.**
+**A production build never needs `'unsafe-eval'`.** A development build does,
+unless you ask for it not to.
+
+| Build | `script-src` | `style-src` |
+| :--- | :--- | :--- |
+| `avenx build` (production) | `'self'` | `'self' 'unsafe-inline'` |
+| `avenx build --csp-strict` | `'self'` | `'self' 'unsafe-inline'` |
+| `avenx build --dev`, `avenx serve` | `'self' 'unsafe-eval'` | `'self' 'unsafe-inline'` |
+| `avenx build --dev --csp-strict` | `'self'` | `'self' 'unsafe-inline'` |
+
+Every build prints the row that applies to it, so you do not have to work it out
+from this table:
 
 ```text
-Content-Security-Policy: script-src 'self';
+Content-Security-Policy: script-src 'self'; style-src 'self' 'unsafe-inline'
 ```
 
-Everything executable in an Avenx application — template interpolations,
+The `style-src` relaxation is not about expressions. A component stylesheet is
+mounted as a `<style>` element the runtime creates, which `style-src 'self'`
+alone does not permit. Replace it with a per-response nonce instead:
+
+```js
+Avenx.styleMountManager.setCspNonce(nonce);
+```
+
+called before the application mounts, with the nonce your server put in that
+response's own `style-src 'nonce-…'`. A nonce baked into the bundle at build
+time is not a nonce — it has to change per response — which is why there is no
+configuration option for one.
+
+For the script directive, everything executable in an Avenx application — template interpolations,
 computed values, directive bindings, list keys, inline event handlers,
 `<action>` bodies and `<resource>` handlers — is compiled to ordinary
 JavaScript functions **at build time** and linked into your bundle. The
@@ -515,6 +539,49 @@ that a template you are still editing keeps rendering when it contains something
 the compiler could not compile. A development build therefore does contain
 `new Function`, and is not intended to be deployed.
 
+#### CSP-strict builds
+
+If a development build has to run under the same policy as production — a
+browser extension, an Electron renderer with a hardened CSP, a staging
+environment that mirrors the production headers — turn on CSP-strict mode:
+
+```json
+{
+  "csp": {
+    "strict": true
+  }
+}
+```
+
+or pass `--csp-strict` to a single `avenx build`. It is off by default, and a
+project that leaves it off gets byte-identical output to before the option
+existed.
+
+Three things change when it is on:
+
+1. **A development build leaves the interpreter out.** That is what removes the
+   last `new Function` from a development bundle, and it makes the bundle
+   smaller — around 80 KB raw, 18 KB gzipped.
+2. **An expression that did not compile fails the build** with `AVX_C31`, in
+   development as well as production, naming the component, the file, the line
+   and the reason. There is no silent fallback: the fallback *is* the
+   interpreter, which is what the option declines to ship.
+3. **The emitted bundle is parsed and refused if it can still evaluate source**
+   (`AVX_C32`) — `eval`, the `Function` constructor, or a `with` statement, from
+   anywhere in the graph including your own modules and your dependencies. The
+   check is on the file your browser downloads, not on what the compiler
+   intended to link, because that file is what a security review looks at.
+
+A production build is unchanged by the option; it already linked no
+interpreter, so all `csp.strict` adds there is the third check.
+
+The Vite plugin takes the same option, and refuses a module whose expressions
+did not all compile:
+
+```js
+avenxVite({ csp: { strict: true } })
+```
+
 #### If the build reports AVX_W48 or AVX_C27
 
 `AVX_W48` (development) and `AVX_C27` (production) list every expression or body
@@ -535,6 +602,15 @@ Rewrite each one in the supported expression language, or move the logic into an
 ### Hosting Configuration
 
 Avenx-JS does not automatically configure production cache headers or Content Security Policy headers. These headers must be configured by the production hosting platform, CDN, reverse proxy, or web server.
+
+What the build tells you is which directives its output can run under; sending
+them is the hosting platform's job. The policy the test suite serves an Avenx
+application under, and drives it through, is:
+
+```text
+Content-Security-Policy: default-src 'self'; script-src 'self';
+  style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'
+```
 
 ---
 
