@@ -182,12 +182,27 @@ try {
         `Unexpected warning: ${warnings[0]}`
       );
       assert.ok(
-        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, mode, server, style, debug, outputName, logging, voidTags, templateGlobals, warnings, treeShakeComponents, preprocessors, alias, hooks, trace, rewind, expressionCacheCapacity, sourceMap, sourcesContent, incremental.'),
+        warnings[0].includes('Supported top-level options are: srcDir, distDir, templatesDir, mode, server, style, debug, outputName, logging, voidTags, templateGlobals, warnings, treeShakeComponents, preprocessors, alias, hooks, trace, rewind, csp, expressionCacheCapacity, sourceMap, sourcesContent, incremental.'),
         `Unexpected warning options list: ${warnings[0]}`
       );
       warnings.length = 0;
 
-      // 1a. Rewind options are recognised, and their sub-keys validated
+      // 1a. CSP options are recognised, and their sub-keys validated
+      writeTestConfig({ csp: { strict: true } });
+      const cspConfig = loadConfig();
+      assert.strictEqual(warnings.length, 0, `CSP options should not warn: ${warnings[0]}`);
+      assert.strictEqual(cspConfig.csp.strict, true);
+      warnings.length = 0;
+
+      writeTestConfig({ csp: { strickt: true } });
+      loadConfig();
+      assert.ok(
+        warnings.some((line) => line.includes('"csp.strickt"') && line.includes('Did you mean "csp.strict"?')),
+        `Expected a csp sub-key suggestion: ${warnings.join(' | ')}`
+      );
+      warnings.length = 0;
+
+      // 1b. Rewind options are recognised, and their sub-keys validated
       writeTestConfig({ rewind: { onConflict: 'force', maxSnapshotItems: 25 } });
       const rewindConfig = loadConfig();
       assert.strictEqual(warnings.length, 0, `Rewind options should not warn: ${warnings[0]}`);
