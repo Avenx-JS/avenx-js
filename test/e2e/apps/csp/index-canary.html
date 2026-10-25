@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avenx E2E — csp (policy canary)</title>
+    <link rel="stylesheet" href="dist/bundle.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!--
+      A canary, not part of the application. The server serves this app under
+      script-src 'self', which forbids an inline script as well as eval, so
+      this one must never run: if window.__cspCanaryRan is set, the policy was
+      not applied and every other assertion in csp-strict.spec.js would be
+      passing for no reason.
+
+      It lives in its own entry point so that the rest of the suite can assert
+      the console is clean -- a blocked inline script is reported as an error,
+      and only the test that provokes it should have to allow one.
+    -->
+    <script>
+      window.__cspCanaryRan = true;
+    </script>
+
+    <script src="dist/bundle.js"></script>
+  </body>
+</html>

@@ -13,7 +13,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import { APPS_DIR } from './apps.js';
+import { APPS_DIR, headersFor } from './apps.js';
 
 const PORT = Number(process.env.E2E_PORT) || 3100;
 
@@ -90,6 +90,11 @@ const server = http.createServer((req, res) => {
       'Content-Type': MIME_TYPES[path.extname(filePath)] || 'application/octet-stream',
       // Fixture bundles are rebuilt every run; a cached one would be a lie.
       'Cache-Control': 'no-store',
+      // Per-app headers, declared beside the app in apps.js. The CSP fixture
+      // is the only one that uses them, and it needs a real header: a <meta>
+      // CSP cannot express everything a deployment's policy does, and is not
+      // what a deployment sends.
+      ...headersFor(pathname),
     });
     res.end(data);
   });
