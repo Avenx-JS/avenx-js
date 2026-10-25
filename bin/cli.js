@@ -177,6 +177,16 @@ export class AvenxCLI {
     // `watch` are development unless the flag says otherwise.
     const explicitDev = args.includes('--dev') || args.includes('--development');
     const explicitProd = args.includes('--prod') || args.includes('--production');
+
+    // `--csp-strict` is additive to the mode rather than a mode of its own. A
+    // CSP-strict development build is the case that makes the flag worth
+    // having: `avenx serve` is where the interpreter -- and with it the last
+    // `new Function` -- used to be unavoidable, and a developer whose target
+    // deployment forbids 'unsafe-eval' wants to find out at their desk rather
+    // than in a staging security review.
+    if (args.includes('--csp-strict')) {
+      this.config.csp = { ...(this.config.csp || {}), strict: true };
+    }
     if (explicitDev) {
       this.config.mode = 'development';
     } else if (explicitProd) {
@@ -214,6 +224,7 @@ export class AvenxCLI {
         !arg.startsWith('--template=') &&
         !arg.startsWith('-t=') &&
         arg !== '--with-test' &&
+        arg !== '--csp-strict' &&
         arg !== '--no-test',
     );
     const type = filteredArgs[0];
