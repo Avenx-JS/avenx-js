@@ -334,6 +334,41 @@ Mounts a registered component onto the specified DOM element, triggering the com
 app.mount('MyRootComponent', '#app');
 ```
 
+### `mountPage(name, params, options)`
+
+Mounts a registered page into the application's configured target container (the `config.target` selector from the constructor). Unlike [`mount()`](#mountname-targetselector), which mounts any registered component into an arbitrary selector, `mountPage` is the page-oriented entry point: it injects route-like parameters as page state, can wrap the page in a layout, and supports keep-alive caching and page transitions.
+
+Calling `mountPage` with a compiled page name is enough for Atlas to treat that page as reachable, so [`AVX_W53`](/troubleshooting/errors/#compiler-codes-avxc) does not fire for it. Prefer this when the app has a single root page and no router; prefer [`initRouter()`](#initrouterroutes) when navigation is hash-based. The router itself resolves each route by calling `mountPage` with the matched page name, params, and route options (`layout`, `transition`, `keepAlive`). A manual `mountPage` call while a router is active replaces whatever page the router last mounted; subsequent navigations call `mountPage` again.
+
+| Param     | Type     | Default | Description |
+| --------- | -------- | ------- | ----------- |
+| `name`    | `string` | (required) | Name of the registered page to mount. Throws `[AVX_R02]` (`PAGE_NOT_FOUND`) if the page is not registered. |
+| `params`  | `object` | `{}`    | Key/value map copied onto the page as both `page.params` and `page.state`, so template bindings such as `{{ id }}` and actions that read `this.state.id` see the values. Same shape as dynamic route parameters. |
+| `options` | `object` | `{}`    | Mount options. Keys used by the runtime are listed below; unknown keys are ignored. |
+
+#### `options` keys
+
+| Key           | Type      | Description |
+| ------------- | --------- | ----------- |
+| `layout`      | `string`  | Name of a registered page used as a layout wrapper. The layout mounts first; the target page mounts into the layout's `[data-ax-router-view]` slot. Throws `PAGE_NOT_FOUND` if the layout name is not registered. |
+| `transition`  | `string`  | Transition name applied as leave/enter animations when replacing the current page. See [Page-Level Transitions](/core-concepts/transitions/#page-level-transitions). |
+| `keepAlive`   | `boolean` | When `true`, navigating away caches the page instance and DOM (subject to [`keepAliveLimit`](#keepalivelimit)) instead of fully unmounting. Restored pages receive `onActivate(params)` rather than a fresh `onMount()`. |
+
+When a later `mountPage` call targets the **same** page class already on screen (for example changing `{ id: 1 }` to `{ id: 2 }` with no layout change), the runtime updates params and state **in place** on the existing instance. It does not unmount and remount, so `onMount` / `onUnmount` do not re-run; `onUpdate` does when params actually changed. See [In-Place Parameter Updates](/core-concepts/routing/#4-in-place-parameter-updates) and [Page Reuse During Navigation](/api-reference/page/#page-reuse-during-navigation).
+
+```javascript
+// Single root page, no router. Params become page state.
+app.mountPage('Home', { id: 42 });
+// Template can read {{ id }} -> 42
+
+// Layout + transition (same options the router passes)
+app.mountPage('Profile', { id: '42' }, {
+  layout: 'AppShell',
+  transition: 'fade',
+  keepAlive: true,
+});
+```
+
 ### `clearKeepAliveCache(pageName)`
 
 Programmatically clears cached KeepAlive component instances from memory. Unmounts evicted page instances and destroys their cached DOM trees.
