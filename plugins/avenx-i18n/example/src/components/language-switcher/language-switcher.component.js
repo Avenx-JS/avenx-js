@@ -1,3 +1,10 @@
+<action name="onMount">
+    document.documentElement.lang = locale.current;
+    $i18n.on('change', ({ locale }) => {
+        document.documentElement.lang = locale;
+    });
+</action>
+
 <div>
     <@css switcher />
 
