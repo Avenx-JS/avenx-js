@@ -167,6 +167,11 @@ export class AvenxCLI {
    * @param {string[]} args - Additional arguments for the command.
    */
   async run(command, args = []) {
+    if (args.includes('--help')) {
+      printHelp();
+      return;
+    }
+
     const dryRun = args.includes('--dry-run') || args.includes('-d');
     const force = args.includes('--force') || args.includes('-f');
     const withTest = args.includes('--with-test');

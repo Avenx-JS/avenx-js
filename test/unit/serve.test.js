@@ -85,6 +85,10 @@ async function testCliServeParsing() {
   await cli.run('serve', ['--host', 'localhost/']);
   assert.deepStrictEqual(lastCall, { port: 3000, host: 'localhost', open: false });
 
+  // Test that -h remains the short form of --host rather than help for serve.
+  await cli.run('serve', ['-h', '0.0.0.0']);
+  assert.deepStrictEqual(lastCall, { port: 3000, host: '0.0.0.0', open: false });
+
   // Test trailing slashes and accidental whitespace
   await cli.run('serve', ['--port', ' 3000/ ', '--host', ' 127.0.0.1/ ']);
   assert.deepStrictEqual(lastCall, { port: 3000, host: '127.0.0.1', open: false });
