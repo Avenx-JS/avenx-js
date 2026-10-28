@@ -230,7 +230,7 @@ function runTests() {
 
   const warningsRef = captureWarnings(() => {
     cp.extractTemplate(
-      '<state a="1" /><div><input data-ax-ref="myInput" /><p>{{ a }}</p></div>',
+      '<state a="1" /><div><input data-ax-ref="myInput" aria-label="Input" /><p>{{ a }}</p></div>',
       {},
       'MyComp',
       'my-component.js',
@@ -243,7 +243,7 @@ function runTests() {
 
   const warningsValidationRules = captureWarnings(() => {
     cp.extractTemplate(
-      '<state email="" password="" /><div><input data-ax-bind="email" data-ax-validate="required|email" /><input data-ax-bind="password" data-ax-validate="required|min:8:Mindestens 8 Zeichen" /></div>',
+      '<state email="" password="" /><div><input data-ax-bind="email" data-ax-validate="required|email" aria-label="Email" /><input data-ax-bind="password" data-ax-validate="required|min:8:Mindestens 8 Zeichen" aria-label="Password" /></div>',
       {},
       'MyComp',
       'my-component.js',
@@ -262,7 +262,7 @@ function runTests() {
 
   const warningsUndeclaredBind = captureWarnings(() => {
     cp.extractTemplate(
-      '<input data-ax-bind="missingField" data-ax-validate="required|email" />',
+      '<input data-ax-bind="missingField" data-ax-validate="required|email" aria-label="Email" />',
       {},
       'MyComp',
       'my-component.js',
@@ -292,7 +292,7 @@ function runTests() {
 
   const warningsSameTemplate = captureWarnings(() => {
     cp.extractTemplate(
-      '<input data-ax-ref="myInput" /><p>{{ undeclaredVar }}</p>',
+      '<input data-ax-ref="myInput" aria-label="Input" /><p>{{ undeclaredVar }}</p>',
       {},
       'MyComp',
       'my-component.js',

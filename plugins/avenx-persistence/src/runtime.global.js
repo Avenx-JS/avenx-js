@@ -17,21 +17,28 @@
  */
 
 /**
- * Returns the Avenx runtime namespace.
+ * Returns the Avenx runtime namespace, optionally verifying required members.
+ * @param {string[]} [requiredMembers] - Member names required on the namespace.
  * @returns {object} The `Avenx` global.
  */
-function core() {
+function core(requiredMembers = []) {
   const namespace = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
   if (!namespace) {
     throw new Error(
       '[avenx-persistence] The Avenx runtime was not found on the page. Load the Avenx application bundle alongside avenx-persistence.global.js.',
     );
   }
+  const missing = requiredMembers.filter((name) => !(name in namespace));
+  if (missing.length > 0) {
+    throw new Error(
+      `[avenx-persistence] The Avenx runtime is missing required member(s): ${missing.join(', ')}. Ensure the Avenx application bundle is loaded.`,
+    );
+  }
   return namespace;
 }
 
 /**
- * The Avenx logger, resolved on each call.
+ * The Avenx logger, resolved on each call with console fallback.
  * @type {object}
  */
 export const logger = {
@@ -39,13 +46,17 @@ export const logger = {
    * @param {...any} args - Arguments to log.
    */
   warn(...args) {
-    core().logger.warn(...args);
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    const log = (ns && ns.logger) || console;
+    log.warn(...args);
   },
   /**
    * @param {...any} args - Arguments to log.
    */
   error(...args) {
-    core().logger.error(...args);
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    const log = (ns && ns.logger) || console;
+    log.error(...args);
   },
 };
 
@@ -56,7 +67,7 @@ export const logger = {
  * @returns {Function} The stop handle.
  */
 export function watchEffect(effect, options) {
-  return core().watchEffect(effect, options);
+  return core(['watchEffect']).watchEffect(effect, options);
 }
 
 /**
@@ -64,5 +75,5 @@ export function watchEffect(effect, options) {
  * @param {Function} job - The job to run at the end of the tick.
  */
 export function queueJob(job) {
-  core().queueJob(job);
+  core(['queueJob']).queueJob(job);
 }
