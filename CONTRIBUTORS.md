@@ -203,6 +203,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dbdefault"><img src="https://avatars.githubusercontent.com/u/246079841?v=4?s=100" width="100px;" alt="dbdefault"/><br /><sub><b>dbdefault</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=dbdefault" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rahul05ranjan"><img src="https://avatars.githubusercontent.com/u/11793455?v=4?s=100" width="100px;" alt="Rahul"/><br /><sub><b>Rahul</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=rahul05ranjan" title="Code">💻</a> <a href="https://github.com/Avenx-JS/avenx-js/commits?author=rahul05ranjan" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/canakyuz"><img src="https://avatars.githubusercontent.com/u/101998697?v=4?s=100" width="100px;" alt="can"/><br /><sub><b>can</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=canakyuz" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/SankalpPandey-56"><img src="https://avatars.githubusercontent.com/u/297567960?v=4?s=100" width="100px;" alt="Sankalp"/><br /><sub><b>Sankalp</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=SankalpPandey-56" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

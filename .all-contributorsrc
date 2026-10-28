@@ -1283,6 +1283,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "SankalpPandey-56",
+      "name": "Sankalp",
+      "avatar_url": "https://avatars.githubusercontent.com/u/297567960?v=4",
+      "profile": "https://github.com/SankalpPandey-56",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
