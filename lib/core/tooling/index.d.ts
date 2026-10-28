@@ -25,6 +25,27 @@ export const componentTagNamingRule: {
     create(context: any): Record<string, any>;
 };
 
+/** ESLint rule enforcing static accessibility lint rules in Avenx SFC templates. */
+export const templateAccessibilityRule: {
+    meta: Record<string, any>;
+    create(context: any): Record<string, any>;
+};
+
+export function findAccessibilityIssues(
+    templateOrNodes: string | any[],
+    options?: { componentName?: string; filePath?: string; customVoidTags?: string[] }
+): Array<{
+    code: string;
+    ruleId: string;
+    element: string;
+    componentName: string;
+    remedy: string;
+    message: string;
+    line: number;
+    column: number;
+    length: number;
+}>;
+
 /** ESLint parser that exposes the JavaScript regions of a component template. */
 export const avenxTemplateParser: {
     parseForESLint(code: string, options?: any): any;
