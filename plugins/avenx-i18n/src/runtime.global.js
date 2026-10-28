@@ -16,22 +16,31 @@
  * @module @avenx/i18n/runtime.global
  */
 
+import { Sanitizer as BuiltinSanitizer } from '../../../lib/core/security/sanitize.js';
+
 /**
- * Returns the Avenx runtime namespace.
+ * Returns the Avenx runtime namespace, optionally verifying required members.
+ * @param {string[]} [requiredMembers] - Member names required on the namespace.
  * @returns {object} The `Avenx` global.
  */
-function core() {
+function core(requiredMembers = []) {
   const namespace = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
   if (!namespace) {
     throw new Error(
       '[avenx-i18n] The Avenx runtime was not found on the page. Load the Avenx application bundle alongside avenx-i18n.global.js.',
     );
   }
+  const missing = requiredMembers.filter((name) => !(name in namespace));
+  if (missing.length > 0) {
+    throw new Error(
+      `[avenx-i18n] The Avenx runtime is missing required member(s): ${missing.join(', ')}. Ensure the Avenx application bundle is loaded.`,
+    );
+  }
   return namespace;
 }
 
 /**
- * The Avenx logger, resolved on each call.
+ * The Avenx logger, resolved on each call with console fallback.
  * @type {object}
  */
 export const logger = {
@@ -39,13 +48,17 @@ export const logger = {
    * @param {...any} args - Arguments to log.
    */
   warn(...args) {
-    core().logger.warn(...args);
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    const log = (ns && ns.logger) || console;
+    log.warn(...args);
   },
   /**
    * @param {...any} args - Arguments to log.
    */
   error(...args) {
-    core().logger.error(...args);
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    const log = (ns && ns.logger) || console;
+    log.error(...args);
   },
 };
 
@@ -55,48 +68,90 @@ export const logger = {
  * @returns {object} The bridge instance.
  */
 export function bridge(definition) {
-  return core().bridge(definition);
+  return core(['bridge']).bridge(definition);
 }
 
 /**
- * The runtime's SafeHtml marker class, resolved on first use.
- *
- * `tHtml()` has to produce a value the renderer recognises as already-safe,
- * and that recognition is an `instanceof` check against the runtime's own
- * class — so this proxies construction to whichever class the page's runtime
- * holds rather than declaring a second one.
+ * The SafeHtml marker class, resolved from the runtime or self-contained.
  */
 export class SafeHtml {
   /**
    * @param {any} value - The sanitized HTML string.
-   * @returns {object} An instance of the runtime's SafeHtml.
+   * @returns {object} An instance of SafeHtml.
    */
   constructor(value) {
-    return new (core().SafeHtml)(value);
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    if (ns && typeof ns.SafeHtml === 'function') {
+      return new ns.SafeHtml(value);
+    }
+    this.value = String(value);
+    this.__isSafeHtml = true;
+  }
+
+  toString() {
+    return this.value;
   }
 }
 
 /**
- * The runtime's HTML escaper.
+ * The HTML escaper, resolved from the runtime or self-contained.
  */
 export class HtmlEscaper {
-  /**
-   * @returns {object} An instance of the runtime's HtmlEscaper.
-   */
   constructor() {
-    return new (core().HtmlEscaper)();
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    if (ns && typeof ns.HtmlEscaper === 'function') {
+      return new ns.HtmlEscaper();
+    }
+  }
+
+  /**
+   * Escapes special HTML characters in a string.
+   * @param {any} value - The value to escape.
+   * @returns {string} The escaped string.
+   */
+  escape(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Unescapes HTML entities in a string back to original characters.
+   * @param {any} value - The value to unescape.
+   * @returns {string} The unescaped string.
+   */
+  unescape(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value)
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
   }
 }
 
 /**
- * The runtime's HTML sanitizer.
+ * The HTML sanitizer, resolved from the runtime or carrying its own built-in sanitizer.
  */
 export class Sanitizer {
   /**
    * @param {object} [options] - Sanitizer policy options.
-   * @returns {object} An instance of the runtime's Sanitizer.
+   * @returns {object} An instance of Sanitizer.
    */
   constructor(options) {
-    return new (core().Sanitizer)(options);
+    const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
+    if (ns && typeof ns.Sanitizer === 'function') {
+      return new ns.Sanitizer(options);
+    }
+    return new BuiltinSanitizer(options);
   }
 }
