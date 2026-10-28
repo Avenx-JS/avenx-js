@@ -84,6 +84,10 @@ export const APPS = [
     summary: 'The <@defer> tag and its interaction, idle, timer and visible triggers.',
   },
   {
+    name: 'transitions',
+    summary: 'Enter and leave transitions, duration detection, rapid toggle cleanup and list transitions.',
+  },
+  {
     name: 'fallback',
     summary: 'Constructs the IR refuses -- <@suspense>, <@errorBoundary>, <@deadlock> -- beside a compiled parent.',
     developmentBuild: true,

@@ -1,0 +1,7 @@
+{
+  "srcDir": "src",
+  "distDir": "dist",
+  "warnings": {
+    "AVX_W47": "off"
+  }
+}
