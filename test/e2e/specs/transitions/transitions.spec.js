@@ -124,6 +124,67 @@ function opacityOf(locator) {
 }
 
 /**
+ * Drives enter, leave and re-entry from one browser task chain so host-side
+ * Playwright latency cannot let either transition settle between toggles.
+ * @param {import('@playwright/test').Locator} locator - List containing the transitioning item.
+ * @returns {Promise<{enterObserved: boolean, leaveObserved: boolean, connectedDuringLeave: boolean}>}
+ */
+function interruptRapidListTransition(locator) {
+  return locator.evaluate((root) => new Promise((resolve, reject) => {
+    const pageWindow = root.ownerDocument.defaultView;
+    const toggle = pageWindow.document.querySelector('[data-testid="toggle-rapid-item"]');
+    if (!toggle) {
+      reject(new Error('Expected the rapid-item toggle to exist.'));
+      return;
+    }
+
+    let enteringElement = null;
+    let phase = 'enter';
+    const observer = new MutationObserver(() => {
+      const rapidItems = Array.from(root.children).filter((child) => child.dataset.testid === 'rapid-item');
+
+      if (phase === 'enter') {
+        const activeEnter = rapidItems.find((child) => (
+          child.classList.contains('fade-enter-active') && child.classList.contains('fade-enter-to')
+        ));
+        if (!activeEnter) return;
+
+        enteringElement = activeEnter;
+        phase = 'leave';
+        toggle.click();
+        return;
+      }
+
+      if (
+        phase === 'leave' &&
+        enteringElement?.isConnected &&
+        enteringElement.classList.contains('fade-leave') &&
+        enteringElement.classList.contains('fade-leave-active')
+      ) {
+        phase = 'settling';
+        pageWindow.__rapidInterruptedElement = enteringElement;
+        const connectedDuringLeave = enteringElement.isConnected;
+        toggle.click();
+        observer.disconnect();
+        resolve({
+          enterObserved: true,
+          leaveObserved: true,
+          connectedDuringLeave,
+        });
+      }
+    });
+
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    toggle.click();
+  }));
+}
+
+/**
  * Finds a class phase in the mutation history.
  * @param {Array<{classes: string[]}>} states - Recorded class states.
  * @param {string[]} classes - Classes that identify the phase.
@@ -232,21 +293,28 @@ test.describe('transitions', () => {
 
     const list = page.getByTestId('transition-list');
     const item = page.getByTestId('rapid-item');
-    const toggle = page.getByTestId('toggle-rapid-item');
     await expect(item).toHaveCount(0);
 
-    await recordInsertedItemClassStates(list, 'rapid-item');
-    await toggle.click();
-    await expectRecordedPhase(page, ['fade-enter-active', 'fade-enter-to']);
-
-    await recordClassStates(item);
-    await toggle.click();
-    await expectRecordedPhase(page, ['fade-leave-active', 'fade-leave-to']);
-
-    await toggle.click();
+    const interruption = await interruptRapidListTransition(list);
+    expect(interruption).toEqual({
+      enterObserved: true,
+      leaveObserved: true,
+      connectedDuringLeave: true,
+    });
 
     await expect(item).toHaveCount(1);
     await expect(item).toBeVisible();
+    await expect.poll(() => page.evaluate((transitionClasses) => {
+      const interrupted = window.__rapidInterruptedElement;
+      const current = document.querySelectorAll('[data-testid="rapid-item"]');
+      return Boolean(
+        interrupted &&
+        !interrupted.isConnected &&
+        current.length === 1 &&
+        current[0] !== interrupted &&
+        transitionClasses.every((className) => !interrupted.classList.contains(className))
+      );
+    }, FADE_CLASSES)).toBe(true);
     await expect.poll(() => hasNoFadeClasses(item)).toBe(true);
     await expect.poll(() => opacityOf(item)).toBe(1);
   });
