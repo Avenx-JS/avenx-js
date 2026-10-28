@@ -1,38 +1,39 @@
 ---
 title: 'ESLint Template Validation'
-description: 'Configure ESLint with avenxTemplateParser and componentTagNamingRule to enforce PascalCase component tag naming in Avenx SFC templates.'
+description: 'Configure ESLint with avenxTemplateParser, componentTagNamingRule, and templateAccessibilityRule to enforce tag naming and accessibility linting in Avenx SFC templates.'
 ---
 
-Avenx-JS provides a dedicated custom ESLint parser (`avenxTemplateParser`) and rule (`componentTagNamingRule`) to validate Single-File Component (SFC) templates and enforce PascalCase component tag naming conventions across your codebase.
+Avenx-JS provides a dedicated custom ESLint parser (`avenxTemplateParser`) and rules (`componentTagNamingRule`, `templateAccessibilityRule`) to validate Single-File Component (SFC) templates, enforce PascalCase component tag naming conventions, and verify template accessibility across your codebase.
 
 ---
 
 ## Overview
 
-### Why PascalCase Component Tags Are Required
+### Template Quality and Conformance
 
-In Avenx-JS templates, registered custom components must use **PascalCase** tag names (for example, `<UserProfileCard />` instead of `<user-profile-card>`).
+In Avenx-JS templates, static template validation catches syntax and design defects at build time before deployment:
 
-- **Disambiguation from HTML Elements**: Native HTML tags (such as `<div>`, `<span>`, `<button>`) use lowercase. Enforcing PascalCase for custom component tags ensures both developers and the template compiler can immediately distinguish custom components from built-in DOM elements.
-- **Automated Component Discovery**: Avenx component filenames (e.g. `user-profile-card.component.js`) map directly to canonical PascalCase tag names (`UserProfileCard`).
-- **Consistency**: Enforcing PascalCase tag usage prevents inconsistent casing syntax across large applications.
+- **PascalCase Component Tags**: Registered custom components must use PascalCase (e.g. `<UserProfileCard />` instead of `<user-profile-card>`).
+- **Static Accessibility Validation**: Statically decidable accessibility rules catch missing `alt` attributes, unlabelled form controls, buttons without names, non-interactive click handlers without ARIA roles, anchors without `href`, and positive `tabindex` values.
 
 ### How ESLint Validates Avenx Templates
 
-Validation relies on two tooling utilities exported from `avenx-core/tooling`:
+Validation relies on tooling utilities exported from `avenx-core/tooling`:
 
 - **`avenxTemplateParser`**: A custom parser (`lib/core/tooling/avenxTemplateParser.js`) that produces an ESLint-compatible AST for `.component.js` and `.page.js` files. It allows ESLint to inspect Avenx template markup and metadata tags (`<state>`, `<computed>`, `<action>`, `<resource>`) without syntax errors or breaking standard JavaScript parsing rules.
 - **`componentTagNamingRule`**: An ESLint rule (`lib/core/tooling/eslintComponentTagNaming.js`) that extracts template markup, scans for custom component tags, and validates them against registered project components to ensure exact PascalCase casing.
+- **`templateAccessibilityRule`**: An ESLint rule (`lib/core/tooling/eslintAccessibility.js`) that runs static accessibility checks over template AST nodes, surfacing accessibility findings (AVX_W65–AVX_W70) inline in editor environments.
 
 ---
 
 ## Setup with Flat Config (`eslint.config.mjs`)
 
-ESLint 9+ uses Flat Config (`eslint.config.mjs`). Import `avenxTemplateParser` and `componentTagNamingRule` from `avenx-core/tooling/` and configure them as shown below:
+ESLint 9+ uses Flat Config (`eslint.config.mjs`). Import `avenxParser`, `componentTagNamingRule`, and `templateAccessibilityRule` from `avenx-core/tooling/` and configure them as shown below:
 
 ```javascript
 import avenxParser from 'avenx-core/tooling/avenxTemplateParser';
 import { componentTagNamingRule } from 'avenx-core/tooling/eslintComponentTagNaming';
+import { templateAccessibilityRule } from 'avenx-core/tooling/eslintAccessibility';
 
 export default [
   {
@@ -44,6 +45,7 @@ export default [
       avenx: {
         rules: {
           'component-tag-naming': componentTagNamingRule,
+          'template-accessibility': templateAccessibilityRule,
         },
       },
     },
@@ -51,6 +53,7 @@ export default [
       'avenx/component-tag-naming': ['error', {
         componentsDir: 'src/components',
       }],
+      'avenx/template-accessibility': 'warn',
     },
   },
 ];
@@ -114,6 +117,45 @@ Given a registered component named `UserProfile` (located at `src/components/use
 | `<div>`, `<button>` | ✅ Ignored | Native DOM tags are skipped. |
 | `<my-web-component />` | ✅ Ignored | Unregistered custom elements are ignored. |
 | `<state>`, `<action>` | ✅ Ignored | Avenx metadata blocks are masked and skipped. |
+
+---
+
+## Accessibility Linting (`templateAccessibilityRule`)
+
+The `avenx/template-accessibility` rule verifies that templates adhere to fundamental web accessibility standards. It uses the exact same static verification logic as `avenx check`, ensuring consistent diagnostics between your editor and build pipeline.
+
+### Rules Enforced
+
+| Rule Code | Focus | Requirement |
+| :--- | :--- | :--- |
+| `AVX_W65` | `<img>` alt attributes | All `<img>` tags must include an `alt` attribute (use `alt=""` for decorative images). Dynamic values such as `alt="{{ imageAlt }}"` or `:alt="alt"` are accepted. |
+| `AVX_W66` | Non-interactive clicks | Non-interactive elements (`<div>`, `<span>`) with `@click` must have an explicit ARIA `role` (e.g. `role="button"`) and keyboard event handling (`@keydown`). |
+| `AVX_W67` | Anchor `href` | `<a>` elements must have an `href` attribute. For in-page button behavior, use `<button type="button">`. |
+| `AVX_W68` | Form labels | Form controls (`<input>`, `<select>`, `<textarea>`) must have an associated `<label for="...">`, be wrapped in `<label>`, or define `aria-label` / `aria-labelledby`. |
+| `AVX_W69` | Button accessible names | `<button>` elements must have non-empty text content or an `aria-label` / `aria-labelledby` attribute. |
+| `AVX_W70` | Positive tabindex | Elements must not use positive `tabindex` values (`tabindex > 0`). Use `0` or `-1` instead. |
+
+### Diagnostic Examples
+
+```html
+<!-- ❌ AVX_W65: Missing alt attribute -->
+<img src="/avatar.png">
+
+<!-- ✅ Valid alt -->
+<img src="/avatar.png" alt="User avatar">
+
+<!-- ❌ AVX_W66: Non-interactive click without role/keyboard -->
+<div @click="toggleDetails()">Details</div>
+
+<!-- ✅ Use button instead -->
+<button type="button" @click="toggleDetails()">Details</button>
+
+<!-- ❌ AVX_W69: Empty button without accessible name -->
+<button class="icon-close"></button>
+
+<!-- ✅ Provide aria-label -->
+<button class="icon-close" aria-label="Close dialog"></button>
+```
 
 ---
 

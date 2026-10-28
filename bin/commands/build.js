@@ -7,6 +7,7 @@ import { reportRewindDiagnostics } from '../../lib/compiler/rewind/diagnostics.j
 import { cyan, gray, green, red } from '../colors.js';
 import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
+import { A11Y_WARNING_CODES } from '../../lib/compiler/rules/accessibility.js';
 import { watchDirectory } from '../utils.js';
 
 /**
@@ -101,14 +102,18 @@ export function parseDiagnostic(severity, args) {
   let file = null;
   let code = null;
   let rawMsg;
+  let line = null;
+  let column = null;
 
   const firstArg = args && args[0];
   if (firstArg instanceof Error) {
     rawMsg = firstArg.message || String(firstArg);
     if (firstArg.code) code = firstArg.code;
-    if (firstArg.filePath || firstArg.fileName || firstArg.file) {
-      file = firstArg.filePath || firstArg.fileName || firstArg.file;
+    if (firstArg.filePath || firstArg.fileName || firstArg.filename || firstArg.file) {
+      file = firstArg.filePath || firstArg.fileName || firstArg.filename || firstArg.file;
     }
+    if (typeof firstArg.line === 'number') line = firstArg.line;
+    if (typeof firstArg.column === 'number') column = firstArg.column;
   } else if (Array.isArray(args)) {
     rawMsg = args.map((a) => (typeof a === 'object' && a !== null ? (a.message || JSON.stringify(a)) : String(a))).join(' ');
   } else {
@@ -127,26 +132,24 @@ export function parseDiagnostic(severity, args) {
 
   // Extract file path/name if not found on error object
   if (!file) {
-    // Remedy text routinely names the configuration file -- "Silence this class
-    // with \"warnings\": { \"AVX_W52\": \"off\" } in avenx.config.json" is the
-    // standard footer on a silenceable warning. That is a configuration
-    // reference, not the location the diagnostic is about, and the last pattern
-    // below matched `config.js` inside it: AVX_W51 and AVX_W52 were both
-    // reported in `avenx check --json` against a file called "config.js", which
-    // exists in no project. A CI job annotating a pull request from this output
-    // pointed at a path that is not there.
     const searchable = rawMsg.replace(/avenx\.config\.json/gi, '');
 
     const fileMatch =
       searchable.match(/in template of\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
       searchable.match(/in component\s+<([^>]+)>/i) ||
       searchable.match(/at\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
-      // The trailing guard stops a name from matching inside a longer dotted
-      // one, which is the general form of the same mistake.
       searchable.match(/["']?([a-zA-Z0-9_\-/\\]+\.(?:component\.js|page\.js|js|mjs|cjs|html|css|json))(?![\w.])["']?/i);
 
     if (fileMatch) {
       file = fileMatch[1];
+    }
+  }
+
+  if (line === null) {
+    const locMatch = rawMsg.match(/:(\d+):(\d+)/) || rawMsg.match(/line\s+(\d+),\s+column\s+(\d+)/i);
+    if (locMatch) {
+      line = parseInt(locMatch[1], 10);
+      column = parseInt(locMatch[2], 10);
     }
   }
 
@@ -156,12 +159,15 @@ export function parseDiagnostic(severity, args) {
     cleanMessage = cleanMessage.replace(new RegExp(`^\\[?${code}\\]?\\s*:?\\s*`), '');
   }
 
-  return {
+  const result = {
     file: file || null,
     code: code || 'AVX_UNK',
     severity: severity === 'error' ? 'error' : 'warning',
     message: cleanMessage.trim(),
   };
+  if (line !== null) result.line = line;
+  if (column !== null) result.column = column;
+  return result;
 }
 
 /**
@@ -194,17 +200,25 @@ export function runCheckPass(cli, args = [], options = {}) {
 
   let warningCount = 0;
   let errorCount = 0;
+  let blockingWarningCount = 0;
+
+  const handleWarning = (...messages) => {
+    warningCount++;
+    const diag = parseDiagnostic('warning', messages);
+    diagnostics.push(diag);
+    if (!A11Y_WARNING_CODES.has(diag.code)) {
+      blockingWarningCount++;
+    }
+  };
+
+  const handleError = (...messages) => {
+    errorCount++;
+    diagnostics.push(parseDiagnostic('error', messages));
+  };
 
   if (isJson) {
-    console.warn = (...messages) => {
-      warningCount++;
-      diagnostics.push(parseDiagnostic('warning', messages));
-    };
-
-    console.error = (...messages) => {
-      errorCount++;
-      diagnostics.push(parseDiagnostic('error', messages));
-    };
+    console.warn = handleWarning;
+    console.error = handleError;
 
     console.log = () => {};
     console.info = () => {};
@@ -212,12 +226,12 @@ export function runCheckPass(cli, args = [], options = {}) {
     console.trace = () => {};
   } else {
     console.warn = (...messages) => {
-      warningCount++;
+      handleWarning(...messages);
       originalWarn(...messages);
     };
 
     console.error = (...messages) => {
-      errorCount++;
+      handleError(...messages);
       originalError(...messages);
     };
   }
@@ -263,10 +277,14 @@ export function runCheckPass(cli, args = [], options = {}) {
     console.trace = originalTrace;
   }
 
+  const isStrict = args.includes('--strict') || args.includes('--strict-a11y');
+  const effectiveBlocking = errorCount + (isStrict ? warningCount : blockingWarningCount);
+
   return {
-    valid: errorCount === 0 && warningCount === 0,
+    valid: effectiveBlocking === 0,
     errorCount,
     warningCount,
+    blockingWarningCount,
     diagnostics,
   };
 }
@@ -299,9 +317,13 @@ export function checkProject(cli, args = []) {
         };
         console.log(JSON.stringify(jsonReport, null, 2));
       } else {
-        const totalIssues = report.warningCount + report.errorCount;
-        if (totalIssues > 0) {
+        const isStrict = args.includes('--strict') || args.includes('--strict-a11y');
+        const blockingIssues = report.errorCount + (isStrict ? report.warningCount : (report.blockingWarningCount || 0));
+        if (blockingIssues > 0) {
+          const totalIssues = report.warningCount + report.errorCount;
           console.error(red(`[${timestamp}] ❌ Found ${totalIssues} validation issue(s).`));
+        } else if (report.warningCount > 0) {
+          console.log(cyan(`[${timestamp}] ✓ Template validation passed with ${report.warningCount} accessibility warning(s).`));
         } else {
           console.log(green(`[${timestamp}] ✓ No template validation issues found.`));
         }
@@ -358,8 +380,11 @@ export function checkProject(cli, args = []) {
     return report;
   }
 
-  const totalIssues = report.warningCount + report.errorCount;
-  if (totalIssues > 0) {
+  const isStrict = args.includes('--strict') || args.includes('--strict-a11y');
+  const blockingIssues = report.errorCount + (isStrict ? report.warningCount : (report.blockingWarningCount || 0));
+
+  if (blockingIssues > 0) {
+    const totalIssues = report.warningCount + report.errorCount;
     console.error(`\n${red(`Found ${totalIssues} validation issue(s).`)}`);
     process.exitCode = 1;
     if (!cli || !cli._noExit) {
@@ -368,7 +393,11 @@ export function checkProject(cli, args = []) {
     return report;
   }
 
-  console.log(green('✓ No template validation issues found.'));
+  if (report.warningCount > 0) {
+    console.log(cyan(`\n✓ Template validation passed with ${report.warningCount} accessibility warning(s).`));
+  } else {
+    console.log(green('✓ No template validation issues found.'));
+  }
   process.exitCode = 0;
   if (!cli || !cli._noExit) {
     process.exit(0);

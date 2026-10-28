@@ -439,6 +439,12 @@ const app = new AvenxApp({
 | `[AVX_W62]` | Slot "{0}" is not declared by component "{1}". | **Identifier:** `COMPILER_UNDECLARED_SLOT`.<br />**Cause:** A caller addresses a slot with `slot="…"` that the component does not declare with `<slot>` / `<slot name="…">`. The content is discarded with no runtime message.<br />**Resolution:** Fix the spelling (the warning suggests the closest declared name when one is near), or update the caller to match the component's slots. Silence with `"warnings": { "AVX_W62": "off" }` in `avenx.config.json` only if the mismatch is intentional. |
 | `[AVX_W52]` | <{0}> uses the inline event handler "{1}". | **Identifier:** `COMPILER_INLINE_EVENT_ATTRIBUTE`.<br />**Cause:** An HTML element has a static inline handler (`onclick="doThing()"`). It bypasses the event system and does not run under a strict CSP.<br />**Resolution:** Prefer `@click="doThing()"`. Kept as a capability; silence with `"warnings": { "AVX_W52": "off" }`. |
 | `[AVX_W63]` | "{0}" appears to be a JavaScript module rather than a template. A single-file component template was expected. | **Identifier:** `COMPILER_JS_MODULE_AS_TEMPLATE`.<br />**Cause:** A `.component.js` file contains a JavaScript module (export, import, class, etc.) instead of component markup.<br />**Resolution:** Use `.component.js` only for single-file component templates, or rename ordinary JavaScript files to `.js`. |
+| `[AVX_W65]` | <img> element is missing an alt attribute (in component <{0}>). | **Identifier:** `COMPILER_A11Y_IMAGE_ALT`.<br />**Cause:** An `<img>` tag is missing an `alt` attribute.<br />**Resolution:** Provide an `alt` attribute describing the image, or `alt=""` if the image is decorative. Silence with `"warnings": { "AVX_W65": "off" }` in `avenx.config.json`. |
+| `[AVX_W66]` | Interactive handler on non-interactive element <{0}> without role or keyboard access. | **Identifier:** `COMPILER_A11Y_INTERACTIVE_ROLE`.<br />**Cause:** A non-interactive element (`<div>`, `<span>`) defines `@click` without an accessible `role` and keyboard access.<br />**Resolution:** Use a native `<button>`, or add `role="button"` and a keyboard event handler (`@keydown`). Silence with `"warnings": { "AVX_W66": "off" }` in `avenx.config.json`. |
+| `[AVX_W67]` | <a> element is missing an href attribute (in component <{0}>). | **Identifier:** `COMPILER_A11Y_ANCHOR_HREF`.<br />**Cause:** An `<a>` tag has no `href` attribute and is used as a button.<br />**Resolution:** Provide an `href` attribute, or use a `<button>` element if triggering an in-page action. Silence with `"warnings": { "AVX_W67": "off" }` in `avenx.config.json`. |
+| `[AVX_W68]` | Form control <{0}> has no associated <label>, aria-label, or aria-labelledby. | **Identifier:** `COMPILER_A11Y_FORM_LABEL`.<br />**Cause:** An `<input>`, `<select>`, or `<textarea>` lacks an accessible label.<br />**Resolution:** Associate a `<label for="...">`, wrap the control in `<label>`, or provide an `aria-label` or `aria-labelledby` attribute. Silence with `"warnings": { "AVX_W68": "off" }` in `avenx.config.json`. |
+| `[AVX_W69]` | <button> has no accessible name (in component <{0}>). | **Identifier:** `COMPILER_A11Y_BUTTON_NAME`.<br />**Cause:** A `<button>` element contains no text content and has no `aria-label` or `aria-labelledby`.<br />**Resolution:** Provide visible text inside `<button>` or add an `aria-label` or `aria-labelledby` attribute. Silence with `"warnings": { "AVX_W69": "off" }` in `avenx.config.json`. |
+| `[AVX_W70]` | Positive tabindex "{0}" disrupts document navigation order. | **Identifier:** `COMPILER_A11Y_POSITIVE_TABINDEX`.<br />**Cause:** An element specifies `tabindex > 0`, disrupting the natural keyboard tab navigation sequence.<br />**Resolution:** Use `tabindex="0"` for natural tab order or `tabindex="-1"` for programmatic focus. Silence with `"warnings": { "AVX_W70": "off" }` in `avenx.config.json`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
 | `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
@@ -3225,7 +3231,176 @@ export function multiply(a, b) {
 </div>
 ```
 
+### AVX_W65 — COMPILER_A11Y_IMAGE_ALT
+
+**Warning Message**
+
+```text
+<img> element is missing an alt attribute (in component <{0}>).
+```
+
+**Cause:** An `<img>` element is missing an `alt` attribute. Screen readers require alternative text to describe images to visually impaired users.
+
+**Resolution:** Provide a meaningful `alt` attribute describing the image, or an empty `alt=""` attribute if the image is purely decorative.
+
+**Incorrect**
+
+```html
+<img src="/logo.png">
+```
+
+**Correct**
+
+```html
+<!-- Meaningful image -->
+<img src="/logo.png" alt="Company Logo">
+
+<!-- Decorative image -->
+<img src="/divider.png" alt="">
+```
+
+### AVX_W66 — COMPILER_A11Y_INTERACTIVE_ROLE
+
+**Warning Message**
+
+```text
+Interactive handler on non-interactive element <{0}> without role or keyboard access.
+```
+
+**Cause:** An interactive handler (`@click`) is attached to a non-interactive element (`<div>` or `<span>`) without an explicit ARIA `role` and without keyboard event handling. Users navigating with a keyboard or assistive technology cannot interact with it.
+
+**Resolution:** Use a semantic `<button>` or `<a>` element instead. If a `<div>` or `<span>` must be used, add `role="button"`, `tabindex="0"`, and a keyboard handler (`@keydown`).
+
+**Incorrect**
+
+```html
+<div @click="toggleMenu()">Menu</div>
+```
+
+**Correct**
+
+```html
+<button @click="toggleMenu()">Menu</button>
+
+<!-- Or with explicit role and keyboard handler -->
+<div role="button" tabindex="0" @click="toggleMenu()" @keydown="onKey($event)">Menu</div>
+```
+
+### AVX_W67 — COMPILER_A11Y_ANCHOR_HREF
+
+**Warning Message**
+
+```text
+<a> element is missing an href attribute (in component <{0}>).
+```
+
+**Cause:** An `<a>` element has no `href` attribute and is used as a click target. Links without `href` are not keyboard-focusable and are not announced as links by screen readers.
+
+**Resolution:** If the element navigates to a URL or route, add an `href` attribute. If it performs an in-page action, replace it with a `<button>` element.
+
+**Incorrect**
+
+```html
+<a @click="openModal()">Open</a>
+```
+
+**Correct**
+
+```html
+<button type="button" @click="openModal()">Open</button>
+
+<!-- Or navigation link -->
+<a href="/profile">Profile</a>
+```
+
+### AVX_W68 — COMPILER_A11Y_FORM_LABEL
+
+**Warning Message**
+
+```text
+Form control <{0}> has no associated <label>, aria-label, or aria-labelledby.
+```
+
+**Cause:** A form input control (`<input>`, `<select>`, `<textarea>`) lacks an accessible label. Screen reader users cannot identify the purpose of the control.
+
+**Resolution:** Associate a `<label>` with a matching `for` attribute and control `id`, wrap the control in a `<label>`, or provide an `aria-label` or `aria-labelledby` attribute. Note that `<input type="hidden">`, `<input type="submit">`, `<input type="button">`, and `<input type="reset">` do not require a separate label.
+
+**Incorrect**
+
+```html
+<input type="text" name="username">
+```
+
+**Correct**
+
+```html
+<label for="username">Username</label>
+<input id="username" type="text" name="username">
+
+<!-- Or wrapping label -->
+<label>
+  Username
+  <input type="text" name="username">
+</label>
+
+<!-- Or aria-label -->
+<input type="text" name="username" aria-label="Username">
+```
+
+### AVX_W69 — COMPILER_A11Y_BUTTON_NAME
+
+**Warning Message**
+
+```text
+<button> has no accessible name (in component <{0}>).
+```
+
+**Cause:** A `<button>` element contains no text content and has no `aria-label` or `aria-labelledby` attribute. Assistive technologies cannot determine what clicking the button will do.
+
+**Resolution:** Add descriptive text inside the button or provide an `aria-label` or `aria-labelledby` attribute.
+
+**Incorrect**
+
+```html
+<button class="icon-trash"></button>
+```
+
+**Correct**
+
+```html
+<button class="icon-trash" aria-label="Delete item"></button>
+
+<!-- Or with text -->
+<button class="icon-trash">Delete</button>
+```
+
+### AVX_W70 — COMPILER_A11Y_POSITIVE_TABINDEX
+
+**Warning Message**
+
+```text
+Positive tabindex "{0}" disrupts document navigation order.
+```
+
+**Cause:** An element specifies a positive `tabindex` value (`tabindex > 0`). This overrides the natural DOM tab order and makes keyboard navigation confusing and unpredictable.
+
+**Resolution:** Remove the positive `tabindex` and adjust the DOM element order instead. Use `tabindex="0"` to make naturally non-interactive elements focusable in DOM order, or `tabindex="-1"` for programmatic focus.
+
+**Incorrect**
+
+```html
+<input type="text" tabindex="5">
+```
+
+**Correct**
+
+```html
+<input type="text">
+<div tabindex="0">Focusable custom element</div>
+```
+
 ## Runtime Codes (`AVX_R*`)
+
 
 | Code        | Default Message                                                                         | Cause & Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ----------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
