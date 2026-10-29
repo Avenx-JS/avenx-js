@@ -89,6 +89,26 @@ When the root cause is unknown, do not present speculation as fact. Clearly dist
 
 For bugs that affect existing tests, identify the relevant test coverage where possible. New regression tests should generally accompany bug fixes.
 
+## 2.5 Issue Assignment and Ownership
+
+Maintainers should respect the ownership of issues assigned to contributors. An assignment represents a contributor's commitment to working on a task and should not be overridden casually.
+
+**Do not assign yourself an issue that already has an assignee.** If a contributor has already taken responsibility for an issue, maintainers must respect that commitment and allow them a reasonable opportunity to work on it.
+
+An exception applies only when all of the following conditions are met:
+
+1. The issue has remained untouched for at least **7 days**.
+2. The maintainer has contacted the current assignee and explicitly asked whether they still intend and are able to work on the issue.
+3. The assignee has not provided a response or otherwise demonstrated renewed activity on the issue.
+
+Only after all three conditions have been met may a maintainer assign the issue to themselves or reassign it to another contributor.
+
+If the assignee confirms that they still intend to work on the issue, their ownership should be respected. If they indicate that they can no longer continue, the issue may be reassigned by agreement.
+
+Before taking over an issue, consider whether the original assignee may simply need more time or clarification. The purpose of this guideline is to keep issues moving while respecting the time, effort, and commitments of contributors.
+
+Maintainers should never use issue assignments to compete with contributors for work or to take ownership away from someone who is actively contributing.
+
 ## 3. Reviewing Pull Requests
 
 Pull request reviews are an opportunity to maintain code quality while helping contributors understand the framework and improve their skills.
