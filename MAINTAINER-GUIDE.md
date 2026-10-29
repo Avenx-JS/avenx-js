@@ -101,6 +101,14 @@ When a maintainer starts reviewing a pull request, they should assign it to them
 
 This makes ownership visible and helps prevent multiple maintainers from unknowingly duplicating work or leaving a pull request unattended.
 
+**Respecting Review Ownership**
+
+Once a reviewer has been assigned to a pull request, other maintainers must not independently review that pull request without first coordinating with the assigned reviewer.
+
+The assigned reviewer is responsible for the review, and their ownership should be respected to avoid conflicting feedback, duplicated effort, and unnecessary confusion for contributors.
+
+An exception applies when **24 hours have passed without any activity from the assigned reviewer**. In that case, another maintainer may take over or begin the review without prior approval. Where practical, they should make the change of ownership clear by updating the assignment or communicating it to the other maintainers.
+
 Once a maintainer takes ownership of a review, they should aim to review it promptly. If the review will take longer than expected, communicate this to the contributor rather than leaving them waiting without an update.
 
 If a maintainer cannot continue reviewing a pull request, they should release ownership or coordinate with another maintainer.
