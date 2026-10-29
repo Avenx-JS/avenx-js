@@ -33,6 +33,7 @@
  */
 import assert from 'assert';
 import { compileComponent } from '../../benches/support/compileFixture.js';
+import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
 import { RefusalReason } from '../../lib/compiler/ir/nodes.js';
 let seq = 0;
@@ -67,6 +68,67 @@ function testDynamicComponentIRFallback() {
   }
 
   console.log('  ✅ Dynamic component IR fallback tests passed.');
+}
+
+async function testCustomDirectiveCompiledPath() {
+  const ComponentClass = compileComponent(
+    '<state themeColor="tomato" showCustom="true" />\n<div><@if showCustom><p id="custom" data-ax-color="themeColor" data-ax-lifecycle="themeColor">text</p></@if></div>',
+    `ParityCustomDirective${seq++}`,
+  );
+  const host = document.createElement('div');
+  host.id = 'custom-directive-app';
+  document.body.appendChild(host);
+  const app = new AvenxApp({ target: '#custom-directive-app' });
+  let mounted = 0;
+  const lifecycle = [];
+  app.directive('color', (el, binding) => {
+    mounted++;
+    el.style.color = binding.value;
+  });
+  app.directive('lifecycle', {
+    mounted(el, binding) {
+      lifecycle.push(['mounted', el.id, binding.value]);
+    },
+    updated(el, binding) {
+      lifecycle.push(['updated', el.id, binding.value, binding.oldValue]);
+    },
+    unmounted(el, binding) {
+      lifecycle.push(['unmounted', el.id, binding.value]);
+    },
+  });
+
+  const component = new ComponentClass({}, {});
+  component.$app = app;
+  component.mount(host);
+
+  assert.strictEqual(mounted, 1, 'the compiled path must run a registered custom directive');
+  assert.deepStrictEqual(lifecycle, [['mounted', 'custom', 'tomato']], 'object directives must run mounted');
+  assert.strictEqual(host.querySelector('#custom').style.color, 'tomato');
+  assert.ok(!host.querySelector('#custom').hasAttribute('data-ax-color'));
+  component.state.themeColor = 'rebeccapurple';
+  await component.$nextTick();
+  assert.strictEqual(mounted, 2, 'the shorthand callback must run again when its binding changes');
+  assert.strictEqual(host.querySelector('#custom').style.color, 'rebeccapurple');
+  assert.deepStrictEqual(lifecycle, [
+    ['mounted', 'custom', 'tomato'],
+    ['updated', 'custom', 'rebeccapurple', 'tomato'],
+  ], 'object directives must run updated with the previous value');
+  component.state.showCustom = false;
+  await component.$nextTick();
+  assert.strictEqual(host.querySelector('#custom'), null, 'the conditional must remove the directive element');
+  assert.deepStrictEqual(lifecycle, [
+    ['mounted', 'custom', 'tomato'],
+    ['updated', 'custom', 'rebeccapurple', 'tomato'],
+    ['unmounted', 'custom', 'rebeccapurple'],
+  ], 'object directives must run unmounted when a conditional removes their element');
+  assert.strictEqual(component.$isMounted, true, 'removing a conditional child must leave its component mounted');
+  component.unmount();
+  assert.deepStrictEqual(lifecycle, [
+    ['mounted', 'custom', 'tomato'],
+    ['updated', 'custom', 'rebeccapurple', 'tomato'],
+    ['unmounted', 'custom', 'rebeccapurple'],
+  ], 'disposing the parent must not unmount the already removed directive again');
+  host.remove();
 }
 
 /**
@@ -749,6 +811,7 @@ async function testDuplicateKeyWarningParity() {
 }
 
 testConditionalCannotFallBack();
+await testCustomDirectiveCompiledPath();
 await testListParity();
 await testNestedBlocksThroughTheCompiler();
 await testSlotFallbackParity();

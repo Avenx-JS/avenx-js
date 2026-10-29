@@ -95,9 +95,9 @@ Directives are applied to HTML elements in component templates using the `data-a
 
 ---
 
-## Registering Custom Directives (`app.directive` & `AvenxComponent.directive`)
+## Registering Custom Directives
 
-Custom directives can be registered globally on your application instance using `app.directive(name, definition)` or via `AvenxComponent.directive(name, definition)`:
+Custom directives can be registered globally on your application instance using `app.directive(name, definition)`:
 
 ```typescript
 app.directive(name: string, definition: DirectiveDefinition | DirectiveFunction): AvenxApp
