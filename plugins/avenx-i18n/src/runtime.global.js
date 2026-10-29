@@ -88,6 +88,10 @@ export class SafeHtml {
     this.__isSafeHtml = true;
   }
 
+  /**
+   * Returns the safe HTML string representation.
+   * @returns {string} The safe HTML string.
+   */
   toString() {
     return this.value;
   }
@@ -97,6 +101,9 @@ export class SafeHtml {
  * The HTML escaper, resolved from the runtime or self-contained.
  */
 export class HtmlEscaper {
+  /**
+   * Creates an instance of HtmlEscaper.
+   */
   constructor() {
     const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
     if (ns && typeof ns.HtmlEscaper === 'function') {
