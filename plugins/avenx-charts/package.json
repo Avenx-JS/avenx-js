@@ -22,7 +22,7 @@
     "build": "node scripts/build.js",
     "prepare": "npm run build",
     "pretest": "node scripts/build.js",
-    "test": "node test/charts.test.js"
+    "test": "node test/charts.test.js && node test/chartsGlobalBuild.test.js"
   },
   "keywords": [
     "avenx",
