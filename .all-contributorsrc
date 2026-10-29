@@ -1292,6 +1292,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Doomguy-BFG9000",
+      "name": "Doomguy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/307901355?v=4",
+      "profile": "https://github.com/Doomguy-BFG9000",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
