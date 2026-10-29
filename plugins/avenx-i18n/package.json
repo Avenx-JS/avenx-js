@@ -18,6 +18,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "prepare": "npm run build",
+    "pretest": "npm run build",
     "test": "node test/i18n.test.js && node test/i18nIntegration.test.js && node test/i18nResilience.test.js && node test/i18nGlobalBuild.test.js"
   },
   "keywords": [
