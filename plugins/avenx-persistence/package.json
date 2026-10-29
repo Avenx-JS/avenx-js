@@ -18,6 +18,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "prepare": "npm run build",
+    "pretest": "node scripts/build.js",
     "test": "node test/persistence.test.js && node test/persistenceResilience.test.js && node test/persistenceGlobalBuild.test.js"
   },
   "keywords": [

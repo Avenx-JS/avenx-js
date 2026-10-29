@@ -90,6 +90,10 @@ async function testExampleAppGlobalIntegration() {
   console.log('  ✅ Example app global integration passed!');
 }
 
+/**
+ * Runs the global build test suite.
+ * @returns {Promise<void>}
+ */
 async function run() {
   testMissingRuntimeDiagnostics();
   await testExampleAppGlobalIntegration();
