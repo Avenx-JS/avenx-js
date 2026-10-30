@@ -192,7 +192,7 @@ Formats an Avenx error/warning template into a console-ready string **without th
 import { AvenxErrorCodes, formatMessage } from 'avenx-core/runtime';
 
 logger.warn(formatMessage(AvenxErrorCodes.COMPONENT_INJECT_KEY_NOT_FOUND, 'theme'));
-// => [AVX_W15] Inject key "theme" was not found in the component provide/inject tree.
+// => [AVX_W15] Injected key "theme" not found in any ancestor component.
 ```
 
 | Param | Type | Description |
@@ -200,7 +200,7 @@ logger.warn(formatMessage(AvenxErrorCodes.COMPONENT_INJECT_KEY_NOT_FOUND, 'theme
 | `code` | `string` | An `AvenxErrorCodes` value (e.g. `AVX_W15`) |
 | `...args` | `any[]` | Values substituted for `{0}`, `{1}`, … placeholders in `AvenxErrorMessages` |
 
-**Returns:** `string` in the form ``[`code`] formatted message``.
+**Returns:** `string` in the form `[code] formatted message`.
 
 Unlike constructing `new AvenxError(code, ...args)`, `formatMessage` never throws—it only builds the text for `logger.warn`, telemetry, or custom UI.
 

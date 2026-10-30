@@ -1305,6 +1305,21 @@ export const consoleTransport: {
     log(level: string, formattedArgs: any[]): void;
 };
 
+/** Framework error with a stable diagnostic code; the message is `[code] text`. */
+export class AvenxError extends Error {
+    constructor(code: string, ...args: any[]);
+    readonly code: string;
+}
+
+/** Registry of stable diagnostic codes, keyed by code name. */
+export const AvenxErrorCodes: Record<string, string>;
+
+/** Message templates for each diagnostic code, with `{n}`-style placeholders. */
+export const AvenxErrorMessages: Record<string, string>;
+
+/** Formats a diagnostic for non-throwing reporting, returning `[code] formatted text`. */
+export function formatMessage(code: string, ...args: any[]): string;
+
 export interface ResourceOptions {
     pollInterval?: number;
 }
