@@ -1,8 +1,20 @@
-<state name="Ada" bio="" subscribed="false" fruits="['apple']" plan="free" city="berlin" ticker="0" />
+<state name="Ada" bio="" subscribed="false" fruits="['apple']" plan="free" city="berlin" ticker="0" username="" email="" password="" submittedData="null" />
 
 <action name="bumpTicker"> state.ticker = state.ticker + 1; </action>
 
 <action name="renameFromCode"> state.name = 'Grace'; </action>
+
+<action name="handleSubmit">
+  event.preventDefault();
+  if (!state.$validation.isValid) {
+    return;
+  }
+  state.submittedData = {
+    username: state.username,
+    email: state.email,
+    password: state.password
+  };
+</action>
 
 <main>
   <h1 data-testid="heading">Forms</h1>
@@ -41,4 +53,60 @@
   <!-- Unrelated state, used to force a patch while a field holds focus. -->
   <p data-testid="ticker">{{ ticker }}</p>
   <button data-testid="rename" @click="renameFromCode()">Rename from code</button>
+
+  <!-- Declarative Form Validation Section -->
+  <hr />
+  <h2>Declarative Validation</h2>
+  <form @submit="handleSubmit">
+    <div class="field-group">
+      <label for="username">Username</label>
+      <input
+        id="username"
+        name="username"
+        data-ax-bind="username"
+        data-ax-validate="required|min:4|alphanumeric"
+        data-testid="username-input"
+      />
+      <span data-testid="username-error" data-ax-show="state.$validation?.errors?.username?.length > 0">
+        {{ state.$validation?.errors?.username?.[0] }}
+      </span>
+    </div>
+
+    <div class="field-group">
+      <label for="email">Email</label>
+      <input
+        id="email"
+        name="email"
+        data-ax-bind="email"
+        data-ax-validate="required|email"
+        data-testid="email-input"
+      />
+      <span data-testid="email-error" data-ax-show="state.$validation?.errors?.email?.length > 0">
+        {{ state.$validation?.errors?.email?.[0] }}
+      </span>
+    </div>
+
+    <div class="field-group">
+      <label for="password">Password</label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        data-ax-bind="password"
+        data-ax-validate="required|min:8"
+        data-testid="password-input"
+      />
+      <span data-testid="password-error" data-ax-show="state.$validation?.errors?.password?.length > 0">
+        {{ state.$validation?.errors?.password?.[0] }}
+      </span>
+    </div>
+
+    <button type="submit" data-testid="submit-btn" data-ax-disabled="!state.$validation.isValid">
+  Submit
+</button>
+  </form>
+
+  <div data-testid="success-output" data-ax-show="state.submittedData !== null">
+    Form submitted successfully: <span data-testid="output-username">{{ state.submittedData?.username }}</span>
+  </div>
 </main>

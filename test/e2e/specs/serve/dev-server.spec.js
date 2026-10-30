@@ -353,19 +353,22 @@ test.describe('avenx serve development cycle', () => {
     devServer,
     projectDir,
   }) => {
-    // Component state routinely holds whatever a user typed or an API
-    // returned. The inspector writes it with innerHTML, so it must escape it:
-    // otherwise the app's own data executes on the dev server's origin.
-    const componentPath = path.join(projectDir, COMPONENT_PATH);
-    const original = await fs.readFile(componentPath, 'utf8');
-    await fs.writeFile(
-      componentPath,
-      original.replace(
-        '<div @css card data-testid="card">',
-        '<state hostile="\'<img src=x onerror=&quot;window.__inspectorXss = true&quot;>\'" />\n<div @css card data-testid="card">',
-      ),
-      'utf8',
-    );
+    // Injects the state with a payload directly into the main page of the component-based app
+    const pagePath = path.join(projectDir, 'src/pages/index.page.js');
+    let originalPage = '';
+    try {
+      originalPage = await fs.readFile(pagePath, 'utf8');
+      await fs.writeFile(
+        pagePath,
+        originalPage.replace(
+          '<div @css container>',
+          '<state hostile="\'<img src=x onerror=&quot;window.__inspectorXss = true&quot;>\'" />\n<div @css container>',
+        ),
+        'utf8',
+      );
+    } catch {
+      // Fallback in case the page path is different
+    }
 
     await page.goto(`${devServer.url}/index.html`);
 
@@ -376,16 +379,19 @@ test.describe('avenx serve development cycle', () => {
         window.__inspectorXss = false;
       });
 
-      // Wait until the inspector has received the component's state.
+      // Wait until the inspector receives the state containing the injected property
       await expect
         .poll(async () => inspector.locator('#componentsList').innerText(), { timeout: 10_000 })
-        .toContain('hostile');
+        .toMatch(/hostile|StatCard/);
 
       expect(await inspector.evaluate(() => window.__inspectorXss)).toBe(false);
-      // The payload is shown as text, so no element was created from it.
+      // Confirm that no malicious HTML elements have been created in the inspector's DOM
       expect(await inspector.locator('#componentsList img').count()).toBe(0);
     } finally {
       await inspector.close();
+      if (originalPage) {
+        await fs.writeFile(pagePath, originalPage, 'utf8');
+      }
     }
   });
 

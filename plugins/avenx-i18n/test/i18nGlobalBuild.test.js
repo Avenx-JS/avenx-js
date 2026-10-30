@@ -102,8 +102,12 @@ async function testExampleAppGlobalIntegration() {
 }
 
 /**
+<<<<<<< HEAD
  * Runs the global build test suite.
  * @returns {Promise<void>}
+=======
+ *
+>>>>>>> daf3b7db (test(e2e): add E2E coverage for declarative form validation (#1363))
  */
 async function run() {
   testMissingRuntimeDiagnostics();

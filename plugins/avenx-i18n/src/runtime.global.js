@@ -89,8 +89,12 @@ export class SafeHtml {
   }
 
   /**
+<<<<<<< HEAD
    * Returns the safe HTML string representation.
    * @returns {string} The safe HTML string.
+=======
+   *
+>>>>>>> daf3b7db (test(e2e): add E2E coverage for declarative form validation (#1363))
    */
   toString() {
     return this.value;
@@ -102,7 +106,11 @@ export class SafeHtml {
  */
 export class HtmlEscaper {
   /**
+<<<<<<< HEAD
    * Creates an instance of HtmlEscaper.
+=======
+   *
+>>>>>>> daf3b7db (test(e2e): add E2E coverage for declarative form validation (#1363))
    */
   constructor() {
     const ns = typeof globalThis !== 'undefined' ? globalThis.Avenx : undefined;
