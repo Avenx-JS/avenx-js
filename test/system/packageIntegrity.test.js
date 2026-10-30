@@ -29,7 +29,9 @@ function packedFiles() {
   });
   assert.strictEqual(result.status, 0, `npm pack failed:\n${result.stderr}`);
   const report = JSON.parse(result.stdout);
-  return report[0].files.map((entry) => entry.path);
+
+  const pkgData = Array.isArray(report) ? report[0] : Object.values(report)[0];
+  return pkgData.files.map((entry) => entry.path);
 }
 
 try {

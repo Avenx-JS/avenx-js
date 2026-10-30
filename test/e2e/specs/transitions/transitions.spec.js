@@ -259,6 +259,7 @@ test.describe('transitions', () => {
       throw new Error('Expected item-2 to exist before starting its leave transition.');
     }
     await recordClassStates(item);
+    
     await item.evaluate((element) => {
       window.__leaveTransitionEnded = false;
       element.addEventListener('transitionend', () => {
@@ -274,8 +275,15 @@ test.describe('transitions', () => {
     const activeLeave = visualPhase(activeStates, ['fade-leave-active', 'fade-leave-to']);
     expect(activeLeave).toBeDefined();
     expect(activeLeave.connected).toBe(true);
-    await expect(item).toBeAttached();
-    expect(await opacityOf(item)).toBeLessThan(1);
+    
+    // Uses the retainedItem (ElementHandle) to validate that it remains attached and has reduced opacity
+    const isConnected = await retainedItem.evaluate((el) => el.isConnected);
+    expect(isConnected).toBe(true);
+
+    const currentOpacity = await retainedItem.evaluate((el) => 
+      Number.parseFloat(window.getComputedStyle(el).opacity)
+    );
+    expect(currentOpacity).toBeLessThan(1);
 
     await expect(item).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => window.__leaveTransitionEnded)).toBe(true);
