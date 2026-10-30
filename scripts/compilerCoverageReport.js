@@ -169,9 +169,32 @@ const uncoveredStatus =
       ? `Yes - ${uncovered.length} changed executable line(s) and ${uncoveredBranches.length} changed branch outcome(s) are not covered.`
       : 'No - all measured changed executable lines and branch outcomes are covered.';
 
+const { GITHUB_SERVER_URL, GITHUB_REPOSITORY } = process.env;
+const contributingLink =
+  GITHUB_SERVER_URL && GITHUB_REPOSITORY
+    ? `[CONTRIBUTING.md](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/main/CONTRIBUTING.md#compiler-changes-and-regression-tests)`
+    : 'CONTRIBUTING.md';
+const testStatus = [];
+if (process.env.HAS_TEST_CHANGES === 'false') {
+  if (process.env.HAS_OVERRIDE === 'true') {
+    testStatus.push(
+      '> [!NOTE]',
+      '> `[no-test-needed]` override acknowledged. Make sure the PR description explains why.',
+    );
+  } else {
+    testStatus.push(
+      '> [!WARNING]',
+      '> Compiler source changed without a test file change. Add a regression test, or add `[no-test-needed]` ' +
+        `with a reason to the PR description if none is needed (see ${contributingLink}).`,
+    );
+  }
+  testStatus.push('');
+}
+
 const lines = [
-  '### Compiler Test Coverage',
+  '### 🧪 Compiler Test Coverage',
   '',
+  ...testStatus,
   ...(process.env.TEST_RESULT ? [`- **Test run:** ${process.env.TEST_RESULT}`] : []),
   `- **Overall compiler line coverage:** ${percentage(coveredLines, totalLines)} (${coveredLines}/${totalLines} executable lines)`,
   `- **Overall compiler branch coverage:** ${percentage(coveredBranches, totalBranches)} (${coveredBranches}/${totalBranches} branches)`,
