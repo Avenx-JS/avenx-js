@@ -1,0 +1,128 @@
+name: Compiler Test Coverage
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  compiler-coverage:
+    name: Check Compiler Test Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changed files
+        id: changed-files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          changed_files="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+
+          if ! grep -Eq '^(lib/compiler/|lib/compiler\.js$)' <<< "$changed_files"; then
+            echo "No compiler source changes detected."
+            echo "has_compiler_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_compiler_changes=true" >> "$GITHUB_OUTPUT"
+
+          if grep -Eq '(^|/)[^/]+\.(test|spec)\.[^/]+$' <<< "$changed_files"; then
+            echo "has_test_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_test_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ "${PR_BODY,,}" == *'[no-test-needed]'* ]]; then
+            echo "has_override=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_override=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        run: npm ci
+
+      # Test failures are reported in the comment, not here: the CI/CD
+      # Pipeline's test job is the gate, and this check stays advisory.
+      - name: Run tests with compiler coverage
+        id: run-tests
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        continue-on-error: true
+        run: npx c8 --all --include="lib/compiler/**" --include="lib/compiler.js" --reporter=json npm test
+
+      - name: Generate compiler coverage report
+        if: steps.changed-files.outputs.has_compiler_changes == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TEST_RESULT: ${{ steps.run-tests.outcome }}
+          HAS_TEST_CHANGES: ${{ steps.changed-files.outputs.has_test_changes }}
+          HAS_OVERRIDE: ${{ steps.changed-files.outputs.has_override }}
+        run: |
+          node scripts/compilerCoverageReport.js "$BASE_SHA" "$HEAD_SHA" coverage/coverage-final.json compiler-coverage-report.md
+          cat compiler-coverage-report.md >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$HAS_TEST_CHANGES" = 'false' ] && [ "$HAS_OVERRIDE" = 'false' ]; then
+            echo "::warning title=Compiler test coverage::Compiler source changed without a test file change. Add a regression test or document a [no-test-needed] override in the pull request description."
+          fi
+
+      # A pull request from a fork gets a read-only token, so commenting fails
+      # with "Resource not accessible by integration". The report is still in
+      # the job summary; only the comment is skipped, and a failure to comment
+      # never fails the job.
+      - name: Post or Update Comment
+        if: steps.changed-files.outputs.has_compiler_changes == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'compiler-coverage-report.md';
+            if (!fs.existsSync(path)) {
+              console.log('Compiler coverage report markdown not found.');
+              return;
+            }
+            const commentBody = fs.readFileSync(path, 'utf8');
+            const { owner, repo, number } = context.issue;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: number,
+            });
+
+            const existingComment = comments.find(c => c.body.includes('### 🧪 Compiler Test Coverage'));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+              console.log('Updated existing compiler coverage comment.');
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: commentBody
+              });
+              console.log('Created new compiler coverage comment.');
+            }

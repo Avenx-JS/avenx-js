@@ -6,15 +6,16 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 
 ## 📊 Overview
 
-| Workflow                        | File                                         | Trigger                                                                   | Purpose                            | Output / Target                                                                                                                      |
-| :------------------------------ | :------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| **Development Docs Publishing** | [`dev-docs.yml`](dev-docs.yml)               | Push to `main`, `workflow_dispatch`                                       | Generates JSDoc documentation      | [`avenx-js/dev-docs`](https://github.com/avenx-js/dev-docs)                                                                          |
-| **Quality & Benchmarks**        | [`quality-results.yml`](quality-results.yml) | Schedule (Saturdays 12:00 Swiss time / `0 10 * * 6`), `workflow_dispatch` | Generates coverage & benchmarks    | [`avenx-js/test-cov`](https://github.com/avenx-js/test-cov)<br>[`avenx-js/bench-results`](https://github.com/avenx-js/bench-results) |
-| **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                           | Push/PR to `main`, Release creation                                       | Runs tests/lint and checks PR compiler tests | Build & multi-version compatibility verification                                                                                     |
-| **Template Parser Fuzz**        | [`fuzz-nightly.yml`](fuzz-nightly.yml)       | Schedule (`0 2 * * *`), `workflow_dispatch`                               | Runs property-based fuzz tests     | Template parser & compiler invariants verification                                                                                   |
-| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)         | Release creation                                                          | Publishes `avenx-core` to npm      | npm registry                                                                                                                         |
-| **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)           | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
-| **GitHub Pages Docs**           | [`static.yml`](static.yml)                   | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                         |
+| Workflow                        | File                                             | Trigger                                                                   | Purpose                            | Output / Target                                                                                                                      |
+| :------------------------------ | :----------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **Development Docs Publishing** | [`dev-docs.yml`](dev-docs.yml)                   | Push to `main`, `workflow_dispatch`                                       | Generates JSDoc documentation      | [`avenx-js/dev-docs`](https://github.com/avenx-js/dev-docs)                                                                          |
+| **Quality & Benchmarks**        | [`quality-results.yml`](quality-results.yml)     | Schedule (Saturdays 12:00 Swiss time / `0 10 * * 6`), `workflow_dispatch` | Generates coverage & benchmarks    | [`avenx-js/test-cov`](https://github.com/avenx-js/test-cov)<br>[`avenx-js/bench-results`](https://github.com/avenx-js/bench-results) |
+| **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                               | Push/PR to `main`, Release creation                                       | Runs test suite and linter         | Build & multi-version compatibility verification                                                                                     |
+| **Template Parser Fuzz**        | [`fuzz-nightly.yml`](fuzz-nightly.yml)           | Schedule (`0 2 * * *`), `workflow_dispatch`                               | Runs property-based fuzz tests     | Template parser & compiler invariants verification                                                                                   |
+| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                          | Publishes `avenx-core` to npm      | npm registry                                                                                                                         |
+| **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)               | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
+| **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                    | Checks compiler changes have tests | PR comment report                                                                                                                    |
+| **GitHub Pages Docs**           | [`static.yml`](static.yml)                       | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                         |
 
 ---
 
@@ -62,7 +63,6 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
   3. Installs dependencies (`npm ci`).
   4. Runs complete test suite (`npm test`).
   5. Executes ESLint (`npm run lint`, executed on Node 20 & 22; skipped on Node 18 as ESLint 10 requires Node >= 20).
-- **Compiler test coverage job (pull requests)**: Compares the base and head file lists and emits a non-blocking warning if `lib/compiler/` or `lib/compiler.js` changes without a changed `*.test.*` or `*.spec.*` file. For compiler changes it runs the tests with coverage instrumentation and posts or updates a PR comment with test result, overall compiler line/branch coverage, diff size, coverage of changed executable lines, and any uncovered changed lines or branches. Fork PRs, where the workflow cannot write comments, show the report in the job summary. Add `[no-test-needed]` and a rationale to the PR description to suppress the reminder for a legitimate exception; see [CONTRIBUTING.md](../../CONTRIBUTING.md#compiler-changes-and-regression-tests).
 
 ### 4. NPM Package Release (`npm-publish.yml`)
 
@@ -97,6 +97,13 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
   2. **Dynamic Binding & Slot Classification**: Dynamic bindings and transclusion slots result in non-static nodes (preventing slot-classification regressions like #200).
   3. **Round-Trip Idempotency & AST Isomorphism**: `serializeHTML(parseHTML(template))` preserves semantics and stabilizes immediately.
   4. **Structural Conservation**: Counts, ordering, and nesting of slots, loops with empty blocks, and conditional chains are conserved in the generated AST and IR.
+
+### 8. Compiler Test Coverage (`compiler-coverage.yml`)
+
+- **Triggers**: Pull Request to `main`.
+- **Steps**: Diffs the PR against its base. If `lib/compiler/` or `lib/compiler.js` changed, runs the test suite with `c8` coverage instrumentation and posts or updates a PR comment (like the bundle size report) with the test result, overall compiler line/branch coverage, diff size, coverage of changed executable lines, and any uncovered changed lines or branches.
+- **Missing tests**: The comment warns when no `*.test.*` or `*.spec.*` file changed, unless the PR description contains `[no-test-needed]`; see [CONTRIBUTING.md](../../CONTRIBUTING.md#compiler-changes-and-regression-tests).
+- **Advisory only**: The check never fails the build; the CI/CD Pipeline's test job is the gate. Fork PRs, which get a read-only token, show the report in the job summary instead of a comment.
 
 ---
 
