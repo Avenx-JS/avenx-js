@@ -36,6 +36,7 @@ import { compileComponent } from '../../benches/support/compileFixture.js';
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
 import { RefusalReason } from '../../lib/compiler/ir/nodes.js';
+import { logger } from '../../lib/core/runtime/AvenxLogger.js';
 let seq = 0;
 /**
  * Dynamic component tags must use the string-renderer fallback.
@@ -105,6 +106,7 @@ async function testCustomDirectiveCompiledPath() {
   assert.deepStrictEqual(lifecycle, [['mounted', 'custom', 'tomato']], 'object directives must run mounted');
   assert.strictEqual(host.querySelector('#custom').style.color, 'tomato');
   assert.ok(!host.querySelector('#custom').hasAttribute('data-ax-color'));
+  assert.ok(!host.querySelector('#custom').hasAttribute('data-ax-lifecycle'));
   component.state.themeColor = 'rebeccapurple';
   await component.$nextTick();
   assert.strictEqual(mounted, 2, 'the shorthand callback must run again when its binding changes');
@@ -776,6 +778,91 @@ async function testSlotFallbackParity() {
 }
 
 /**
+ * A `data-ax-*` attribute no directive claims is plain markup on both paths.
+ * The compiler cannot know it is unregistered, so it must not drop it.
+ */
+async function testUnregisteredDirectiveAttributeParity() {
+  await parity(
+    'an unregistered data-ax-* attribute',
+    `<state label="hover me" />
+<div><p id="t1" data-ax-tooltip="label">{{ label }}</p><p id="t2" data-ax-testid="row-7">plain marker</p><p id="t3" data-ax-testid="{{ label }}">bound marker</p></div>`,
+    async (component, host) => {
+      assert.strictEqual(host.querySelector('#t1').getAttribute('data-ax-tooltip'), 'label');
+      assert.strictEqual(host.querySelector('#t2').getAttribute('data-ax-testid'), 'row-7');
+      assert.strictEqual(host.querySelector('#t3').getAttribute('data-ax-testid'), 'hover me');
+      component.state.label = 'moved';
+      await component.$nextTick();
+      assert.strictEqual(host.querySelector('#t3').getAttribute('data-ax-testid'), 'moved');
+    },
+  );
+}
+
+/**
+ * A registered directive written with a modifier consumes its attribute,
+ * modifier and all, and receives the modifier.
+ */
+async function testCustomDirectiveModifierConsumed() {
+  console.log('🧪 Testing a directive with a modifier consumes its attribute...');
+
+  const ComponentClass = compileComponent(
+    '<state themeColor="tomato" />\n<div><p id="m" data-ax-color.mod="themeColor">text</p></div>',
+    `ParityDirectiveModifier${seq++}`,
+  );
+  const host = document.createElement('div');
+  host.id = 'directive-modifier-app';
+  document.body.appendChild(host);
+  const app = new AvenxApp({ target: '#directive-modifier-app' });
+  const seen = [];
+  app.directive('color', (el, binding) => seen.push(binding.modifiers));
+
+  const component = new ComponentClass({}, {});
+  component.$app = app;
+  component.mount(host);
+
+  assert.strictEqual(component.$compiled, true);
+  assert.deepStrictEqual(seen, [{ mod: true }]);
+  assert.ok(!host.querySelector('#m').hasAttribute('data-ax-color.mod'), 'the claimed attribute must leave the DOM');
+  component.unmount();
+  host.remove();
+}
+
+/**
+ * A framework name cannot be taken by a custom directive. Registering one warns,
+ * and the directive never runs, so the framework marker stays in the DOM.
+ */
+async function testReservedNameDirectiveNeverRuns() {
+  console.log('🧪 Testing a directive registered under a reserved name never runs...');
+
+  const ComponentClass = compileComponent(
+    '<state target="home" />\n<div><a id="l" data-ax-link="target">go</a></div>',
+    `ParityReservedDirective${seq++}`,
+  );
+  const host = document.createElement('div');
+  host.id = 'reserved-directive-app';
+  document.body.appendChild(host);
+  const app = new AvenxApp({ target: '#reserved-directive-app' });
+  const warnings = [];
+  const origWarn = logger.warn;
+  logger.warn = (...args) => warnings.push(args.join(' '));
+  let calls = 0;
+  try {
+    app.directive('link', () => calls++);
+  } finally {
+    logger.warn = origWarn;
+  }
+  assert.ok(warnings.some((w) => w.includes('"data-ax-link" is reserved')), 'registering a reserved name must warn');
+
+  const component = new ComponentClass({}, {});
+  component.$app = app;
+  component.mount(host);
+
+  assert.strictEqual(calls, 0, 'a directive under a reserved name must not run');
+  assert.ok(host.querySelector('#l').hasAttribute('data-ax-link'), 'the framework marker must stay');
+  component.unmount();
+  host.remove();
+}
+
+/**
  * A duplicate `data-ax-key` must warn on both paths, with the same message.
  * The compiled path used to be silent here, so this is the parity assertion
  * that keeps the diagnostic from diverging again.
@@ -815,6 +902,9 @@ await testCustomDirectiveCompiledPath();
 await testListParity();
 await testNestedBlocksThroughTheCompiler();
 await testSlotFallbackParity();
+await testUnregisteredDirectiveAttributeParity();
+await testCustomDirectiveModifierConsumed();
+await testReservedNameDirectiveNeverRuns();
 await testDuplicateKeyWarningParity();
 
 await testKnownDifference();

@@ -215,6 +215,21 @@ function testEventsAreNotOps() {
 }
 
 /**
+ * A `data-ax-*` name the framework does not reserve may be a custom directive,
+ * but only the runtime knows which directives are registered. It compiles to a
+ * CUSTOM op and also stays in the skeleton, so it survives when nothing claims
+ * it.
+ */
+function testUnclaimedDirectiveAttributeStays() {
+  console.log('🧪 Testing an unclaimed data-ax-* attribute stays in the skeleton...');
+
+  const program = compiled('<p data-ax-testid="row-7">x</p>');
+  assert.strictEqual(ops(program).length, 1);
+  assert.strictEqual(ops(program)[0].k, OpKind.CUSTOM);
+  assert.ok(program.html.includes('data-ax-testid="row-7"'), 'the attribute must survive when nothing claims it');
+}
+
+/**
  * A subtree the compiler proved static is emitted whole and never descended
  * into, and its marker attribute is dropped.
  *
@@ -380,6 +395,7 @@ testBooleanAttributeOps();
 testAttributePartsOps();
 testDirectiveOps();
 testEventsAreNotOps();
+testUnclaimedDirectiveAttributeStays();
 testStaticSubtrees();
 testRefusals();
 testChildComponentProps();
