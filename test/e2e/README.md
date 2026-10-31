@@ -46,6 +46,7 @@ test/e2e/
     counter/        state, computed values, actions, bound attributes
     rendering/      interpolation, escaping, data-ax-show, keyed lists
     components/     nesting, props from parent state, slot projection
+    composition/    provide/inject descendants and keep-alive routes
     events/         @click and the modifier grammar
     styling/        scoped CSS, isolation, @def globals
     routing/        hash routes, params, query, wildcard, guards, a bridge
@@ -161,6 +162,7 @@ product running in a browser.
 | `actions/` | 6 | Browser APIs |
 | `build/` | 4 | Production and development runtime parity |
 | `components/` | 12 | Component composition |
+| `composition/` | 5 | Reactive provide/inject, live DOM retention, uncached reset and lifecycle order |
 | `events/` | 12 | Event bindings, modifiers and loop scope |
 | `forms/` | 12 | Focus retention and two-way binding |
 | `performance/` | 6 | `<@defer>` triggers |
@@ -181,7 +183,7 @@ raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
 Not yet covered, in rough priority order: resources, rewind rollback, virtual
-list windowing, transitions, keep-alive, provide/inject, declarative form
+list windowing, transitions, declarative form
 validation, live reload, and trace capture under
 `avenx serve --trace`.
 

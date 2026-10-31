@@ -64,6 +64,10 @@ export const APPS = [
     summary: 'Component nesting, props from parent state, and slot projection.',
   },
   {
+    name: 'composition',
+    summary: 'Reactive provide/inject through descendants and keep-alive DOM, listeners and lifecycle hooks.',
+  },
+  {
     name: 'events',
     summary: 'Event bindings and the .prevent, .stop, .self, .once and key modifiers.',
   },
