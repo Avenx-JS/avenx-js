@@ -1310,6 +1310,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Vamsi-2581",
+      "name": "Vamsi-2581",
+      "avatar_url": "https://avatars.githubusercontent.com/u/245859299?v=4",
+      "profile": "https://github.com/Vamsi-2581",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
