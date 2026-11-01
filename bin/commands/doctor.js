@@ -206,6 +206,20 @@ export function runDoctor(cli) {
   const indexHtml = path.join(root, 'index.html');
   if (fs.existsSync(indexHtml)) {
     record('pass', 'index.html present');
+    // The scaffolded page names the default bundle. Warn only when it names
+    // neither the configured JS nor the CSS bundle, so a project that loads the
+    // bundle another way is not flagged.
+    const outputName = (userConfig && userConfig.outputName) || cli.config.outputName || 'bundle';
+    const html = fs.readFileSync(indexHtml, 'utf8');
+    const expectedJs = path.posix.join(distRel.replace(/\\/g, '/'), `${outputName}.js`);
+    const expectedCss = path.posix.join(distRel.replace(/\\/g, '/'), `${outputName}.css`);
+    if (!html.includes(expectedJs) && !html.includes(expectedCss)) {
+      record(
+        'warn',
+        `index.html does not reference the bundle (${expectedJs} or ${expectedCss})`,
+        'Update the script and stylesheet paths in index.html to match outputName and distDir.',
+      );
+    }
   } else {
     record('warn', 'index.html missing at project root');
   }
