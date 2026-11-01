@@ -118,6 +118,6 @@ Your browser will open to `http://localhost:3000`. Modify code in real-time and 
 
 ### Next Steps & Code Quality
 
-- Validate template markup offline with [`avenx check`](/cli-reference/commands#6-avenx-check).
+- Validate template markup offline with [`avenx check`](/cli-reference/commands#6-avenx-check-alias-lint).
 - Configure ESLint with Flat Config to enforce PascalCase component tag naming in your IDE and CI pipeline using the [ESLint Template Validation Guide](/guides/eslint).
 

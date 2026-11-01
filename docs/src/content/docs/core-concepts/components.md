@@ -165,7 +165,7 @@ own, so the page reconciles children in repeated passes until a pass mounts
 nothing new. The depth is therefore not fixed by the mechanism, but it is
 bounded: a tree nested more than 50 levels deep, or a component that renders
 itself without a base case, stops at that bound and reports
-[`AVX_R36`](/troubleshooting/errors#avx-r36-component-nesting-limit) rather
+[`AVX_R36`](/troubleshooting/errors#avx_r36--component_nesting_limit) rather
 than looping. Reaching it almost always means a component is rendering itself.
 
 ### When to nest and when not to

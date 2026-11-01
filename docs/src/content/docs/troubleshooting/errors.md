@@ -4375,3 +4375,25 @@ The "{3}" conflict policy refuses to overwrite a value the transaction did not w
 ```
 
 See the [Avenx Rewind guide](/core-concepts/rewind) for the full model.
+
+### AVX_R36 — COMPONENT_NESTING_LIMIT
+
+**Error Message**
+
+```text
+[AVX_R36] Child components are still being mounted after {0} passes, so mounting stopped and anything deeper is not on the page.
+```
+
+**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper, and the page stops after 50 passes. Reaching the limit means one of two things:
+
+- **A component renders itself**, directly or through a cycle (`<TreeNode>` rendering `<TreeNode>` with no base case, or `A` rendering `B` rendering `A`). This is almost always the cause.
+- **The tree genuinely nests components more than 50 levels deep.**
+
+The page does not throw. It logs this error and keeps everything it mounted, so the levels above the limit render normally and anything below it is missing from the page.
+
+**Resolution:**
+
+1. Look for a component whose template renders its own tag, directly or through another component, and give the recursion a base case (for example, render children only when the node has any).
+2. Otherwise flatten the tree, or render the deeper levels from a page instead of from nested components.
+
+See [Nesting Components](/core-concepts/components#nesting-components) for how child mounting works.
