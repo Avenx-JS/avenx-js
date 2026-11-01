@@ -122,6 +122,26 @@ try {
   // Restore logger
   logger.warn = originalLoggerWarn;
 
+
+  // Test 1c: missing preprocessor warns once across many preprocessCss calls
+  mockSassAvailable = false;
+  const missingWarns = [];
+  logger.warn = (msg) => {
+    if (String(msg).includes('AVX_W24')) missingWarns.push(String(msg));
+  };
+  const spDedupe = new StyleProcessor({ preprocessor: 'sass' });
+  for (let i = 0; i < 5; i++) {
+    assert.strictEqual(spDedupe.preprocessCss('body { color: red; }', 'sass'), 'body { color: red; }');
+  }
+  // Second stylesheet-shaped pass still must not multiply the warning
+  for (let i = 0; i < 5; i++) {
+    assert.strictEqual(spDedupe.preprocessCss('.card { color: blue; }', 'sass'), '.card { color: blue; }');
+  }
+  assert.strictEqual(missingWarns.length, 1, `AVX_W24 should print once, got ${missingWarns.length}`);
+  assert.ok(missingWarns[0].includes('"sass" package'), 'deduped warning still names the package');
+  assert.ok(missingWarns[0].includes('npm install -D sass'), 'deduped warning still includes install command');
+  logger.warn = originalLoggerWarn;
+
   // Test 2: Successful compilation with mock Sass preprocessor
   mockSassAvailable = true;
   const spSass = new StyleProcessor({ preprocessor: 'sass' });
