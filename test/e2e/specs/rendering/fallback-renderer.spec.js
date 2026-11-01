@@ -36,6 +36,28 @@ for (const { label, entry } of ENTRIES) {
     await expect(page.getByTestId('slot-comparison')).toHaveText('false');
   });
 
+  test(`VirtualList windows 5000 rows in the ${label}`, async ({ page, app }) => {
+    await app.open('fallback', { entry, hash: '#/windowing' });
+    await expect(page.getByTestId('windowing-heading')).toHaveText('VirtualList Windowing');
+
+    const rows = page.getByTestId('row-item');
+    await expect(rows.first()).toBeVisible();
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThan(50);
+    await expect(rows.first()).toHaveText('#0 item-0');
+
+    const viewport = page.locator('.virtual-list-viewport');
+    await viewport.evaluate((el) => {
+      el.scrollTop = 2000;
+      el.dispatchEvent(new Event('scroll'));
+    });
+
+    await expect(rows.first()).not.toHaveText('#0 item-0');
+    const newCount = await rows.count();
+    expect(newCount).toBeLessThan(50);
+  });
+
   test.describe(`fallback rendering (${label})`, () => {
     test.beforeEach(async ({ app }) => {
       await app.open('fallback', { entry });
