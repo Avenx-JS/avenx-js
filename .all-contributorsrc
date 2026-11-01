@@ -1328,6 +1328,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "imagiolabs",
+      "name": "Imagio Labs",
+      "avatar_url": "https://avatars.githubusercontent.com/u/333408025?v=4",
+      "profile": "https://github.com/imagiolabs",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
