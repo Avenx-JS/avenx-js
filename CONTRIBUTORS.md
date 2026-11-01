@@ -210,6 +210,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="http://jcosta.tech"><img src="https://avatars.githubusercontent.com/u/14304404?v=4?s=100" width="100px;" alt="John Costa"/><br /><sub><b>John Costa</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=costajohnt" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Vamsi-2581"><img src="https://avatars.githubusercontent.com/u/245859299?v=4?s=100" width="100px;" alt="Vamsi-2581"/><br /><sub><b>Vamsi-2581</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Vamsi-2581" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://apexsofteck.com"><img src="https://avatars.githubusercontent.com/u/143932417?v=4?s=100" width="100px;" alt="Malik Taimoor Awan"/><br /><sub><b>Malik Taimoor Awan</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=6t9xstar" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ShahadatTest"><img src="https://avatars.githubusercontent.com/u/179203101?v=4?s=100" width="100px;" alt="ShahadatTest"/><br /><sub><b>ShahadatTest</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=ShahadatTest" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
