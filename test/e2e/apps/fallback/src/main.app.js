@@ -17,4 +17,5 @@ app.register('Scoped', Scoped);
 app.initRouter({
   '': 'Shell',
   '/scoped': 'Scoped',
+  '/windowing': 'Windowing',
 });
