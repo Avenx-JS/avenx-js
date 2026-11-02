@@ -52,6 +52,7 @@ test/e2e/
     routing/        hash routes, params, query, wildcard, guards, a bridge
     forms/          data-ax-bind across input types, focus retention
     defer/          <@defer> and its triggers
+    virtual-list/   VirtualList windowing over large datasets
     guard-gaps/     regression tests for previously fixed guard bugs
   specs/          tests, grouped by the behaviour they describe
     smoke/ reactivity/ rendering/ components/ events/
@@ -173,6 +174,7 @@ product running in a browser.
 | `serve/` | 9 | Development server |
 | `smoke/` | 4 | Application boot |
 | `styling/` | 12 | Attribute content and scoped CSS |
+| `virtual-list/` | 1 | Fixed-height VirtualList windowing and scroll boundaries |
 
 `<@suspense>`, `<@errorBoundary>` and `<@deadlock>` are covered by
 `rendering/fallback-renderer.spec.js`, against both the production and the
@@ -182,9 +184,8 @@ while every test in this suite stayed green. A component that renders nothing
 raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
-Not yet covered, in rough priority order: resources, rewind rollback, virtual
-list windowing, transitions, declarative form
-validation, live reload, and trace capture under
+Not yet covered, in rough priority order: resources, rewind rollback, transitions,
+declarative form validation, live reload, and trace capture under
 `avenx serve --trace`.
 
 ## The failure mode that has no symptom
