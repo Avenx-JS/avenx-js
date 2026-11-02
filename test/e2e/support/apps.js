@@ -97,6 +97,10 @@ export const APPS = [
     developmentBuild: true,
   },
   {
+    name: 'virtual-list',
+    summary: 'VirtualList windowing over a dynamically generated fixed-height dataset.',
+  },
+  {
     name: 'browser-apis',
     summary: 'Browser APIs used from <resource> and <action> bodies: fetch, timers, window listeners, requestAnimationFrame.',
   },
