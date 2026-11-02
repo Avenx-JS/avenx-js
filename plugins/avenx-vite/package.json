@@ -33,6 +33,9 @@
   ],
   "author": "Avenx Team",
   "license": "MIT",
+  "scripts": {
+    "test": "node test/vite.test.js"
+  },
   "peerDependencies": {
     "vite": "^7.0.0 || ^8.0.0",
     "avenx-core": ">=0.4.0"
