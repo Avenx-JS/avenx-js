@@ -140,11 +140,35 @@ try {
       'a missing local module is an error',
     );
 
-    for (const builtin of ['fs', 'node:path', 'child_process']) {
+    for (const builtin of [
+      'fs',
+      'node:path',
+      'child_process',
+      'fs/promises',
+      'node:fs/promises',
+      'node:timers/promises',
+      'node:test',
+    ]) {
       assert.throws(
         () => resolver.resolve(builtin, importer),
-        (error) => error instanceof ResolveError && /Node\.js builtin/.test(error.message),
+        (error) =>
+          error instanceof ResolveError &&
+          /Node\.js builtin/.test(error.message) &&
+          !/node_modules/.test(error.message) &&
+          error.specifier === builtin,
         `${builtin} must be rejected for a browser bundle`,
+      );
+    }
+
+    // Names that only share a prefix with a builtin still resolve as packages.
+    for (const packageName of ['pathe', 'process-nextick-args', 'fs-extra']) {
+      assert.throws(
+        () => resolver.resolve(packageName, importer),
+        (error) =>
+          error instanceof ResolveError &&
+          /no package named/.test(error.message) &&
+          !/Node\.js builtin/.test(error.message),
+        `${packageName} must not be treated as a Node builtin`,
       );
     }
 
