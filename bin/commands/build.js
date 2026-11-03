@@ -8,7 +8,7 @@ import { cyan, gray, green, red } from '../colors.js';
 import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 import { A11Y_WARNING_CODES } from '../../lib/compiler/rules/accessibility.js';
-import { watchDirectory } from '../utils.js';
+import { watchDirectories } from '../utils.js';
 
 /**
  * Runs a configured lifecycle hook.
@@ -340,18 +340,22 @@ export function checkProject(cli, args = []) {
     }
 
     let timeout;
-    const watcher = watchDirectory(srcPath, (eventType, filename) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        const fileMsg = filename ? ` in ${filename}` : '';
-        console.log(`\n${cyan(`[${getTimestamp()}] 📄 Change detected${fileMsg}. Re-checking templates...`)}`);
-        executeCheck();
-      }, 100);
-    });
-
+    const templateDirs = [(cli && cli.config && cli.config.templatesDir) || '.avenxtemplates', 'templates'];
+    const watcher = watchDirectories(
+      [srcPath, ...templateDirs.map((dir) => path.join((cli && cli.baseDir) || process.cwd(), dir))],
+      (_eventType, filename) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          const fileMsg = filename ? ` in ${filename}` : '';
+          console.log(`\n${cyan(`[${getTimestamp()}] 📄 Change detected${fileMsg}. Re-checking templates...`)}`);
+          executeCheck();
+        }, 100);
+      },
+    );
 
     const cleanup = () => {
       console.log(`\n${gray('Stopping template check watcher...')}`);
+      clearTimeout(timeout);
       if (watcher) watcher.close();
       if (!cli || !cli._noExit) {
         process.exit(0);

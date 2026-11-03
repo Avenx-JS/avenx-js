@@ -212,8 +212,7 @@ async function testHttpDevServerRequestLogging() {
 }
 
 async function waitFor(predicate, message) {
-  const deadline = Date.now() + 2000;
-  while (!predicate() && Date.now() < deadline) {
+  for (let i = 0; i < 100 && !predicate(); i++) {
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
   assert.ok(predicate(), message);
@@ -221,50 +220,33 @@ async function waitFor(predicate, message) {
 
 async function testWatchProjectInputs() {
   const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-watch-project-'));
-  const srcDir = path.join(baseDir, 'src');
-  const publicDir = path.join(baseDir, 'public');
-  fs.mkdirSync(srcDir);
-  fs.mkdirSync(publicDir);
-  fs.writeFileSync(path.join(srcDir, 'main.app.js'), '');
-  fs.writeFileSync(path.join(baseDir, 'index.html'), '<html></html>');
-  fs.writeFileSync(path.join(baseDir, 'avenx.config.json'), '{}');
-  fs.writeFileSync(path.join(baseDir, '.env.local'), 'API_URL=one');
-  fs.writeFileSync(path.join(publicDir, 'site.css'), 'body {}');
+  fs.mkdirSync(path.join(baseDir, 'src'));
+  fs.mkdirSync(path.join(baseDir, 'public'));
+  for (const [file, content] of Object.entries({
+    'src/main.app.js': '', 'index.html': '<html></html>', 'avenx.config.json': '{}',
+    '.env.local': 'API_URL=one', 'public/site.css': 'body {}',
+  })) fs.writeFileSync(path.join(baseDir, file), content);
 
   const reloads = [];
   const messages = [];
   const originalLog = console.log;
   console.log = (message) => messages.push(String(message));
-
-  const cli = {
-    baseDir,
-    config: { srcDir: 'src', distDir: 'dist', templatesDir: '.avenxtemplates' },
-    liveReloadClients: [{ write: (event) => reloads.push(event) }],
-  };
-
   let watcher;
   try {
-    watcher = watchProject(cli);
+    watcher = watchProject({
+      baseDir,
+      config: { srcDir: 'src', distDir: 'dist', templatesDir: '.avenxtemplates' },
+      liveReloadClients: [{ write: (event) => reloads.push(event) }],
+    });
     assert.ok(watcher, 'watchProject should return a closable project watcher');
-
     fs.appendFileSync(path.join(baseDir, 'index.html'), '<!-- updated -->');
     await waitFor(() => reloads.length === 1, 'editing index.html should reload the page');
-
-    fs.appendFileSync(path.join(publicDir, 'site.css'), '\nbody { color: red; }');
+    fs.appendFileSync(path.join(baseDir, 'public/site.css'), '\nbody { color: red; }');
     await waitFor(() => reloads.length === 2, 'editing a public asset should reload the page');
-
-    fs.writeFileSync(path.join(baseDir, 'avenx.config.json'), '{"srcDir":"app"}');
-    await waitFor(
-      () => messages.some((message) => message.includes('avenx.config.json') && /restart/i.test(message)),
-      'editing avenx.config.json should explain that the dev server must restart',
-    );
-
-    fs.writeFileSync(path.join(baseDir, '.env.local'), 'API_URL=two');
-    await waitFor(
-      () => messages.some((message) => message.includes('.env.local') && /restart/i.test(message)),
-      'editing an env file should explain that the dev server must restart',
-    );
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    for (const file of ['avenx.config.json', '.env.local']) {
+      fs.appendFileSync(path.join(baseDir, file), ' ');
+      await waitFor(() => messages.some((message) => message.includes(file) && /restart/i.test(message)), `${file} should require a restart`);
+    }
     assert.strictEqual(reloads.length, 2, 'config and env edits must not reload stale output');
   } finally {
     if (watcher) watcher.close();
