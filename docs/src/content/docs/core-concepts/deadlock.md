@@ -1,26 +1,24 @@
 ---
 title: '<@deadlock> Reactive Boundary'
-description: 'Understand reactive deadlock diagnostics and manually render fallback boundaries in Avenx-JS applications.'
+description: 'Understand reactive deadlock diagnostics, active boundary controls (maxDepth, action, isolated), and automatic or manual fallback recovery in Avenx-JS applications.'
 ---
 
 ## Overview
 
-Avenx-JS currently provides two related deadlock facilities:
+Avenx-JS provides reactive deadlock detection and recovery facilities:
 
-1. The global reactive scheduler and watcher guards detect runaway update chains, log `AVX_R18`, and stop the affected work.
-2. The `<@deadlock>` compiler directive creates a named DOM boundary whose fallback can be rendered by calling `$tripDeadlockBoundary()` on the component instance.
-
-> [!IMPORTANT]
-> Detection and boundary recovery are not connected automatically. A scheduler deadlock does not search for or trip the nearest `<@deadlock>` boundary. Call `$tripDeadlockBoundary()` directly, or explicitly connect an `onSchedulerDeadlock()` listener to the boundary you want to recover.
+1. The reactive scheduler and watcher guards detect runaway update chains, log `AVX_R18`, and stop the affected work.
+2. The `<@deadlock>` compiler directive creates a named DOM boundary with active runtime controls (`maxDepth`, `action`, `isolated`) and optional fallback UI rendering. When `action="fallback"` is specified, the boundary automatically trips upon detection without manual intervention.
+3. Boundary fallback UI can also be triggered manually by calling `$tripDeadlockBoundary()` on the component instance.
 
 ---
 
 ## Define a Boundary
 
-Include a fallback when you want a manual trip to replace the active content:
+Configure active boundary behavior using `maxDepth`, `action`, and `isolated`:
 
 ```html
-<@deadlock name="metrics-panel">
+<@deadlock name="metrics-panel" maxDepth="50" action="fallback" isolated="true">
   <ChartWidget />
   <DataSummary />
 
@@ -34,13 +32,35 @@ Include a fallback when you want a manual trip to replace the active content:
 </@deadlock>
 ```
 
-The compiler converts this into a `data-ax-deadlock` container and stores the fallback in a template. The `name` becomes `data-ax-deadlock-name` and is used when a component selects a boundary.
+The compiler converts this into a `data-ax-deadlock` container, emits active attribute markers (`data-ax-deadlock-depth`, `data-ax-deadlock-action`, `data-ax-deadlock-isolated`), and stores the fallback in a `<template>` element.
+
+---
+
+## Active Boundary Attributes
+
+| Attribute  | Behavior                                                                                                                                                                                                                                                                                                                                                                  |
+| :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`     | Identifies the boundary. Exposed as `name` in fallback template interpolation and used by `$tripDeadlockBoundary(name, error)`. Defaults to `"anonymous"`.                                                                                                                                                                                                                |
+| `maxDepth` | A per-boundary flush-depth budget consulted by the scheduler when runaway work is attributable to a component inside this boundary, overriding the global `maxFlushCount` for that region. Compiled to `data-ax-deadlock-depth`. Emits compiler warning `AVX_W35` if not a positive integer.                                                                              |
+| `action`   | What happens on detection: `abort` (default: stop the flush and log `AVX_R18`), `fallback` (automatically trip this boundary, rendering its `<@fallback>`), or `throw` (propagate the deadlock error to the nearest error boundary). Compiled to `data-ax-deadlock-action`. Emits compiler warning `AVX_W35` if invalid.                                                  |
+| `isolated` | When set to `"true"`, a cycle detected inside this boundary is contained: jobs belonging to components inside the boundary are suppressed, but scheduler work belonging to components outside the boundary is not aborted. When `"false"`, detection halts the pending flush queue. Compiled to `data-ax-deadlock-isolated`. Emits compiler warning `AVX_W35` if invalid. |
+
+---
+
+## Automatic Recovery with `action="fallback"`
+
+When `action="fallback"` is configured, you do not need to call `$tripDeadlockBoundary()`. On scheduler deadlock detection:
+
+1. `AVX_R18` is logged to describe the causal cycle.
+2. The scheduler attributes the cycle to the nearest enclosing `<@deadlock>` boundary.
+3. The boundary automatically trips: child component instances inside the boundary are unmounted and the `<@fallback>` template content is rendered into the boundary container.
+4. Offending jobs within the boundary are quarantined. When `isolated="true"` is set, updates for components outside the boundary continue without interruption.
 
 ---
 
 ## Trip a Boundary Manually
 
-From code running on the component that owns the boundary, call:
+From code running on the component that owns the boundary, you can also trigger recovery manually:
 
 ```javascript
 this.$tripDeadlockBoundary('metrics-panel', {
@@ -64,7 +84,7 @@ this.$tripDeadlockBoundary(null, new Error('Reactive work was stopped.'));
 
 ## Connect Scheduler Detection Explicitly
 
-`onSchedulerDeadlock()` is a global subscription. If a component should show a boundary fallback when the scheduler detects a cycle, retain the actual mounted component instance and clean up the listener when that owner is torn down:
+`onSchedulerDeadlock()` is a global subscription that receives deadlock event details (`cyclePath`, `triggeringJobId`, `executionHistory`, `boundary`, `boundaryName`, `action`, `isolated`). If a component needs custom recovery or diagnostics outside the built-in `action` options:
 
 ```javascript
 import { onSchedulerDeadlock } from 'avenx-core/runtime';
@@ -88,19 +108,6 @@ function unmountMetricsPanel() {
 ```
 
 The listener is global, so choose the retained target component and boundary deliberately. It receives scheduler deadlock events; synchronous watcher-cycle guards currently log `AVX_R18` but do not call scheduler deadlock listeners.
-
----
-
-## Current Attribute Behavior
-
-| Attribute | Current behavior |
-| :--- | :--- |
-| `name` | Used by `$tripDeadlockBoundary(name, error)` and exposed to fallback interpolation. It defaults to `"anonymous"`. |
-| `maxDepth` | Compiled to `data-ax-deadlock-depth`, but not read by the scheduler or `DeadlockManager`. Use `setSchedulerMaxFlushCount()` for the current global scheduler threshold. |
-| `action` | Compiled to `data-ax-deadlock-action`, but not read at runtime. A manual trip renders the fallback when one exists. |
-| `isolated` | Compiled to `data-ax-deadlock-isolated`, but not enforced by `DeadlockManager`. It is not the same as the separately validated `isolated` compiler contract. |
-
-These metadata attributes are preserved for compatibility, but they should not be treated as active per-boundary controls. Their values are emitted without runtime validation.
 
 ---
 

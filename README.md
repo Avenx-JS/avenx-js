@@ -622,16 +622,15 @@ is compiled entirely or not at all.
 | :--- | :--- |
 | `<@suspense>` and `<@errorBoundary>` | transitions, template refs |
 | Virtualised lists, form validation | dynamic component tags |
-| Dynamic attribute names, router view | `<@deadlock>` boundary ⚠️ *(see below)* |
+| Dynamic attribute names, router view | `<@deadlock>` boundary |
 
-> [!WARNING]
-> **`<@deadlock>` is the one qualified entry.** Scheduler and watcher guards do
-> detect runaway reactive work and log `AVX_R18`, and you can trip a boundary
-> manually with `$tripDeadlockBoundary(name, error)` — but detection does not
-> automatically trip the nearest boundary, and the `maxDepth`, `action` and
-> `isolated` attributes are currently metadata rather than active controls. The
-> [deadlock guide](https://docs.avenx-js.com/core-concepts/deadlock/) states the
-> current behaviour and its limits.
+> [!NOTE]
+> **`<@deadlock>` boundaries** isolate and recover from runaway reactive work.
+> Scheduler and watcher guards detect runaway cycles and log `AVX_R18`.
+> With `action="fallback"`, the boundary trips automatically on detection,
+> rendering its `<@fallback>`. The `maxDepth`, `action`, and `isolated`
+> attributes provide active per-boundary controls. See the
+> [deadlock guide](https://docs.avenx-js.com/core-concepts/deadlock/) for details.
 
 ### Size and dependencies
 
@@ -831,10 +830,9 @@ correct behaviour, and
 [test/e2e/README.md](test/e2e/README.md) says which.
 
 > [!CAUTION]
-> **Known limitations**, stated plainly: no language server; `<@deadlock>`
-> detection does not auto-trip boundaries; the plugins are not on npm; and the
-> constructs marked *String renderer* above re-render their whole template on
-> every update.
+> **Known limitations**, stated plainly: no language server; the plugins are
+> not on npm; and the constructs marked *String renderer* above re-render their
+> whole template on every update.
 
 <div align="right"><a href="#avenxjs">↑ back to top</a></div>
 
