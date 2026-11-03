@@ -12,9 +12,11 @@ import assert from 'assert';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import vm from 'vm';
 import { Resolver, ResolveError } from '../../lib/bundler/resolve.js';
 import { buildGraph, detectFormat, BindingError } from '../../lib/bundler/graph.js';
 import { parseModule } from '../../lib/bundler/parseModule.js';
+import { bundle } from '../../lib/bundler/index.js';
 
 console.log('🧪 Testing the bundler module graph...');
 
@@ -111,6 +113,27 @@ try {
     write('bind2/no-default.js', 'export const named = 1;');
     assert.throws(() => build(entry), BindingError, 'a missing default export is caught too');
     console.log('  ✅ A missing default export is caught');
+  }
+
+  // --------------------------------------------------------------- JSON ---
+  {
+    const entry = write('json/entry.js', `import data from './data.json';\nglobalThis.jsonResult = data.title;`);
+    const data = write('json/data.json', '{"title":"Hello","items":[1,2,3]}');
+    const { graph } = build(entry);
+    assert.ok(graph.modules.get(data).exportNames.has('default'), 'JSON data is exposed as a default export');
+    assert.match(graph.modules.get(data).source, /^export default /, 'JSON is wrapped as an ESM default export');
+    const output = bundle({ entries: [entry], rootDir: root, treeShake: false });
+    const runtime = {};
+    vm.runInNewContext(output.code, runtime);
+    assert.equal(runtime.jsonResult, 'Hello', 'the emitted bundle runs and exposes JSON data at runtime');
+    const invalidEntry = write('invalid-json/entry.js', `import data from './data.json';\nexport const title = data.title;`);
+    write('invalid-json/data.json', '{"title":');
+    assert.throws(
+      () => build(invalidEntry),
+      (error) => error instanceof SyntaxError && /invalid-json[\\/]data\.json/.test(error.message),
+      'invalid JSON fails with a JSON parse error naming its file',
+    );
+    console.log('  ✅ JSON modules provide a default export and malformed JSON names its file');
   }
 
   // ---------------------------------------------------------- re-exports ---
