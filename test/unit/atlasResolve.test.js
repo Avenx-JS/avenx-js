@@ -278,6 +278,28 @@ function scope(overrides = {}) {
   assert.ok(AMBIENT_ROOTS.has('Math'));
 }
 
+// ── ComponentScope-injected $ helpers are ambient (#1615) ───────────────────
+{
+  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick']) {
+    assert.ok(AMBIENT_ROOTS.has(name), `${name} must be ambient like ComponentScope injects`);
+  }
+  // Bare ambient roots are skipped by the scanner; a member access is recorded
+  // and must resolve without unknown-identifier.
+  const { references } = scanReferences(
+    '$route.path; $emit.x; $watch.x; $watchEffect.x; $nextTick.x',
+  );
+  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick']) {
+    const entry = references.find((item) => item.root === name);
+    assert.ok(entry, `${name} should be scanned when it has a member`);
+    const resolved = resolveReference(entry, scope());
+    assert.strictEqual(resolved.unresolved, null, `${name} must not be unknown-identifier`);
+  }
+  const { references: unknownRefs } = scanReferences('$nosuchthing.foo');
+  const unknown = resolveReference(ref(unknownRefs, '$nosuchthing.foo'), scope());
+  assert.ok(unknown.unresolved, 'a fake $ helper is still reported');
+  assert.strictEqual(unknown.unresolved.reason, UnresolvedReason.UNKNOWN_IDENTIFIER);
+}
+
 // ── Strings, comments and template literals ─────────────────────────────────
 {
   const { references } = scanReferences('"cart.fake" + cart.real');
