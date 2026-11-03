@@ -1,7 +1,10 @@
 import assert from 'assert';
+import fs from 'fs';
 import http from 'http';
+import os from 'os';
+import path from 'path';
 import { EventEmitter } from 'events';
-import { bindAddressFor, listenWithPortFallback, formatStatusCode, formatRequestLog, attachRequestLogger, applyCustomHeaders, getInitialHtml } from '../../bin/commands/serve.js';
+import { bindAddressFor, listenWithPortFallback, formatStatusCode, formatRequestLog, attachRequestLogger, applyCustomHeaders, getInitialHtml, watchProject } from '../../bin/commands/serve.js';
 import { setColorEnabled } from '../../bin/colors.js';
 import { AvenxCLI } from '../../bin/cli.js';
 
@@ -208,12 +211,75 @@ async function testHttpDevServerRequestLogging() {
   }
 }
 
+async function waitFor(predicate, message) {
+  const deadline = Date.now() + 2000;
+  while (!predicate() && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.ok(predicate(), message);
+}
+
+async function testWatchProjectInputs() {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-watch-project-'));
+  const srcDir = path.join(baseDir, 'src');
+  const publicDir = path.join(baseDir, 'public');
+  fs.mkdirSync(srcDir);
+  fs.mkdirSync(publicDir);
+  fs.writeFileSync(path.join(srcDir, 'main.app.js'), '');
+  fs.writeFileSync(path.join(baseDir, 'index.html'), '<html></html>');
+  fs.writeFileSync(path.join(baseDir, 'avenx.config.json'), '{}');
+  fs.writeFileSync(path.join(baseDir, '.env.local'), 'API_URL=one');
+  fs.writeFileSync(path.join(publicDir, 'site.css'), 'body {}');
+
+  const reloads = [];
+  const messages = [];
+  const originalLog = console.log;
+  console.log = (message) => messages.push(String(message));
+
+  const cli = {
+    baseDir,
+    config: { srcDir: 'src', distDir: 'dist', templatesDir: '.avenxtemplates' },
+    liveReloadClients: [{ write: (event) => reloads.push(event) }],
+  };
+
+  let watcher;
+  try {
+    watcher = watchProject(cli);
+    assert.ok(watcher, 'watchProject should return a closable project watcher');
+
+    fs.appendFileSync(path.join(baseDir, 'index.html'), '<!-- updated -->');
+    await waitFor(() => reloads.length === 1, 'editing index.html should reload the page');
+
+    fs.appendFileSync(path.join(publicDir, 'site.css'), '\nbody { color: red; }');
+    await waitFor(() => reloads.length === 2, 'editing a public asset should reload the page');
+
+    fs.writeFileSync(path.join(baseDir, 'avenx.config.json'), '{"srcDir":"app"}');
+    await waitFor(
+      () => messages.some((message) => message.includes('avenx.config.json') && /restart/i.test(message)),
+      'editing avenx.config.json should explain that the dev server must restart',
+    );
+
+    fs.writeFileSync(path.join(baseDir, '.env.local'), 'API_URL=two');
+    await waitFor(
+      () => messages.some((message) => message.includes('.env.local') && /restart/i.test(message)),
+      'editing an env file should explain that the dev server must restart',
+    );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert.strictEqual(reloads.length, 2, 'config and env edits must not reload stale output');
+  } finally {
+    if (watcher) watcher.close();
+    console.log = originalLog;
+    fs.rmSync(baseDir, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   try {
     testGetInitialHtmlLanguage();
     testRequestLoggerFormatting();
     testAttachRequestLogger();
     await testHttpDevServerRequestLogging();
+    await testWatchProjectInputs();
     runTests();
     await testCliServeParsing();
     console.log('Dev server port fallback, request logger formatting, HTTP request logging, and CLI serve sanitization tests passed!');
