@@ -393,6 +393,7 @@ diagnostics[] }`, where each diagnostic carries `file`, `code`, `severity` and
 `message`. `file` is `null` when the diagnostic names no location.
 
 This command is useful for checking templates in development and Continuous Integration (CI/CD) pipelines without generating build output.
+Watch modes also react to source and project-template changes while they run.
 
 ```bash
 npx avenx check
