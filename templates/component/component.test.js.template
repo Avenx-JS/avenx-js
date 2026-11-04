@@ -1,19 +1,23 @@
 /**
- * Note: Running component tests requires Vitest and @avenx/vite.
+ * Note: Running component tests requires Vitest, @avenx/vite and a DOM
+ * environment (happy-dom).
+ * Vitest needs Node ^22.12, ^24 or >=26.
  *
  * Setup instructions:
  * 1. Install dependencies:
- *      npm install -D vitest @avenx/vite
+ *      npm install -D vitest @avenx/vite happy-dom
  * 2. Ensure vitest.config.js includes:
  *      import { defineConfig } from 'vitest/config';
  *      import avenx from '@avenx/vite';
- *      export default defineConfig({ plugins: [avenx()] });
+ *      export default defineConfig({
+ *        plugins: [avenx()],
+ *        test: { environment: 'happy-dom' },
+ *      });
  * 3. Run:
  *      npx vitest run
  */
 
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { mountTestComponent, fireEvent } from 'avenx-core/testing';
 import {{PascalCaseName}} from './{{name}}.component.js';
 
@@ -24,10 +28,10 @@ describe('{{PascalCaseName}} Component', () => {
     });
 
     const title = find('h1');
-    assert.match(title.textContent, /{{PascalCaseName}} Component/);
+    expect(title.textContent).toMatch(/{{PascalCaseName}} Component/);
 
     const text = find('p');
-    assert.match(text.textContent, /Current count: 0/);
+    expect(text.textContent).toMatch(/Current count: 0/);
   });
 
   it('increments count on click', async () => {
@@ -39,6 +43,6 @@ describe('{{PascalCaseName}} Component', () => {
     await fireEvent(buttons[0], 'click');
 
     const text = find('p');
-    assert.match(text.textContent, /Current count: 1/);
+    expect(text.textContent).toMatch(/Current count: 1/);
   });
 });
