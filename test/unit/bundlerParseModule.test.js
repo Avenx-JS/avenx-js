@@ -161,6 +161,51 @@ import { real } from './real.js';
   console.log('  ✅ Declarations inside comments, strings and templates are ignored');
 }
 
+// ---------------------------------------------------------- import.meta ---
+{
+  const found = (source) => read(source).importMeta.map((start) => source.slice(start, start + 11));
+
+  for (const source of [
+    'console.log(import.meta.url);',
+    'const a = import . meta;',
+    'const a = import /* gap */ .meta.env;',
+    'const a = [...import.meta.list];',
+    'function f() { return () => import.meta.url; }',
+    'const a = `x ${import.meta.url}`;',
+    'const a = `x ${`y ${import.meta.url}`}`;',
+    'const a = `x ${{ b: "}" }.b + import.meta.url} z`;',
+  ]) {
+    const hits = found(source);
+    assert.equal(hits.length, 1, `a real occurrence is found in: ${source}`);
+    assert.ok(hits[0].startsWith('import'), `the offset points at it in: ${source}`);
+  }
+
+  assert.deepEqual(
+    read('const a = `${import.meta.url}`;\nconst b = import.meta.env;').importMeta,
+    [13, 42],
+    'offsets point into the module, inside a substitution and out of one',
+  );
+
+  for (const source of [
+    'const a = "import.meta.url";',
+    "const a = 'import.meta.env';",
+    'const a = `import.meta.url`;',
+    'const a = `\\${import.meta.url}`;',
+    'const a = `${"import.meta.url"}`;',
+    'const a = /import.meta/.test(b);',
+    '// import.meta.url',
+    '/* import.meta.env */',
+    'const a = config.import.meta;',
+    'const a = config?.import.meta;',
+    'class A { #import = { meta: 1 }; b() { return this.#import.meta; } }',
+    'const reimport = { meta: 1 }; const a = reimport.meta;',
+    'const a = { import: 1 }, metadata = 2;',
+  ]) {
+    assert.deepEqual(found(source), [], `not an occurrence: ${source}`);
+  }
+  console.log('  ✅ import.meta is found in code and substitutions, and only there');
+}
+
 // ------------------------------------------------------------ malformed ---
 {
   assert.throws(
