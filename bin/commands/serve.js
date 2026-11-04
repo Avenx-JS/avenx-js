@@ -5,7 +5,7 @@ import { spawn } from 'child_process';
 import { buildProject } from './build.js';
 import { reportRebuildFailure } from '../fatal.js';
 import { cyan, green, yellow, red, gray } from '../colors.js';
-import { watchDirectory } from '../utils.js';
+import { watchDirectories } from '../utils.js';
 import { saveTrace } from '../../lib/core/trace/store.js';
 import { TRACE_ENDPOINT } from '../../lib/core/trace/devtools.js';
 
@@ -748,41 +748,89 @@ export function getInspectorHtml(cli) {
  */
 export function watchProject(cli) {
   let timeout;
-  const srcPath = path.join(cli.baseDir, cli.config.srcDir);
+  let pendingChange = null;
+  const baseDir = path.resolve(cli.baseDir);
+  const srcPath = path.join(baseDir, cli.config.srcDir || 'src');
 
   if (!fs.existsSync(srcPath)) return null;
 
-  const watcher = watchDirectory(srcPath, (eventType, filename) => {
-    if (filename) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        console.log(`\n${cyan(`📄 Change detected: ${filename}. Rebuilding...`)}`);
-
-        const startedAt = performance.now();
-
-        try {
-          buildProject(cli, { watch: true });
-        } catch (error) {
-          // A watch session keeps going: the next save usually fixes it. The
-          // browser is not reloaded, so it keeps showing the last good build
-          // rather than a blank page.
-          reportRebuildFailure(error);
-          return;
-        }
-
-        // What the rebuild cost, on every cycle. Rebuild latency is the
-        // most-felt property of a development loop, and a number that is printed
-        // is one a developer can notice getting worse.
-        console.log(green(`✅ Rebuilt in ${Math.round(performance.now() - startedAt)}ms`));
-
-        if (cli.liveReloadClients) {
-          cli.liveReloadClients.forEach((client) => {
-            client.write('data: reload\n\n');
-          });
-        }
-      }, 100);
+  const sendReload = () => {
+    if (cli.liveReloadClients) {
+      cli.liveReloadClients.forEach((client) => client.write('data: reload\n\n'));
     }
-  });
+  };
+
+  const scheduleChange = (kind, filename) => {
+    if (!pendingChange || kind >= pendingChange.kind) {
+      pendingChange = { kind, filename };
+    }
+
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      const change = pendingChange;
+      pendingChange = null;
+      if (!change) return;
+
+      if (change.kind === 3) {
+        console.log(yellow(`\n⚠️ Change detected: ${change.filename}. Restart the dev server to load the new configuration.`));
+        return;
+      }
+
+      if (change.kind === 1) {
+        console.log(`\n${cyan(`📄 Change detected: ${change.filename}. Reloading...`)}`);
+        sendReload();
+        return;
+      }
+
+      console.log(`\n${cyan(`📄 Change detected: ${change.filename}. Rebuilding...`)}`);
+      const startedAt = performance.now();
+      try {
+        buildProject(cli, { watch: true });
+      } catch (error) {
+        // A watch session keeps going: the next save usually fixes it. The
+        // browser is not reloaded, so it keeps showing the last good build.
+        reportRebuildFailure(error);
+        return;
+      }
+
+      console.log(green(`✅ Rebuilt in ${Math.round(performance.now() - startedAt)}ms`));
+      sendReload();
+    }, 100);
+  };
+
+  const templateDirs = [cli.config.templatesDir || '.avenxtemplates', 'templates'];
+  const sourceDirs = [srcPath, ...templateDirs.map((dir) => path.join(baseDir, dir))];
+  const assetDirs = ['public', 'assets'].map((dir) => path.join(baseDir, dir));
+  const watchers = [
+    watchDirectories(sourceDirs, (_eventType, filename) => filename && scheduleChange(2, filename.toString())),
+    watchDirectories(assetDirs, (_eventType, filename) => filename && scheduleChange(1, filename.toString())),
+    fs.watch(baseDir, (_eventType, rawFilename) => {
+      if (!rawFilename) return;
+      const filename = rawFilename.toString();
+      if (filename.includes('/') || filename.includes('\\')) return;
+      if (filename === 'node_modules' || filename === '.git' || filename === path.basename(cli.config.distDir || 'dist')) return;
+
+      const absolutePath = path.join(baseDir, filename);
+      try {
+        if (fs.existsSync(absolutePath) && fs.statSync(absolutePath).isDirectory()) return;
+      } catch {
+      // Treat a path that disappeared during the event as a file change.
+      }
+
+      if (filename === 'avenx.config.json' || filename === 'package.json' || /^\.env(?:\.|$)/.test(filename)) {
+        scheduleChange(3, filename);
+      } else {
+        scheduleChange(1, filename);
+      }
+    }),
+  ].filter(Boolean);
+
+  const watcher = {
+    close() {
+      clearTimeout(timeout);
+      for (const activeWatcher of watchers) activeWatcher.close();
+    },
+  };
 
   if (cli) {
     cli._watcher = watcher;

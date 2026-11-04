@@ -336,6 +336,25 @@ export function watchDirectory(dirPath, callback) {
 }
 
 /**
+ * Watches each existing directory once and returns one handle for the group.
+ * @param {string[]} dirPaths - Directories to watch recursively.
+ * @param {Function} callback - Event callback shared by every watcher.
+ * @returns {{close: Function}|null} A closable group, or null when none exist.
+ */
+export function watchDirectories(dirPaths, callback) {
+  const paths = [...new Set(dirPaths.filter(Boolean).map((dirPath) => path.resolve(dirPath)))];
+  const watchers = paths.filter((dirPath) => {
+    try {
+      return fs.statSync(dirPath).isDirectory();
+    } catch {
+      return false;
+    }
+  }).map((dirPath) => watchDirectory(dirPath, callback));
+  if (watchers.length === 0) return null;
+  return { close: () => watchers.forEach((watcher) => watcher.close()) };
+}
+
+/**
  * Fallback recursive watcher for platforms/Node versions lacking native recursive watch.
  * Walks directory tree and registers individual fs.watch instances.
  * @param {string} rootPath - Root directory to watch.
