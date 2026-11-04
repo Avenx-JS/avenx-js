@@ -321,7 +321,7 @@ export async function initProject(cli, args = []) {
   const gitignorePath = path.join(cli.baseDir, '.gitignore');
 
   if (!fs.existsSync(gitignorePath)) {
-    fs.writeFileSync(gitignorePath, `node_modules/\n${cli.config.distDir}/\n.DS_Store\n`);
+    fs.writeFileSync(gitignorePath, `node_modules/\n${cli.config.distDir}/\n.DS_Store\n.env\n.env.*\n!.env.example\n`);
     console.log('  Created: .gitignore');
   }
   // Create initial .prettierrc

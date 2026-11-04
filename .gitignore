@@ -26,6 +26,9 @@ vscode-extension/
 node_modules/
 .npmrc
 dist/
+.env
+.env.*
+!.env.example
 
 # editors
 .vscode/
