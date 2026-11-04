@@ -433,6 +433,7 @@ const app = new AvenxApp({
 | `[AVX_C30]` | Unhandled template AST node type "{0}"{1} in {2}. | **Identifier:** `COMPILER_UNHANDLED_AST_NODE`.<br />**Cause:** A compiler pass over the template AST reached a node type it has no branch for — normally because a change to the template parser introduced a node kind an existing pass was never taught to read.<br />**Resolution:** Add an explicit branch for the reported node type to the pass named in the message. This is an internal invariant rather than a mistake in your template: a node type with no branch would otherwise be mis-handled silently and emit output that looks valid, so the build stops instead. |
 | `[AVX_C31]` | csp.strict is on, and {0} expression(s) could not be compiled to a function. | **Identifier:** `COMPILER_CSP_STRICT_EXPRESSION`.<br />**Cause:** The same expressions as `AVX_C27`, in a build with `"csp": { "strict": true }` — which refuses them in a development build too, because the fallback is the expression interpreter and interpreting a statement body needs the `Function` constructor.<br />**Resolution:** The message lists each expression with its component, file, line and reason. Rewrite it in the [expression language](/core-concepts/template-expressions/), or move the logic into an `<action>`. Dropping `csp.strict` goes back to `AVX_W48` in development. |
 | `[AVX_C32]` | csp.strict is on, but {0} still contains {1} at line {2}. | **Identifier:** `COMPILER_CSP_STRICT_DYNAMIC_CODE`.<br />**Cause:** The emitted bundle contains `eval`, the `Function` constructor or a `with` statement, so it would need `script-src 'unsafe-eval'`. It can come from a hand-written module in the project, from a dependency the bundle links, or — if neither — from framework code, which is a bug.<br />**Resolution:** The message names the artifact, the line and the source text. Rewrite the construct, or keep the dependency out of the bundle. Nothing was written, so the previous `dist/` is intact. |
+| `[AVX_C33]` | {0} uses import.meta, which an Avenx bundle cannot contain. | **Identifier:** `COMPILER_IMPORT_META`.<br />**Cause:** A module that reached the bundle uses `import.meta`, which only exists inside an ES module. The bundle is a classic script.<br />**Resolution:** Read environment variables as `process.env.AVX_PUBLIC_*` in the entry, components, pages, bridges or guards. If the message names a package, use a browser build of it or replace it. |
 | `[AVX_W53]` | Nothing in the application can reach its compiled pages. | **Identifier:** `ATLAS_NO_REACHABLE_PAGE`.<br />**Cause:** No route in `app.initRouter()` refers to a compiled page and no `app.mountPage()` call mounts one. The pages are included in the bundle but never displayed, potentially leaving the app container empty.<br />**Resolution:** Add a route such as `app.initRouter({ "": "Home" })` or call `app.mountPage("Home")` in `src/main.app.js` (use an actual page name). See [`mountPage`](/api-reference/app/#mountpagename-params-options) for parameters and options. Silence with `"warnings": { "AVX_W53": "off" }` in `avenx.config.json` only if the unreachable pages are intentional. |
 | `[AVX_W54]` | Unterminated interpolation in template of {0}: {1} | **Identifier:** `COMPILER_UNTERMINATED_INTERPOLATION`.<br />**Cause:** A template opens an interpolation with `{{` but never closes it with `}}`. The unmatched expression is emitted as literal text, so visitors can see its braces and source instead of the intended value.<br />**Resolution:** Close the interpolation with `}}`, or escape the braces when they are intended as text. Silence with `"warnings": { "AVX_W54": "off" }` in `avenx.config.json` only when the literal output is intentional. |
 | `[AVX_W56]` | A template renders a component that the application never registers. | **Identifier:** `ATLAS_UNREGISTERED_COMPONENT`.<br />**Cause:** A page or component uses a component tag that was not registered with the app. Pages under `src/pages` are auto-registered by the compiler, but components are not. The runtime may also report `AVX_W13` when the page opens; the missing component renders as an empty element.<br />**Resolution:** Import the component and call `app.register("ComponentName", ComponentName)` in `src/main.app.js` (using its real path and name). Silence with `"warnings": { "AVX_W56": "off" }` in `avenx.config.json` only if the missing component is deliberate. |
@@ -1204,6 +1205,24 @@ The check is deliberately performed on the emitted file rather than inferred fro
 2. If it is your own code, rewrite it without `eval`, the `Function` constructor or `with`.
 3. If it is a dependency, keep it out of the bundle or replace it. A library that compiles templates or expressions at run time cannot be used in a CSP-strict application.
 4. If it is framework code, please report it with the message: a CSP-strict build is meant to be able to make this promise.
+
+### AVX_C33 — COMPILER_IMPORT_META
+
+
+**Error Message**
+{0} uses import.meta, which an Avenx bundle cannot contain.
+
+**Cause:** `import.meta` only exists inside an ES module. An Avenx bundle is one classic script, loaded with a plain `<script src>`, so a module that uses it cannot be bundled. The most common source is `import.meta.env`, the spelling Vite uses for environment variables.
+
+The check runs on the modules that reach the bundle. `import.meta` in a string, a template's text, a regular expression or a comment is not a use of it, and a module tree shaking dropped does not count.
+
+**Impact:** The build stops and nothing is written, so the previous `dist/` is left intact. `avenx check` does not link the bundle, so this is reported by `avenx build`.
+
+**Resolution:**
+
+1. For environment variables, replace `import.meta.env.AVX_PUBLIC_API_URL` with `process.env.AVX_PUBLIC_API_URL`. The build inlines `process.env.AVX_PUBLIC_*` in the entry, components, pages, bridges and guards, and warns with `AVX_W60` when one is unset. It does not inline it in other imported modules, such as a helper under `src/utils/`, where the reference reaches the browser and throws a `ReferenceError`. Read the variable in one of the inlined files and pass the value to the helper.
+2. For `import.meta.url`, use `document.baseURI` for the page's own address.
+3. If the message names a package, the use is inside that dependency rather than your code. Use a browser build of the package, or replace it.
 
 ### AVX_W06 — COMPILER_STATIC_SUBTREE_OPTIMIZATION_FAILED
 
