@@ -214,6 +214,9 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/abinyads-dev"><img src="https://avatars.githubusercontent.com/u/229813436?v=4?s=100" width="100px;" alt="Abinaya DS"/><br /><sub><b>Abinaya DS</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=abinyads-dev" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/amandaallis"><img src="https://avatars.githubusercontent.com/u/104679365?v=4?s=100" width="100px;" alt="Amanda Allis"/><br /><sub><b>Amanda Allis</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=amandaallis" title="Code">💻</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://reneturcios.replit.app"><img src="https://avatars.githubusercontent.com/u/95189389?v=4?s=100" width="100px;" alt="Rene Turcios"/><br /><sub><b>Rene Turcios</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=CloudCorpRecords" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 
