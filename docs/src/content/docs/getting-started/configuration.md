@@ -625,6 +625,20 @@ In this example:
 
 ---
 
+### Warning Codes Must Name a Real Warning
+
+Each key in the `warnings` map must be the canonical code of a warning the compiler can emit — an `AVX_W*` code from the diagnostic registry (`lib/core/runtime/AvenxError.js`), spelled exactly as documented, e.g. `AVX_W55`. Only the canonical spelling takes effect.
+
+A key that names no warning does not stop the build, but it is reported when the configuration is loaded, with a suggestion when the key looks like a variant of a real code:
+
+```text
+[Avenx warn] Unknown warning code "W55" in avenx.config.json. Did you mean "AVX_W55"?
+```
+
+That covers the short form `avenx explain` accepts (`W55`), lowercase spellings, truncated codes such as `AVX_W5`, and codes that do not exist at all. Keys naming a diagnostic that is not a warning (`AVX_C*` / `AVX_R*` errors) are reported too: a severity override in `warnings` can only steer warnings, so such an entry would otherwise sit in the file doing nothing.
+
+---
+
 ### CI/CD Integration & Strict Mode
 
 Promoting specific warnings to `"error"` is a powerful tool for enforcing code quality checks in Continuous Integration (CI/CD) pipelines.
