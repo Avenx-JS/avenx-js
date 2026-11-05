@@ -3445,6 +3445,7 @@ Positive tabindex "{0}" disrupts document navigation order.
 | `[AVX_R31]` | Invalid component class for "{0}". Expected a constructor extending AvenxComponent, received "{1}". | **Identifier:** `COMPONENT_INVALID_CLASS`.<br />**Cause:** Component or page registration receives a plain object, an unrelated class, or another value that is not an `AvenxComponent` constructor. The diagnostic code is defined, but `app.register()` and `app.registerPage()` currently throw an ordinary `Error` for this condition.<br />**Resolution:** Import the intended constructor and make sure it extends `AvenxComponent`; pass the class itself to `app.register()` instead of an instance or object. |
 | `[AVX_R33]` | <{0}> failed to render and nothing handled the error, so it is showing nothing. | **Identifier:** `COMPONENT_RENDER_ABORTED`.<br />**Cause:** A component fails during rendering and neither a component/ancestor error capture hook nor an application error handler claims the failure. The component stays mounted but empty; failures already reported by a more specific diagnostic are not re-reported under this code.<br />**Resolution:** Inspect the recorded origin and cause, fix the failing render expression or hook, or handle the error with `onErrorCaptured`, an `<@errorBoundary>`, or `app.onError()`. |
 | `[AVX_R34]` | <{0}> needs {1}, and this bundle does not contain it. | **Identifier:** `RENDERER_UNAVAILABLE`.<br />**Cause:** A component requires the string renderer after a compilation fallback, but the running bundle has no usable renderer registered. The compiler normally links it when reporting `AVX_W47`; mismatched build artifacts or duplicate runtime copies can split its registry.<br />**Resolution:** Rebuild from a clean `dist/`, confirm the build reports `AVX_W47` if a fallback is needed, and ensure only one runtime copy is bundled. If a fresh bundle still fails, report it as a compiler/runtime defect. |
+| `[AVX_R37]` | <{0}> cannot render in this environment: {1}, and the string renderer it falls back to is not in this bundle. | **Identifier:** `COMPILED_TEMPLATE_ENVIRONMENT_UNSUPPORTED`.<br />**Cause:** The environment has no usable DOM — for example a test runner in its default `node` environment — so a compiled template's skeleton cannot be prepared, and the string renderer the component falls back to is not in the bundle.<br />**Resolution:** Run in a browser, or configure a DOM environment in the test runner: install `happy-dom` or `jsdom` and set `test: { environment: 'happy-dom' }` in the Vitest config. The bundle is not mislinked; do not rebuild for this code. |
 
 ### AVX_R01 — MOUNT_TARGET_NOT_FOUND
 
@@ -4416,3 +4417,19 @@ The page does not throw. It logs this error and keeps everything it mounted, so 
 2. Otherwise flatten the tree, or render the deeper levels from a page instead of from nested components.
 
 See [Nesting Components](/core-concepts/components#nesting-components) for how child mounting works.
+
+### AVX_R37 — COMPILED_TEMPLATE_ENVIRONMENT_UNSUPPORTED
+
+**Error Message**
+
+```text
+[AVX_R37] <Tile> cannot render in this environment: there is no usable DOM in this environment (no document, or document.createElement is unavailable), so its skeleton could not be parsed at all, and the string renderer it falls back to is not in this bundle.
+```
+
+**Cause:** A compiled component prepares its template's skeleton against the DOM. In an environment with no usable DOM — the common case is a test runner in its default `node` environment (Vitest's default), or a minimal DOM mock whose parser reshapes the skeleton past the compiler's markers — the skeleton cannot be prepared, so the component falls back to the string renderer. When the bundle does not contain that renderer (the normal case when every template compiled, so nothing linked it), this error is what the fallback raises. The bundle is not mislinked: the same bundle renders where a usable DOM exists, which is what distinguishes this code from AVX_R34.
+
+**Resolution:**
+
+1. Run the component in a browser, or give the test runner a DOM environment. For Vitest, install `happy-dom` or `jsdom` and set `test: { environment: 'happy-dom' }` in the Vitest config.
+2. If a DOM mock is in use, replace it with a complete DOM implementation (happy-dom, jsdom, or a real browser) whose parser preserves the compiled skeleton.
+3. Do not rebuild from a clean `dist/` for this code, and do not file it as a compiler defect — nothing about the build is wrong.
