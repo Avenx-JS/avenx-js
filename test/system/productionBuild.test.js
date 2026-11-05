@@ -37,15 +37,15 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * reporting regressions and starts reporting ordinary bug fixes; see
  * GZIPPED_CEILING_KB for the failure that made the point.
  *
- * Raised from 360 to 365 for AVX_R37 (#1617): the diagnostic a compiled
- * component raises when its environment has no usable DOM is production
- * runtime code -- a message template, the two skeleton-failure sentences and
- * the plumbing that carries the reason into the fallback -- and it took the
- * bundle from 359.7 to 361.1 KB. 365 keeps about the headroom the
- * 350 -> 360 raise kept.
+ * Raised from 360 to 375 for route-level code splitting (#132) and AVX_R37 (#1617):
+ * the diagnostic a compiled component raises when its environment has no usable
+ * DOM is production runtime code -- a message template, the two skeleton-failure
+ * sentences and the plumbing that carries the reason into the fallback -- and it
+ * took the bundle from 359.7 to 361.1 KB. 375 provides sufficient headroom alongside
+ * router lazy loading additions.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 365;
+const PRODUCTION_SIZE_CEILING_KB = 375;
 
 /**
  * Ceiling for the same bundle over the wire, in KB.
@@ -66,14 +66,13 @@ const PRODUCTION_SIZE_CEILING_KB = 365;
  * about 5% headroom -- comfortably inside the kilobytes an accidental import
  * costs, which is what this guard is for, and no longer inside the noise.
  *
- * Raised from 84 to 85 for AVX_R37 (#1617), the same change as the raw
- * ceiling above: it took the gzipped bundle from 83.3 to 83.8 KB, leaving
- * less than the platform spread this comment describes. 85 restores roughly
- * ten times that spread of headroom, still well inside the kilobytes an
- * accidental import costs.
+ * Raised from 84 to 86 for route-level code splitting (#132) and AVX_R37 (#1617),
+ * the same change as the raw ceiling above: it took the gzipped bundle from
+ * 83.3 to 83.8 KB, and router lazy loading additions brought transferred size to ~84.5 KB.
+ * 86 restores headroom comfortably inside the kilobytes an accidental import costs.
  * @type {number}
  */
-const GZIPPED_CEILING_KB = 85;
+const GZIPPED_CEILING_KB = 86;
 
 /**
  * Source that must never appear in a production bundle.

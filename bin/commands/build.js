@@ -58,7 +58,11 @@ export function buildProject(cli, options = {}) {
   // `watch` is what lets the compiler reuse cached compilation products, and it
   // is passed only by the commands that keep a process alive across rebuilds.
   // `avenx build` calls this without it and so always builds cold.
-  const result = new AvenxCompiler({ ...cli.config, watch: options.watch === true }).build();
+  const result = new AvenxCompiler({
+    ...cli.config,
+    watch: options.watch === true,
+    ...(options.codeSplitting !== undefined ? { codeSplitting: options.codeSplitting } : {}),
+  }).build();
 
   runHook('postbuild', hooks.postbuild, baseDir);
 

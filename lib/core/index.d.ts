@@ -844,11 +844,23 @@ export class AvenxApp {
     register(name: string, compClass: typeof AvenxComponent): void;
 
     /**
-     * Registers a routing page component class.
+     * Registers a routing page component class or async loader function.
      * @param name Page name identifier.
-     * @param pageClass Page class extension.
+     * @param pageClass Page class extension or async loader function returning the page class.
      */
-    registerPage(name: string, pageClass: typeof AvenxPage): void;
+    registerPage(name: string, pageClass: typeof AvenxPage | (() => Promise<any>)): void;
+
+    /**
+     * Checks if a registered page is an unresolved async loader function.
+     * @param name Page name identifier.
+     */
+    isPageLoader(name: string): boolean;
+
+    /**
+     * Asynchronously resolves a page component class.
+     * @param name Page name identifier.
+     */
+    resolvePage(name: string): Promise<typeof AvenxPage>;
 
     /**
      * Registers a shared state bridge.
