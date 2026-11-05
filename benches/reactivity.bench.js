@@ -1,6 +1,8 @@
+import '../test/helpers/register-happy-dom.js';
 import { performance } from 'perf_hooks';
 import { StateFactory } from '../lib/core/reactive/createState.js';
 import { AvenxWatcher } from '../lib/core/reactive/watcher.js';
+import { AvenxComponent } from '../lib/core/runtime/AvenxComponent.js';
 
 /**
  * Runs benchmarks on the reactivity core.
@@ -84,6 +86,39 @@ function benchmark() {
     throw new Error('State creation failed');
   }
 
+  // 5. Mutating a non-template key in a loop (Issue #1167)
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+
+  /**
+   * Component for benchmarking non-template state mutations.
+   */
+  class BenchComponent extends AvenxComponent {
+    /**
+     * Initializes the benchmark component.
+     */
+    constructor() {
+      super(
+        { count: 0, nonVisualBookkeeping: 0 },
+        {},
+        {},
+        '<div><span>{{ count }}</span></div>'
+      );
+    }
+  }
+
+  const comp = new BenchComponent();
+  comp.mount(root);
+
+  const startNonTemplate = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    comp.state.nonVisualBookkeeping++;
+  }
+  const endNonTemplate = performance.now();
+  const nonTemplateTime = endNonTemplate - startNonTemplate;
+  comp.destroy();
+  document.body.removeChild(root);
+
   console.log(`Total time: ${totalTime.toFixed(2)}ms`);
   console.log(`Average time per operation: ${avgTime.toFixed(4)}ms`);
   console.log(`Ops/sec: ${Math.round(1000 / avgTime)}`);
@@ -92,6 +127,7 @@ function benchmark() {
   console.log(`  - Cached reads: ${cachedReadTime.toFixed(2)}ms`);
   console.log(`  - Invalidation + reads: ${dirtyReadTime.toFixed(2)}ms`);
   console.log(`  - Large Deep State Lazy Init (10k items): ${deepLazyTime.toFixed(4)}ms`);
+  console.log(`  - Non-template key mutation (50k items, render skipped): ${nonTemplateTime.toFixed(2)}ms (${Math.round((iterations / nonTemplateTime) * 1000).toLocaleString()} ops/sec)`);
 }
 
 benchmark();
