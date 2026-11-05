@@ -4,7 +4,7 @@ import http from 'http';
 import os from 'os';
 import path from 'path';
 import { EventEmitter } from 'events';
-import { bindAddressFor, listenWithPortFallback, formatStatusCode, formatRequestLog, attachRequestLogger, applyCustomHeaders, getInitialHtml, watchProject } from '../../bin/commands/serve.js';
+import { bindAddressFor, listenWithPortFallback, formatStatusCode, formatRequestLog, attachRequestLogger, applyCustomHeaders, getInitialHtml, getBundleHashes, watchProject } from '../../bin/commands/serve.js';
 import { setColorEnabled } from '../../bin/colors.js';
 import { AvenxCLI } from '../../bin/cli.js';
 
@@ -33,6 +33,31 @@ function testGetInitialHtmlLanguage() {
     html.includes('<html lang="en">'),
     'Generated index.html should declare its language'
   );
+}
+
+function testBundleHashes() {
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-bundle-hashes-'));
+  const distDir = path.join(baseDir, 'dist');
+  fs.mkdirSync(distDir);
+  fs.writeFileSync(path.join(distDir, 'bundle.js'), 'const value = 1;');
+  fs.writeFileSync(path.join(distDir, 'bundle.css'), '.card { color: red; }');
+
+  try {
+    const first = getBundleHashes({
+      baseDir,
+      config: { distDir: 'dist' },
+    });
+    fs.writeFileSync(path.join(distDir, 'bundle.css'), '.card { color: blue; }');
+    const second = getBundleHashes({
+      baseDir,
+      config: { distDir: 'dist' },
+    });
+
+    assert.strictEqual(second.js, first.js);
+    assert.notStrictEqual(second.css, first.css);
+  } finally {
+    fs.rmSync(baseDir, { recursive: true, force: true });
+  }
 }
 
 function runTests() {
@@ -258,6 +283,7 @@ async function testWatchProjectInputs() {
 async function main() {
   try {
     testGetInitialHtmlLanguage();
+    testBundleHashes();
     testRequestLoggerFormatting();
     testAttachRequestLogger();
     await testHttpDevServerRequestLogging();

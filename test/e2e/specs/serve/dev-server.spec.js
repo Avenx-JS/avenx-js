@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 
 import {
   test,
@@ -43,6 +45,148 @@ async function writeProjectFile(projectDir, relativePath, content) {
     content,
     'utf8',
   );
+}
+
+/**
+ * Waits for a source rebuild to emit a marker in the scratch bundle.
+ * @param {string} projectDir - Scratch project directory.
+ * @param {string} marker - Text expected in the compiled bundle.
+ * @returns {Promise<void>}
+ */
+async function waitForBundleMarker(projectDir, marker) {
+  await expect.poll(
+    async () => {
+      try {
+        return (await readProjectFile(projectDir, 'dist/bundle.js')).includes(marker);
+      } catch {
+        return false;
+      }
+    },
+    { timeout: 10_000 },
+  ).toBe(true);
+}
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Replaces the scratch fixture with a stateful app used by hot-swap tests.
+ * @param {string} projectDir - Scratch project directory.
+ * @returns {Promise<void>}
+ */
+async function writeHotSwapFixture(projectDir) {
+  await fs.mkdir(
+    path.join(projectDir, 'src/components/hot-panel'),
+    { recursive: true },
+  );
+  await fs.mkdir(
+    path.join(projectDir, 'src/bridges'),
+    { recursive: true },
+  );
+
+  await Promise.all([
+    writeProjectFile(
+      projectDir,
+      'src/main.app.js',
+      `import { AvenxApp } from 'avenx-core/runtime';
+import HotPanel from './components/hot-panel/hot-panel.component.js';
+
+const app = new AvenxApp({ target: '#app' });
+app.register('HotPanel', HotPanel);
+app.initRouter({
+  '/': 'Home',
+  '#/details': 'Details',
+});
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/bridges/session.bridge.js',
+      `import { bridge } from 'avenx-core/runtime';
+
+export default bridge({
+  state: {
+    value: 'bridge-ready',
+  },
+
+  setValue(value) {
+    this.value = value;
+  },
+});
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/components/hot-panel/hot-panel.component.js',
+      `<div class="hot-panel" data-testid="component-panel">
+  <input aria-label="Focused field" data-testid="focus-input" />
+  <div class="scroll-box" data-testid="scroll-box">
+    <div style="height: 800px">Scrollable content</div>
+  </div>
+</div>
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/components/hot-panel/hot-panel.component.css',
+      `<@global>
+.hot-panel {
+  border-top-style: solid;
+  border-top-width: 2px;
+}
+</@global>
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/pages/home.page.js',
+      `import session from '../bridges/session.bridge.js';
+
+<state count="1" />
+<main data-testid="home-page">
+  <p data-testid="count">{{ count }}</p>
+  <p data-testid="bridge">{{ session.value }}</p>
+  <button data-testid="increment" @click="count = count + 1">Increment</button>
+  <button data-testid="bridge-update" @click="session.setValue('bridge-updated')">Update bridge</button>
+  <HotPanel />
+</main>
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/pages/home.page.css',
+      `<@global>
+[data-testid="home-page"] {
+  color: rgb(1, 2, 3);
+}
+</@global>
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/pages/details.page.js',
+      `import session from '../bridges/session.bridge.js';
+
+<state count="1" />
+<main data-testid="details-page">
+  <p data-testid="count">{{ count }}</p>
+  <p data-testid="bridge">{{ session.value }}</p>
+  <button data-testid="increment" @click="count = count + 1">Increment</button>
+  <button data-testid="bridge-update" @click="session.setValue('bridge-updated')">Update bridge</button>
+  <HotPanel />
+</main>
+`,
+    ),
+    writeProjectFile(
+      projectDir,
+      'src/pages/details.page.css',
+      `<@global>
+[data-testid="details-page"] {
+  color: rgb(1, 2, 3);
+}
+</@global>
+`,
+    ),
+  ]);
 }
 
 /**
@@ -166,6 +310,268 @@ test.describe('avenx serve development cycle', () => {
         original,
       );
     }
+  });
+
+  test('CSS-only component and page updates preserve application state without reloading', async ({
+    page,
+    projectDir,
+  }) => {
+    await writeHotSwapFixture(projectDir);
+    await waitForBundleMarker(projectDir, 'HotPanel');
+
+    let loadCount = 0;
+    page.on('load', () => {
+      loadCount++;
+    });
+    await page.reload();
+    await page.goto(`${page.url()}#/details`);
+
+    await expect(page.getByTestId('details-page')).toBeVisible();
+    const cssBaselineLoads = loadCount;
+    await expect(page.getByTestId('count')).toHaveText('1');
+    await page.getByTestId('increment').click();
+    await page.getByTestId('bridge-update').click();
+    await page.getByTestId('focus-input').focus();
+    await page.getByTestId('scroll-box').evaluate((element) => {
+      element.scrollTop = 120;
+    });
+
+    const before = await page.evaluate(() => ({
+      route: location.hash,
+      active: document.activeElement?.getAttribute('data-testid'),
+      scrollTop: document.querySelector('[data-testid="scroll-box"]').scrollTop,
+    }));
+
+    const componentCss = await readProjectFile(
+      projectDir,
+      'src/components/hot-panel/hot-panel.component.css',
+    );
+    const pageCss = await readProjectFile(
+      projectDir,
+      'src/pages/details.page.css',
+    );
+
+    try {
+      await expect.poll(
+        async () => page.getByTestId('component-panel').evaluate((element) =>
+          getComputedStyle(element).borderTopWidth,
+        ),
+      ).toBe('2px');
+      await expect.poll(
+        async () => page.getByTestId('details-page').evaluate((element) =>
+          getComputedStyle(element).color,
+        ),
+      ).toBe('rgb(1, 2, 3)');
+
+      await writeProjectFile(
+        projectDir,
+        'src/components/hot-panel/hot-panel.component.css',
+        componentCss.replace('2px', '8px'),
+      );
+      await writeProjectFile(
+        projectDir,
+        'src/pages/details.page.css',
+        pageCss.replace('rgb(1, 2, 3)', 'rgb(4, 5, 6)'),
+      );
+
+      await expect.poll(
+        async () => page.getByTestId('component-panel').evaluate((element) =>
+          getComputedStyle(element).borderTopWidth,
+        ),
+        { timeout: 10_000 },
+      ).toBe('8px');
+      await expect.poll(
+        async () => page.getByTestId('details-page').evaluate((element) =>
+          getComputedStyle(element).color,
+        ),
+        { timeout: 10_000 },
+      ).toBe('rgb(4, 5, 6)');
+
+      await expect(page.getByTestId('count')).toHaveText('2');
+      await expect(page.getByTestId('bridge')).toHaveText('bridge-updated');
+      await expect.poll(() => page.evaluate(() => ({
+        route: location.hash,
+        active: document.activeElement?.getAttribute('data-testid'),
+        scrollTop: document.querySelector('[data-testid="scroll-box"]').scrollTop,
+      }))).toEqual(before);
+      expect(loadCount).toBe(cssBaselineLoads);
+    } finally {
+      await writeProjectFile(
+        projectDir,
+        'src/components/hot-panel/hot-panel.component.css',
+        componentCss,
+      );
+      await writeProjectFile(
+        projectDir,
+        'src/pages/details.page.css',
+        pageCss,
+      );
+    }
+  });
+
+  test('keeps the old stylesheet during a CSS swap and removes it after load', async ({
+    page,
+    projectDir,
+  }) => {
+    await writeHotSwapFixture(projectDir);
+    await waitForBundleMarker(projectDir, 'HotPanel');
+    await page.reload();
+    await page.goto(`${page.url()}#/details`);
+    await expect(page.getByTestId('details-page')).toBeVisible();
+
+    let releaseStylesheet;
+    const stylesheetReady = new Promise((resolve) => {
+      releaseStylesheet = resolve;
+    });
+    await page.route('**/bundle.css?t=*', async (route) => {
+      const response = await route.fetch();
+      await stylesheetReady;
+      await route.fulfill({ response });
+    });
+
+    const original = await readProjectFile(
+      projectDir,
+      'src/pages/details.page.css',
+    );
+
+    try {
+      await writeProjectFile(
+        projectDir,
+        'src/pages/details.page.css',
+        original.replace('rgb(1, 2, 3)', 'rgb(7, 8, 9)'),
+      );
+
+      await expect.poll(
+        () => page.locator('link[rel="stylesheet"][href*="bundle.css"]').count(),
+        { timeout: 10_000 },
+      ).toBe(2);
+      await expect.poll(
+        () => page.getByTestId('details-page').evaluate((element) =>
+          getComputedStyle(element).color,
+        ),
+      ).toBe('rgb(1, 2, 3)');
+
+      releaseStylesheet();
+
+      await expect(
+        page.locator('link[rel="stylesheet"][href*="bundle.css"]'),
+      ).toHaveCount(1, { timeout: 10_000 });
+      await expect.poll(
+        () => page.getByTestId('details-page').evaluate((element) =>
+          getComputedStyle(element).color,
+        ),
+      ).toBe('rgb(7, 8, 9)');
+    } finally {
+      await page.unroute('**/bundle.css?t=*');
+      await writeProjectFile(
+        projectDir,
+        'src/pages/details.page.css',
+        original,
+      );
+    }
+  });
+
+  test('reloads for JavaScript changes and changes touching JavaScript and CSS', async ({
+    page,
+    projectDir,
+  }) => {
+    await writeHotSwapFixture(projectDir);
+    await waitForBundleMarker(projectDir, 'HotPanel');
+    await page.reload();
+    await page.goto(`${page.url()}#/details`);
+
+    let loads = 0;
+    page.on('load', () => {
+      loads++;
+    });
+    const originalJs = await readProjectFile(
+      projectDir,
+      'src/components/hot-panel/hot-panel.component.js',
+    );
+    const originalCss = await readProjectFile(
+      projectDir,
+      'src/components/hot-panel/hot-panel.component.css',
+    );
+
+    try {
+      const jsOnlyUpdate = originalJs.replace(
+        '<div class="hot-panel" data-testid="component-panel">',
+        '<div class="hot-panel" data-testid="component-panel"><h1 data-testid="js-only-update">Updated component</h1>',
+      );
+      expect(jsOnlyUpdate).not.toBe(originalJs);
+      await writeProjectFile(
+        projectDir,
+        'src/components/hot-panel/hot-panel.component.js',
+        jsOnlyUpdate,
+      );
+      await expect.poll(() => loads, { timeout: 10_000 }).toBeGreaterThan(0);
+      await expect(page.getByTestId('js-only-update')).toHaveText('Updated component');
+
+      const previousLoads = loads;
+      const updatedJs = originalJs.replace(
+        '<div class="hot-panel" data-testid="component-panel">',
+        '<div class="hot-panel" data-testid="component-panel"><h1 data-testid="mixed-update">Mixed update</h1>',
+      );
+      const updatedCss = originalCss.replace('2px', '9px');
+      expect(updatedJs).not.toBe(originalJs);
+      expect(updatedCss).not.toBe(originalCss);
+      await Promise.all([
+        writeProjectFile(
+          projectDir,
+          'src/components/hot-panel/hot-panel.component.js',
+          updatedJs,
+        ),
+        writeProjectFile(
+          projectDir,
+          'src/components/hot-panel/hot-panel.component.css',
+          updatedCss,
+        ),
+      ]);
+      await expect.poll(
+        () => loads,
+        { timeout: 10_000 },
+      ).toBeGreaterThan(previousLoads);
+      await expect(page.getByTestId('mixed-update')).toHaveText('Mixed update');
+      await expect.poll(
+        () => page.getByTestId('component-panel').evaluate((element) =>
+          getComputedStyle(element).borderTopWidth,
+        ),
+        { timeout: 10_000 },
+      ).toBe('9px');
+    } finally {
+      await Promise.all([
+        writeProjectFile(
+          projectDir,
+          'src/components/hot-panel/hot-panel.component.js',
+          originalJs,
+        ),
+        writeProjectFile(
+          projectDir,
+          'src/components/hot-panel/hot-panel.component.css',
+          originalCss,
+        ),
+      ]);
+    }
+  });
+
+  test('production output contains no dev-server live-reload code', async ({
+    projectDir,
+  }) => {
+    await writeHotSwapFixture(projectDir);
+    await execFileAsync(
+      process.execPath,
+      [path.resolve(process.cwd(), 'bin/avenx.js'), 'build', '--production'],
+      { cwd: projectDir },
+    );
+
+    const bundle = await readProjectFile(projectDir, 'dist/bundle.js');
+    const index = await readProjectFile(projectDir, 'index.html');
+
+    expect(bundle).not.toContain('EventSource');
+    expect(bundle).not.toContain('__avenx_live_reload__');
+    expect(bundle).not.toContain('swapStylesheet');
+    expect(index).not.toContain('EventSource');
+    expect(index).not.toContain('__avenx_live_reload__');
   });
 
   test('failed rebuild keeps the last good page and the next good save recovers', async ({

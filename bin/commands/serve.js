@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import http from 'http';
 import { spawn } from 'child_process';
 import { buildProject } from './build.js';
@@ -17,6 +18,22 @@ import { TRACE_ENDPOINT } from '../../lib/core/trace/devtools.js';
  * @type {number}
  */
 const MAX_TRACE_BYTES = 32 * 1024 * 1024;
+
+/**
+ * Hashes the emitted JavaScript and CSS bundles for live-reload decisions.
+ * @param {object} cli
+ * @returns {{js: string, css: string}}
+ */
+export function getBundleHashes(cli) {
+  const distDir = path.resolve(cli.baseDir, cli.config.distDir || 'dist');
+  const hashFile = (name) =>
+    crypto.createHash('sha256').update(fs.readFileSync(path.join(distDir, name))).digest('hex');
+
+  return {
+    js: hashFile('bundle.js'),
+    css: hashFile('bundle.css'),
+  };
+}
 
 /**
  * Checks whether a resolved path is the project root itself or sits beneath it.
@@ -751,12 +768,60 @@ export function watchProject(cli) {
   let pendingChange = null;
   const baseDir = path.resolve(cli.baseDir);
   const srcPath = path.join(baseDir, cli.config.srcDir || 'src');
+  const templateDirs = [cli.config.templatesDir || '.avenxtemplates', 'templates'];
+  const sourceDirs = [srcPath, ...templateDirs.map((dir) => path.join(baseDir, dir))];
+  const assetDirs = ['public', 'assets'].map((dir) => path.join(baseDir, dir));
 
   if (!fs.existsSync(srcPath)) return null;
 
-  const sendReload = () => {
+  const snapshotDirectories = (directories) => {
+    const snapshot = new Map();
+    const visit = (directory) => {
+      let entries;
+      try {
+        entries = fs.readdirSync(directory, { withFileTypes: true });
+      } catch {
+        return;
+      }
+
+      for (const entry of entries) {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+          visit(entryPath);
+        } else if (entry.isFile()) {
+          const stat = fs.statSync(entryPath, { bigint: true });
+          snapshot.set(entryPath, `${stat.mtimeNs}:${stat.size}`);
+        }
+      }
+    };
+
+    directories.forEach(visit);
+    return snapshot;
+  };
+
+  const snapshotRootFiles = () => {
+    const snapshot = new Map();
+    for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const entryPath = path.join(baseDir, entry.name);
+      const stat = fs.statSync(entryPath, { bigint: true });
+      snapshot.set(entryPath, `${stat.mtimeNs}:${stat.size}`);
+    }
+    return snapshot;
+  };
+
+  const changedPaths = (previous, next) => {
+    const candidates = new Set([...previous.keys(), ...next.keys()]);
+    return [...candidates].filter((filePath) => previous.get(filePath) !== next.get(filePath));
+  };
+
+  let sourceSnapshot = snapshotDirectories(sourceDirs);
+  let assetSnapshot = snapshotDirectories(assetDirs);
+  let rootSnapshot = snapshotRootFiles();
+
+  const sendEvent = (event) => {
     if (cli.liveReloadClients) {
-      cli.liveReloadClients.forEach((client) => client.write('data: reload\n\n'));
+      cli.liveReloadClients.forEach((client) => client.write(`data: ${event}\n\n`));
     }
   };
 
@@ -778,7 +843,7 @@ export function watchProject(cli) {
 
       if (change.kind === 1) {
         console.log(`\n${cyan(`📄 Change detected: ${change.filename}. Reloading...`)}`);
-        sendReload();
+        sendEvent('reload');
         return;
       }
 
@@ -794,40 +859,59 @@ export function watchProject(cli) {
       }
 
       console.log(green(`✅ Rebuilt in ${Math.round(performance.now() - startedAt)}ms`));
-      sendReload();
+      const previous = cli.liveReloadHashes;
+      const next = getBundleHashes(cli);
+      cli.liveReloadHashes = next;
+      if (previous && previous.js === next.js && previous.css !== next.css) {
+        sendEvent('css');
+      } else {
+        sendEvent('reload');
+      }
     }, 100);
   };
 
-  const templateDirs = [cli.config.templatesDir || '.avenxtemplates', 'templates'];
-  const sourceDirs = [srcPath, ...templateDirs.map((dir) => path.join(baseDir, dir))];
-  const assetDirs = ['public', 'assets'].map((dir) => path.join(baseDir, dir));
+  const refreshDirectorySnapshot = (directories, previous, kind) => {
+    const next = snapshotDirectories(directories);
+    for (const filePath of changedPaths(previous, next)) {
+      scheduleChange(kind, path.relative(baseDir, filePath));
+    }
+    return next;
+  };
+
+  const refreshSourceSnapshot = () => {
+    sourceSnapshot = refreshDirectorySnapshot(sourceDirs, sourceSnapshot, 2);
+  };
+  const refreshAssetSnapshot = () => {
+    assetSnapshot = refreshDirectorySnapshot(assetDirs, assetSnapshot, 1);
+  };
+  const refreshRootSnapshot = () => {
+    const next = snapshotRootFiles();
+    for (const filePath of changedPaths(rootSnapshot, next)) {
+      const filename = path.basename(filePath);
+      const requiresRestart = filename === 'avenx.config.json'
+        || filename === 'package.json'
+        || /^\.env(?:\.|$)/.test(filename);
+      scheduleChange(requiresRestart ? 3 : 1, filename);
+    }
+    rootSnapshot = next;
+  };
+
   const watchers = [
-    watchDirectories(sourceDirs, (_eventType, filename) => filename && scheduleChange(2, filename.toString())),
-    watchDirectories(assetDirs, (_eventType, filename) => filename && scheduleChange(1, filename.toString())),
-    fs.watch(baseDir, (_eventType, rawFilename) => {
-      if (!rawFilename) return;
-      const filename = rawFilename.toString();
-      if (filename.includes('/') || filename.includes('\\')) return;
-      if (filename === 'node_modules' || filename === '.git' || filename === path.basename(cli.config.distDir || 'dist')) return;
-
-      const absolutePath = path.join(baseDir, filename);
-      try {
-        if (fs.existsSync(absolutePath) && fs.statSync(absolutePath).isDirectory()) return;
-      } catch {
-      // Treat a path that disappeared during the event as a file change.
-      }
-
-      if (filename === 'avenx.config.json' || filename === 'package.json' || /^\.env(?:\.|$)/.test(filename)) {
-        scheduleChange(3, filename);
-      } else {
-        scheduleChange(1, filename);
-      }
-    }),
+    watchDirectories(sourceDirs, refreshSourceSnapshot),
+    watchDirectories(assetDirs, refreshAssetSnapshot),
+    fs.watch(baseDir, refreshRootSnapshot),
   ].filter(Boolean);
+
+  const startupScan = setImmediate(() => {
+    refreshSourceSnapshot();
+    refreshAssetSnapshot();
+    refreshRootSnapshot();
+  });
 
   const watcher = {
     close() {
       clearTimeout(timeout);
+      clearImmediate(startupScan);
       for (const activeWatcher of watchers) activeWatcher.close();
     },
   };
@@ -913,6 +997,7 @@ export function listenWithPortFallback(server, requestedPort, host, onListening)
  */
 export function serveProject(cli, port, host = 'localhost', open = false) {
   buildProject(cli, { watch: true });
+  cli.liveReloadHashes = getBundleHashes(cli);
 
   if (cli.config.server.liveReload) {
     cli.liveReloadClients = [];
@@ -1050,9 +1135,40 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
 <script>
     if ('EventSource' in window) {
         const source = new EventSource('/__avenx_live_reload__');
+        let pendingStylesheet = null;
+        let stylesheetSwapToken = 0;
+        const swapStylesheet = () => {
+            const current = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+                .find((link) => new URL(link.href, document.baseURI).pathname.endsWith('/bundle.css'));
+            if (!current) return;
+
+            if (pendingStylesheet && pendingStylesheet.parentNode) {
+                pendingStylesheet.parentNode.removeChild(pendingStylesheet);
+            }
+
+            const replacement = document.createElement('link');
+            replacement.rel = 'stylesheet';
+            const url = new URL(current.href, document.baseURI);
+            url.searchParams.set('t', String(Date.now()));
+            replacement.href = url.href;
+            const token = ++stylesheetSwapToken;
+            pendingStylesheet = replacement;
+            replacement.onload = () => {
+                if (token !== stylesheetSwapToken) return;
+                if (current.parentNode) current.parentNode.removeChild(current);
+                pendingStylesheet = null;
+            };
+            replacement.onerror = () => {
+                if (replacement.parentNode) replacement.parentNode.removeChild(replacement);
+                if (token === stylesheetSwapToken) pendingStylesheet = null;
+            };
+            current.parentNode.insertBefore(replacement, current.nextSibling);
+        };
         source.onmessage = (e) => {
             if (e.data === 'reload') {
                 window.location.reload();
+            } else if (e.data === 'css') {
+                swapStylesheet();
             }
         };
     }
