@@ -322,7 +322,9 @@ export class AvenxCLI {
             process.exit(1);
           }
         }
-        buildProject(this);
+        buildProject(this, {
+          codeSplitting: args.includes('--code-splitting') || args.includes('--split') ? true : undefined,
+        });
         break;
       case 'clean':
         cleanProject(this);
