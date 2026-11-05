@@ -28,6 +28,37 @@ To maximize browser performance, state updates are batched together. If you chan
 </action>
 ```
 
+## Template Dependency Filtering
+
+To avoid unnecessary render passes and DOM diffing, Avenx-JS tracks which state properties are actually referenced by the component's template or by rendered computed properties.
+
+When a reactive state key is mutated that is **not** referenced by the template or any rendered computed property (such as scroll positions, bookkeeping counters, request IDs, or flags consumed only inside actions), the framework **skips scheduling a template re-render and DOM patch**.
+
+- **Reactivity remains active:** Watchers (`$watch`, `watchEffect`), resources, and bridge subscriptions attached to that key still execute normally.
+- **Deep mutations:** Deep writes to nested objects, arrays, and Maps/Sets correctly resolve back to their root key.
+- **Indirect dependencies:** If a template displays a computed property (`{{ total }}`), mutations to upstream state properties that feed into `total` will trigger a render as expected.
+- **Safety fallback:** If a template uses dynamic constructs where dependencies cannot be statically verified (such as dynamic attribute names `:[attr]`, dynamic `data-ax-html`, or bracket property access `state[...]`), Avenx-JS conservatively falls back to unconditional rendering.
+
+### Escape Hatch (Opt-Out)
+
+If you need to restore unconditional re-rendering on every mutation (e.g., during troubleshooting), you can opt out:
+
+1. **Using compiler contracts in `.component.js`:**
+   ```html
+   <contract unconditional />
+   ```
+2. **Using component options:**
+   ```javascript
+   new MyComponent(..., { unconditional: true });
+   ```
+
+### Debugging Skipped Renders
+
+When `debug.debugReactivity` is enabled in `avenx.config.json` or via `setDebugReactivity(true)`, skipped renders are logged to the console with the component name and key:
+```text
+[Avenx Debug] Skipped render for component "UserProfile" on unobserved key "lastScrollY"
+```
+
 ## Lifecycle & Rendering Flow
 
 When reactive state changes, Avenx-JS processes the update through a scheduled rendering cycle. Updates are batched using the scheduler queue so that multiple state mutations can be processed efficiently within a single microtask.

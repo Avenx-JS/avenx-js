@@ -1,9 +1,9 @@
 ---
 title: 'Compiler Contracts'
-description: 'Compiler Contracts (static, pure, deterministic, isolated) and compile-time optimizations in Avenx-JS.'
+description: 'Compiler Contracts (static, pure, deterministic, isolated, unconditional) and compile-time optimizations in Avenx-JS.'
 ---
 
-Avenx-JS introduces **Compiler Contracts** (`static`, `pure`, `deterministic`, `isolated`). Compiler contracts are explicit semantic guarantees provided by the developer to the Avenx compiler. The compiler leverages these guarantees for static analysis, validation, and optimizations.
+Avenx-JS introduces **Compiler Contracts** (`static`, `pure`, `deterministic`, `isolated`, `unconditional`). Compiler contracts are explicit semantic guarantees provided by the developer to the Avenx compiler. The compiler leverages these guarantees for static analysis, validation, and optimizations.
 
 ---
 
@@ -15,6 +15,7 @@ Avenx-JS introduces **Compiler Contracts** (`static`, `pure`, `deterministic`, `
 | **`pure`** | Component or expression produces zero observable side effects. | Detects assignment operators, state mutations, and external global access (`window`, `localStorage`, `fetch`). | Safe code reordering and dead-code elimination. |
 | **`deterministic`** | Identical inputs $\rightarrow$ identical semantic output. | Detects calls to non-deterministic functions (`Math.random()`, `Date.now()`, `performance.now()`, `crypto`). | Enables safe memoization and render caching. |
 | **`isolated`** | Unit depends *only* on explicit props and local state. Disconnects from global bridges. | Disallows access to `$bridges`, `this.$bridges`, and `$parent`. | Eliminates unneeded reactive bridge subscriptions; updates only on prop/state changes. |
+| **`unconditional`** | Bypasses template dependency filtering and re-renders on every mutation. | Opts out of render skipping for unobserved keys. | Escape hatch for manual debugging and unconditional re-rendering. |
 
 ---
 
