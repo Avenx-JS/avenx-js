@@ -2,7 +2,7 @@
     @def primary #6366f1;
     @def dark #1e1b4b;
     @def white #ffffff;
-</ @global>
+</@global>
 
 <@css>
     container {
@@ -32,4 +32,4 @@
         cursor: pointer;
         margin: 0.5rem;
     }
-</ @css>
+</@css>

@@ -68,7 +68,7 @@ Templates use `{{ name }}` as a placeholder, which the CLI replaces with the par
     title {
         font-weight: 600;
     }
-</ @css>
+</@css>
 ```
 
 Once these files exist, running `npx avenx g counter` will use your custom templates instead of the framework defaults, generating `src/components/counter/counter.component.js` and `.css` based on your overrides.
