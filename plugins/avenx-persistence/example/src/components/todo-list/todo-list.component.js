@@ -7,10 +7,11 @@ import todos from '../../global/todos.bridge.js';
     <p @css hint>{{ todos.remaining }} left. Reload the page — the list is still here.</p>
 
     <form @css row @submit.prevent="todos.add()">
+        <label @css label for="new-todo">What needs doing?</label>
         <input
             @css input
+            id="new-todo"
             type="text"
-            placeholder="What needs doing?"
             :value="todos.draft"
             @input="todos.setDraft(event.target.value)"
         />
