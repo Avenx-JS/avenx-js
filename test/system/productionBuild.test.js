@@ -36,6 +36,13 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * the spread between two platforms' output. A ceiling that tight stops
  * reporting regressions and starts reporting ordinary bug fixes; see
  * GZIPPED_CEILING_KB for the failure that made the point.
+ *
+ * Raised from 360 to 375 for route-level code splitting (#132) and AVX_R37 (#1617):
+ * the diagnostic a compiled component raises when its environment has no usable
+ * DOM is production runtime code -- a message template, the two skeleton-failure
+ * sentences and the plumbing that carries the reason into the fallback -- and it
+ * took the bundle from 359.7 to 361.1 KB. 375 provides sufficient headroom alongside
+ * router lazy loading additions.
  * @type {number}
  */
 const PRODUCTION_SIZE_CEILING_KB = 375;
@@ -58,6 +65,11 @@ const PRODUCTION_SIZE_CEILING_KB = 375;
  * inside that margin fails by platform rather than by regression. 84 KB keeps
  * about 5% headroom -- comfortably inside the kilobytes an accidental import
  * costs, which is what this guard is for, and no longer inside the noise.
+ *
+ * Raised from 84 to 86 for route-level code splitting (#132) and AVX_R37 (#1617),
+ * the same change as the raw ceiling above: it took the gzipped bundle from
+ * 83.3 to 83.8 KB, and router lazy loading additions brought transferred size to ~84.5 KB.
+ * 86 restores headroom comfortably inside the kilobytes an accidental import costs.
  * @type {number}
  */
 const GZIPPED_CEILING_KB = 86;
