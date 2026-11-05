@@ -1355,6 +1355,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "CloudCorpRecords",
+      "name": "Rene Turcios",
+      "avatar_url": "https://avatars.githubusercontent.com/u/95189389?v=4",
+      "profile": "https://reneturcios.replit.app",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
