@@ -40,6 +40,8 @@ interface AvenxCompilerOptions {
     distDir?: string;
     /** Build mode. Production is the default for `avenx build`. */
     mode?: 'production' | 'development';
+    /** Whether to split page components into separate chunk files. */
+    codeSplitting?: boolean;
     /** Content-Security-Policy posture. */
     csp?: AvenxCspConfig;
     [option: string]: unknown;
