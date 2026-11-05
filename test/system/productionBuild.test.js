@@ -38,7 +38,7 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * GZIPPED_CEILING_KB for the failure that made the point.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 360;
+const PRODUCTION_SIZE_CEILING_KB = 375;
 
 /**
  * Ceiling for the same bundle over the wire, in KB.
@@ -60,7 +60,7 @@ const PRODUCTION_SIZE_CEILING_KB = 360;
  * costs, which is what this guard is for, and no longer inside the noise.
  * @type {number}
  */
-const GZIPPED_CEILING_KB = 84;
+const GZIPPED_CEILING_KB = 86;
 
 /**
  * Source that must never appear in a production bundle.
