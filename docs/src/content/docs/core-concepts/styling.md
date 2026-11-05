@@ -5,6 +5,8 @@ description: 'Master scoped styling and global styles inside Avenx-JS components
 
 Styling is defined in the companion `.component.css` stylesheet. At compile-time, the Avenx compiler scopes component styles to keep them from bleeding into other views.
 
+Whitespace before `@` in closing block tags is tolerated for compatibility; use `</@css>` and `</@global>` as the canonical spellings.
+
 ## 1. Scoped CSS Blocks (`<@css>`)
 
 CSS rules defined inside `<@css>` use named blocks without dot prefixes. The compiler extracts this CSS, hashes the block names into unique class suffixes, and binds them to the component's HTML tags via the `@css` attribute.
