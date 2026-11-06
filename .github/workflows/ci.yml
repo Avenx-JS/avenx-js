@@ -32,6 +32,10 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Check compiler snapshots
+        if: matrix.node-version == 22
+        run: npm run test:snapshots
+
       - name: Run plugin tests
         run: npm run test:plugins
 

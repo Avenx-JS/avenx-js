@@ -67,6 +67,8 @@ A quick start for working on the codebase:
 
    Add `--watch` (or `-w`) to rerun matching tests when files change. Add `--update-snapshots` (or `-u`) to rewrite stored snapshots; review those changes before committing.
 
+   The compiler snapshot check is not part of `npm test`. Run it with `npm run test:snapshots`; CI runs it on every pull request. If the compiler output changed on purpose, run `npm run test:snapshots:update` and commit the result.
+
 5. **Run the browser tests.** Install Chromium once, then run the Playwright suite:
 
    ```bash
