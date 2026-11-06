@@ -62,7 +62,8 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
   2. Configures Node.js (`actions/setup-node@v4`) with `cache: npm` enabled.
   3. Installs dependencies (`npm ci`).
   4. Runs complete test suite (`npm test`).
-  5. Executes ESLint (`npm run lint`, executed on Node 20 & 22; skipped on Node 18 as ESLint 10 requires Node >= 20).
+  5. Checks the compiler snapshots (`npm run test:snapshots`, executed on Node 22 only, since the output does not depend on the Node version).
+  6. Executes ESLint (`npm run lint`, executed on Node 20 & 22; skipped on Node 18 as ESLint 10 requires Node >= 20).
 
 ### 4. NPM Package Release (`npm-publish.yml`)
 
