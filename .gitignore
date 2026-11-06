@@ -46,3 +46,8 @@ docs/*.html
 docs/fonts/
 docs/styles/
 docs/scripts/
+
+# Bundle size check output (scripts/size-check.js, written by size-check.yml)
+base-sizes.json
+pr-sizes.json
+size-report.md
