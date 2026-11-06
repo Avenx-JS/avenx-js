@@ -1373,6 +1373,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "O1sumitkumar",
+      "name": "Sumeet Jha",
+      "avatar_url": "https://avatars.githubusercontent.com/u/109774891?v=4",
+      "profile": "https://github.com/O1sumitkumar",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
