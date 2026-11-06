@@ -145,7 +145,9 @@ async function run() {
       console.log('Build size check complete.');
     } catch (err) {
       console.error('❌ Build size check failed:', err);
-      process.exit(1);
+      // Not process.exit(1): it ends the process before the finally block below
+      // runs, which left the temporary project behind on every failed build.
+      process.exitCode = 1;
     } finally {
       console.log('Cleaning up temporary project...');
       fs.rmSync(tempDir, { recursive: true, force: true });
