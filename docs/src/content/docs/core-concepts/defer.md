@@ -167,7 +167,7 @@ Depending on the trigger used, these include:
 When the trigger is fired and the deferred content is loaded, the associated trigger cleanup function is executed.
 
 > [!NOTE]
-> Complete cleanup on unmount of a parent component is not currently guaranteed. The `DeferManager.destroy()` method is currently a placeholder and is not yet called during component teardown. Full unmount cleanup is planned for a future update.
+> Unmounting a component releases its pending `<@defer>` triggers: observers, timers, idle callbacks and listeners are cancelled, and a trigger that has not fired never renders into the detached component.
 
 ---
 
