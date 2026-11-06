@@ -1382,6 +1382,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "DaniLlano",
+      "name": "DaniLlano",
+      "avatar_url": "https://avatars.githubusercontent.com/u/67348891?v=4",
+      "profile": "https://github.com/DaniLlano",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
