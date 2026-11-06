@@ -638,11 +638,12 @@ The published package has **one dependency**, `acorn`, used only by the
 compiler; it does not appear in an application bundle. The runtime you ship has
 no third-party dependencies.
 
-A freshly scaffolded application, production build, measured with `avenx build`:
+A freshly scaffolded application, production build, measured with
+`avenx init -y && avenx build` (verified 2026-11-06):
 
 | Asset | Raw | Gzipped |
 | :--- | ---: | ---: |
-| `bundle.js` | 341 KB | 78 KB |
+| `bundle.js` | 356.04 KB | 82.63 KB |
 | `bundle.css` | 0.7 KB | 0.3 KB |
 
 That number is honest rather than flattering, and worth understanding: Avenx's
@@ -650,8 +651,8 @@ minifier strips comments and indentation and nothing else. It does not rename
 identifiers or remove dead branches, because doing that safely needs a full
 ECMAScript parser and a minifier that guesses produces a bundle that is smaller
 and wrong. Line numbers therefore survive into production stack traces. Unused
-modules *are* tree-shaken out of the graph — a scaffolded build reports
-`65 modules · 13 shaken out` — and comments and indentation are what gzip
+modules *are* tree-shaken out of the graph — the same scaffolded build reports
+`64 modules · 15 shaken out` — and comments and indentation are what gzip
 compresses best, so the gap on the wire is much narrower than on disk.
 
 <div align="right"><a href="#avenxjs">↑ back to top</a></div>
@@ -812,21 +813,30 @@ migration.
   The unreleased section of the changelog records what it has found and fixed.
 - **Node:** 18 or newer. CI runs the suite on 18, 20 and 22.
 
-The repository's own verification, as it stands on `develop`:
+The repository's own verification, as it stands on the default branch
+`main` (counts verified 2026-11-06):
 
 | Suite | Count | How to run |
-| :--- | ---: | :--- |
-| Unit | 218 files | `npm run test:unit` |
-| Integration | 23 files | `npm run test:integration` |
-| System / CLI | 28 files | `npm run test:system` |
-| Browser (E2E, Chromium) | 166 tests | `npm run test:e2e` |
-| Plugins | 3 suites | `npm run test:plugins` |
+| :--- | ---: | --- |
+| Unit | 249 files | `npm run test:unit` |
+| Integration | 24 files | `npm run test:integration` |
+| System / CLI | 46 files | `npm run test:system` |
+| Browser (E2E, Chromium) | ~250 test declarations | `npm run test:e2e` |
+| Plugins | 4 suites | `npm run test:plugins` |
 
-The E2E suite compiles 12 real applications with the actual CLI and drives the
-compiled bundles in a browser, so a test cannot pass unless the compiler and the
-runtime both ran. Chromium gates every pull request; Firefox and WebKit run
-nightly. Some fixtures exist to pin known gaps rather than to demonstrate
-correct behaviour, and
+The file counts come from `ls test/unit/*.test.js | wc -l`,
+`ls test/integration/*.test.js | wc -l`, and
+`ls test/system/*.test.js | wc -l`. The E2E declaration count can be checked
+with `grep -RhoE 'test[[:space:]]*\(' test/e2e/specs | wc -l`; it is not a
+count of fixture applications. The 16 fixture directories can be counted with
+`find test/e2e/apps -mindepth 1 -maxdepth 1 -type d | wc -l`. The plugin count
+covers `avenx-i18n`, `avenx-persistence`, `avenx-charts` and `avenx-vite`.
+
+The E2E suite compiles 16 real fixture applications from `test/e2e/apps` with
+the actual CLI and drives the compiled bundles in a browser, so a test cannot
+pass unless the compiler and the runtime both ran. Chromium gates every pull
+request; Firefox and WebKit run nightly. Some fixtures exist to pin known gaps
+rather than to demonstrate correct behaviour, and
 [test/e2e/README.md](test/e2e/README.md) says which.
 
 > [!CAUTION]
