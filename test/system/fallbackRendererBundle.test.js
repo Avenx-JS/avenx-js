@@ -264,7 +264,11 @@ app.mount('Plain');
   // would make every assertion above pass, and would show up here as the
   // compiled-only build gaining the same 50 KB -- which the clean-build check
   // further down would then catch as well.
-  const FALLBACK_GZIP_CEILING_KB = 95;
+  //
+  // Raised from 95 to 100 KB as base runtime grew with route-level code splitting (#132),
+  // AVX_R37 (#1617), nested component mounting under app.mount() (#1641), and DeferManager
+  // unmount teardown (#1642), taking the fallback bundle from ~92 KB to 97.1 KB gzipped.
+  const FALLBACK_GZIP_CEILING_KB = 100;
   const FALLBACK_OVERHEAD_CEILING_KB = 70;
 
   const cleanBundleBytes = Buffer.byteLength(cleanBundle);
