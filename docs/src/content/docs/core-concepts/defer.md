@@ -113,7 +113,7 @@ Optional sub-tags can be used within `<@defer>`.
 <@defer when="visible">
   <@placeholder>
     <div class="skeleton-loader">
-      Diagramm wird geladen, sobald es sichtbar ist...
+      The chart will load when it becomes visible...
     </div>
   </@placeholder>
 
@@ -123,19 +123,26 @@ Optional sub-tags can be used within `<@defer>`.
 
 ### `<@loading>`
 
-`<@loading>` is recognized by the compiler and prepared as a separate loading template.
+In the compiled render-program runtime, `<@loading>` is another spelling for
+the waiting placeholder. Its content is displayed until the configured trigger
+fires, then replaced by the deferred content. If both `<@placeholder>` and
+`<@loading>` are provided, `<@placeholder>` takes precedence.
 
 ```html
 <@defer when="visible">
   <@loading>
-    <div class="spinner">Profil wird geladen...</div>
+    <div class="spinner">Loading profile...</div>
   </@loading>
 
   <UserProfileDetails user="{{ state.user }}" />
 </@defer>
 ```
 
-**Current status:** In the current synchronous runtime, the `<@loading>` template is not yet displayed. Once the trigger is fired, the deferred content is rendered directly. Active display of the loading state can be added with future asynchronous loading support.
+The fallback string renderer recognizes `<@loading>` but currently only stores
+its template; it does not display that template while waiting. Use
+`<@placeholder>` for a waiting state that works with either renderer.
+Neither spelling represents a separate asynchronous loading phase after the
+trigger fires.
 
 ---
 
@@ -177,6 +184,7 @@ Processing of `<@defer>` takes place in two primary steps:
 
 1. **Compilation step:** The compiler recognizes `<@defer>` and lowers it into a **render program** (or converts it into a special defer container when falling back to the **string renderer** via `ComponentParser`). Depending on the content used, templates for `<@placeholder>`, `<@loading>`, and the deferred content itself can be stored within it.
 
-2. **Runtime step:** The `DeferManager` processes the defer containers and sets up the configured trigger. Depending on the trigger, it uses `requestIdleCallback`, `IntersectionObserver`, event listeners, or `setTimeout`.
+2. **Runtime step:** The compiled renderer's `DeferBinding` (or the fallback string renderer's `DeferManager`) sets up the configured trigger. Depending on the trigger, it uses `requestIdleCallback`, `IntersectionObserver`, event listeners, or `setTimeout`.
 
-Once the trigger is fired, the `DeferManager` renders the deferred content and removes previously rendered placeholder content.
+Once the trigger fires, the active renderer displays the deferred content and
+removes any previously rendered placeholder.
