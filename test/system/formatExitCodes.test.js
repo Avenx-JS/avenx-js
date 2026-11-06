@@ -83,6 +83,68 @@ try {
     console.log('  ✅ files the globs match are still formatted');
   }
 
+  // --- --dry-run must not write ------------------------------------------
+  {
+    const unformatted = 'const  spacing  =  1;\n';
+    fs.writeFileSync(path.join(root, 'src/main.app.js'), unformatted);
+
+    const dry = avenx(['format', '--dry-run']);
+    assert.strictEqual(dry.status, 0, `format --dry-run must exit 0 even when files would change:\n${dry.output}`);
+    const afterDryRun = fs.readFileSync(path.join(root, 'src/main.app.js'), 'utf8');
+    assert.strictEqual(afterDryRun, unformatted, `format --dry-run must not write any file:\n${dry.output}`);
+    assert.ok(
+      dry.output.includes('src/main.app.js'),
+      `format --dry-run must list the files that would change:\n${dry.output}`,
+    );
+    console.log('  ✅ --dry-run lists unformatted files and writes nothing');
+  }
+
+  // --- --check fails on unformatted files and never writes ----------------
+  {
+    const unformatted = 'const  spacing  =  1;\n';
+    fs.writeFileSync(path.join(root, 'src/main.app.js'), unformatted);
+
+    const check = avenx(['format', '--check']);
+    assert.notStrictEqual(
+      check.status,
+      0,
+      `format --check must exit non-zero when a file is not formatted:\n${check.output}`,
+    );
+    assert.strictEqual(
+      fs.readFileSync(path.join(root, 'src/main.app.js'), 'utf8'),
+      unformatted,
+      `format --check must not write any file:\n${check.output}`,
+    );
+    assert.ok(
+      check.output.includes('src/main.app.js'),
+      `format --check must list the unformatted files:\n${check.output}`,
+    );
+    console.log('  ✅ --check lists unformatted files, exits non-zero, and writes nothing');
+
+    // Once the project is formatted, --check passes.
+    assert.strictEqual(avenx(['format']).status, 0, 'format should succeed');
+    const clean = avenx(['format', '--check']);
+    assert.strictEqual(clean.status, 0, `format --check must exit 0 on a formatted project:\n${clean.output}`);
+    console.log('  ✅ --check exits 0 on a formatted project');
+  }
+
+  // --- unknown flags are rejected, not ignored ----------------------------
+  {
+    const unformatted = 'const  spacing  =  1;\n';
+    fs.writeFileSync(path.join(root, 'src/main.app.js'), unformatted);
+
+    const typo = avenx(['format', '--wirte']);
+    assert.notStrictEqual(typo.status, 0, `an unknown format flag must fail:\n${typo.output}`);
+    assert.strictEqual(
+      fs.readFileSync(path.join(root, 'src/main.app.js'), 'utf8'),
+      unformatted,
+      `an unknown format flag must not format in place:\n${typo.output}`,
+    );
+    assert.ok(typo.output.includes('--wirte'), `the unknown flag must be named in the output:\n${typo.output}`);
+    console.log('  ✅ an unknown flag is rejected and writes nothing');
+    fs.writeFileSync(path.join(root, 'src/main.app.js'), 'const spacing = 1;\n');
+  }
+
   // --- a file Prettier cannot parse still fails ---------------------------
   {
     fs.writeFileSync(path.join(root, 'broken.js'), 'const a = {');

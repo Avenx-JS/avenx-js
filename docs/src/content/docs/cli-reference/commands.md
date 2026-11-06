@@ -1024,6 +1024,14 @@ It takes the same `--json` and `--depth` options, resolves symbols the same way,
 
 Formats project components, pages, stylesheets, JavaScript, Markdown and JSON files in place with Prettier. The command loads Avenx's Prettier plugin so Prettier can parse Avenx template syntax in component and page files.
 
+#### Modes
+
+- `avenx format` formats the files in place.
+- `avenx format --dry-run` (or `-d`) lists the files that would change and writes nothing. It exits 0 when files would change.
+- `avenx format --check` writes nothing, lists the files that are not formatted, and exits non-zero if any are found. It exits 0 on a formatted project. Use it in CI or a pre-commit hook.
+
+Any other flag is rejected with an error and the command exits non-zero, so a typo such as `--wirte` never formats files in place.
+
 #### Files Formatted
 
 The command passes these globs to Prettier:
@@ -1045,4 +1053,4 @@ Run this from the project root to format the project files:
 npx avenx format
 ```
 
-The command exits with a non-zero status if Prettier fails. Because it uses `--write`, review the resulting changes before committing them.
+The command exits with a non-zero status if Prettier fails. Because it uses `--write`, review the resulting changes before committing them. To check formatting without changing files, use `npx avenx format --check`.

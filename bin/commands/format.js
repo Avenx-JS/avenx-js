@@ -38,11 +38,41 @@ function resolvePrettierBin(baseDir, frameworkDir) {
  * makes Prettier skip the empty globs instead; a glob that matches files is
  * still formatted, and a genuine failure -- a syntax error, a plugin crash --
  * still exits non-zero through the status propagation below.
+ * With `--dry-run` Prettier lists the files that would change and writes
+ * nothing. Prettier exits 1 in that case; a dry run treats that status as
+ * "files would change" and still exits 0, so existing scripts that run
+ * `avenx format --dry-run` are not broken. Only a genuine failure exits non-zero.
+ * With `--check` Prettier lists the files that are not formatted, writes
+ * nothing, and exits 1 when any is found, so CI and pre-commit hooks fail.
+ * Any flag other than the ones above is rejected rather than ignored, so a
+ * typo such as `--wirte` cannot silently format in place.
  * @param {object} cli - AvenxCLI instance containing baseDir and frameworkDir.
+ * @param {string[]} [args] - Command arguments: `--dry-run` / `-d` or `--check`.
  * @returns {void}
  */
-export function runFormat(cli) {
-  console.log('Formatting project files...');
+export function runFormat(cli, args = []) {
+  const allowedFlags = ['--dry-run', '-d', '--check'];
+  const unknownFlags = args.filter((arg) => arg.startsWith('-') && !allowedFlags.includes(arg));
+  if (unknownFlags.length > 0) {
+    console.error(`Unknown option(s) for avenx format: ${unknownFlags.join(', ')}`);
+    console.error('Usage: avenx format [--dry-run | --check]');
+    process.exitCode = 1;
+    return;
+  }
+
+  const dryRun = args.includes('--dry-run') || args.includes('-d');
+  const check = args.includes('--check');
+  if (dryRun && check) {
+    console.error('avenx format: use either --dry-run or --check, not both.');
+    process.exitCode = 1;
+    return;
+  }
+
+  if (check) {
+    console.log('Checking project formatting (no files will be written)...');
+  } else {
+    console.log(dryRun ? 'Checking project files (dry run)...' : 'Formatting project files...');
+  }
 
   try {
     const pluginPath = path.join(cli.frameworkDir, 'lib', 'core', 'tooling', 'prettierPlugin.js');
@@ -54,7 +84,7 @@ export function runFormat(cli) {
         '--plugin',
         pluginPath,
         '--no-error-on-unmatched-pattern',
-        '--write',
+        check ? '--check' : dryRun ? '--list-different' : '--write',
         'src/**/*.component.js',
         'src/**/*.page.js',
         'src/**/*.css',
@@ -69,8 +99,23 @@ export function runFormat(cli) {
       },
     );
 
-    console.log('Formatting completed successfully.');
+    if (check) {
+      console.log('All matched files are formatted; no files were written.');
+    } else {
+      console.log(dryRun ? 'Dry run completed; no files were written.' : 'Formatting completed successfully.');
+    }
   } catch (error) {
+    if (dryRun && error?.status === 1) {
+      console.log('Files listed above would change; no files were written.');
+      return;
+    }
+
+    if (check && error?.status === 1) {
+      console.error('Files listed above are not formatted; run "avenx format" to fix them.');
+      process.exitCode = 1;
+      return;
+    }
+
     console.error('Formatting failed.');
 
     if (error?.status !== undefined) {

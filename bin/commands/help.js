@@ -35,7 +35,7 @@ ${bold(cyan('Commands:'))}
   ${green('trace prune (clean)')}       ${gray('Remove stored traces')}
   ${green('serve [port]')}              ${gray('Start dev server with hot-reload (default: 3000)')}
   ${green('watch (w)')}                 ${gray('Watch for file changes and rebuild automatically')}
-  ${green('format')}                    ${gray('Format project files using Prettier')}
+  ${green('format')}                    ${gray('Format project files using Prettier (--dry-run lists, --check fails if unformatted)')}
   ${green('help')}                      ${gray('Show this help message')}
   
 ${bold(cyan('Options:'))}
