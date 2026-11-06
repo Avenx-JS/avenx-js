@@ -218,6 +218,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://reneturcios.replit.app"><img src="https://avatars.githubusercontent.com/u/95189389?v=4?s=100" width="100px;" alt="Rene Turcios"/><br /><sub><b>Rene Turcios</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=CloudCorpRecords" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bbs-669"><img src="https://avatars.githubusercontent.com/u/176799736?v=4?s=100" width="100px;" alt="bbs-669"/><br /><sub><b>bbs-669</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=bbs-669" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/O1sumitkumar"><img src="https://avatars.githubusercontent.com/u/109774891?v=4?s=100" width="100px;" alt="Sumeet Jha"/><br /><sub><b>Sumeet Jha</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=O1sumitkumar" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/DaniLlano"><img src="https://avatars.githubusercontent.com/u/67348891?v=4?s=100" width="100px;" alt="DaniLlano"/><br /><sub><b>DaniLlano</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=DaniLlano" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
