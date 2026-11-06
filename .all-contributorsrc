@@ -1364,6 +1364,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "bbs-669",
+      "name": "bbs-669",
+      "avatar_url": "https://avatars.githubusercontent.com/u/176799736?v=4",
+      "profile": "https://github.com/bbs-669",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
