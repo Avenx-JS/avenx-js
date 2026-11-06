@@ -16,6 +16,36 @@ rest of that directory, and nothing replaced it, so the reference was dead.)
 Production-readiness cycle. No public API was removed and no documented feature
 was dropped. Behaviour changes are listed with their migration.
 
+### Changed — the published package has no dependencies
+
+- **`acorn` is no longer a dependency.** `"dependencies"` is now empty, so
+  `npm install avenx-core` installs Avenx and nothing else. The runtime never
+  had a third-party dependency; the compiler did, because it parsed JavaScript
+  with acorn in four places — the action compiler (`codegen/actions.js`), the
+  `csp.strict` scan (`bundle/validate.js`), the component reader
+  (`ComponentParser.js`) and the declaration reader (`parser/declarations.js`).
+
+  All four now use `lib/compiler/parser/js/`, an ECMAScript parser the project
+  owns: a re-windable tokenizer and a recursive-descent parser producing ESTree
+  nodes with source offsets, which is what the action compiler needs since it
+  rewrites bodies by offset. It refuses what it does not model, with a file and
+  a position, rather than guessing — the same compile-or-refuse rule the rest of
+  the compiler follows.
+
+  Nothing about compiler behaviour changed. Generated action source is identical
+  body for body, and the error codes, messages and positions are the same;
+  `test/unit/actionCompilerParserSwap.test.js` records that output so it cannot
+  drift. acorn stays as a development dependency and is still the authority on
+  what JavaScript is: `test/unit/jsParserDifferential.test.js` parses the whole
+  repository — including the built bundles — plus thousands of generated and
+  deliberately damaged sources with both parsers, and fails on any disagreement
+  about the tree, the offsets, or the refusal.
+
+  `test/system/noRuntimeDependencies.test.js` keeps the property from being lost
+  again: it fails if a dependency appears in the manifest, if the lockfile
+  resolves anything that is not development-only, or if a file that ships
+  imports a bare specifier that is not a Node builtin.
+
 ### Fixed — found by an adversarial pass over the release candidate
 
 A second review followed the documentation literally, built a realistic
