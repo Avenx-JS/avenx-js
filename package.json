@@ -17,12 +17,15 @@
       "default": "./lib/core/index.js"
     },
     "./runtime/interpreter": {
+      "types": "./lib/core/expression/interpreter.d.ts",
       "default": "./lib/core/expression/interpreter.js"
     },
     "./runtime/string-renderer": {
+      "types": "./lib/core/renderer/installStringRenderer.d.ts",
       "default": "./lib/core/renderer/installStringRenderer.js"
     },
     "./runtime/virtual-list": {
+      "types": "./lib/core/runtime/installVirtualList.d.ts",
       "default": "./lib/core/runtime/installVirtualList.js"
     },
     "./core": {
