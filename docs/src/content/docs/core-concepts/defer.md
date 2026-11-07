@@ -113,7 +113,7 @@ Optional sub-tags can be used within `<@defer>`.
 <@defer when="visible">
   <@placeholder>
     <div class="skeleton-loader">
-      Diagramm wird geladen, sobald es sichtbar ist...
+      The chart will load when it becomes visible...
     </div>
   </@placeholder>
 
@@ -123,19 +123,21 @@ Optional sub-tags can be used within `<@defer>`.
 
 ### `<@loading>`
 
-`<@loading>` is recognized by the compiler and prepared as a separate loading template.
+On the compiled rendering path, `<@loading>` is an alternative spelling of `<@placeholder>`. Its content is displayed while waiting for the trigger and replaced by the deferred content when the trigger fires.
 
 ```html
 <@defer when="visible">
   <@loading>
-    <div class="spinner">Profil wird geladen...</div>
+    <div class="spinner">Loading profile...</div>
   </@loading>
 
   <UserProfileDetails user="{{ state.user }}" />
 </@defer>
 ```
 
-**Current status:** In the current synchronous runtime, the `<@loading>` template is not yet displayed. Once the trigger is fired, the deferred content is rendered directly. Active display of the loading state can be added with future asynchronous loading support.
+These branches describe the waiting state before the trigger, not a separate asynchronous loading phase after it. Use one branch per `<@defer>` block. If both are supplied, the compiled rendering path uses `<@placeholder>`.
+
+> **String-renderer fallback:** `<@placeholder>` is displayed while waiting for the trigger. `<@loading>` is parsed into a separate template, but `DeferManager` does not display it. Use `<@placeholder>` if your template may use the string-renderer fallback.
 
 ---
 
@@ -167,7 +169,7 @@ Depending on the trigger used, these include:
 When the trigger is fired and the deferred content is loaded, the associated trigger cleanup function is executed.
 
 > [!NOTE]
-> Unmounting a component releases its pending `<@defer>` triggers: observers, timers, idle callbacks and listeners are cancelled, and a trigger that has not fired never renders into the detached component.
+> Unmounting a component releases its pending `<@defer>` triggers on both rendering paths: compiled blocks dispose their trigger subscriptions, and the string-renderer fallback calls `DeferManager.destroy()`. Observers, timers, idle callbacks and listeners are cancelled, and a trigger that has not fired never renders into the detached component.
 
 ---
 
@@ -177,6 +179,6 @@ Processing of `<@defer>` takes place in two primary steps:
 
 1. **Compilation step:** The compiler recognizes `<@defer>` and lowers it into a **render program** (or converts it into a special defer container when falling back to the **string renderer** via `ComponentParser`). Depending on the content used, templates for `<@placeholder>`, `<@loading>`, and the deferred content itself can be stored within it.
 
-2. **Runtime step:** The `DeferManager` processes the defer containers and sets up the configured trigger. Depending on the trigger, it uses `requestIdleCallback`, `IntersectionObserver`, event listeners, or `setTimeout`.
+2. **Runtime step:** Compiled templates use `DeferBinding`; the string-renderer fallback uses `DeferManager` to process defer containers. Both set up the configured trigger using `requestIdleCallback`, `IntersectionObserver`, event listeners, or `setTimeout`, depending on the trigger.
 
-Once the trigger is fired, the `DeferManager` renders the deferred content and removes previously rendered placeholder content.
+Once the trigger is fired, the active rendering path renders the deferred content and removes previously rendered placeholder content.
