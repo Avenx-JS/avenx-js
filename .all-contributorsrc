@@ -1409,6 +1409,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "jdotc1",
+      "name": "Jeff",
+      "avatar_url": "https://avatars.githubusercontent.com/u/138259519?v=4",
+      "profile": "https://github.com/jdotc1",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
