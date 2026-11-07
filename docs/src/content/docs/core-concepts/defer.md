@@ -135,9 +135,9 @@ On the compiled rendering path, `<@loading>` is an alternative spelling of `<@pl
 </@defer>
 ```
 
-These branches describe the waiting state before the trigger, not a separate asynchronous loading phase after it. Use one branch per `<@defer>` block. If both are supplied, the compiled rendering path uses `<@placeholder>`.
+These branches describe the waiting state before the trigger, not a separate asynchronous loading phase after it. Use one branch per `<@defer>` block. If both `<@placeholder>` and `<@loading>` are provided, `<@placeholder>` takes precedence on the compiled rendering path.
 
-> **String-renderer fallback:** `<@placeholder>` is displayed while waiting for the trigger. `<@loading>` is parsed into a separate template, but `DeferManager` does not display it. Use `<@placeholder>` if your template may use the string-renderer fallback.
+> **String-renderer fallback:** `<@placeholder>` is displayed while waiting for the trigger. The fallback string renderer recognizes `<@loading>` and parses it into a separate template, but `DeferManager` does not display it while waiting. Use `<@placeholder>` if your template may use the string-renderer fallback.
 
 ---
 
@@ -181,4 +181,4 @@ Processing of `<@defer>` takes place in two primary steps:
 
 2. **Runtime step:** Compiled templates use `DeferBinding`; the string-renderer fallback uses `DeferManager` to process defer containers. Both set up the configured trigger using `requestIdleCallback`, `IntersectionObserver`, event listeners, or `setTimeout`, depending on the trigger.
 
-Once the trigger is fired, the active rendering path renders the deferred content and removes previously rendered placeholder content.
+Once the trigger fires, the active rendering path renders the deferred content and removes previously rendered placeholder content.
