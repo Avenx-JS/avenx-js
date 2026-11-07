@@ -9,7 +9,8 @@
  * development dependency for exactly one job: being the independent opinion
  * this test checks against.
  *
- * Four corpora, because they fail differently:
+ * Two deterministic corpora gate pull requests. Generated and damaged sources
+ * run separately in test/fuzz/jsParser.test.js on the nightly/on-demand tier.
  *
  * 1. **The repository itself.** Every `.js` file under `lib/`, `bin/`,
  *    `scripts/`, `test/` and `templates/` — including the built bundles
@@ -18,11 +19,6 @@
  * 2. **A hand-written corpus** of syntax that does not appear in this
  *    repository: `with`, labels, legacy octals, `new.target`, import
  *    attributes, nested templates, private-name `in`, getters in patterns.
- * 3. **Generated programs**, which nest those constructs in combinations
- *    nobody would write by hand.
- * 4. **Damaged sources**, which is the half that matters most: a parser that
- *    quietly accepts what acorn rejects is a parser that will one day hand the
- *    code generator something no engine will run.
  *
  * Node ranges are compared as strictly as node types, because the action
  * compiler rewrites source by offset: a range that is off by one does not fail
@@ -34,22 +30,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { differential, listJsFiles } from '../helpers/parserOracle.js';
-import { generateProgram, mutate, Rng } from '../helpers/jsSyntaxFuzzer.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-
-/**
- * How many generated programs and mutations to try.
- *
- * The default is enough to re-find every defect this test caught while the
- * parser was being written; CI raises it.
- * @type {number}
- */
-const iterations = process.env.FAST_CHECK_NUM_RUNS
-  ? parseInt(process.env.FAST_CHECK_NUM_RUNS, 10)
-  : process.env.CI_FUZZ
-    ? 20000
-    : 2000;
 
 console.log('\n🔬 JavaScript parser differential tests (oracle: acorn)\n');
 
@@ -229,44 +211,4 @@ console.log(`  ✅ ${INVALID.length} invalid cases are refused by both, as scrip
   console.log('  ✅ the single divergence from acorn is the one V8 agrees with.');
 }
 
-// ---------------------------------------------------------------------------
-// 3. Generated programs.
-// ---------------------------------------------------------------------------
-
-for (let seed = 1; seed <= iterations; seed += 1) {
-  const source = generateProgram(seed);
-  for (const sourceType of ['script', 'module']) {
-    const difference = differential(source, { sourceType, locations: true });
-    assert.strictEqual(
-      difference,
-      null,
-      `generated seed ${seed} as ${sourceType}: ${difference}\n--- source ---\n${source}\n`,
-    );
-  }
-}
-console.log(`  ✅ ${iterations} generated programs parse identically as scripts and as modules.`);
-
-// ---------------------------------------------------------------------------
-// 4. Damaged sources: agreement on refusal.
-// ---------------------------------------------------------------------------
-
-const mutationCorpus = listJsFiles(path.join(rootDir, 'lib')).slice(0, 80);
-const rng = new Rng(20261106);
-for (let i = 0; i < iterations; i += 1) {
-  const file = mutationCorpus[rng.int(mutationCorpus.length)];
-  const source = fs.readFileSync(file, 'utf8');
-  const from = rng.int(Math.max(1, source.length - 500));
-  const slice = source.slice(from, from + 200 + rng.int(400));
-  const damaged = mutate(slice, i + 1);
-  for (const sourceType of ['script', 'module']) {
-    const difference = differential(damaged, { sourceType });
-    assert.strictEqual(
-      difference,
-      null,
-      `mutation ${i} of ${path.relative(rootDir, file)} as ${sourceType}: ${difference}\n--- source ---\n${damaged}\n`,
-    );
-  }
-}
-console.log(`  ✅ ${iterations} damaged sources are accepted or refused identically.`);
-
-console.log('\n✅ JavaScript parser differential tests passed');
+console.log('\n✅ Deterministic JavaScript parser differential tests passed');

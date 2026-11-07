@@ -58,6 +58,13 @@ A quick start for working on the codebase:
    npm run test:system
    ```
 
+   The unit tier includes the deterministic JavaScript parser differential checks
+   (repository sources and hand-written cases). Generated programs and damaged
+   sources live in `test/fuzz/jsParser.test.js`; run both parser fuzz suites with
+   `npm run test:fuzz`. JavaScript fuzzing defaults to 2,000 cases per corpus
+   locally and 20,000 nightly. Set `FAST_CHECK_NUM_RUNS` to override that count;
+   the nightly workflow's manual `num_runs` input sets it for both parser suites.
+
 4. **Run a specific test or matching group.** The test runner accepts a file path or a substring:
 
    ```bash

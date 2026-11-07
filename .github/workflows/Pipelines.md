@@ -84,13 +84,18 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 - **Triggers**: Push to `main`, `workflow_dispatch`.
 - **Steps**: Builds the Astro documentation project in `docs/` and deploys static site artifacts to GitHub Pages.
 
-### 7. Template Parser Fuzz Testing (`fuzz-nightly.yml`)
+### 7. Template and JavaScript Parser Fuzz Testing (`fuzz-nightly.yml`)
 
 - **Triggers**:
   - Scheduled cron: `0 2 * * *` (Nightly at 02:00 UTC = 04:00 CEST / 03:00 CET).
   - Manually via `workflow_dispatch` with optional `num_runs` parameter (defaults to 1000).
 - **Purpose**:
   Runs property-based fuzz testing using `fast-check` to validate template compiler and parser invariants across randomized-but-valid template structures (combinations of `<@for>`, `<@empty>`, slots, conditionals, dynamic bindings, and deep nesting). Deliberately kept off the standard pull request gate to prevent slowing down PR checks.
+  A separate step runs `test/fuzz/jsParser.test.js`: 20,000 generated programs
+  and 20,000 damaged sources are compared with Acorn on scheduled runs. The
+  manual `num_runs` input overrides `FAST_CHECK_NUM_RUNS` for both steps (manual
+  default: 1,000). Deterministic repository and hand-written JavaScript cases
+  remain in `test/unit/jsParserDifferential.test.js` under the normal PR gate.
 - **Node.js Compatibility Matrix**:
   Executes across all supported major Node.js versions (`[18, 20, 22]`).
 - **Invariants Verified**:
