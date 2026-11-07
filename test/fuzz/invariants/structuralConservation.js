@@ -11,6 +11,7 @@
 import assert from 'node:assert';
 import fc from 'fast-check';
 import { templateTreeArbitrary } from '../generators/templateTree.js';
+import { isDeclaredRefusal } from './compilerResilience.js';
 import { buildTemplateIR } from '../../../lib/compiler/ir/build.js';
 import { IRKind, walkIR } from '../../../lib/compiler/ir/nodes.js';
 
@@ -22,9 +23,17 @@ export function testStructuralConservation(numRuns = 200) {
   console.log(`🧪 Invariant 4: Structural conservation of control-flow and slots [${numRuns} runs]...`);
 
   fc.assert(
-    fc.property(templateTreeArbitrary(), ({ template, meta }) => {
+    fc.property(templateTreeArbitrary(), ({ template, meta, root }) => {
       const built = buildTemplateIR(template, {});
-      assert.strictEqual(built.refusal, null, `Unexpected refusal on valid syntax: ${JSON.stringify(built.refusal)}`);
+      if (built.refusal) {
+        // A declared refusal leaves no IR to conserve counts over. It is only
+        // acceptable for a SCOPED_SLOT refusal of a tree holding a scoped slot.
+        assert.ok(
+          isDeclaredRefusal(built.refusal, root),
+          `Unexpected refusal on valid syntax: ${JSON.stringify(built.refusal)}`,
+        );
+        return true;
+      }
 
       let irSlotsCount = 0;
       const irSlotNames = [];
