@@ -1391,6 +1391,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "diyaryavuz",
+      "name": "Diyar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/119570818?v=4",
+      "profile": "https://www.linkedin.com/in/diyaryavuz/",
+      "contributions": [
+        "test"
+      ]
     }
   ],
   "commitType": "docs",
