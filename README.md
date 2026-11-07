@@ -634,9 +634,13 @@ is compiled entirely or not at all.
 
 ### Size and dependencies
 
-The published package has **one dependency**, `acorn`, used only by the
-compiler; it does not appear in an application bundle. The runtime you ship has
-no third-party dependencies.
+The published package has **no dependencies**: `npm install avenx-core`
+installs Avenx and nothing else. That holds for the compiler as well as for the
+runtime — the compiler parses JavaScript with its own parser
+(`lib/compiler/parser/js/`) rather than a third-party one, and
+`test/system/noRuntimeDependencies.test.js` fails the build if a dependency is
+ever reintroduced, by the manifest, by the lockfile, or by an import in a file
+that ships.
 
 A freshly scaffolded application, production build, measured with
 `avenx init -y && avenx build` (verified 2026-11-06):

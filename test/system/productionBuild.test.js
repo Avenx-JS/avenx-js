@@ -43,9 +43,13 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * sentences and the plumbing that carries the reason into the fallback -- and it
  * took the bundle from 359.7 to 361.1 KB. 375 provides sufficient headroom alongside
  * router lazy loading additions.
+ *
+ * Raised from 375 to 385 for nested component mounting under app.mount() (#1641)
+ * and DeferManager unmount teardown (#1642), which took the raw bundle to ~371 KB.
+ * 385 restores adequate headroom.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 375;
+const PRODUCTION_SIZE_CEILING_KB = 385;
 
 /**
  * Ceiling for the same bundle over the wire, in KB.
@@ -70,9 +74,14 @@ const PRODUCTION_SIZE_CEILING_KB = 375;
  * the same change as the raw ceiling above: it took the gzipped bundle from
  * 83.3 to 83.8 KB, and router lazy loading additions brought transferred size to ~84.5 KB.
  * 86 restores headroom comfortably inside the kilobytes an accidental import costs.
+ *
+ * Raised from 86 to 88 for nested component mounting under app.mount() (#1641)
+ * and DeferManager unmount teardown (#1642): the runtime additions took the
+ * gzipped bundle to ~86.1 KB, tripping the ceiling. 88 restores headroom
+ * comfortably inside the kilobytes an accidental import costs.
  * @type {number}
  */
-const GZIPPED_CEILING_KB = 86;
+const GZIPPED_CEILING_KB = 88;
 
 /**
  * Source that must never appear in a production bundle.

@@ -1391,6 +1391,24 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "diyaryavuz",
+      "name": "Diyar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/119570818?v=4",
+      "profile": "https://www.linkedin.com/in/diyaryavuz/",
+      "contributions": [
+        "test"
+      ]
+    },
+    {
+      "login": "Akash-Dhanwate",
+      "name": "AKASH DHANWATE ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/213058644?v=4",
+      "profile": "http://www.linkedin.com/in/4kashdhanwate",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",

@@ -3,6 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { pathToFileURL } from 'url';
 import { spawnSync } from 'child_process';
 import AvenxCompiler from '../../lib/compiler.js';
 
@@ -39,6 +40,12 @@ function project(files) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-codesplit-'));
   projects.push(root);
 
+  // Generated page chunks use top-level await and are ESM. Mark the temporary
+  // project accordingly so Node treats its .js chunks as modules on Node 18+.
+  if (!Object.prototype.hasOwnProperty.call(files, 'package.json')) {
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'module' }));
+  }
+
   for (const [relative, contents] of Object.entries(files)) {
     const full = path.join(root, relative);
     fs.mkdirSync(path.dirname(full), { recursive: true });
@@ -50,9 +57,11 @@ function project(files) {
   fs.mkdirSync(nodeModulesDir, { recursive: true });
   const symlinkPath = path.join(nodeModulesDir, 'avenx-core');
   try {
-    fs.symlinkSync(repoRoot, symlinkPath, 'dir');
-  } catch {
-    // Ignore if symlink already exists
+    fs.symlinkSync(repoRoot, symlinkPath, process.platform === 'win32' ? 'junction' : 'dir');
+  } catch (error) {
+    if (!fs.existsSync(symlinkPath)) {
+      throw new Error(`Could not link avenx-core into the test project: ${error.message}`, { cause: error });
+    }
   }
 
   return root;
@@ -116,7 +125,7 @@ app.initRouter({
     assert.ok(aboutChunk.includes('export default About'), 'about chunk exports default About');
 
     // Test dynamic import of chunk works
-    const importedHome = await import(path.join(root, 'dist/pages/home.page.js'));
+    const importedHome = await import(pathToFileURL(path.join(root, 'dist/pages/home.page.js')).href);
     assert.ok(importedHome.default, 'Chunk exports default class');
     assert.strictEqual(typeof importedHome.default, 'function', 'Exported page is a class constructor');
 

@@ -42,7 +42,7 @@ Component Template Source
 | **1. Parser** | `parser/htmlTree.js`, `parser/tokenizer.js` | Raw template string | `HTMLNode` tree | Tokenizes tags and constructs a lightweight DOM-like AST. Intentionally non-spec-compliant; guarantees `serializeHTML(parseHTML(x))` round-trips. |
 | **2. IR Builder** | `ir/build.js`, `ir/nodes.js` | `HTMLNode` tree (post-scoping) | Typed Template IR (`IRKind`) | Converts semantic constructs (`<@for>`, `<@if>`, `<slot>`, `<@defer>`) into typed IR nodes *before* any runtime directive rewriting occurs. |
 | **3. Lowering** | `ir/lower.js` | Typed Template IR | Render `Program` + Interned Expressions | Emits a static HTML skeleton, runtime operations (`ops`), and indexed sub-blocks. Interns dynamic expression strings into positional indices. |
-| **4. Codegen** | `codegen/table.js`, `codegen/expression.js` | Interned expression strings | Module source tables (`__axExprs`) | Compiles expressions to AST via Acorn, checks security invariants, and emits closure tables for runtime evaluation. |
+| **4. Codegen** | `codegen/table.js`, `codegen/expression.js` | Interned expression strings | Module source tables (`__axExprs`) | Compiles expressions to an AST with the compiler's own parser (`parser/js/`), checks security invariants, and emits closure tables for runtime evaluation. |
 
 ---
 
