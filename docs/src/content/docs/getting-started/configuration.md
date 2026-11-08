@@ -41,6 +41,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `enableProfiling` | `boolean` | `false` | Enables performance profiling by wrapping lifecycle hooks, rendering, and DOM patching with browser Performance API marks and measures. |
 | `debug.debugReactivity` | `boolean` | `false` | Enables verbose reactivity dependency tracking and watcher execution logging to the browser console during development. |
 | `treeShakeComponents` | `boolean` | `true` | Removes unused components from the compiled bundle during compilation. Set to `false` to compile all discovered components. |
+| `codeSplitting` | `boolean` | `false` | Emits every page under `src/pages/` as its own chunk in `<distDir>/pages/`, fetched on first navigation, instead of bundling it into `<outputName>.js`. `avenx build --code-splitting` sets it for one build. See [Code splitting](#code-splitting-codesplitting). |
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
 | `templateGlobals` | `string[]` | `[]`                 | Identifiers a plugin publishes into every component's template scope through `app.mixin()`. Declaring them lets template validation accept `{{ t('home.title') }}` without weakening the check for anything else. See [Plugin-provided template globals](#plugin-provided-template-globals). |
 | `warnings`     | `object`   | `{}`                   | Map of compiler warning codes (`AVX_W01`, `AVX_W03`, etc.) to severity overrides (`"off"`, `"ignore"`, `"warn"`, or `"error"`). |
@@ -272,6 +273,62 @@ When `treeShakeComponents` is:
 | `false` | All discovered components are compiled, even if they are not referenced directly. |
 
 In most applications, the default value of `true` should be used. Disable tree shaking only when your application depends on components that cannot be detected during compilation.
+
+## Code splitting (`codeSplitting`)
+
+By default `avenx build` writes one script, `<distDir>/<outputName>.js`, with every page class in it. With `codeSplitting` on, each page under `src/pages/` becomes its own ES module chunk that the browser fetches the first time the router navigates to it, so the initial download carries the runtime, the components and `main.app.js` but no page.
+
+### Configuration
+
+```json
+{
+  "codeSplitting": true
+}
+```
+
+`avenx build --code-splitting` (alias `--split`) turns it on for one build without touching the config. The config value is read by every command that compiles, so `avenx serve` and `avenx watch` build split output too; the flag is accepted by `avenx build` only.
+
+### What it emits
+
+For a project with `src/pages/home.page.js` and `src/pages/admin/users.page.js`, the default `outputName` and `distDir` produce:
+
+```text
+dist/
+├── bundle.js
+├── bundle.css
+├── bundle.css.map
+└── pages/
+    ├── home.page.js
+    └── admin/
+        └── users.page.js
+```
+
+- **One chunk per page**, at `<distDir>/pages/<path>`, where `<path>` is the page's path under `src/pages/`, subdirectories included. The chunk name does not depend on `outputName`: with `"outputName": "app"` the bundle is `dist/app.js` and the chunks are still `dist/pages/*.page.js`.
+- **Each chunk is an ES module** that uses top-level `await` and exports the page class as its default export. In production it is minified like the bundle.
+- **The bundle contains no page class.** Where an unsplit build imports and registers each page, a split build registers a loader:
+
+  ```javascript
+  app.registerPage("Home", () => import("./pages/home.page.js"));
+  app.registerPage("Users", () => import("./pages/admin/users.page.js"));
+  ```
+
+  The router calls the loader on the first navigation to that page and keeps the loaded class in its place, so each chunk is fetched once.
+
+- **Styles are not split.** A page's `.page.css` is still compiled into `<outputName>.css`, so the stylesheet link in `index.html` does not change.
+
+The build lists the chunks under **Asset sizes** with the other output files.
+
+### How `index.html` loads them
+
+Nothing changes in `index.html`: it loads `<distDir>/<outputName>.js` with the same `<script src>` tag as an unsplit build. The browser resolves the `./pages/...` specifier against the bundle's own URL, so the chunks are fetched from `<distDir>/pages/` wherever the bundle is served from, and `<distDir>` has to be deployed as one tree. A chunk reads the runtime from the `Avenx` global the bundle installs, so the bundle must have run before a chunk is evaluated; registering the loaders from the bundle guarantees that order.
+
+### What it does not change
+
+Page names, routes and `initRouter` are the ones of an unsplit build. Components and bridges are never split: they are bundled into `<outputName>.js` whichever pages use them. A dynamic `import()` in your own code is still bundled eagerly, as described in [Dynamic imports, and code splitting](/guides/deployment#dynamic-imports-and-code-splitting).
+
+:::caution
+A split page whose template contains an expression (`{{ title }}`, a directive binding, an inline handler) currently renders it empty in the browser and logs `AVX_R08` with `axGet is not a function`: the chunk looks for the compiled-expression helpers on the `Avenx` global, and the bundle does not put them there. Static markup in a split page renders, and the same page renders fully in an unsplit build. Until that is fixed, treat `codeSplitting` as experimental and verify a split build in a browser before deploying it.
+:::
 
 ## CSS Preprocessor & Style Settings (`style`)
 
