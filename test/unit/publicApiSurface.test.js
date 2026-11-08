@@ -81,6 +81,34 @@ function testPublicClassMembersAreDeclared() {
 }
 
 /**
+ * Every value the type definitions declare exists at runtime.
+ *
+ * `testAllRuntimeExportsAreDeclared` covers one direction. This is the other:
+ * an `export class`/`function`/`const` in index.d.ts is a promise that the
+ * binding exists on the barrel, and a type-only declaration is invisible to
+ * the check above. `Resource` shipped declared but undefined because nothing
+ * asserted this half.
+ */
+function testAllDeclaredValuesAreExported() {
+  console.log('🧪 Testing every declared value is exported from index.js...');
+
+  const declared = [
+    ...dts.matchAll(/^export\s+(?:declare\s+)?(?:class|function|const|let|var)\s+([A-Za-z0-9_$]+)/gm),
+  ].map((match) => match[1]);
+  const unique = [...new Set(declared)];
+  const missing = unique.filter((name) => !(name in runtime));
+
+  const detail =
+    'these values are declared in lib/core/index.d.ts but exported by nothing in ' +
+    `lib/core/index.js: ${missing.join(', ')}`;
+
+  assert.deepStrictEqual(missing, [], detail);
+  assert.ok(unique.length > 90, 'the runtime declaration file should declare a substantial public surface');
+
+  console.log(`  ✅ All ${unique.length} declared values exported.`);
+}
+
+/**
  * The package's declared entry points must exist on disk.
  */
 function testPackageTypeEntryPointsExist() {
@@ -101,6 +129,7 @@ function testPackageTypeEntryPointsExist() {
 
 try {
   testAllRuntimeExportsAreDeclared();
+  testAllDeclaredValuesAreExported();
   testPublicClassMembersAreDeclared();
   testPackageTypeEntryPointsExist();
   console.log('🎉 All public API surface tests passed successfully!');
