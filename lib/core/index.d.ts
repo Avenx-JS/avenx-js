@@ -1153,6 +1153,18 @@ export function isReactive(value: unknown): boolean;
 /** Marks an object so it will not be wrapped by reactive proxies. */
 export function markRaw<T extends object>(target: T): T;
 
+/** Returns true when value is a raw target a reactive proxy may wrap. */
+export function isReactiveTarget(value: unknown): boolean;
+
+/** Reads the raw target behind a reactive proxy. */
+export const RAW_SYMBOL: symbol;
+
+/** Marks a value as an Avenx reactive proxy. */
+export const IS_REACTIVE_PROXY: symbol;
+
+/** Links a raw target back to the proxy that wraps it. */
+export const PROXY_REF_SYMBOL: symbol;
+
 /**
  * Factory for creating state proxy traps.
  */

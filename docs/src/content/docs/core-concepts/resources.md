@@ -55,7 +55,7 @@ Under the hood, every declared resource creates an instance of the `Resource` cl
 ### Constructor Signature
 
 ```javascript
-import { Resource } from 'avenx-core/reactive';
+import { Resource } from 'avenx-core/runtime';
 
 const resource = new Resource(name, handlerFn, componentContext, options);
 ```

@@ -473,7 +473,7 @@ Pass a custom delegate or configuration mode to `AvenxApp.initRouter(routes, opt
 
 ```javascript
 import { AvenxApp } from 'avenx-core/runtime';
-import { MemoryNavigationDelegate } from 'avenx-core/runtime/navigation';
+import { MemoryNavigationDelegate } from 'avenx-core/runtime';
 
 // Method 1: Explicit MemoryNavigationDelegate instance
 const delegate = new MemoryNavigationDelegate('#/dashboard');

@@ -262,7 +262,7 @@ History traversal is delegated to whichever `NavigationDelegate` the router is c
 - **`MemoryNavigationDelegate`** maintains its own in-memory history array and cursor index instead of relying on `window.history`. Calling `go(delta)` moves that cursor and re-emits the resulting hash to subscribers, which makes backward/forward transitions deterministic and easy to assert in unit and integration tests, without a DOM or `jsdom` history mock.
 
 ```javascript
-import { MemoryNavigationDelegate } from 'avenx-core/runtime/navigation';
+import { MemoryNavigationDelegate } from 'avenx-core/runtime';
 
 const delegate = new MemoryNavigationDelegate('#/step-1');
 delegate.setHash('#/step-2');

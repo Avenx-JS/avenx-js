@@ -405,7 +405,7 @@ To test router transitions, guards, resolvers, and page title updates in Jest, V
 
 ```javascript
 import { AvenxApp } from 'avenx-core/runtime';
-import { MemoryNavigationDelegate } from 'avenx-core/runtime/navigation';
+import { MemoryNavigationDelegate } from 'avenx-core/runtime';
 import AuthGuard from '../src/guards/auth.guard.js';
 
 describe('Router Headless Tests', () => {
