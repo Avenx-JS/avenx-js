@@ -60,7 +60,9 @@ test('Suspense and Error Boundaries Integration', async (t) => {
     comp.mount(container);
     
     // Initially should show fallback
-    assert.strictEqual(container.innerHTML.includes('Loading users...'), true, 'Should render fallback immediately');
+    // textContent excludes the contents of an inert <template>, so this fails
+    // while the fallback is still unrendered markup rather than visible text.
+    assert.strictEqual(container.textContent.includes('Loading users...'), true, 'Fallback should be visible text while pending');
     assert.strictEqual(container.innerHTML.includes('Alice'), false, 'Should not render content yet');
 
     // Wait for promise to resolve
