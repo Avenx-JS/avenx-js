@@ -140,6 +140,7 @@ export function parseDiagnostic(severity, args) {
 
     const fileMatch =
       searchable.match(/in template of\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
+      searchable.match(/in stylesheet\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
       searchable.match(/in component\s+<([^>]+)>/i) ||
       searchable.match(/at\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
       searchable.match(/["']?([a-zA-Z0-9_\-/\\]+\.(?:component\.js|page\.js|js|mjs|cjs|html|css|json))(?![\w.])["']?/i);
