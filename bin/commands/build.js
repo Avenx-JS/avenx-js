@@ -70,6 +70,49 @@ export function buildProject(cli, options = {}) {
 }
 
 /**
+ * Runs one build and returns its diagnostics alongside the outcome.
+ *
+ * {@link buildProject} prints diagnostics and throws on failure, which is all
+ * `avenx build` needs. A long-lived caller -- the dev server -- needs the same
+ * pass as data, so it can put the diagnostics somewhere other than the
+ * terminal. The console is wrapped rather than silenced: everything still
+ * prints exactly as before, and the structured copies are collected on the
+ * side.
+ *
+ * Never throws: a failed build is reported as `ok: false` with the failure in
+ * both `error` and the last diagnostic, because the caller is a watch loop
+ * that must survive it.
+ * @param {object} cli - AvenxCLI instance containing config and baseDir.
+ * @param {object} [options] - Build options, forwarded to {@link buildProject}.
+ * @returns {{ok: boolean, result: object|null, error: Error|null, diagnostics: object[]}}
+ */
+export function runBuildPass(cli, options = {}) {
+  const diagnostics = [];
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  console.warn = (...messages) => {
+    diagnostics.push(parseDiagnostic('warning', messages));
+    originalWarn(...messages);
+  };
+  console.error = (...messages) => {
+    diagnostics.push(parseDiagnostic('error', messages));
+    originalError(...messages);
+  };
+
+  try {
+    const result = buildProject(cli, options);
+    return { ok: true, result, error: null, diagnostics };
+  } catch (error) {
+    diagnostics.push(parseDiagnostic('error', [error]));
+    return { ok: false, result: null, error, diagnostics };
+  } finally {
+    console.warn = originalWarn;
+    console.error = originalError;
+  }
+}
+
+/**
  * Cleans the project by deleting the build output directory.
  * @param {object} cli - AvenxCLI instance containing config and baseDir.
  */
@@ -94,6 +137,46 @@ function stripAnsi(str) {
   const ansiPattern = '(?:\\u001b|\\u009b)[[(#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nseries]';
   const ansiRegex = new RegExp(ansiPattern, 'g');
   return str.replace(ansiRegex, '').trim();
+}
+
+/**
+ * Splits a trailing caret code frame off a diagnostic message.
+ *
+ * Compiler errors append their frame to `message` (see
+ * `CompilerError.setLocation`), and warnings printed with one do the same. A
+ * consumer that renders the message and the frame in different places -- the
+ * dev-server error overlay puts the frame in a monospaced block -- needs them
+ * apart, so the frame is recognised by its gutter (` 12 | ...` and ` | ^^^`)
+ * and removed from the message.
+ * @param {string} message - The diagnostic text, frame included.
+ * @returns {{message: string, frame: string|null}} The split parts.
+ */
+export function splitCodeFrame(message) {
+  if (typeof message !== 'string' || message === '') {
+    return { message: typeof message === 'string' ? message : '', frame: null };
+  }
+
+  const lines = message.split(/\r?\n/);
+  const isFrameLine = (line) => /^\s*(?:\d+\s*)?\|/.test(line);
+
+  let start = lines.length;
+  while (start > 0) {
+    const line = lines[start - 1];
+    if (isFrameLine(line) || (line.trim() === '' && start < lines.length)) {
+      start -= 1;
+      continue;
+    }
+    break;
+  }
+
+  // A block of blank lines alone is not a frame.
+  if (!lines.slice(start).some(isFrameLine)) {
+    return { message, frame: null };
+  }
+
+  const frame = lines.slice(start).join('\n').replace(/^\n+|\n+$/g, '');
+  const head = lines.slice(0, start).join('\n').replace(/\s+$/, '');
+  return { message: head, frame: frame || null };
 }
 
 /**
@@ -164,14 +247,24 @@ export function parseDiagnostic(severity, args) {
     cleanMessage = cleanMessage.replace(new RegExp(`^\\[?${code}\\]?\\s*:?\\s*`), '');
   }
 
+  // The frame is carried as its own field so a consumer can render it as code
+  // rather than as prose. `error.frame` is authoritative when the diagnostic
+  // came from a CompilerError; otherwise it is recovered from the text.
+  const split = splitCodeFrame(cleanMessage);
+  let frame = split.frame;
+  if (!frame && firstArg instanceof Error && typeof firstArg.frame === 'string' && firstArg.frame !== '') {
+    frame = stripAnsi(firstArg.frame);
+  }
+
   const result = {
     file: file || null,
     code: code || 'AVX_UNK',
     severity: severity === 'error' ? 'error' : 'warning',
-    message: cleanMessage.trim(),
+    message: split.message.trim(),
   };
   if (line !== null) result.line = line;
   if (column !== null) result.column = column;
+  if (frame) result.frame = frame;
   return result;
 }
 

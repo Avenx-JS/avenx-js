@@ -364,6 +364,13 @@ export class AvenxCLI {
           this.config.server.liveReload = false;
         }
 
+        // The overlay rides on the live-reload channel, so turning live reload
+        // off turns the overlay off with it; the flag is for keeping the
+        // reloads while silencing the overlay.
+        if (args.includes('--no-error-overlay') || args.includes('--error-overlay=false')) {
+          this.config.server.errorOverlay = false;
+        }
+
         // The positional port is the first bare argument that is not itself the
         // value of a flag. Only args[0] used to be considered, so any leading
         // flag — `serve --trace 8080`, `serve --open 8080` — silently fell back
