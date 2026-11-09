@@ -132,6 +132,10 @@ export const APPS = [
     },
   },
   {
+    name: 'code-splitting',
+    summary: 'Built with codeSplitting: pages arrive as lazy chunks and their template expressions still render.',
+  },
+  {
     name: 'guard-gaps',
     summary: 'Pins two guard compilation bugs; its bundle is expected not to parse.',
     documentsKnownGaps: true,

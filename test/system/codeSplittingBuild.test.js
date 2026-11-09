@@ -5,7 +5,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { pathToFileURL } from 'url';
 import { spawnSync } from 'child_process';
+import { Window } from 'happy-dom';
 import AvenxCompiler from '../../lib/compiler.js';
+import { PAGE_CHUNK_RUNTIME_NAMES } from '../../lib/compiler/modules.js';
+import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -181,6 +184,52 @@ app.initRouter({ '': 'Home' });
     assert.strictEqual(bundle.includes('class Home extends'), false);
 
     console.log('  ✅ avenx.config.json with codeSplitting: true is honored by avenx build');
+  }
+
+  // Test 4: the split bundle publishes what its chunks resolve at load time.
+  //
+  // A chunk imports nothing and a browser cannot resolve the bare
+  // `avenx-core/runtime` fallback, so the base class and the expression
+  // helpers have to be on the namespace object when the chunk runs. They must
+  // not become bare globals: the bundle's global surface stays PUBLIC_GLOBALS.
+  {
+    const root = project({
+      'avenx.config.json': JSON.stringify({
+        codeSplitting: true,
+      }),
+      'src/pages/home.page.js': `<state title="Home" />
+<div><h1>{{ title }}</h1></div>`,
+      // No router: nothing asks for a chunk while the bundle runs, so what is
+      // observed is the bundle's own work, not a page load.
+      'src/main.app.js': `import { AvenxApp } from 'avenx-core/runtime';
+const app = new AvenxApp({ target: '#app' });
+`,
+    });
+
+    const build = avenx(['build'], root);
+    assert.strictEqual(build.status, 0, `CLI build with codeSplitting succeeds:\n${build.output}`);
+    const bundle = fs.readFileSync(path.join(root, 'dist/bundle.js'), 'utf-8');
+
+    const window = new Window({ url: 'http://localhost' });
+    window.document.body.innerHTML = '<div id="app"></div>';
+    const before = new Set(Object.keys(window));
+    window.eval(bundle);
+
+    const namespace = window[NAMESPACE_GLOBAL];
+    assert.ok(namespace, `the split bundle publishes window.${NAMESPACE_GLOBAL}`);
+    for (const name of PAGE_CHUNK_RUNTIME_NAMES) {
+      assert.strictEqual(typeof namespace[name], 'function', `${name} is published on the namespace for page chunks`);
+    }
+
+    const added = Object.keys(window).filter((key) => !before.has(key));
+    assert.deepStrictEqual(
+      added.sort(),
+      [NAMESPACE_GLOBAL, ...PUBLIC_GLOBALS].sort(),
+      'a split build installs the namespace and the declared globals, and nothing else',
+    );
+    await window.happyDOM.close();
+
+    console.log('  ✅ Split bundle publishes the chunk runtime names on the namespace only');
   }
 
   console.log('🎉 All Route-Level Code Splitting Build tests passed!');

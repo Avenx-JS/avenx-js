@@ -53,6 +53,7 @@ test/e2e/
     forms/          data-ax-bind across input types, focus retention
     defer/          <@defer> and its triggers
     virtual-list/   VirtualList windowing over large datasets
+    code-splitting/  lazy page chunks under codeSplitting, with template expressions
     guard-gaps/     regression tests for previously fixed guard bugs
   specs/          tests, grouped by the behaviour they describe
     smoke/ reactivity/ rendering/ components/ events/
@@ -161,7 +162,7 @@ product running in a browser.
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
 | `actions/` | 6 | Browser APIs |
-| `build/` | 4 | Production and development runtime parity |
+| `build/` | 8 | Production and development runtime parity, code-split page chunks |
 | `components/` | 12 | Component composition |
 | `composition/` | 5 | Reactive provide/inject, live DOM retention, uncached reset and lifecycle order |
 | `events/` | 12 | Event bindings, modifiers and loop scope |

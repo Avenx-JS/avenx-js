@@ -13,7 +13,7 @@
  * called, that `// @avenx-inject` wins when present, and that a dynamic import
  * is an expression rather than a declaration.
  */
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,7 +22,15 @@ import assert from 'assert';
 import path from 'path';
 import fs from 'fs';
 import AvenxCompiler from '../../lib/compiler.js';
-import { entryModule, componentModule, bridgeModule, collectImportStatements } from '../../lib/compiler/modules.js';
+import {
+  entryModule,
+  componentModule,
+  bridgeModule,
+  pageChunkModule,
+  collectImportStatements,
+  PAGE_CHUNK_RUNTIME_NAMES,
+} from '../../lib/compiler/modules.js';
+import { PUBLIC_GLOBALS, NAMESPACE_MEMBERS } from '../../lib/core/globals.js';
 
 try {
   console.log('🧪 Testing entry module generation...');
@@ -230,6 +238,86 @@ try {
     assert.deepEqual(collectImportStatements(source), ["import a from './a.js';", "import { c, d } from './cd.js';"]);
   }
   console.log('  ✅ Component and bridge module generation tests passed!');
+
+  console.log('🧪 Testing page chunk module generation...');
+  {
+    // A chunk cannot import the runtime -- it is loaded outside the bundle --
+    // so the class body below reports what the prelude resolved. `axGet` is
+    // what a compiled interpolation calls first, and what used to be
+    // `undefined` in a browser (AVX_R08 "axGet is not a function").
+    const chunk = pageChunkModule({
+      className: 'Home',
+      body: [
+        'class Home extends AvenxPage {',
+        '  static resolved() {',
+        `    return { ${PAGE_CHUNK_RUNTIME_NAMES.join(', ')} };`,
+        '  }',
+        '}',
+      ].join('\n'),
+    });
+
+    assert.ok(!chunk.includes("from 'avenx-core/runtime'"), 'a chunk carries no static import of the runtime');
+    assert.ok(!/if \(!AvenxPage\)/.test(chunk), 'the fallback is no longer gated on the base class alone');
+    for (const name of PAGE_CHUNK_RUNTIME_NAMES) {
+      assert.ok(chunk.includes(`let ${name} = _Avenx.${name};`), `${name} is read from the namespace first`);
+      assert.ok(
+        chunk.includes(`${name} = ${name} === undefined ? _rt.${name} : ${name};`),
+        `${name} falls back to the import only when it is missing`,
+      );
+    }
+
+    const tempChunkDir = path.join(__dirname, 'temp_compiler_chunk_test');
+    fs.mkdirSync(tempChunkDir, { recursive: true });
+    const chunkPath = path.join(tempChunkDir, 'home.page.js');
+    fs.writeFileSync(chunkPath, chunk);
+
+    const hadNamespace = Object.prototype.hasOwnProperty.call(globalThis, 'Avenx');
+    const previousNamespace = globalThis.Avenx;
+    try {
+      // The namespace an unsplit bundle publishes: the public globals and the
+      // plugin members, so `AvenxPage` is present and every helper is not.
+      // This is the shape the browser saw, and the chunk must not take the
+      // base class as proof that the helpers are there too.
+      const narrowNamespace = {};
+      for (const name of [...PUBLIC_GLOBALS, ...NAMESPACE_MEMBERS]) {
+        narrowNamespace[name] = class Stub {};
+      }
+      globalThis.Avenx = narrowNamespace;
+
+      const fromNarrow = await import(`${pathToFileURL(chunkPath).href}?narrow`);
+      const resolved = fromNarrow.default.resolved();
+      assert.strictEqual(resolved.AvenxPage, narrowNamespace.AvenxPage, 'the base class comes from the namespace');
+      for (const name of PAGE_CHUNK_RUNTIME_NAMES) {
+        assert.strictEqual(
+          typeof resolved[name],
+          'function',
+          `${name} is resolved even though the namespace does not carry it`,
+        );
+      }
+
+      // The namespace a split bundle publishes: everything the chunk needs.
+      // Each name is taken from there, and nothing is imported in its place.
+      const fullNamespace = {};
+      for (const name of PAGE_CHUNK_RUNTIME_NAMES) {
+        fullNamespace[name] = function published() {};
+      }
+      globalThis.Avenx = fullNamespace;
+
+      const fromFull = await import(`${pathToFileURL(chunkPath).href}?full`);
+      const published = fromFull.default.resolved();
+      for (const name of PAGE_CHUNK_RUNTIME_NAMES) {
+        assert.strictEqual(published[name], fullNamespace[name], `${name} is the one the bundle published`);
+      }
+    } finally {
+      if (hadNamespace) {
+        globalThis.Avenx = previousNamespace;
+      } else {
+        delete globalThis.Avenx;
+      }
+      fs.rmSync(tempChunkDir, { recursive: true, force: true });
+    }
+  }
+  console.log('  ✅ Page chunk module generation tests passed!');
 
   console.log('🧪 Testing guard and page compilation...');
   {
