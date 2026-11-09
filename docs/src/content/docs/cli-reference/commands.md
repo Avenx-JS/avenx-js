@@ -433,12 +433,25 @@ Launches a local live-reloading development server with automatic file watching 
 - `--port <number>`, `-p <number>` (or positional argument `avenx serve 8080`): Sets the development server TCP port (default: `3000`).
 - `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`).
 - `--no-live-reload` / `--live-reload=false`: Disables file watching, live reload SSE client script injection, and automatic browser refreshes.
+- `--no-error-overlay` / `--error-overlay=false`: Keeps live reload, but stops build diagnostics from being shown as a browser overlay. See [Build error overlay](#build-error-overlay).
 - `--trace`: Records a causal trace of the running application. Off by default. See [`avenx trace`](#14-avenx-trace) and the [Avenx Trace guide](/core-concepts/trace/).
 
 - `--open`, `-o`: Opens the default browser once the development server is listening. Off by default; closing the browser does not stop the server.
 
 Custom HTTP response headers (such as `Content-Security-Policy` or CORS headers) can be attached to every dev-server response via [`server.headers`](/getting-started/configuration#dev-server-response-headers-serverheaders) in `avenx.config.json`. These headers apply to `avenx serve` only and do not affect production builds.
  
+#### Build error overlay
+
+When a rebuild fails while `avenx serve` is running, the compiler diagnostics are pushed to the browser over the same `/__avenx_live_reload__` SSE channel that drives live reload and rendered as an overlay on the page. The overlay shows the severity, the `AVX_*` code, the source file with line and column, the message, and the caret-annotated code frame — the same information the terminal prints, in the window the developer is already looking at.
+
+- **Errors block the page.** A failed build is shown as a full-page panel, because what is on screen is the previous build's output and no longer matches the source.
+- **Warnings do not.** They appear as a dismissible panel in the corner that passes clicks through to the application underneath.
+- **A successful rebuild clears the overlay** automatically. Reloading the page while the build is still broken brings it back, so a refresh cannot hide the reason.
+- **Uncaught runtime errors and unhandled promise rejections** are shown in the same overlay while the dev server is running.
+- The overlay styles itself entirely through `!important` declarations in style attributes under the element id `__avenx-error-overlay`, so an application stylesheet cannot restyle or hide it — which matters most when the stylesheet is what failed to build. Diagnostic text is HTML-escaped before it is inserted into the page.
+
+The overlay is on by default and is controlled by [`server.errorOverlay`](/getting-started/configuration#build-error-overlay-servererroroverlay) in `avenx.config.json` or by `--no-error-overlay` on the command line. It is part of the development server only: `avenx build` emits no trace of it, and the overlay client script is injected under exactly the same conditions as the live-reload client — `text/html` responses, with live reload enabled. Turning live reload off turns the overlay off with it.
+
 #### Visual Inspection Dashboard (`/__avenx-inspect`)
 
 Access `http://localhost:3000/__avenx-inspect` while the dev server is running to inspect active routes, registered components, global bridges, and compiler options in real-time.
@@ -452,6 +465,9 @@ npx avenx serve 8080 --host 0.0.0.0
 
 # Disable live reload script injection
 npx avenx serve --no-live-reload
+
+# Keep live reload, but never show the build error overlay
+npx avenx serve --no-error-overlay
 
 # Start server and open the default browser
 npx avenx serve --open

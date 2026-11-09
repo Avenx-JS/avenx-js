@@ -61,6 +61,7 @@ ${bold(cyan('Options:'))}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
   ${green('--open, -o')}                ${gray('Open a browser when "serve" starts')}
   ${green('--no-live-reload')}          ${gray('Disable live reload while serving')}
+  ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
   ${green('--out, -o <file>')}          ${gray('Where "trace export" writes the generated regression test')}

@@ -572,6 +572,13 @@ test.describe('avenx serve development cycle', () => {
     expect(bundle).not.toContain('swapStylesheet');
     expect(index).not.toContain('EventSource');
     expect(index).not.toContain('__avenx_live_reload__');
+
+    // The overlay is a dev-server affordance and nothing else: a production
+    // build carries no trace of it.
+    expect(bundle).not.toContain('__avenx-error-overlay');
+    expect(bundle).not.toContain('__avenxDevOverlay');
+    expect(index).not.toContain('__avenx-error-overlay');
+    expect(index).not.toContain('__avenxDevOverlay');
   });
 
   test('failed rebuild keeps the last good page and the next good save recovers', async ({
@@ -653,6 +660,169 @@ test.describe('avenx serve development cycle', () => {
         COMPONENT_PATH,
         original,
       );
+    }
+  });
+
+
+  test('a failed rebuild shows the diagnostic as an overlay and a fixed one removes it', async ({
+    page,
+    projectDir,
+  }) => {
+    const original = await readProjectFile(projectDir, COMPONENT_PATH);
+    const overlay = page.locator('#__avenx-error-overlay');
+
+    await expect(overlay).toHaveCount(0);
+
+    try {
+      await writeProjectFile(
+        projectDir,
+        COMPONENT_PATH,
+        `${original}\n<broken syntax`,
+      );
+
+      await expect(overlay).toBeVisible({ timeout: 10_000 });
+
+      const text = await overlay.innerText();
+
+      // Severity, code, source file and message -- the same four things the
+      // terminal prints, in the window the developer is looking at.
+      expect(text).toContain('error');
+      expect(text).toMatch(/AVX_[A-Z]\d+/);
+      expect(text).toContain('stat-card.component.js');
+      expect(text).toContain('broken');
+
+      // And the caret code frame, which is what names the line.
+      await expect(overlay.locator('pre')).toContainText('|');
+
+      // An error is blocking: what is on screen is the previous build's
+      // output and no longer matches the source.
+      expect(await overlay.getAttribute('data-avenx-blocking')).toBe('true');
+
+      // A reload while the build is still broken must not hide the reason.
+      await page.reload();
+      await expect(overlay).toBeVisible({ timeout: 10_000 });
+
+      await writeProjectFile(projectDir, COMPONENT_PATH, original);
+
+      await expect(overlay).toHaveCount(0, { timeout: 10_000 });
+      await expect(
+        page.getByTestId('filled').getByTestId('card-label'),
+      ).toHaveText('Revenue');
+    } finally {
+      await writeProjectFile(projectDir, COMPONENT_PATH, original);
+    }
+  });
+
+  test('warnings are shown without blocking the page, and diagnostic text is escaped', async ({
+    page,
+  }) => {
+    // Driven through the overlay's own entry point rather than through a
+    // build, so the presentation rules are tested directly: a warning must
+    // not take the page away from the developer, and diagnostic text -- which
+    // quotes the developer's own source -- must never be parsed as markup.
+    await page.evaluate(() => {
+      window.__avenxDevOverlay.render([
+        {
+          severity: 'warning',
+          code: 'AVX_W03',
+          file: 'src/components/header.component.js',
+          line: 12,
+          column: 5,
+          message: 'Undeclared variable in <Header>: <img src=x onerror="window.__overlayXss = true">',
+          frame: ' 12 |   {{ userName }}\n    |      ^^^^^^^^',
+        },
+      ]);
+    });
+
+    const overlay = page.locator('#__avenx-error-overlay');
+
+    await expect(overlay).toBeVisible();
+    expect(await overlay.getAttribute('data-avenx-blocking')).toBe('false');
+    await expect(overlay).toContainText('warning');
+    await expect(overlay).toContainText('AVX_W03');
+
+    expect(await page.evaluate(() => window.__overlayXss === true)).toBe(false);
+    expect(await overlay.locator('img').count()).toBe(0);
+    await expect(overlay).toContainText('<img src=x onerror=');
+
+    // The container passes clicks through, so the application underneath is
+    // still usable while a warning is on screen.
+    expect(
+      await overlay.evaluate((element) => getComputedStyle(element).pointerEvents),
+    ).toBe('none');
+    await page.getByTestId('filled').getByTestId('card').click();
+
+    // And the overlay itself can be dismissed.
+    await overlay.getByRole('button', { name: /dismiss/i }).click();
+    await expect(overlay).toHaveCount(0);
+  });
+
+  test('the application cannot restyle or hide the overlay', async ({ page }) => {
+    // The overlay reports on an application that may be exactly what failed
+    // to build, so an application stylesheet -- important declarations and
+    // all -- must not be able to reach it.
+    await page.evaluate(() => {
+      const hostile = document.createElement('style');
+      hostile.textContent =
+        '#__avenx-error-overlay { display: none !important; visibility: hidden !important;'
+        + ' opacity: 0 !important; position: static !important; z-index: -1 !important; }';
+      document.head.appendChild(hostile);
+
+      window.__avenxDevOverlay.render([
+        { severity: 'error', code: 'AVX_C26', file: 'src/a.component.js', message: 'Malformed template' },
+      ]);
+    });
+
+    const overlay = page.locator('#__avenx-error-overlay');
+
+    await expect(overlay).toBeVisible();
+    expect(
+      await overlay.evaluate((element) => {
+        const styles = getComputedStyle(element);
+        return {
+          display: styles.display,
+          visibility: styles.visibility,
+          opacity: styles.opacity,
+          position: styles.position,
+          zIndex: styles.zIndex,
+        };
+      }),
+    ).toEqual({
+      display: 'flex',
+      visibility: 'visible',
+      opacity: '1',
+      position: 'fixed',
+      zIndex: '2147483647',
+    });
+  });
+
+  test('server.errorOverlay: false serves live reload without the overlay', async ({
+    projectDir,
+    devServer,
+  }) => {
+    await configureProject(projectDir, { errorOverlay: false });
+
+    // The fixture server already read the old configuration, so the option is
+    // tested on a server started with the new one.
+    await terminate(devServer.child);
+
+    const replacementPort = await findFreePort();
+    const replacement = await startServer(projectDir, replacementPort);
+
+    try {
+      const html = await (
+        await fetch(`${replacement.url}/index.html`)
+      ).text();
+
+      expect(html).not.toContain('__avenx-error-overlay');
+      expect(html).not.toContain('window.__avenxDevOverlay = {');
+
+      // Everything else about the dev server is unchanged. The live-reload
+      // client still ships its one-line guard for the overlay it will not
+      // find, which is exactly how the option stays additive.
+      expect(html).toContain("new EventSource('/__avenx_live_reload__')");
+    } finally {
+      await terminate(replacement.child);
     }
   });
 

@@ -13,7 +13,8 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
   "server": {
     "port": 3000,
     "host": "localhost",
-    "liveReload": true
+    "liveReload": true,
+    "errorOverlay": true
   },
   "treeShakeComponents": true,
   "voidTags": []
@@ -33,6 +34,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `server.port`  | `number`   | `3000`                | Valid TCP port from `0` to `65535`.                                    |
 | `server.host`  | `string`   | `"localhost"`         | Non-empty host name or address for the local dev server.              |
 | `server.liveReload` | `boolean` | `true`              | Enables file watching, automatic browser reloads, and inspection script injection. |
+| `server.errorOverlay` | `boolean` | `true`            | Shows build diagnostics as an overlay in the browser while `avenx serve` runs. Requires `server.liveReload`. Applies to the dev server only. See [Build error overlay](#build-error-overlay-servererroroverlay). |
 | `server.headers` | `object` | `{}`                  | Custom HTTP response headers added to every dev-server response. Applies to `avenx serve` only. See [Dev-server response headers](#dev-server-response-headers-serverheaders). |
 | `hooks.prebuild` | `string` | `undefined`           | Synchronous shell command executed before the compiler builds. See [Build lifecycle hooks](#build-lifecycle-hooks-hooks). |
 | `hooks.postbuild` | `string` | `undefined`          | Synchronous shell command executed after a successful compiler build. See [Build lifecycle hooks](#build-lifecycle-hooks-hooks). |
@@ -380,7 +382,8 @@ If the configured preprocessor package is not installed, Avenx-JS falls back to 
   "server": {
     "port": 5173,
     "host": "0.0.0.0",
-    "liveReload": false
+    "liveReload": false,
+    "errorOverlay": true
   },
   "treeShakeComponents": false,
   "voidTags": ["my-video"]
@@ -390,6 +393,35 @@ If the configured preprocessor package is not installed, Avenx-JS falls back to 
 The configuration is merged with the defaults, so you can override only the settings your project needs.
 
 Set `server.liveReload` to `false` when the dev server should serve HTML without watching for changes or injecting the live-reload and inspection client script.
+
+---
+
+## Build error overlay (`server.errorOverlay`)
+
+While `avenx serve` is running, a failed rebuild is pushed to the browser over the live-reload channel and rendered as an overlay on the page, so a compile error does not stay hidden in a terminal window behind the browser:
+
+```json
+{
+  "server": {
+    "liveReload": true,
+    "errorOverlay": true
+  }
+}
+```
+
+The overlay shows the severity, the `AVX_*` code, the source file with line and column, the message, and the code frame. Errors are presented as a blocking panel; warnings as a dismissible panel in the corner that does not block interaction with the page. A successful rebuild removes the overlay again.
+
+| Value | Behaviour |
+| ----- | --------- |
+| `true` (default) | `avenx serve` injects the overlay client alongside the live-reload client and broadcasts build diagnostics to it. |
+| `false` | `avenx serve` behaves exactly as it did before the overlay existed: diagnostics go to the terminal only. |
+
+Notes:
+
+- The option affects the development server only. A production build never contains the overlay, whatever the value.
+- The overlay rides on the live-reload channel, so `server.liveReload: false` (or `--no-live-reload`) disables it as well.
+- `avenx serve --no-error-overlay` turns it off for a single run without changing `avenx.config.json`.
+- The overlay is self-contained: it uses no application CSS and no framework runtime, it styles itself with `!important` declarations in style attributes under the element id `__avenx-error-overlay` so the application cannot hide it, and all diagnostic text is HTML-escaped before insertion.
 
 ---
 
