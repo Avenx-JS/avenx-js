@@ -27,6 +27,7 @@ The following flags can be passed globally to `avenx` commands:
 | `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
+| `--help` | | Prints the command and option summary and exits before the command runs. | Global |
 | `--version` | `-v` | Displays the installed version of the Avenx-JS CLI package. | Global |
 
 ## Terminal Formatting & CI Environment
@@ -218,6 +219,8 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 
 - `--dry-run` / `-d`: Previews generated files without writing to disk.
 - `--force` / `-f`: Bypasses Git working tree status checks.
+- `--with-test`: Also writes a colocated unit test next to a generated component. `--no-test` skips it. Neither is the default.
+- `--template <name>` / `-t <name>`: Generates from the override named `<name>` under `templatesDir` (for example `.avenxtemplates/component/<name>/component.js.template`) instead of the default template. See [Custom Templates](/cli-reference/custom-templates/).
 
 #### Usage Examples
 
@@ -305,6 +308,22 @@ Content-Security-Policy: script-src 'self'; style-src 'self' 'unsafe-inline'
 See [CSP-strict builds](/getting-started/configuration#csp-strict-builds-cspstrict)
 and the [deployment guide](/guides/deployment#content-security-policy-csp).
 
+**`--code-splitting`** (alias **`--split`**) emits every page under
+`src/pages/` as its own ES module chunk in `<distDir>/pages/`, and the bundle
+loads a page's chunk the first time the router navigates to it instead of
+carrying every page class itself. It is the one-build form of
+`"codeSplitting": true` in `avenx.config.json`; the output shape and the
+current limitations are described under
+[Code splitting](/getting-started/configuration#code-splitting-codesplitting).
+
+```bash
+npx avenx build --code-splitting
+```
+
+Deploy `dist/pages/` beside the bundle. See
+[Dynamic imports, and code splitting](/guides/deployment#dynamic-imports-and-code-splitting)
+in the deployment guide.
+
 **Exit codes.** An unrecognised command exits `1` and names the closest match, so a mistyped command in a script never passes as success. `avenx build` exits `0` only on a successful build. Any fatal compiler error, a warning escalated to `"error"`, a failing lifecycle hook, or declining the working-tree prompt exits non-zero, so `avenx build && deploy` never deploys a failed build. See [Build Failures and Exit Codes](/guides/deployment#build-failures-and-exit-codes).
 
 #### Features & Distribution Files
@@ -316,6 +335,7 @@ and the [deployment guide](/guides/deployment#content-security-policy-csp).
 - Minifies the bundled runtime in production mode.
 - Verifies, with `csp.strict`, that the emitted bundle contains no `eval`, no `Function` constructor and no `with` statement.
 - Generates JavaScript (`<outputName>.js`) and CSS (`<outputName>.css`) distribution bundles.
+- Emits one chunk per page in `<distDir>/pages/` when `codeSplitting` is on.
 
 #### Custom Output Bundle Names (`outputName`)
 
@@ -391,6 +411,11 @@ to agree can escalate the codes it cares about with `warnings` in
 Pass `--json` for machine-readable output: `{ valid, errorCount, warningCount,
 diagnostics[] }`, where each diagnostic carries `file`, `code`, `severity` and
 `message`. `file` is `null` when the diagnostic names no location.
+
+Pass `--watch` (or `-w`) to keep checking as files under `srcDir` change.
+
+Pass `--strict` (alias `--strict-a11y`) to fail the check on accessibility
+warnings too.
 
 This command is useful for checking templates in development and Continuous Integration (CI/CD) pipelines without generating build output.
 Watch modes also react to source and project-template changes while they run.

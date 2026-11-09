@@ -41,9 +41,12 @@ ${bold(cyan('Commands:'))}
 ${bold(cyan('Options:'))}
   ${green('--layout <blank|routing>')}  ${gray('Specify project layout template for init (default: blank)')}
   ${green('--style <none|sass|...>')}   ${gray('Specify CSS preprocessor for init (none, sass, less, postcss)')}
+  ${green('--yes, -y')}                 ${gray('Skip the "init" wizard and take the defaults (none, blank)')}
+  ${green('--interactive, -i')}         ${gray('Run the "init" wizard even when stdin or stdout is not a TTY')}
   ${green('--dev')}                     ${gray('Build for development: readable runtime, inline CSS source maps')}
   ${green('--prod')}                    ${gray('Build for production (the default for "build")')}
   ${green('--csp-strict')}              ${gray('Refuse any output needing \'unsafe-eval\', in development builds too')}
+  ${green('--code-splitting, --split')} ${gray('Emit each page as its own chunk in <distDir>/pages/ ("build" only)')}
   ${green('--dry-run, -d')}             ${gray('Preview actions without writing or deleting any files')}
   ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
@@ -52,14 +55,17 @@ ${bold(cyan('Options:'))}
   ${green('--json, -j')}                ${gray('Machine-readable output for check, atlas, impact, why and explain (explain: --json only)')}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
   ${green('--watch, -w')}               ${gray('Watch project component files for continuous template linting')}
+  ${green('--strict, --strict-a11y')}   ${gray('Make "check" fail on accessibility warnings too')}
   ${green('--no-color')}                ${gray('Disable colored output (the NO_COLOR variable is honored too)')}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
   ${green('--open, -o')}                ${gray('Open a browser when "serve" starts')}
   ${green('--no-live-reload')}          ${gray('Disable live reload while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
+  ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
   ${green('--out, -o <file>')}          ${gray('Where "trace export" writes the generated regression test')}
   ${green('--keep=<n>, --all')}         ${gray('How much "trace prune" removes')}
+  ${green('--help')}                    ${gray('Show this help for any command, before it runs')}
   ${green('--version, -v')}             ${gray('Output the current version')}
     `);
 }

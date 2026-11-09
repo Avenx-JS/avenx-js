@@ -87,25 +87,53 @@ promise resolves with its namespace:
 const { renderChart } = await import('./charts/renderer.js');
 ```
 
-What it does **not** do yet is produce a separate file. Avenx emits one chunk,
-so a dynamically imported module is bundled eagerly and the promise resolves
-immediately. That is the correct observable behaviour for an unsplit build — the
-semantics are right, and what is missing is the chunk boundary — but it means a
-dynamic import is a code-organisation tool today, not a payload-reduction one.
+A dynamic import of your own does **not** produce a separate file. Avenx emits
+one script for the application graph, so a dynamically imported module is
+bundled eagerly and the promise resolves immediately. That is the correct
+observable behaviour for an unsplit module — the semantics are right, and what
+is missing is the chunk boundary — but it means a dynamic import in your code
+is a code-organisation tool, not a payload-reduction one.
 
 The specifier must be a literal. `import(name)` fails the build, because no
 build-time analysis can say what it names and the emitted bundle is a classic
 script with no module loader to resolve it at run time.
 
-**Why splitting is not implemented.** Emitting chunks is not the hard part; the
-pieces around it are. `dist/bundle.js` is loaded with a plain `<script src>`, so
-a second chunk needs a loader and a decision about whether the bundle becomes a
-module script. Route-level laziness additionally needs `initRouter` to accept a
-loader rather than a page name, and the router's mount path to become
-asynchronous. Those are application-facing changes, and the bundler now has the
-graph they would build on: dynamic imports are already distinct edges, and
-`lib/bundler/emit.js` already takes the set of modules to include as a
-parameter.
+**Page-level code splitting** is where a chunk boundary does exist. With
+`"codeSplitting": true` in `avenx.config.json`, or `avenx build
+--code-splitting` for a single build, every page under `src/pages/` is emitted
+as its own ES module in `dist/pages/`, and the bundle registers a loader for it
+instead of the class:
+
+```javascript
+app.registerPage("Home", () => import("./pages/home.page.js"));
+```
+
+The router fetches a page's chunk on the first navigation to it, so the initial
+download is the runtime, the components and `main.app.js`. Components, bridges
+and stylesheets are not split. The output shape, how the chunks are named and
+loaded, and the current limitation on template expressions in a split page are
+documented under
+[Code splitting](/getting-started/configuration#code-splitting-codesplitting).
+
+**What to deploy.** A split build adds `dist/pages/` to the artifact:
+
+```text
+index.html
+dist/
+├── bundle.js
+├── bundle.css
+├── bundle.css.map
+└── pages/
+    ├── home.page.js
+    └── about.page.js
+```
+
+`index.html` is unchanged: the chunks are resolved relative to `bundle.js`, so
+they are fetched from `dist/pages/` wherever `dist/` is served from. Deploy the
+directory as one tree, and serve the chunks with a JavaScript content type, as
+the bundle already needs; a browser refuses a module served as anything else.
+Chunk names carry no content hash either, so the advice under
+[Caching Generated Assets](#caching-generated-assets) applies to them as well.
 
 ## Build Modes
 
