@@ -1671,6 +1671,15 @@ export function getFallbackReport(): Array<{ source: string; reason: string }>;
  */
 export function isCompilable(source: string): boolean;
 
+/**
+ * Sets the capacity of the compiled-expression cache, the cache of parsed
+ * expressions the runtime keeps.
+ *
+ * The configuration file sets it for a build (`expressionCacheCapacity`); a
+ * program that wants another capacity calls this itself.
+ */
+export function setExpressionCacheCapacity(capacity: number): void;
+
 /** Whether a URL may be placed in a navigating attribute. */
 export function isSafeUrl(value: string): boolean;
 
