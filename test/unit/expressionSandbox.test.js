@@ -210,10 +210,15 @@ console.log('  ✅ Ordinary expressions still evaluate.');
   assert.strictEqual(state.text, 'hi', 'the first statement in a program runs');
   assert.strictEqual(state.count, 10, 'and so does the second');
 
+  // A statement program returns its last statement's value (see #1699): an
+  // event handler that calls an async action hands the promise it got back
+  // to the dispatcher, and discarding the value here is what made async
+  // action failures invisible -- no diagnostic, no logger entry, no
+  // errorHandler call.
   assert.strictEqual(
     evaluator.executeStatement('count', state, state),
-    undefined,
-    'a statement program has no value unless it used return',
+    10,
+    'a statement program returns its last statement\'s value',
   );
 }
 

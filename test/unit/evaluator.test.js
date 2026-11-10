@@ -97,13 +97,19 @@ try {
   // 2e. Statement with custom thisArg
   // `with(this)` wraps thisArg, so bare identifiers resolve against thisArg
   // properties first, then function params.
+  //
+  // A statement program returns its last statement's value (see #1699): an
+  // event handler that calls an async action hands the promise it got back
+  // to the dispatcher, and discarding the value here is what made async
+  // action failures invisible -- no diagnostic, no logger entry, no
+  // errorHandler call.
   const scope5a = { val: 5 };
   const customThis2a = { val: 5, factor: 3 };
   const statementResultA = evaluator.executeStatement('val * this.factor', scope5a, customThis2a);
   assert.strictEqual(
     statementResultA,
-    undefined,
-    'executeStatement returns undefined for expression statements (no return)',
+    15,
+    'executeStatement returns the last statement\'s value',
   );
 
   // 2f. Statement using loop
