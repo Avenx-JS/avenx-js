@@ -25,22 +25,30 @@ function benchmark() {
     box: 'border: 1px solid black;',
   };
 
-  styleProcessor.addVariable('bg', '#f0f0f0');
-  styleProcessor.addVariable('primary', '#007bff');
-  styleProcessor.addVariable('primary-dark', '#0056b3');
-  styleProcessor.addVariable('secondary', '#6c757d');
+  // `reset()` clears variables along with the accumulated styles, so they are
+  // registered again after every reset. Registering them once, before the
+  // loop, left every iteration resolving nothing: the benchmark measured the
+  // unresolved-variable diagnostic, and its megabytes of warnings overflowed
+  // the runner's output buffer and killed the process.
+  const resetWithVariables = () => {
+    styleProcessor.reset();
+    styleProcessor.addVariable('bg', '#f0f0f0');
+    styleProcessor.addVariable('primary', '#007bff');
+    styleProcessor.addVariable('primary-dark', '#0056b3');
+    styleProcessor.addVariable('secondary', '#6c757d');
+  };
 
   console.log(`Running StyleProcessor benchmark with ${iterations} iterations...`);
 
   // Warmup
   for (let i = 0; i < 100; i++) {
-    styleProcessor.reset();
+    resetWithVariables();
     styleProcessor.process(html, desBlocks, 'BenchmarkComponent');
   }
 
   const start = performance.now();
   for (let i = 0; i < iterations; i++) {
-    styleProcessor.reset();
+    resetWithVariables();
     styleProcessor.process(html, desBlocks, 'BenchmarkComponent');
   }
   const end = performance.now();

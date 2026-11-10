@@ -1,0 +1,184 @@
+name: Benchmark Comparison
+
+# What size-check.yml does for bytes, for timings: measure the base branch and
+# the PR branch side by side on one runner, report the per-benchmark change,
+# and fail on a regression in a benchmark stable enough to gate on.
+# Thresholds, the gating set and the reasoning for both live in
+# benches/regression-gate.js.
+#
+# The weekly absolute numbers are still published by quality-results.yml; this
+# job answers a different question -- did this change make an update slower.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# A new push makes the measurement of the previous one moot, and each run takes
+# several minutes of runner time.
+concurrency:
+  group: benchmark-compare-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Runs per branch. Each round runs the whole suite once on each side; the
+  # reported figure is the median across rounds. See benches/regression-gate.js
+  # for how this was calibrated before changing it.
+  BENCH_ROUNDS: 5
+
+jobs:
+  benchmark-compare:
+    name: Compare Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Two full suite runs per round is too slow to spend on a docs change.
+      # Without a relevant change the job passes without measuring; it is not
+      # filtered with `paths:` because a required check that never starts
+      # would leave the pull request pending forever.
+      - name: Check changed files
+        id: changed-files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed_files="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+          pattern='^(lib/core/renderer/|lib/core/reactive/|lib/core/expression/|lib/compiler/|lib/compiler\.js$|benches/|scripts/bench-compare\.js$|\.github/workflows/benchmark-compare\.yml$)'
+          if grep -Eq "$pattern" <<< "$changed_files"; then
+            echo "Render, reactive, expression, compiler or benchmark changes detected."
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No changes that the benchmarks measure; skipping the comparison."
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout base branch
+        if: steps.changed-files.outputs.relevant == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Setup Node.js
+        if: steps.changed-files.outputs.relevant == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (PR)
+        if: steps.changed-files.outputs.relevant == 'true'
+        run: npm ci
+
+      - name: Install dependencies (Base)
+        if: steps.changed-files.outputs.relevant == 'true'
+        run: npm ci
+        working-directory: base
+
+      # Each side runs its own `benches/run.js --json`, the output the weekly
+      # publish uses. Rounds alternate base/PR order so drift on the shared
+      # runner lands on both sides.
+      - name: Run benchmarks on both branches
+        if: steps.changed-files.outputs.relevant == 'true'
+        run: node scripts/bench-compare.js measure --base base --pr . --rounds "$BENCH_ROUNDS" --out bench-samples.json
+
+      # Read live rather than from the event payload: re-running the job after
+      # adding the label replays the original payload, which predates it.
+      - name: Check for maintainer override
+        id: override
+        if: steps.changed-files.outputs.relevant == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          label="$(node -e "import('./benches/regression-gate.js').then(m => console.log(m.overrideLabel))")"
+          if gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name' | grep -Fxq "$label"; then
+            echo "Override label '$label' is present."
+            echo "override=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "override=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compare and generate report
+        id: compare
+        if: steps.changed-files.outputs.relevant == 'true'
+        continue-on-error: true
+        env:
+          OVERRIDE: ${{ steps.override.outputs.override }}
+        run: |
+          node scripts/bench-compare.js compare --samples bench-samples.json --markdown bench-report.md --override "$OVERRIDE"
+
+      - name: Write job summary
+        if: always() && steps.changed-files.outputs.relevant == 'true'
+        run: |
+          if [ -f bench-report.md ]; then cat bench-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Upload raw samples
+        if: always() && steps.changed-files.outputs.relevant == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-samples
+          path: bench-samples.json
+          if-no-files-found: ignore
+
+      # A pull request from a fork gets a read-only token, so commenting fails
+      # with "Resource not accessible by integration". The report is still in
+      # the job summary and the gate still applies; only the comment is
+      # skipped, and a failure to comment never fails the job.
+      - name: Post or Update Comment
+        if: steps.changed-files.outputs.relevant == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'bench-report.md';
+            if (!fs.existsSync(path)) {
+              console.log('Benchmark report markdown not found.');
+              return;
+            }
+            const commentBody = fs.readFileSync(path, 'utf8');
+            const { owner, repo, number } = context.issue;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: number,
+            });
+
+            const existingComment = comments.find(c => c.body.includes('### ⏱️ Benchmark Comparison'));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+              console.log('Updated existing benchmark comment.');
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: commentBody
+              });
+              console.log('Created new benchmark comment.');
+            }
+
+      - name: Check compare status
+        if: steps.compare.outcome == 'failure'
+        run: |
+          echo "❌ A gating benchmark regressed beyond its threshold (see the report above)."
+          echo "If the regression is deliberate, a maintainer can add the 'benchmark-regression-accepted' label and re-run this job."
+          exit 1
