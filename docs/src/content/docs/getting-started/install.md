@@ -2,6 +2,9 @@
 title: 'Installation'
 description: 'Step-by-step installation instructions for Avenx-JS using npm and npx.'
 ---
+
+These docs describe `avenx-core@1.0.0-rc.1`.
+
 ## Prerequisites
 
 Before installing the Avenx CLI, ensure your environment meets the following requirements:
@@ -16,13 +19,15 @@ To begin using Avenx-JS, make sure you have [Node.js](https://nodejs.org/) v18 o
 Install the Avenx package globally or locally in your project:
 
 ```bash
-npm install avenx-core
+npm install avenx-core@rc
 ```
+
+The `rc` tag selects the documented version; `latest` points to the older `0.4.3`.
 
 Or run it directly using `npx` to initialize a new project structure:
 
 ```bash
-npx avenx init
+npx --package avenx-core@rc avenx init
 ```
 
 ## System Requirements

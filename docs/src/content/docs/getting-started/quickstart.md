@@ -12,6 +12,7 @@ Create an empty directory, navigate into it, and initialize your project:
 ```bash
 mkdir my-avenx-app
 cd my-avenx-app
+npm install avenx-core@rc
 npx avenx init
 ```
 
