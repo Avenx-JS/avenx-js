@@ -13,7 +13,14 @@ import { lowerToProgram } from '../lib/compiler/ir/lower.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDirectory = path.join(__dirname, '../test/fixtures/compiler-snapshots/templates');
 const snapshotPath = path.join(__dirname, '../test/unit/snapshots/compiler-output.json');
-const updateSnapshots = process.env.AVENX_UPDATE_SNAPSHOTS === '1';
+// `npm run test:snapshots:update` passes the flag; the environment variable is
+// what `test/run-tests.js` sets for the same purpose. Reading only the variable
+// left the documented update command failing with the same diff it was meant
+// to accept.
+const updateSnapshots =
+  process.env.AVENX_UPDATE_SNAPSHOTS === '1' ||
+  process.argv.includes('--update-snapshots') ||
+  process.argv.includes('-u');
 
 const fixtureFiles = fs
   .readdirSync(fixtureDirectory)
