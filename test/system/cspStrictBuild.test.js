@@ -295,7 +295,9 @@ try {
     ['a computed value', /"doubled"/],
     ['a bound attribute', /axGet\(\$s,\s*"label"\)/],
     ['a list item read', /axRead\(axGet\(\$s,\s*"item"\),\s*"name"/],
-    ['an inline handler', /\(\$s\)\s*=>\s*\{\s*axCall\(axGet\(\$s,\s*"bump"\)/],
+    // The handler returns its last statement's value, so the promise of an
+    // async action reaches the dispatcher (see compileStatementRun).
+    ['an inline handler', /\(\$s\)\s*=>\s*\{\s*return\s+axCall\(axGet\(\$s,\s*"bump"\)/],
     ['a statement-bodied action', /"total":\s*\(\$s\)\s*=>\s*\{\s*let running/],
   ]) {
     assert.ok(pattern.test(strictDev), `${what} was not compiled into the strict development bundle`);
