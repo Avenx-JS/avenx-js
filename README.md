@@ -345,6 +345,8 @@ template keeps rendering; `AVX_W48` names anything it could not compile.
 > Requires **Node.js 18 or newer**. There is no `avenx` package on npm — the
 > package is `avenx-core`, and it provides the `avenx` binary, so install it
 > before using `npx avenx`.
+> The docs describe `1.0.0-rc.1`; `latest` points to the older `0.4.3`,
+> so use the `rc` tag.
 
 <table>
 <tr valign="top">
@@ -352,7 +354,7 @@ template keeps rendering; `AVX_W48` names anything it could not compile.
 
 ```bash
 mkdir my-app && cd my-app
-npm install avenx-core
+npm install avenx-core@rc
 
 npx avenx init        # scaffold
 npx avenx g counter   # a working component
@@ -634,7 +636,7 @@ is compiled entirely or not at all.
 
 ### Size and dependencies
 
-The published package has **no dependencies**: `npm install avenx-core`
+The published package has **no dependencies**: `npm install avenx-core@rc`
 installs Avenx and nothing else. That holds for the compiler as well as for the
 runtime — the compiler parses JavaScript with its own parser
 (`lib/compiler/parser/js/`) rather than a third-party one, and
@@ -823,7 +825,7 @@ Avenx is **pre-1.0**. Under SemVer that means a minor release may change public
 behaviour; every such change is listed in [CHANGELOG.md](CHANGELOG.md) with its
 migration.
 
-- **Published:** `avenx-core@1.0.0-rc.1` on npm.
+- **Published:** `rc` resolves to `avenx-core@1.0.0-rc.1`; `latest` resolves to `avenx-core@0.4.3` on npm.
 - **In progress:** a production-readiness cycle ahead of a release candidate.
   The unreleased section of the changelog records what it has found and fixed.
 - **Node:** 18 or newer. CI runs the suite on 18, 20 and 22.
