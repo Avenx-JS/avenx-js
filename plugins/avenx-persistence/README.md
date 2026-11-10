@@ -24,9 +24,9 @@ It is an extension of Avenx state, not a second store. Your data stays in the br
 
 ### 1. Install the package
 
-```bash
-npm install @avenx/persistence
-```
+`@avenx/persistence` is not on npm yet. Until a release publishes it, install it
+from a checkout as described in the
+[installation guide](https://docs.avenx-js.com/guides/persistence/#installation).
 
 ### 2. Persist a bridge
 

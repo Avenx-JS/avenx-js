@@ -9,9 +9,8 @@ to the language, through the same dependency tracking that answers a counter
 increment. Switching locale re-renders exactly the components that translate,
 patches only the text nodes that changed, and leaves everything else alone.
 
-```bash
-npm install @avenx/i18n
-```
+> **Not on npm yet.** Until a release publishes `@avenx/i18n`, install it from a
+> checkout: [installation guide](https://docs.avenx-js.com/guides/i18n/#installation).
 
 ```javascript
 import { AvenxApp } from 'avenx-core/runtime';

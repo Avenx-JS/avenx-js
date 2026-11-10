@@ -113,3 +113,7 @@ npm run test:plugins
 ```
 
 CI runs this after `npm test`. Prefer fixing a plugin failure against the working-tree core rather than a published `avenx-core`.
+
+Plugin sources import the core the way an installed plugin does, as `avenx-core/runtime` or `avenx-core/integration`, never as a relative path into `lib/`. Such a path resolves only in a checkout and breaks the published package. Inside the repository these specifiers resolve to the working tree through `plugins/node_modules/avenx-core`, a link `scripts/link-plugin-core.js` creates. `npm ci`, `npm test` and `npm run test:plugins` create it for you. If a plugin needs a compiler piece core does not export yet, add it to `lib/compiler/integration.js` (and its `.d.ts`). `test/system/packageIntegrity.test.js` fails on an import that would not resolve once published.
+
+The plugins are versioned in lockstep with `avenx-core`. Do not bump a plugin's version by hand: `npm version` updates all of them (`scripts/sync-plugin-versions.js`).

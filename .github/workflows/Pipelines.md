@@ -12,7 +12,7 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 | **Quality & Benchmarks**        | [`quality-results.yml`](quality-results.yml)     | Schedule (Saturdays 12:00 Swiss time / `0 10 * * 6`), `workflow_dispatch` | Generates coverage & benchmarks    | [`avenx-js/test-cov`](https://github.com/avenx-js/test-cov)<br>[`avenx-js/bench-results`](https://github.com/avenx-js/bench-results) |
 | **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                               | Push/PR to `main`, Release creation                                       | Runs test suite and linter         | Build & multi-version compatibility verification                                                                                     |
 | **Template Parser Fuzz**        | [`fuzz-nightly.yml`](fuzz-nightly.yml)           | Schedule (`0 2 * * *`), `workflow_dispatch`                               | Runs property-based fuzz tests     | Template parser & compiler invariants verification                                                                                   |
-| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                          | Publishes `avenx-core` to npm      | npm registry                                                                                                                         |
+| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                          | Publishes `avenx-core` and plugins | npm registry                                                                                                                         |
 | **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)               | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
 | **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                    | Checks compiler changes have tests | PR comment report                                                                                                                    |
 | **Benchmark Comparison**        | [`benchmark-compare.yml`](benchmark-compare.yml) | Pull Request to `main` (measures only on render/reactive/compiler changes) | Gates benchmark regressions vs base | PR comment report                                                                                                                   |
@@ -69,11 +69,17 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 ### 4. NPM Package Release (`npm-publish.yml`)
 
 - **Triggers**: Release creation (`types: [created]`).
-- **Pre-Publish & Release Runtime**:
-  - Executes build verification (`build` job) and publication (`publish-npm` job) using **Node.js 18** (the minimum supported version requirement) with `cache: npm`.
 - **Steps**:
-  1. **Build Job**: Validates the codebase on Node.js 18 by installing dependencies (`npm ci`) and executing the test suite (`npm test`).
-  2. **Publish Job**: Sets up Node.js 18 with npm registry credentials, reinstalls dependencies, and publishes `avenx-core` to the npm registry with provenance tracking (`npm publish --provenance`).
+  1. **Build Job** (`build`): On Node.js 18, 20 and 22, installs dependencies (`npm ci`), runs the test suite (`npm test`) and the plugin suites (`npm run test:plugins`).
+  2. **Core Publish Job** (`publish-npm`): On Node.js 20, publishes `avenx-core` with provenance (`npm publish --provenance`).
+  3. **Plugin Publish Job** (`publish-plugins`): Runs only after the core publish succeeded, once per plugin (`@avenx/i18n`, `@avenx/persistence`, `@avenx/charts`, `@avenx/vite`), in parallel:
+     - Installs the root dependencies, which provide esbuild for the plugin builds and link `avenx-core` for the plugins' own imports (`scripts/link-plugin-core.js`).
+     - Skips the plugin if that exact version is already on npm, so a re-run after a partial failure finishes the rest instead of failing.
+     - Builds it (`npm run build --if-present`), which populates the `dist/` that the manifests for i18n, persistence and charts ship.
+     - Publishes with `npm publish --provenance --access public --tag <tag>`. The tag is `latest` for a release version and the prerelease identifier otherwise (`1.0.0-rc.2` → `rc`).
+- **Versioning**: The plugins are versioned in lockstep with `avenx-core` and require `avenx-core` `^<version>`. `npm version <bump>` runs `scripts/sync-plugin-versions.js` and stages the plugin manifests in the same commit. `test/system/packageIntegrity.test.js` fails if a plugin's version or peer range drifts from the core.
+- **Credentials**: The plugin job publishes with the `NPM_TOKEN` repository secret (`NODE_AUTH_TOKEN`). npm trusted publishing is configured per package on npmjs.com and needs the package to exist first, so at least the first publish of each plugin needs the token. The `@avenx` scope must belong to the npm account or organisation the token is for.
+- **Integrity**: `test/system/packageIntegrity.test.js` packs each plugin and checks that every `exports` target, including a `types` condition for every subpath, is in the tarball, that `dist/` is built where `files` lists it, and that every module reachable from the entry points resolves inside the tarball or to a declared (peer) dependency, with `avenx-core/*` imports limited to subpaths core exports.
 
 ### 5. Bundle Size Monitor (`size-check.yml`)
 

@@ -18,11 +18,10 @@ Official [Vite](https://vitejs.dev/) plugin for [Avenx.js](https://github.com/av
 
 ## Installation
 
-Install `@avenx/vite` and `vite` as development dependencies in your project:
-
-```bash
-npm install -D @avenx/vite vite
-```
+`@avenx/vite` is not on npm yet. Until a release publishes it, install it from a
+checkout, together with the `avenx-core` from the same checkout, as described in
+the [installation guide](https://docs.avenx-js.com/cli-reference/vite-plugin/#package-installation).
+`vite` itself installs from npm as usual.
 
 ### Peer Dependencies
 
@@ -31,7 +30,7 @@ npm install -D @avenx/vite vite
 | Package      | Supported Version Range |
 | :----------- | :---------------------- |
 | `vite`       | `^7.0.0 \|\| ^8.0.0`    |
-| `avenx-core` | `>=0.4.0`               |
+| `avenx-core` | `^` this plugin's own version (versioned in lockstep) |
 
 ---
 

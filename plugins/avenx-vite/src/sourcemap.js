@@ -2,4 +2,4 @@ export {
   encodeVLQ,
   generateTemplateSourceMap,
   composeBundleSourceMap,
-} from '../../../lib/compiler/sourcemap.js';
+} from 'avenx-core/integration';

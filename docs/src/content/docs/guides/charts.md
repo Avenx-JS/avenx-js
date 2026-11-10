@@ -11,11 +11,33 @@ Only the line chart exists today. The package exports two components, `ChartLine
 
 ## Installation
 
+`@avenx/charts` is not on npm yet, so `npm install @avenx/charts` fails with a
+404. Until a release publishes it, build it from a checkout of the Avenx
+repository and install the result. These commands assume the checkout sits next
+to your project, in the same parent folder:
+
 ```bash
-npm install @avenx/charts
+# Once: get the repository and the tools its packages build with
+git clone https://github.com/avenx-js/avenx-js.git
+cd avenx-js
+npm ci
+
+# Pack the core and the plugin. Each command prints the .tgz file it wrote.
+npm pack
+npm pack ./plugins/avenx-charts
+
+# In your project
+cd ../my-app
+npm install ../avenx-js/avenx-core-<version>.tgz ../avenx-js/avenx-charts-<version>.tgz
 ```
 
-The plugin requires `avenx-core` `>=0.4.0` as a peer dependency.
+Replace `<version>` with the version in the file names `npm pack` printed.
+Install `avenx-core` from the same checkout as the plugin: the plugin requires
+`avenx-core` at its own version as a peer dependency, because it is built
+against the core beside it.
+
+Your imports are the same either way. Once the package is on npm, this step
+becomes `npm install @avenx/charts` and nothing else changes.
 
 ## Register the plugin
 

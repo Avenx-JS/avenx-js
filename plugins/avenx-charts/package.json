@@ -1,6 +1,6 @@
 {
   "name": "@avenx/charts",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "description": "First-class official declarative, reactive charts plugin for Avenx.js",
   "type": "module",
   "main": "./src/index.js",
@@ -10,10 +10,11 @@
       "default": "./src/index.js"
     },
     "./preprocessor": {
+      "types": "./src/preprocessor.d.ts",
       "default": "./src/preprocessor.js"
     }
   },
-    "files": [
+  "files": [
     "src/",
     "dist/",
     "README.md"
@@ -21,7 +22,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "prepare": "npm run build",
-    "pretest": "node scripts/build.js",
+    "pretest": "node ../../scripts/link-plugin-core.js && node scripts/build.js",
     "test": "node test/charts.test.js && node test/chartsGlobalBuild.test.js"
   },
   "keywords": [
@@ -45,6 +46,9 @@
   },
   "homepage": "https://avenx-js.com/",
   "peerDependencies": {
-    "avenx-core": ">=0.4.0"
+    "avenx-core": "^1.0.0-rc.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

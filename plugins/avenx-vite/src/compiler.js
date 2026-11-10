@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import StyleProcessor from '../../../lib/compiler/StyleProcessor.js';
-import ComponentParser from '../../../lib/compiler/ComponentParser.js';
-import { AvenxErrorCodes } from '../../../lib/core/runtime/AvenxError.js';
-import { BuildError } from '../../../lib/compiler/errors/index.js';
+// Through the peer dependency's published entry, never a path into the
+// repository: `../../../lib/...` resolves only in a checkout, so a published
+// plugin that imported it would fail before Vite called a single hook.
+import { StyleProcessor, ComponentParser, AvenxErrorCodes, BuildError } from 'avenx-core/integration';
 import { wrapComponent, wrapPage } from './wrapper.js';
 import { generateTemplateSourceMap } from './sourcemap.js';
 import { COMPONENT_CSS_EXT, PAGE_CSS_EXT } from './constants.js';
