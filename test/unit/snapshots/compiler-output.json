@@ -593,7 +593,7 @@
     "statements": [
       "select(user)"
     ],
-    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"pageTitle\")),\n  ($s) => (\"wide\"),\n  ($s) => (axGet($s, \"user\")),\n  ($s) => (axRead(axGet($s, \"user\"), \"name\", false)),\n  ($s) => (axGet($s, \"footer\"))\n];\nSnapshot.__axProgramStmts = [\n  ($s) => { axCall(axGet($s, \"select\"), undefined, [axGet($s, \"user\")], \"select\"); }\n];\n"
+    "generatedSource": "\nSnapshot.__axProgramExprs = [\n  ($s) => (axGet($s, \"pageTitle\")),\n  ($s) => (\"wide\"),\n  ($s) => (axGet($s, \"user\")),\n  ($s) => (axRead(axGet($s, \"user\"), \"name\", false)),\n  ($s) => (axGet($s, \"footer\"))\n];\nSnapshot.__axProgramStmts = [\n  ($s) => { return axCall(axGet($s, \"select\"), undefined, [axGet($s, \"user\")], \"select\"); }\n];\n"
   },
   "slots.html": {
     "ir": {
