@@ -15,6 +15,7 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 | **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                          | Publishes `avenx-core` to npm      | npm registry                                                                                                                         |
 | **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)               | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
 | **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                    | Checks compiler changes have tests | PR comment report                                                                                                                    |
+| **Benchmark Comparison**        | [`benchmark-compare.yml`](benchmark-compare.yml) | Pull Request to `main` (measures only on render/reactive/compiler changes) | Gates benchmark regressions vs base | PR comment report                                                                                                                   |
 | **GitHub Pages Docs**           | [`static.yml`](static.yml)                       | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                         |
 
 ---
@@ -110,6 +111,23 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 - **Steps**: Diffs the PR against its base. If `lib/compiler/` or `lib/compiler.js` changed, runs the test suite with `c8` coverage instrumentation and posts or updates a PR comment (like the bundle size report) with the test result, overall compiler line/branch coverage, diff size, coverage of changed executable lines, and any uncovered changed lines or branches.
 - **Missing tests**: The comment warns when no `*.test.*` or `*.spec.*` file changed, unless the PR description contains `[no-test-needed]`; see [CONTRIBUTING.md](../../CONTRIBUTING.md#compiler-changes-and-regression-tests).
 - **Advisory only**: The check never fails the build; the CI/CD Pipeline's test job is the gate. Fork PRs, which get a read-only token, show the report in the job summary instead of a comment.
+
+### 9. Benchmark Comparison (`benchmark-compare.yml`)
+
+The timing counterpart of the Bundle Size Monitor. `quality-results.yml` publishes absolute numbers weekly; this job answers whether _this_ pull request made an update slower, before it lands.
+
+- **Triggers**: Pull Request to `main`. A new push cancels the run in progress for the same pull request.
+- **When it measures**: Only when the diff against the base touches `lib/core/renderer/`, `lib/core/reactive/`, `lib/core/expression/`, `lib/compiler/`, `lib/compiler.js`, `benches/`, or the job's own files (`scripts/bench-compare.js`, this workflow). Otherwise it passes without measuring. Changed-file detection is the same `git diff` used by `compiler-coverage.yml`, not a `paths:` filter, so the check always reports a status.
+- **Steps**:
+  1. Checks out the PR branch, and the base branch into `base/`, as `size-check.yml` does. Installs dependencies in both.
+  2. Runs `node scripts/bench-compare.js measure`, which runs each checkout's own `benches/run.js --json` (the output `npm run bench:report` produces) `BENCH_ROUNDS` times per side (currently **5**).
+  3. Runs `node scripts/bench-compare.js compare`, which takes the median of each benchmark's samples and reports base, PR, absolute and relative change, and each side's noise for every benchmark.
+  4. Posts or updates a PR comment (`### ⏱️ Benchmark Comparison`), writes the same report to the job summary, and uploads the raw samples as the `bench-samples` artifact.
+- **Noise handling**: Both branches run in the same job on the same runner, interleaved (base, PR, PR, base, …) so drift on the shared machine lands on both sides. The figure compared is a median across rounds, and the comment states the number of rounds and each side's spread.
+- **What fails the job**: Only the benchmarks listed in [`benches/regression-gate.js`](../../benches/regression-gate.js), when their PR median is slower than the base median by more than their threshold (currently **+25%** for `dom-patching` and `list-rendering`, **+35%** for `reactivity-lookup`), or when one crashes on the PR but ran on the base. Every other benchmark is reported only. The thresholds, the gating set, and the A/A calibration behind them are documented in that file.
+- **Override**: A maintainer adds the `benchmark-regression-accepted` label and re-runs the job. Labels are read live from the API, since a re-run replays the original event payload, which predates the label. The report still shows the regression and says it was accepted. The job deliberately does not trigger on `labeled`. A run skipped for an unrelated label would replace a failing check with a passing one.
+- **Fork PRs**: The read-only token cannot comment, so the report is in the job summary. The gate still applies.
+- **Cost**: About one minute per suite run on a typical runner, so roughly 10–12 minutes with 5 rounds per side, spent only on pull requests that change what the benchmarks measure.
 
 ---
 

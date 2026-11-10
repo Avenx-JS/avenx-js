@@ -41,7 +41,10 @@ files.forEach((file) => {
   const result = spawnSync(
     'node',
     ['--import', bootstrapUrl, path.join(benchesDir, file)],
-    { encoding: 'utf-8' },
+    // The default 1 MB buffer kills a child that logs more than that, and the
+    // kill surfaces as an unexplained `exit -1` -- which is how a benchmark
+    // flooding stderr with diagnostics went unnoticed.
+    { encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 },
   );
 
   const output = result.stdout || '';
