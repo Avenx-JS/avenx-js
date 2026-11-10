@@ -16,6 +16,42 @@ rest of that directory, and nothing replaced it, so the reference was dead.)
 Production-readiness cycle. No public API was removed and no documented feature
 was dropped. Behaviour changes are listed with their migration.
 
+### Added — the official plugins can be published
+
+- **A release now publishes `@avenx/i18n`, `@avenx/persistence`,
+  `@avenx/charts` and `@avenx/vite`** (`publish-plugins` in
+  `npm-publish.yml`), after `avenx-core`, with provenance and public access.
+  None of them has been on npm so far; every guide opened with an
+  `npm install` that returned 404. Until the first such release, the guides
+  explain how to pack the core and the plugin from a checkout.
+- **The plugins are versioned in lockstep with `avenx-core`** and require
+  `avenx-core` `^` their own version. They move from `0.1.0` to the core
+  version (`1.0.0-rc.1` in this tree). The previous peer range, `>=0.4.0`, did
+  not match any `1.0.0` prerelease, so installing a plugin next to
+  `avenx-core@rc` failed with `ERESOLVE`. `npm version` now syncs the plugin
+  manifests (`scripts/sync-plugin-versions.js`).
+- **`avenx-core/integration`**: the compiler pieces a build-tool plugin needs
+  (`ComponentParser`, `StyleProcessor`, `BuildError`, `AvenxErrorCodes`, the
+  source-map writers, `runtimeImportStatement`), with type declarations.
+  `@avenx/vite` imports them from here.
+- **Type declarations for `@avenx/vite` and `@avenx/charts/preprocessor`.**
+
+### Fixed — the plugins would not have worked once installed
+
+- **`@avenx/vite` imported the compiler as `../../../lib/compiler/…`.** That
+  path exists only in this repository. In an installed package it points
+  outside `node_modules`, so the plugin would have failed at its first import.
+- **`@avenx/i18n`, `@avenx/persistence` and `@avenx/charts` broke every Vite
+  build.** They tried `import('avenx-core/runtime')` and fell back to
+  `../../../lib/core/index.js`. Vite resolves both statically and failed with
+  `UNRESOLVED_IMPORT`. Each now imports `avenx-core/runtime` statically, which
+  also drops a top-level `await`. In the repository, the specifier resolves
+  through a link `scripts/link-plugin-core.js` creates (run by `prepare`,
+  `pretest` and `test:plugins`).
+- `test/system/packageIntegrity.test.js` now packs each plugin. It checks the
+  exports, types and `dist/`, and walks the shipped import graph, so an import
+  that resolves only in a checkout fails the test suite.
+
 ### Changed — the published package has no dependencies
 
 - **`acorn` is no longer a dependency.** `"dependencies"` is now empty, so

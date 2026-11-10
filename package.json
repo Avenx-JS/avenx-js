@@ -36,6 +36,10 @@
       "types": "./lib/core/testing.d.ts",
       "default": "./lib/core/testing.js"
     },
+    "./integration": {
+      "types": "./lib/compiler/integration.d.ts",
+      "default": "./lib/compiler/integration.js"
+    },
     "./tooling": {
       "types": "./lib/core/tooling/index.d.ts",
       "default": "./lib/core/tooling/index.js"
@@ -63,8 +67,10 @@
     "./lib/core/runtime/installVirtualList.js"
   ],
   "scripts": {
+    "prepare": "node scripts/link-plugin-core.js",
+    "pretest": "node scripts/link-plugin-core.js",
     "test": "node test/run-tests.js",
-    "test:plugins": "npm --prefix plugins/avenx-i18n test && npm --prefix plugins/avenx-persistence test && npm --prefix plugins/avenx-charts test && npm --prefix plugins/avenx-vite test",
+    "test:plugins": "node scripts/link-plugin-core.js && npm --prefix plugins/avenx-i18n test && npm --prefix plugins/avenx-persistence test && npm --prefix plugins/avenx-charts test && npm --prefix plugins/avenx-vite test",
     "test:unit": "node test/run-tests.js unit",
     "test:snapshots": "node scripts/compilerSnapshots.js",
     "test:snapshots:update": "node scripts/compilerSnapshots.js --update-snapshots",
@@ -73,6 +79,7 @@
     "test:fuzz": "node test/run-tests.js fuzz",
     "test:e2e": "playwright test",
     "test:coverage": "c8 --reporter=text --reporter=html npm test",
+    "version": "node scripts/sync-plugin-versions.js && git add plugins/*/package.json plugins/*/package-lock.json",
     "bench": "node benches/run.js",
     "bench:report": "node benches/run.js --json > bench-results/results.json",
     "docs": "jsdoc -c jsdoc.json",

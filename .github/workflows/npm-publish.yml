@@ -22,6 +22,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm test
+      - run: npm run test:plugins
 
   publish-npm:
     needs: build
@@ -34,3 +35,75 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - run: npm ci
       - run: npm publish --provenance
+
+  # The official plugins are versioned in lockstep with avenx-core and require
+  # it as `^<this version>` (scripts/sync-plugin-versions.js), so they publish
+  # only after the core they depend on has: a plugin on npm that requires a
+  # core that failed to publish would be uninstallable.
+  publish-plugins:
+    needs: publish-npm
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: [avenx-i18n, avenx-persistence, avenx-charts, avenx-vite]
+    defaults:
+      run:
+        working-directory: plugins/${{ matrix.plugin }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      # The root install provides esbuild for the plugin builds and, through
+      # its `prepare` script, links avenx-core for the plugins' own imports.
+      - name: Install root dependencies
+        run: npm ci
+        working-directory: .
+
+      - name: Read package identity
+        id: package
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # A prerelease goes out under its identifier (1.0.0-rc.2 -> rc), so it
+          # never becomes what a bare `npm install @avenx/<name>` resolves to.
+          if [[ "$version" == *-* ]]; then
+            tag="${version#*-}"; tag="${tag%%.*}"
+          else
+            tag=latest
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # Re-running a release whose plugins partly published must not fail on
+      # the ones already there.
+      - name: Check whether this version is already published
+        id: published
+        run: |
+          if npm view "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
+            echo "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }} is already on npm; skipping."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # `npm publish` runs `prepare`, which builds too; building here first
+      # makes a build failure its own red step rather than part of the publish.
+      - name: Build
+        if: steps.published.outputs.exists == 'false'
+        run: npm run build --if-present
+
+      # --access public: a scoped package is private by default, and the first
+      # publish of each one fails without it (publishConfig says the same).
+      # NODE_AUTH_TOKEN: npm trusted publishing is configured per package on
+      # npmjs.com, which needs the package to exist, so the first publish of
+      # each plugin authenticates with the NPM_TOKEN secret.
+      - name: Publish
+        if: steps.published.outputs.exists == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public --tag "${{ steps.package.outputs.tag }}"

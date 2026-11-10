@@ -19,9 +19,32 @@ The plugin only adds two movements around it:
 
 ## Installation
 
+`@avenx/persistence` is not on npm yet, so `npm install @avenx/persistence`
+fails with a 404. Until a release publishes it, build it from a checkout of the
+Avenx repository and install the result. These commands assume the checkout
+sits next to your project, in the same parent folder:
+
 ```bash
-npm install @avenx/persistence
+# Once: get the repository and the tools its packages build with
+git clone https://github.com/avenx-js/avenx-js.git
+cd avenx-js
+npm ci
+
+# Pack the core and the plugin. Each command prints the .tgz file it wrote.
+npm pack
+npm pack ./plugins/avenx-persistence
+
+# In your project
+cd ../my-app
+npm install ../avenx-js/avenx-core-<version>.tgz ../avenx-js/avenx-persistence-<version>.tgz
 ```
+
+Replace `<version>` with the version in the file names `npm pack` printed.
+Install `avenx-core` from the same checkout as the plugin: the plugin is built
+against the core beside it and requires exactly that version.
+
+Your imports are the same either way. Once the package is on npm, this step
+becomes `npm install @avenx/persistence` and nothing else changes.
 
 ## Persisting a bridge
 

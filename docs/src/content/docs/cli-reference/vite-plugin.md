@@ -11,11 +11,35 @@ The `@avenx/vite` package (located in `plugins/avenx-vite`) brings native [Vite]
 
 ### Package Installation
 
-Install `@avenx/vite` along with `vite` as development dependencies in your project:
+`@avenx/vite` is not on npm yet, so `npm install -D @avenx/vite` fails with a
+404. Until a release publishes it, build it from a checkout of the Avenx
+repository and install the result. These commands assume the checkout sits next
+to your project, in the same parent folder:
 
 ```bash
-npm install -D @avenx/vite vite
+# Once: get the repository and the tools its packages build with
+git clone https://github.com/avenx-js/avenx-js.git
+cd avenx-js
+npm ci
+
+# Pack the core and the plugin. Each command prints the .tgz file it wrote.
+npm pack
+npm pack ./plugins/avenx-vite
+
+# In your project: the core as a dependency, the plugin and Vite as dev dependencies
+cd ../my-app
+npm install ../avenx-js/avenx-core-<version>.tgz
+npm install -D ../avenx-js/avenx-vite-<version>.tgz vite
 ```
+
+Replace `<version>` with the version in the file names `npm pack` printed.
+Install `avenx-core` from the same checkout as the plugin. The plugin compiles
+components through `avenx-core/integration`, an entry point the `avenx-core`
+release currently on npm does not have yet, and it requires `avenx-core` at its
+own version.
+
+Your configuration is the same either way. Once the package is on npm, this step
+becomes `npm install -D @avenx/vite vite` and nothing else changes.
 
 ### Basic `vite.config.js` Setup
 

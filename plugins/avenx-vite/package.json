@@ -1,11 +1,12 @@
 {
   "name": "@avenx/vite",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "description": "Official Vite plugin for Avenx-JS providing Single File Component (SFC) & Page compilation, CSS processing, and HMR",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
     ".": {
+      "types": "./src/index.d.ts",
       "default": "./src/index.js"
     }
   },
@@ -34,13 +35,18 @@
   "author": "Avenx Team",
   "license": "MIT",
   "scripts": {
+    "pretest": "node ../../scripts/link-plugin-core.js",
     "test": "node test/vite.test.js"
   },
   "peerDependencies": {
     "vite": "^7.0.0 || ^8.0.0",
-    "avenx-core": ">=0.4.0"
+    "avenx-core": "^1.0.0-rc.1"
   },
   "devDependencies": {
     "vite": "^8.1.4"
+  },
+  "types": "./src/index.d.ts",
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,22 +1,19 @@
 /**
- * Resolves the Avenx runtime once for the whole plugin.
+ * The Avenx runtime, resolved once for the whole plugin.
  *
- * A published plugin imports `avenx-core/runtime`. Inside this repository that
- * specifier does not resolve — the nearest package.json is the plugin's own —
- * so the checked-out runtime is used instead. Doing it here, rather than in
- * every component, keeps the fallback to a single place and gives the
- * standalone browser build one module to swap (see `runtime.global.js`).
+ * A static import of `avenx-core/runtime`, the peer dependency, so a bundler
+ * sees exactly one runtime and links this plugin to the application's copy of
+ * it. This module used to try that import and fall back to
+ * `../../../lib/core/index.js` when it failed; that path exists only in this
+ * repository, and in an installed package it made Vite fail the build with an
+ * unresolved import. Inside the repository the specifier resolves through the
+ * link `scripts/link-plugin-core.js` creates.
+ *
+ * Keeping the import in this one module still gives the standalone browser
+ * build a single module to swap (see `runtime.global.js`).
  * @module @avenx/charts/runtime
  */
-
-let core;
-try {
-  core = await import('avenx-core/runtime');
-} catch {
-  core = await import('../../../lib/core/index.js');
-}
-
-export const { AvenxComponent } = core;
+export { AvenxComponent } from 'avenx-core/runtime';
 
 /**
  * No-op in the module build: `AvenxComponent` above is already the real base

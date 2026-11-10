@@ -1,4 +1,4 @@
-import { runtimeImportStatement } from '../../../lib/compiler/codegen/expression.js';
+import { runtimeImportStatement } from 'avenx-core/integration';
 
 /**
  * Builds the side-effect import that pulls a module's scoped stylesheet into

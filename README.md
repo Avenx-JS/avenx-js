@@ -781,17 +781,28 @@ casing against your registered components.
 **→ [ESLint guide](https://docs.avenx-js.com/guides/eslint/)**
 
 **Official plugins** live in this repository under `plugins/`. They are **not
-yet published to npm** — use them from a checkout for now.
+yet published to npm**. Until a release publishes them, pack them from a
+checkout together with `avenx-core`; each guide below has the exact commands
+under *Installation*.
 
-| Plugin | What it adds |
-| :--- | :--- |
-| `@avenx/i18n` | Reactive translations, locale fallback, `Intl` formatting. |
-| `@avenx/persistence` | Bridge state that survives reloads. |
-| `@avenx/charts` | Declarative, reactive charts. |
-| `@avenx/vite` | Component and page compilation, CSS processing and HMR under Vite. |
+| Plugin | What it adds | Version |
+| :--- | :--- | :--- |
+| `@avenx/i18n` | Reactive translations, locale fallback, `Intl` formatting. | same as `avenx-core` |
+| `@avenx/persistence` | Bridge state that survives reloads. | same as `avenx-core` |
+| `@avenx/charts` | Declarative, reactive charts. | same as `avenx-core` |
+| `@avenx/vite` | Component and page compilation, CSS processing and HMR under Vite. | same as `avenx-core` |
+
+**Versioning.** The plugins are versioned in lockstep with `avenx-core`: every
+release publishes each plugin at the core's version, and each plugin requires
+`avenx-core` `^` that version. A plugin is built and tested against the core in
+the same tree (`@avenx/vite` compiles through `avenx-core/integration`), so
+`@avenx/i18n@1.2.0` is the release known to work with `avenx-core@1.2.0`. Use
+matching versions. `npm version` keeps them in step
+(`scripts/sync-plugin-versions.js`), and a test fails if they drift.
 
 **→ [i18n](https://docs.avenx-js.com/guides/i18n/)** ·
 **[Persistence](https://docs.avenx-js.com/guides/persistence/)** ·
+**[Charts](https://docs.avenx-js.com/guides/charts/)** ·
 **[Vite plugin](https://docs.avenx-js.com/cli-reference/vite-plugin/)** ·
 **[Writing a plugin](https://docs.avenx-js.com/guides/plugin-authoring/)**
 
