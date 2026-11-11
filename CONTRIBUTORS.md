@@ -226,6 +226,7 @@ If you have questions or want to contribute, feel free to reach out.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bfs2021"><img src="https://avatars.githubusercontent.com/u/101915083?v=4&size=100" width="100px" height="100px" alt="zgy"/><br /><sub><b>zgy</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=bfs2021" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/khizzcr7"><img src="https://avatars.githubusercontent.com/u/70688827?v=4&size=100" width="100px" height="100px" alt="Muhammad Khizar"/><br /><sub><b>Muhammad Khizar</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=khizzcr7" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/shounakjoshi88-a11y"><img src="https://avatars.githubusercontent.com/u/226379714?v=4&size=100" width="100px" height="100px" alt="Shounak Joshi"/><br /><sub><b>Shounak Joshi</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=shounakjoshi88-a11y" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
