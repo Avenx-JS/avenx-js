@@ -1436,6 +1436,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "shounakjoshi88-a11y",
+      "name": "Shounak Joshi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/226379714?v=4",
+      "profile": "https://github.com/shounakjoshi88-a11y",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
