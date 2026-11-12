@@ -186,6 +186,6 @@ app.mixin({
 Looking to build, package, or distribute your own plugin? See the [Plugin Authoring Guide](/guides/plugin-authoring) for details on:
 
 * The `install(app, options)` installer contract
-* Declaring template helpers via `templateGlobals`
+* Declaring template helpers via `templateGlobals`, and [publishing them as top-level mixin members](/guides/plugin-authoring#the-authors-contract)
 * Subscribing to reactive state with bridge `setup()` hooks
 * Compiler preprocessors and packaging standards
