@@ -12,14 +12,12 @@
  *   appearing as a substring somewhere else.
  */
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import assert from 'assert';
-import { fileURLToPath } from 'url';
 import { runInspect } from '../../bin/commands/inspect.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const TEST_DIR = path.join(__dirname, 'inspect-unit-test-project');
+const TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-inspect-unit-'));
 
 /**
  * Creates an empty project directory.

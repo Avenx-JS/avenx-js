@@ -1,12 +1,19 @@
 import assert from 'assert';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { checkProject } from '../../bin/commands/build.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-watch');
+const FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-check-watch-'));
+
+async function waitFor(predicate, message, timeoutMs = 3000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.ok(predicate(), message);
+}
 
 (async () => {
   try {
@@ -58,10 +65,11 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-watch');
       '<div>{{ invalidVar }}</div>'
     );
 
-    // Wait for watch debounce timeout (100ms)
-    await new Promise((res) => setTimeout(res, 300));
-
-    assert.ok(logs.some((l) => l.includes('Change detected in')), 'Should log change detection event');
+    // Wait for watch debounce and change detection
+    await waitFor(
+      () => logs.some((l) => l.includes('Change detected in')),
+      'Should log change detection event',
+    );
     assert.ok(logs.some((l) => l.includes('validation issue')), 'Should report validation issue on invalid template');
 
     // 3. Fix component file to verify recovery
@@ -72,11 +80,10 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-watch');
 <div>{{ validVar }}</div>`
     );
 
-
-
-    await new Promise((res) => setTimeout(res, 300));
-
-    assert.ok(logs.some((l) => l.includes('Change detected in')), 'Should log second change event');
+    await waitFor(
+      () => logs.some((l) => l.includes('Change detected in')),
+      'Should log second change event',
+    );
     assert.ok(logs.some((l) => l.includes('No template validation issues found')), 'Should report zero issues on fixed template');
 
     // Clean up watcher

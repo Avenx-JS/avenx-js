@@ -193,6 +193,8 @@ Avenx‑JS uses a 4‑tier testing strategy:
 To run a **single test file**, use:  
 `node test/run-tests.js unit path/to/file.test.js` (or the corresponding tier).
 
+Tests execute concurrently across a bounded worker pool by default. You can adjust the concurrency with `--concurrency <n>` (or `-c <n>`), or pass `--concurrency 1` (or `-c 1`) to run sequentially with live unbuffered stdio for debugging. Tests requiring exclusive resources can declare the `@avenx-serial` marker in the test file.
+
 ### Standard Development Commands
 
 - `npm test` – Run all unit, integration, and system tests.

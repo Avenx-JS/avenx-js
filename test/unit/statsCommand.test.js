@@ -1,12 +1,10 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import assert from 'assert';
-import { fileURLToPath } from 'url';
 import { analyzeStats, runStats, formatBytes } from '../../bin/commands/stats.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const TEST_DIR = path.join(__dirname, 'stats-unit-test-project');
+const TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-stats-unit-'));
 
 function setup() {
   if (fs.existsSync(TEST_DIR)) {

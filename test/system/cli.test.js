@@ -1,3 +1,9 @@
+// @avenx-serial
+/**
+ * @file cli.test.js
+ * @description Comprehensive CLI end-to-end and lifecycle tests.
+ * Declares @avenx-serial for exclusive access to shared scaffold directories.
+ */
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);

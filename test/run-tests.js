@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fork, spawnSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -6,16 +7,56 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Parse command line arguments to detect watch and snapshot update flags
+// Calculate default concurrency: bounded worker pool defaulting to os.cpus().length - 1
+const availableCPUs = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
+const envConcurrency = process.env.AVENX_TEST_CONCURRENCY ? parseInt(process.env.AVENX_TEST_CONCURRENCY, 10) : null;
+const defaultConcurrency =
+  envConcurrency && envConcurrency > 0
+    ? envConcurrency
+    : Math.max(1, Math.min(availableCPUs > 2 ? availableCPUs - 1 : availableCPUs, 8));
+
+// Timeout per test file to prevent hung children from stalling the worker pool
+const TEST_TIMEOUT_MS =
+  parseInt(process.env.TEST_TIMEOUT_MS || process.env.AVENX_TEST_TIMEOUT || '60000', 10) || 60000;
+
+// Parse command line arguments: watch, update-snapshots, concurrency, and path filter
 const args = process.argv.slice(2);
-const isWatchMode = args.includes('--watch') || args.includes('-w');
-const isUpdateSnapshots = args.includes('--update-snapshots') || args.includes('-u');
+let isWatchMode = false;
+let isUpdateSnapshots = false;
+let concurrency = defaultConcurrency;
+const filterArgs = [];
+
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === '--watch' || arg === '-w') {
+    isWatchMode = true;
+  } else if (arg === '--update-snapshots' || arg === '-u') {
+    isUpdateSnapshots = true;
+  } else if (arg === '--concurrency' || arg === '-c') {
+    if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+      const val = parseInt(args[++i], 10);
+      if (!isNaN(val) && val > 0) {
+        concurrency = val;
+      }
+    }
+  } else if (arg.startsWith('--concurrency=')) {
+    const val = parseInt(arg.split('=')[1], 10);
+    if (!isNaN(val) && val > 0) {
+      concurrency = val;
+    }
+  } else if (arg.startsWith('-c=')) {
+    const val = parseInt(arg.split('=')[1], 10);
+    if (!isNaN(val) && val > 0) {
+      concurrency = val;
+    }
+  } else {
+    filterArgs.push(arg);
+  }
+}
+
 if (isUpdateSnapshots) {
   process.env.AVENX_UPDATE_SNAPSHOTS = '1';
 }
-const filterArgs = args.filter(
-  (arg) => arg !== '--watch' && arg !== '-w' && arg !== '--update-snapshots' && arg !== '-u',
-);
 const filter = filterArgs[0] || '';
 
 if (filter === 'e2e' || filter === 'test/e2e') {
@@ -115,30 +156,46 @@ function optsOutOfDevRuntime(file) {
 }
 
 /**
- * Runs a single test file by forking a child process.
- * @param {string} file
- * @returns {Promise<{file: string, success: boolean, code?: number}>}
+ * The marker a test file declares to require serial execution.
+ *
+ * A string rather than a filename convention, so the declaration sits in the
+ * file it governs and a reader of that file can see why it behaves differently
+ * from its neighbours. Tests declaring this marker are held back and run in a
+ * serial worker after parallel pool execution completes.
+ * @type {string}
  */
-async function runTestFile(file) {
+const SERIAL_MARKER = '@avenx-serial';
+
+/**
+ * Whether a test file declared that it must run serially.
+ * @param {string} file - Absolute path to the test file.
+ * @returns {boolean} True when the file declares the marker.
+ */
+function requiresSerialExecution(file) {
+  try {
+    return fs.readFileSync(file, 'utf-8').includes(SERIAL_MARKER);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Runs a single test file by forking a child process.
+ * @param {string} file - Test file path.
+ * @param {object} [options]
+ * @param {boolean} [options.inheritStdio] - Whether to inherit stdio (for concurrency 1 serial debugging).
+ * @param {number} [options.timeoutMs] - Maximum execution time before SIGKILL.
+ * @returns {Promise<{file: string, success: boolean, code?: number, timedOut?: boolean}>}
+ */
+async function runTestFile(file, options = {}) {
+  const { inheritStdio = false, timeoutMs = TEST_TIMEOUT_MS } = options;
   const relativePath = path.relative(path.join(__dirname, '..'), file);
-  console.log(`\n🏃 Running: ${relativePath}`);
+
+  if (inheritStdio) {
+    console.log(`\n🏃 Running: ${relativePath}`);
+  }
 
   const execArgv = [...process.execArgv];
-
-  // Every tier runs with the expression interpreter and the string renderer
-  // installed, because a test constructs components directly and nothing
-  // compiled their expressions. This is what a development build does; a
-  // production bundle installs nothing, which is asserted on a real bundle in
-  // test/system.
-  //
-  // A test may opt out, and that matters more than it looks. Installing both
-  // unconditionally means every test runs against a runtime configuration no
-  // `avenx build` output has, so a defect that exists only in the shipped
-  // arrangement is structurally undetectable here -- which is how a blank-page
-  // failure in the fallback renderer survived a full green suite.
-  //
-  // Declaring @avenx-no-dev-runtime runs the file in a bare process, so it
-  // observes what an application observes.
   const bareRuntime = optsOutOfDevRuntime(file);
   const interpreterPath = path.resolve(__dirname, 'helpers/register-interpreter.js');
   execArgv.push('--import', pathToFileURL(interpreterPath).href);
@@ -154,36 +211,164 @@ async function runTestFile(file) {
   }
 
   return new Promise((resolve) => {
-    // Tests inherit this runner's stdio, so a real terminal would otherwise enable
-    // CLI colors and wrap asserted output in ANSI escapes. Keep it deterministic.
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timeoutTimer = null;
+
     const child = fork(file, [], {
-      stdio: 'inherit',
+      stdio: inheritStdio ? 'inherit' : ['pipe', 'pipe', 'pipe', 'ipc'],
       execArgv,
       env: {
         ...process.env,
         NO_COLOR: '1',
-        // Read by helpers/register-interpreter.js, which is the single place
-        // the development runtime is installed from.
         ...(bareRuntime ? { AVENX_TEST_NO_DEV_RUNTIME: '1' } : {}),
       },
     });
-    child.on('exit', (code) => {
-      if (code === 0) {
+
+    if (!inheritStdio) {
+      child.stdout?.setEncoding('utf8');
+      child.stderr?.setEncoding('utf8');
+      child.stdout?.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr?.on('data', (chunk) => {
+        stderr += chunk;
+      });
+
+      if (timeoutMs > 0) {
+        timeoutTimer = setTimeout(() => {
+          if (settled) return;
+          try {
+            child.kill('SIGKILL');
+          } catch {
+            // Already exited
+          }
+          finish(null, true);
+        }, timeoutMs);
+      }
+    }
+
+    function finish(code, timedOut = false) {
+      if (settled) return;
+      settled = true;
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
+
+      if (!inheritStdio) {
+        const banner = `\n🏃 Running: ${relativePath}`;
+        const output = (stdout + stderr).trim();
+        if (output) {
+          console.log(`${banner}\n${output}`);
+        } else {
+          console.log(banner);
+        }
+      }
+
+      if (timedOut) {
+        console.error(`  ❌ TIMEOUT: ${relativePath} timed out after ${timeoutMs}ms`);
+        resolve({ file: relativePath, success: false, code: -1, timedOut: true });
+      } else if (code === 0) {
         resolve({ file: relativePath, success: true });
       } else {
-        resolve({ file: relativePath, success: false, code });
+        resolve({ file: relativePath, success: false, code: code ?? 1 });
+      }
+    }
+
+    // Listen on 'close' rather than 'exit' when piping to ensure all stdio buffers have flushed
+    if (inheritStdio) {
+      child.on('exit', (code) => finish(code, false));
+    } else {
+      child.on('close', (code) => finish(code, false));
+    }
+
+    child.on('error', (err) => {
+      if (!settled) {
+        stderr += `\nChild process error: ${err.message}`;
+        finish(1, false);
       }
     });
   });
 }
 
 /**
- * Rebuilds the Avenx runtime.
+ * Executes tasks concurrently through a bounded worker pool.
+ * @template T, R
+ * @param {T[]} items
+ * @param {number} poolSize
+ * @param {function(T): Promise<R>} workerFn
+ * @returns {Promise<R[]>}
+ */
+async function runWorkerPool(items, poolSize, workerFn) {
+  if (items.length === 0) return [];
+  const results = new Array(items.length);
+  let currentIndex = 0;
+
+  async function worker() {
+    while (currentIndex < items.length) {
+      const index = currentIndex++;
+      results[index] = await workerFn(items[index]);
+    }
+  }
+
+  const workers = [];
+  const workerCount = Math.min(poolSize, items.length);
+  for (let i = 0; i < workerCount; i++) {
+    workers.push(worker());
+  }
+
+  await Promise.all(workers);
+  return results;
+}
+
+/**
+ * Prints the formatted test summary and returns overall success.
+ * Result list is sorted deterministically by relative file path.
+ * @param {Array<{file: string, success: boolean, code?: number, timedOut?: boolean}>} results
+ * @returns {{success: boolean, count: number}}
+ */
+function printSummary(results) {
+  console.log('\n======================================');
+  console.log('📊 Test Run Summary');
+  console.log('======================================');
+
+  let passed = 0;
+  let failed = 0;
+
+  // Ordering of the summary is deterministic (sorted by file path)
+  const sortedResults = [...results].sort((a, b) => a.file.localeCompare(b.file));
+
+  sortedResults.forEach((r) => {
+    if (r.success) {
+      console.log(`  ✅ PASSED: ${r.file}`);
+      passed++;
+    } else {
+      const detail = r.timedOut ? `Timed out after ${TEST_TIMEOUT_MS}ms` : `Exit code: ${r.code}`;
+      console.log(`  ❌ FAILED: ${r.file} (${detail})`);
+      failed++;
+    }
+  });
+
+  console.log('--------------------------------------');
+  console.log(`Total: ${sortedResults.length} | Passed: ${passed} | Failed: ${failed}`);
+  console.log('======================================');
+
+  return { success: failed === 0, count: sortedResults.length };
+}
+
+/**
+ * Rebuilds the Avenx runtime if a build script exists.
  * @returns {Promise<void>}
  */
 function rebuild() {
   return new Promise((resolve, reject) => {
     const buildPath = path.resolve(__dirname, '../scripts/build.js');
+    if (!fs.existsSync(buildPath)) {
+      resolve();
+      return;
+    }
     const child = fork(buildPath, [], { stdio: 'inherit' });
     child.on('exit', (code) => {
       if (code === 0) {
@@ -210,36 +395,36 @@ async function runOnce() {
     return { success: true, count: 0 };
   }
 
-  console.log(`Found ${testFiles.length} test files to run.`);
-
-  const results = [];
-  for (const file of testFiles) {
-    const result = await runTestFile(file);
-    results.push(result);
+  // When concurrency is 1, reproduce today's fully serial behaviour for debugging
+  if (concurrency <= 1) {
+    console.log(`Found ${testFiles.length} test files to run (serial mode).`);
+    const results = [];
+    for (const file of testFiles) {
+      const result = await runTestFile(file, { inheritStdio: true });
+      results.push(result);
+    }
+    return printSummary(results);
   }
 
-  console.log('\n======================================');
-  console.log('📊 Test Run Summary');
-  console.log('======================================');
+  const effectiveConcurrency = Math.min(concurrency, testFiles.length);
+  console.log(`Found ${testFiles.length} test files to run (concurrency: ${effectiveConcurrency}).`);
 
-  let passed = 0;
-  let failed = 0;
+  const parallelFiles = testFiles.filter((f) => !requiresSerialExecution(f));
+  const serialFiles = testFiles.filter((f) => requiresSerialExecution(f));
 
-  results.forEach((r) => {
-    if (r.success) {
-      console.log(`  ✅ PASSED: ${r.file}`);
-      passed++;
-    } else {
-      console.log(`  ❌ FAILED: ${r.file} (Exit code: ${r.code})`);
-      failed++;
-    }
-  });
+  // Run parallel files concurrently through the bounded worker pool
+  const parallelResults = await runWorkerPool(parallelFiles, effectiveConcurrency, (file) =>
+    runTestFile(file, { inheritStdio: false }),
+  );
 
-  console.log('--------------------------------------');
-  console.log(`Total: ${results.length} | Passed: ${passed} | Failed: ${failed}`);
-  console.log('======================================');
+  // Run any test files that declared exclusive serial execution requirements
+  const serialResults = [];
+  for (const file of serialFiles) {
+    const result = await runTestFile(file, { inheritStdio: false });
+    serialResults.push(result);
+  }
 
-  return { success: failed === 0, count: results.length };
+  return printSummary([...parallelResults, ...serialResults]);
 }
 
 /**

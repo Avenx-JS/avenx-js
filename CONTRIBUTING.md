@@ -72,6 +72,11 @@ A quick start for working on the codebase:
    node test/run-tests.js router
    ```
 
+   Test files execute concurrently across a bounded worker pool by default (defaulting to available CPU cores minus 1).
+   Pass `--concurrency <n>` (or `-c <n>`) to customize the worker pool size. Setting `--concurrency 1` (or `-c 1`) runs the suite strictly sequentially with unbuffered stdio for debugging.
+
+   If a test file requires exclusive access to shared resources, declare the `@avenx-serial` marker in the test file; the test runner will isolate and run any such files serially after parallel pool execution completes.
+
    Add `--watch` (or `-w`) to rerun matching tests when files change. Add `--update-snapshots` (or `-u`) to rewrite stored snapshots; review those changes before committing.
 
    The compiler snapshot check is not part of `npm test`. Run it with `npm run test:snapshots`; CI runs it on every pull request. If the compiler output changed on purpose, run `npm run test:snapshots:update` and commit the result.
