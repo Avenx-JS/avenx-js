@@ -487,7 +487,7 @@ app.initRouter({
 A Layout component acts as a shell that wraps nested child page components. During child route navigation, the Layout component remains mounted, preserving its internal reactive state, animations, and DOM tree:
 
 ```html
-<!-- src/layouts/app-layout.component.js -->
+<!-- src/layouts/app-layout.component.js; .component.js files compile anywhere under src/ -->
 <state activeTab="'dashboard'" />
 
 <action name="navigateTab">

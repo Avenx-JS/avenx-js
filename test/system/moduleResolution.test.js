@@ -107,6 +107,28 @@ try {
   // ============================================================ green paths ===
 
   {
+    // Components use their filename suffix as the marker and can be colocated
+    // anywhere under src/, including a layout imported by the app entry point.
+    const root = project({
+      'src/layouts/app-layout.component.js': '<div class="layout">Nested layout</div>',
+      'src/main.app.js': `import { AvenxApp } from 'avenx-core/runtime';
+import AppLayout from './layouts/app-layout.component.js';
+
+const app = new AvenxApp({ target: '#app' });
+app.register('AppLayout', AppLayout);
+app.mount('AppLayout');
+`,
+    });
+
+    const build = avenx(['build'], root);
+    assert.strictEqual(build.status, 0, `a component outside src/components compiles:\n${build.output}`);
+    const bundle = bundleOf(root);
+    assertParses(bundle);
+    assert.ok(bundle.includes('Nested layout'), 'the layout component is included in the bundle');
+    console.log('  ✅ A component outside src/components is compiled and bundled');
+  }
+
+  {
     // An npm package imported from a component. The case that motivated all of
     // this: it used to build green and throw at runtime.
     const root = project({
