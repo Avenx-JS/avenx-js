@@ -11,6 +11,8 @@ import session from '../../bridges/session.bridge.js';
   <a href="#/dashboard?tab=analytics&amp;page=2" data-testid="nav-dashboard">Dashboard</a>
   <a href="#/admin" data-testid="nav-admin">Admin</a>
   <a href="#/admin?token=valid" data-testid="nav-admin-with-token">Admin (with token)</a>
+  <a href="#/admin-layout/dashboard" data-testid="nav-layout-dashboard">Layout dashboard</a>
+  <a href="#/admin-layout/users" data-testid="nav-layout-users">Layout users</a>
 
   <span data-testid="session-status">{{ session.signedIn }}</span>
   <button data-testid="sign-in" @click="signIn()">Sign in</button>
