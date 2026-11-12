@@ -46,6 +46,12 @@ first pass and the whole test suite had missed.
   `'/profile/:id'` receives `id` as state, but the template validator only read
   `<state>`, so `{{ id }}` raised `AVX_W03` and `avenx check` exited 1 — the
   documented feature failing the documented CI command on correct code.
+- **`wildcard` was reported as undeclared.** The same fix above covered `:param`
+  routes but missed `*`: the router captures a pattern's `*` — a segment
+  wildcard like `'/docs/*'` or the catch-all `'*'` — into `params.wildcard` and
+  assigns it into state like any parameter, but the validator did not know, so
+  the routing guide's `{{ wildcard }}` example still raised `AVX_W03`. The
+  validator now declares `wildcard` for the page a wildcard route names.
 - `AVX_W07` fired when a page was registered again with the *same* class, which
   overwrites nothing. The routing tutorial tells the reader to register pages by
   hand while the compiler already does, so following it logged one warning per
