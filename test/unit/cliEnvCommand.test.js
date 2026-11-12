@@ -1,12 +1,10 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import assert from 'assert';
-import { fileURLToPath } from 'url';
 import { runEnv } from '../../bin/commands/env.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const TEST_DIR = path.join(__dirname, 'env-unit-test-project');
+const TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-env-unit-'));
 
 function setup() {
   if (fs.existsSync(TEST_DIR)) {

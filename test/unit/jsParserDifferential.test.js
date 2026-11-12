@@ -40,12 +40,19 @@ console.log('\n🔬 JavaScript parser differential tests (oracle: acorn)\n');
 // ---------------------------------------------------------------------------
 
 const corpusDirs = ['lib', 'bin', 'scripts', 'test', 'templates', 'plugins', 'benches'];
-const files = corpusDirs.flatMap((dir) => listJsFiles(path.join(rootDir, dir), { skip: new Set(['node_modules', '.git', 'coverage']) }));
+const skipDirs = new Set(['node_modules', '.git', 'coverage', 'test-project', 'interactive-test-project', 'scratch']);
+const files = corpusDirs.flatMap((dir) => listJsFiles(path.join(rootDir, dir), { skip: skipDirs }));
 assert.ok(files.length > 200, `the corpus should cover the repository, found ${files.length} files`);
 
 let bytes = 0;
 for (const file of files) {
-  const source = fs.readFileSync(file, 'utf8');
+  let source;
+  try {
+    source = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') continue;
+    throw err;
+  }
   bytes += source.length;
   const difference = differential(source, { sourceType: 'module', locations: true });
   assert.strictEqual(difference, null, `${path.relative(rootDir, file)}: ${difference}`);
