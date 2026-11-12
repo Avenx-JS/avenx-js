@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
+import { AvenxError, AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 
 const mountTarget = document.createElement('div');
 mountTarget.id = 'app';
@@ -49,7 +50,7 @@ function testFailingPluginIsNotRetried() {
 }
 
 /**
- * The error must be the plugin's own, not something produced by a second call.
+ * The diagnostic keeps the plugin identity and original error as its cause.
  */
 function testOriginalErrorIsPreserved() {
   console.log('🧪 Testing the original error is preserved...');
@@ -57,8 +58,11 @@ function testOriginalErrorIsPreserved() {
   const app = createApp();
   const original = new TypeError('missing configuration');
 
-  const brokenPlugin = () => {
-    throw original;
+  const brokenPlugin = {
+    name: 'BrokenPlugin',
+    install() {
+      throw original;
+    },
   };
 
   let caught = null;
@@ -68,8 +72,10 @@ function testOriginalErrorIsPreserved() {
     caught = err;
   }
 
-  assert.strictEqual(caught, original, 'the exact error instance should propagate');
-  assert.ok(caught instanceof TypeError, 'the error type should be preserved');
+  assert.ok(caught instanceof AvenxError, 'a failed plugin should raise an Avenx diagnostic');
+  assert.strictEqual(caught.code, AvenxErrorCodes.PLUGIN_INSTALL_FAILED);
+  assert.strictEqual(caught.cause, original, 'the original error should be preserved as cause');
+  assert.match(caught.message, /BrokenPlugin.*missing configuration/);
 
   console.log('  ✅ Original error instance preserved.');
 }
@@ -123,6 +129,16 @@ async function testWorkingPluginsStillInstall() {
   console.log('  ✅ All supported plugin shapes still install.');
 }
 
+async function testAsyncFailureNamesPluginAndPreservesCause() {
+  const original = new Error('async install failed');
+  const plugin = { name: 'AsyncPlugin', install: async () => { throw original; } };
+  await assert.rejects(createApp().use(plugin), (error) => {
+    assert.strictEqual(error.code, AvenxErrorCodes.PLUGIN_INSTALL_FAILED);
+    assert.strictEqual(error.cause, original);
+    return /AsyncPlugin/.test(error.message);
+  });
+}
+
 /**
  * Duplicate installation must still be prevented and must not re-run the plugin.
  */
@@ -147,6 +163,7 @@ function testDuplicateInstallStillPrevented() {
     testFailingPluginIsNotRetried();
     testOriginalErrorIsPreserved();
     await testWorkingPluginsStillInstall();
+    await testAsyncFailureNamesPluginAndPreservesCause();
     testDuplicateInstallStillPrevented();
     console.log('🎉 All plugin installation error tests passed successfully!');
   } catch (err) {
