@@ -49,10 +49,13 @@ try {
     {
       "name": "AvenxError",
       "code": "AVX_R08",
-      "message": "[AVX_R08] Failed to render interpolation expression \"state.user.name\".",
+      "message": "[AVX_R08] Failed to render interpolation expression \"state.user.name\" in component <UserProfile> at src/components/UserProfile.component.js:42:15. Error: Cannot read properties of undefined (reading 'name')",
       "componentName": "UserProfile",
+      "fileName": "src/components/UserProfile.component.js",
+      "line": 42,
+      "column": 15,
       "sourceLine": 42,
-      "details": { "expression": "state.user.name" },
+      "details": ["state.user.name", "Error: Cannot read properties of undefined (reading 'name')"],
       "stack": "AvenxError: ..."
     }
     */
@@ -2362,7 +2365,7 @@ When list items lack unique ID properties, construct a composite key or combine 
 **Warning Message**
 
 ```text
-Failed to evaluate data-ax-html: {0}. Error: {1}
+Failed to evaluate data-ax-html: {0} in component <{2}>{3}. Error: {1}
 ```
 
 **Cause:** This warning is emitted at runtime when Avenx-JS attempts to evaluate the expression bound to a `data-ax-html="..."` directive, but the expression throws an exception during evaluation. Since `data-ax-html` injects raw HTML directly into the element's `innerHTML`, any error in the underlying expression — such as referencing an uninitialized variable, calling an undefined method, or a malformed expression — prevents the directive from resolving to a valid HTML string.
@@ -2425,7 +2428,7 @@ Deriving the HTML content through a guarded `<computed>` property ensures `data-
 **Warning Message**
 
 ```text
-Failed to evaluate data-ax-show: {0}. Error: {1}
+Failed to evaluate data-ax-show: {0} in component <{2}>{3}. Error: {1}
 ```
 
 **Cause:** This warning is emitted at runtime when Avenx-JS attempts to evaluate the condition expression bound to a `data-ax-show="..."` directive, but the evaluation throws a runtime exception. Since `data-ax-show` dynamically toggles an element's visibility based on the truthiness of the evaluated expression, an evaluation error — such as accessing properties on an uninitialized or `undefined` state property — prevents the renderer from determining whether the element should be shown or hidden.
@@ -2479,7 +2482,10 @@ Deriving the condition through a guarded `<computed>` property ensures `data-ax-
 ### AVX_W23 — DIRECTIVE_CLASS_EVALUATION_FAILED
 
 **Warning Message**
-Failed to evaluate data-ax-class: {0}. Error: {1}
+
+```text
+Failed to evaluate data-ax-class: {0} in component <{2}>{3}. Error: {1}
+```
 
 **Cause:** This warning is emitted at runtime when Avenx-JS attempts to evaluate the expression bound to a `data-ax-class="..."` directive, but the expression throws an exception. Since `data-ax-class` adds and removes classes based on the evaluated value, any error during evaluation prevents the renderer from applying the intended dynamic classes for that update.
 
@@ -3430,7 +3436,7 @@ Positive tabindex "{0}" disrupts document navigation order.
 | `[AVX_R05]` | Failed to evaluate computed property "{name}".                                          | **Cause:** Unhandled exceptions inside custom getter scripts.<br />**Resolution:** Review expression syntax and ensure referenced states are defined.                                                                                                                                                                                                                                                                                                                                                                        |
 | `[AVX_R06]` | Navigation guard denied transition.                                                     | **Cause:** A guard returned false (Expected behavior for access controls).                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `[AVX_R07]` | Navigation guard threw an error.                                                        | **Cause:** Route guard evaluations failed.<br />**Resolution:** Wrap asynchronous fetches in try/catch blocks.                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `[AVX_R08]` | Failed to render interpolation expression "{expr}".                                     | **Cause:** Accessing properties on undefined or null properties.<br />**Resolution:** Guard properties in template: `{{ state.user ? state.user.name : '' }}`.                                                                                                                                                                                                                                                                                                                                                               |
+| `[AVX_R08]` | Failed to render interpolation expression "{expr}" in component <{component}>{location}. | **Cause:** Accessing properties on undefined or null properties.<br />**Resolution:** Guard properties in template: `{{ state.user ? state.user.name : '' }}`. |
 | `[AVX_R09]` | Event handler execution failed.                                                         | **Cause:** Unhandled exceptions in event listener actions.<br />**Resolution:** Verify method declarations match event expressions.                                                                                                                                                                                                                                                                                                                                                                                          |
 | `[AVX_R10]` | Bridge "{0}" is already registered. Available bridges: {1}. Suggestion: {2} | **Cause:** An attempt was made to register a global bridge using a name (`app.registerBridge(name, data)`) that has already been registered on the `AvenxApp` instance. Bridge names must be unique across the application.<br />**Resolution:** Assign a unique string identifier to each bridge, or check if the bridge is already registered (`app.hasBridge(name)`) before calling `app.registerBridge()`. |
 | `[AVX_R11]` | STATE_MUTATION_IN_UPDATE: Synchronous state mutation detected during component update.  | **Cause:** Modifying reactive state synchronously inside a template expression, computed property, or `onUpdate` hook causes the runtime to re-trigger the same update cycle, resulting in an infinite update/render loop.<br />**Resolution:** Never mutate state directly inside templates or computed getters. If a side-effect state change is required after an update, defer it asynchronously (e.g. `setTimeout(() => { this.state.value = newValue; }, 0)`) or derive the value through a computed property instead. |
