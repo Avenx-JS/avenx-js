@@ -18,6 +18,8 @@ Single-file components, compiled templates, and a compiler that keeps a model of
 
 </div>
 
+![avenx-js — one click updates the count, doubleCount and the reactive state observer at once](https://raw.githubusercontent.com/yasirwhite/opendemo-media/main/Avenx-JS-avenx-js/avenx-js-demo.gif)
+
 ---
 
 ## 🧭 What Avenx is
