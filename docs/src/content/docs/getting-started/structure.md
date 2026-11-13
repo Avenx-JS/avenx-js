@@ -14,7 +14,7 @@ my-avenx-app/
 │   ├── bundle.js         # Single unified JavaScript runtime and app bundle
 │   └── bundle.css        # Combined and scoped application stylesheets
 ├── src/                  # Main application source directory
-│   ├── components/       # UI Components (Reusable elements)
+│   ├── components/       # Conventional location for reusable UI components
 │   │   └── counter/
 │   │       ├── counter.component.js
 │   │       └── counter.component.css
@@ -32,7 +32,7 @@ my-avenx-app/
 ```
 
 :::note
-**Compilation Note:** During builds, Avenx-JS bundles the core runtime files, your components, pages, bridges, and guards into a single `dist/bundle.js` and stylesheet `dist/bundle.css`. No runtime bundler like Webpack/Vite is needed.
+**Compilation Note:** During builds, Avenx-JS compiles every `.component.js` file under `src/`, plus pages under `src/pages/`, bridges, and guards. It bundles the modules used by your app into `dist/bundle.js` and `dist/bundle.css`. `src/components/` is the conventional component location; components can also live beside the code that uses them, such as in `src/layouts/` or `src/features/`. No runtime bundler like Webpack/Vite is needed.
 
 For IDE and CI/CD component tag casing validation, configure `eslint.config.mjs` with `avenxTemplateParser` and `componentTagNamingRule`. See the [ESLint Template Validation Guide](/guides/eslint) for setup instructions.
 :::
