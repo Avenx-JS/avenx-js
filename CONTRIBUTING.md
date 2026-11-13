@@ -59,11 +59,14 @@ A quick start for working on the codebase:
    ```
 
    The unit tier includes the deterministic JavaScript parser differential checks
-   (repository sources and hand-written cases). Generated programs and damaged
-   sources live in `test/fuzz/jsParser.test.js`; run both parser fuzz suites with
-   `npm run test:fuzz`. JavaScript fuzzing defaults to 2,000 cases per corpus
-   locally and 20,000 nightly. Set `FAST_CHECK_NUM_RUNS` to override that count;
-   the nightly workflow's manual `num_runs` input sets it for both parser suites.
+   (repository sources and hand-written cases) and bounded bundle minifier safety
+   invariant checks (`test/unit/minifyInvariants.test.js`). Full property-based
+   fuzz suites live under `test/fuzz/` (`templateParser.test.js`, `jsParser.test.js`,
+   and `minify.test.js`); run all fuzz suites with `npm run test:fuzz`. JavaScript
+   fuzzing defaults to 2,000 cases per corpus locally and 20,000 nightly; template
+   and minifier property suites default to 100 runs locally and 1,000 nightly. Set
+   `FAST_CHECK_NUM_RUNS` to override that count; the nightly workflow's manual
+   `num_runs` input sets it across the fuzz suites.
 
 4. **Run a specific test or matching group.** The test runner accepts a file path or a substring:
 

@@ -11,7 +11,7 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 | **Development Docs Publishing** | [`dev-docs.yml`](dev-docs.yml)                   | Push to `main`, `workflow_dispatch`                                       | Generates JSDoc documentation      | [`avenx-js/dev-docs`](https://github.com/avenx-js/dev-docs)                                                                          |
 | **Quality & Benchmarks**        | [`quality-results.yml`](quality-results.yml)     | Schedule (Saturdays 12:00 Swiss time / `0 10 * * 6`), `workflow_dispatch` | Generates coverage & benchmarks    | [`avenx-js/test-cov`](https://github.com/avenx-js/test-cov)<br>[`avenx-js/bench-results`](https://github.com/avenx-js/bench-results) |
 | **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                               | Push/PR to `main`, Release creation                                       | Runs test suite and linter         | Build & multi-version compatibility verification                                                                                     |
-| **Template Parser Fuzz**        | [`fuzz-nightly.yml`](fuzz-nightly.yml)           | Schedule (`0 2 * * *`), `workflow_dispatch`                               | Runs property-based fuzz tests     | Template parser & compiler invariants verification                                                                                   |
+| **Parser & Minifier Fuzz**      | [`fuzz-nightly.yml`](fuzz-nightly.yml)           | Schedule (`0 2 * * *`), `workflow_dispatch`                               | Runs property-based fuzz tests     | Template/JS parser & bundle minifier invariants verification                                                                         |
 | **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                          | Publishes `avenx-core` and plugins | npm registry                                                                                                                         |
 | **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)               | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
 | **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                    | Checks compiler changes have tests | PR comment report                                                                                                                    |
@@ -91,25 +91,31 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 - **Triggers**: Push to `main`, `workflow_dispatch`.
 - **Steps**: Builds the Astro documentation project in `docs/` and deploys static site artifacts to GitHub Pages.
 
-### 7. Template and JavaScript Parser Fuzz Testing (`fuzz-nightly.yml`)
+### 7. Template Parser, JavaScript Parser, and Bundle Minifier Fuzz Testing (`fuzz-nightly.yml`)
 
 - **Triggers**:
   - Scheduled cron: `0 2 * * *` (Nightly at 02:00 UTC = 04:00 CEST / 03:00 CET).
   - Manually via `workflow_dispatch` with optional `num_runs` parameter (defaults to 1000).
 - **Purpose**:
-  Runs property-based fuzz testing using `fast-check` to validate template compiler and parser invariants across randomized-but-valid template structures (combinations of `<@for>`, `<@empty>`, slots, conditionals, dynamic bindings, and deep nesting). Deliberately kept off the standard pull request gate to prevent slowing down PR checks.
-  A separate step runs `test/fuzz/jsParser.test.js`: 20,000 generated programs
-  and 20,000 damaged sources are compared with Acorn on scheduled runs. The
-  manual `num_runs` input overrides `FAST_CHECK_NUM_RUNS` for both steps (manual
-  default: 1,000). Deterministic repository and hand-written JavaScript cases
-  remain in `test/unit/jsParserDifferential.test.js` under the normal PR gate.
+  Runs property-based fuzz testing using `fast-check` to validate template compiler, JavaScript parser, and bundle minifier safety invariants. Deliberately kept off the standard pull request gate to prevent slowing down PR checks, with fast, bounded versions running on the PR gate in `test/unit/`.
+  - **Template Parser Invariants (`test/fuzz/templateParser.test.js`)**: Validates compiler and parser invariants across randomized-but-valid template structures (combinations of `<@for>`, `<@empty>`, slots, conditionals, dynamic bindings, and deep nesting).
+  - **JavaScript Parser Differential (`test/fuzz/jsParser.test.js`)**: 20,000 generated programs and 20,000 damaged sources are compared with Acorn on scheduled runs. Deterministic repository and hand-written JavaScript cases remain in `test/unit/jsParserDifferential.test.js` under the normal PR gate.
+  - **Bundle Minifier Safety Invariants (`test/fuzz/minify.test.js`)**: Asserts that `lib/bundler/minify.js` strips comments and trims line margins without altering program semantics, line counts, or string/template literal values across synthetic programs mixing escaped strings, regex literals, multiline indentation, and division chains. A fast bounded property suite and deterministic regression cases run on every PR in `test/unit/minifyInvariants.test.js`.
+  The manual `num_runs` input overrides `FAST_CHECK_NUM_RUNS` for all steps (manual default: 1,000).
 - **Node.js Compatibility Matrix**:
   Executes across all supported major Node.js versions (`[18, 20, 22]`).
-- **Invariants Verified**:
+- **Template Invariants Verified**:
   1. **Compiler Resilience**: The compiler never throws or crashes on valid syntax.
   2. **Dynamic Binding & Slot Classification**: Dynamic bindings and transclusion slots result in non-static nodes (preventing slot-classification regressions like #200).
   3. **Round-Trip Idempotency & AST Isomorphism**: `serializeHTML(parseHTML(template))` preserves semantics and stabilizes immediately.
   4. **Structural Conservation**: Counts, ordering, and nesting of slots, loops with empty blocks, and conditional chains are conserved in the generated AST and IR.
+- **Bundle Minifier Invariants Verified**:
+  1. **Line Count Preservation**: `minify(src).split('\n').length === src.split('\n').length`, ensuring development and production build source maps stay aligned.
+  2. **Semantic Equivalence**: Both original and minified sources parse cleanly with Acorn and evaluate to identical results in isolated execution contexts.
+  3. **AST Literal Value Preservation**: Every string `Literal` and `TemplateElement` in the Acorn AST is byte-identical in value, raw text, and cooked text.
+  4. **Idempotence**: `minify(minify(src)) === minify(src)`.
+  5. **Non-Increasing Length**: `minify(src).length <= src.length`.
+  6. **Complete Comment Removal**: Acorn reports 0 comment tokens in the minified program.
 
 ### 8. Compiler Test Coverage (`compiler-coverage.yml`)
 

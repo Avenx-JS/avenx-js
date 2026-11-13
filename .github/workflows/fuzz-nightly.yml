@@ -1,6 +1,6 @@
-name: Template and JavaScript Parser Fuzz Testing (Nightly)
+name: Parser and Bundle Minifier Fuzz Testing (Nightly)
 
-# Property-based template invariants and generated/mutated JavaScript differential tests.
+# Property-based template invariants, bundle minifier safety invariants, and generated/mutated JavaScript differential tests.
 # Kept off the pull-request path deliberately to avoid slowing down every PR,
 # and executed nightly and on demand via workflow_dispatch.
 on:
@@ -48,4 +48,11 @@ jobs:
         run: node test/run-tests.js test/fuzz/jsParser.test.js
         env:
           FAST_CHECK_NUM_RUNS: ${{ inputs.num_runs || '20000' }}
+          CI_FUZZ: '1'
+
+      - name: Run bundle minifier property tests
+        if: ${{ !cancelled() }}
+        run: node test/run-tests.js test/fuzz/minify.test.js
+        env:
+          FAST_CHECK_NUM_RUNS: ${{ inputs.num_runs || '1000' }}
           CI_FUZZ: '1'
