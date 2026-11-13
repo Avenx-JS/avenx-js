@@ -1900,7 +1900,7 @@ Directives are evaluated inside `#applyDirectives` in a strict priority order. E
 
 | Priority | Directive | Behavior |
 | --- | --- | --- |
-| 1 | `data-ax-html` | Evaluates expression, sets `innerHTML`. Accepts `SafeHtml` for raw output or escapes via `HtmlEscaper`. Sets `skipChildren = true` - all child diffing is skipped. |
+| 1 | `data-ax-html` | Evaluates expression, sets `innerHTML`. Accepts `SafeHtml` for raw output; any other value is sanitized via `Sanitizer`. Sets `skipChildren = true` - all child diffing is skipped. |
 | 2 | `data-ax-show` | Evaluates boolean expression. Toggles `display: none` with transition support (`enter`/`leave`). Preserves original `display` value. |
 | 3 | `data-ax-class` | Accepts a string (space-separated classes) or object (`{ className: boolean }`). Removes previous classes, adds new set - idempotent across re-renders. |
 | 4 | `:[attr]="expr"` | Dynamic attribute name binding. Evaluates bracketed expression for the actual attribute name. Both the name and the value are expressions -- writing either as `{{ ... }}` is refused at build time (`AVX_C29`). Tracks previous names in `__avenxDynAttrs` for cleanup. |
@@ -1912,7 +1912,7 @@ Directives are evaluated inside `#applyDirectives` in a strict priority order. E
 
 | Attribute | Purpose |
 | --- | --- |
-| `data-ax-html` | Sets `innerHTML` with `SafeHtml` bypass or escaping |
+| `data-ax-html` | Sets `innerHTML` with `SafeHtml` bypass or sanitization |
 | `data-ax-show` | Toggles visibility via `display: none` with transition support |
 | `data-ax-class` | Dynamic class binding (string or `{cls: bool}` object) |
 | `data-ax-transition` | Names the CSS transition (e.g., `"fade"`, `"slide"`) |

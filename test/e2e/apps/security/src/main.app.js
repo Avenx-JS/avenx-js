@@ -12,4 +12,5 @@ if (typeof window !== 'undefined') {
 app.initRouter({
   '': 'Srcdoc',
   '#/dynamic-attr': 'DynamicAttr',
+  '#/ax-html': 'AxHtml',
 });

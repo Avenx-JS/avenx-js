@@ -37,6 +37,7 @@ import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
 import { RefusalReason } from '../../lib/compiler/ir/nodes.js';
 import { logger } from '../../lib/core/runtime/AvenxLogger.js';
+import { html } from '../../lib/core/security/escapeHtml.js';
 let seq = 0;
 /**
  * Dynamic component tags must use the string-renderer fallback.
@@ -897,6 +898,101 @@ async function testDuplicateKeyWarningParity() {
   console.log('  ✅ duplicate keys warn identically on both render paths.');
 }
 
+/**
+ * `data-ax-html` injects sanitized markup on both paths (#1721). It used to
+ * escape a plain string, so `<b>` rendered as literal text and the sanitizer
+ * never ran. Asserts the DOM that was built, not the string passed in.
+ */
+async function testHtmlDirectiveSanitizesOnBothPaths() {
+  const ComponentClass = compileComponent(
+    `<state raw="" tick="0" />
+<div><p id="h" data-ax-html="raw"></p><span>{{ tick }}</span></div>`,
+    `Parity${seq++}`,
+  );
+  assert.ok(ComponentClass.__axProgram, 'the data-ax-html template must compile, or this compares nothing');
+
+  for (const compiled of [true, false]) {
+    const path = compiled ? 'compiled' : 'string';
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    const { host, component } = mount(ComponentClass, compiled);
+    try {
+      const target = host.querySelector('#h');
+
+      component.state.raw = '<b>bold</b>';
+      await component.$nextTick();
+      assert.strictEqual(
+        target.querySelector('b')?.textContent,
+        'bold',
+        `${path}: allowed markup renders as an element`,
+      );
+
+      component.state.raw = '<b>ok</b><script>alert(1)</script><img src="x.png" onerror="boom()">';
+      await component.$nextTick();
+      assert.strictEqual(target.querySelector('b')?.textContent, 'ok', `${path}: safe markup survives`);
+      assert.strictEqual(target.querySelector('script'), null, `${path}: <script> is stripped`);
+      assert.ok(!target.innerHTML.includes('alert'), `${path}: stripped script content is dropped, not shown`);
+      assert.strictEqual(
+        target.querySelector('img')?.hasAttribute('onerror'),
+        false,
+        `${path}: event handler attribute is stripped`,
+      );
+      assert.strictEqual(
+        warnings.filter((w) => w.includes('AVX_W16')).length,
+        1,
+        `${path}: stripped tag reported as AVX_W16`,
+      );
+      assert.strictEqual(
+        warnings.filter((w) => w.includes('AVX_W17')).length,
+        1,
+        `${path}: stripped attribute reported as AVX_W17`,
+      );
+
+      // An id on injected markup would become a window property and could
+      // clobber framework globals, so the directive strips it. A neutral id is
+      // used here: happy-dom's DOMParser leaks named properties onto the real
+      // window, which a browser's does not. The real clobbering case runs in
+      // test/e2e/specs/security/ax-html.spec.js.
+      component.state.raw = '<b id="ax-html-probe" class="kept">c</b>';
+      await component.$nextTick();
+      const clobber = target.querySelector('b');
+      assert.strictEqual(clobber?.hasAttribute('id'), false, `${path}: id is stripped`);
+      assert.strictEqual(clobber?.className, 'kept', `${path}: other allowed attributes stay`);
+      assert.strictEqual(
+        warnings.filter((w) => w.includes('AVX_W17')).length,
+        2,
+        `${path}: the stripped id is reported as AVX_W17`,
+      );
+
+      // Markup the browser re-serializes differently from the sanitizer's
+      // output must not be rebuilt by an unrelated re-render.
+      component.state.raw = 'a<br>b "q" \'s\'';
+      await component.$nextTick();
+      const first = target.firstChild;
+      component.state.tick = 1;
+      await component.$nextTick();
+      component.state.tick = 2;
+      await component.$nextTick();
+      // A boolean, not strictEqual: printing a happy-dom node on failure never finishes.
+      assert.ok(target.firstChild === first, `${path}: an unchanged value keeps its nodes across re-renders`);
+
+      component.state.raw = html`<em data-trusted="yes">t</em>`;
+      await component.$nextTick();
+      assert.strictEqual(
+        target.querySelector('em')?.getAttribute('data-trusted'),
+        'yes',
+        `${path}: SafeHtml bypasses the sanitizer`,
+      );
+    } finally {
+      console.warn = originalWarn;
+      component.unmount();
+      host.remove();
+    }
+  }
+  console.log('  ✅ data-ax-html injects sanitized markup on both render paths.');
+}
+
 testConditionalCannotFallBack();
 await testCustomDirectiveCompiledPath();
 await testListParity();
@@ -906,6 +1002,7 @@ await testUnregisteredDirectiveAttributeParity();
 await testCustomDirectiveModifierConsumed();
 await testReservedNameDirectiveNeverRuns();
 await testDuplicateKeyWarningParity();
+await testHtmlDirectiveSanitizesOnBothPaths();
 
 await testKnownDifference();
 await testBoundBooleanWithNoValue();

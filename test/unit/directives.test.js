@@ -530,7 +530,7 @@ async function runTests() {
     assert.ok(pEl.classList.contains('theme-green'), 'Should have new theme-green class');
 
     // 4. data-ax-html Runtime Tests
-    console.log('  Testing data-ax-html rendering and security (escaping/SafeHtml)...');
+    console.log('  Testing data-ax-html rendering and security (sanitizing/SafeHtml)...');
     class HtmlComponent extends AvenxComponent {
       constructor() {
         super({ content: 'Hello <b>World</b>', rawContent: html`Hello <b>World</b>` });
@@ -553,8 +553,8 @@ async function runTests() {
 
     assert.strictEqual(
       escEl.innerHTML,
-      'Hello &lt;b&gt;World&lt;/b&gt;',
-      'Content should be escaped by default to prevent XSS',
+      'Hello <b>World</b>',
+      'Allowed markup in a plain string should be injected after sanitization',
     );
     assert.strictEqual(
       rawEl.innerHTML,

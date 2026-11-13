@@ -307,19 +307,21 @@ async function testUrlPolicyOnEveryWrite() {
 }
 
 /**
- * `data-ax-html` escapes a plain value and only lets a SafeHtml through.
+ * `data-ax-html` sanitizes a plain value and only lets a SafeHtml through as is.
  *
- * Loosening this would turn every use of the directive in every application
- * into an injection point, which is why it has a test rather than a comment.
+ * Writing a plain value unsanitized would turn every use of the directive in
+ * every application into an injection point, which is why it has a test rather
+ * than a comment.
  */
-async function testHtmlDirectiveEscapesPlainValues() {
-  console.log('🧪 Testing data-ax-html escapes plain values...');
+async function testHtmlDirectiveSanitizesPlainValues() {
+  console.log('🧪 Testing data-ax-html sanitizes plain values...');
 
-  const { host, state } = mount('<div data-ax-html="body"></div>', { body: '<img src=x onerror=boom>' });
+  const { host, state } = mount('<div data-ax-html="body"></div>', { body: '<b>hi</b><img src=x onerror=boom>' });
   const box = host.querySelector('div');
 
-  assert.strictEqual(box.querySelector('img'), null, 'a plain string must not become markup');
-  assert.ok(box.innerHTML.includes('&lt;img'), 'it is escaped instead');
+  assert.strictEqual(box.querySelector('b')?.textContent, 'hi', 'allowed markup is injected');
+  assert.ok(box.querySelector('img'), 'an allowed tag survives');
+  assert.strictEqual(box.querySelector('img').hasAttribute('onerror'), false, 'its event handler does not');
 
   state.body = html`<em>trusted</em>`;
   await flush();
@@ -620,7 +622,7 @@ await testRawBindingRange();
 await testAttributeBindings();
 await testBooleanAttributes();
 await testUrlPolicyOnEveryWrite();
-await testHtmlDirectiveEscapesPlainValues();
+await testHtmlDirectiveSanitizesPlainValues();
 await testClassBinding();
 await testShowBinding();
 await testUpdatesAreFineGrained();
