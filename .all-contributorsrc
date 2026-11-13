@@ -1454,6 +1454,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "mentallyunstable-lab",
+      "name": "mentallyunstable-lab",
+      "avatar_url": "https://avatars.githubusercontent.com/u/193638771?v=4",
+      "profile": "https://github.com/mentallyunstable-lab",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
