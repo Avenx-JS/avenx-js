@@ -184,10 +184,16 @@ async function testParityWithCliCompiler() {
   const id = path.join(dir, 'Counter.component.js');
 
   const viaPlugin = readProgram(avenxPlugin().transform(COMPONENT, id).code);
-  const viaCli = readProgram(new AvenxCompiler({ rootDir: dir }).compileComponent(id));
+  const viaCli = readProgram(new AvenxCompiler({ rootDir: dir, dev: true }).compileComponent(id));
 
   assert.ok(viaPlugin, 'the plugin output has a program');
-  assert.deepStrictEqual(viaPlugin, viaCli, 'the plugin and the CLI compiler emit the same program');
+  assert.deepStrictEqual(viaPlugin, viaCli, 'the plugin and the CLI compiler emit the same development program');
+
+  const viaPluginProd = readProgram(avenxPlugin({ mode: 'production' }).transform(COMPONENT, id).code);
+  const viaCliProd = readProgram(new AvenxCompiler({ rootDir: dir }).compileComponent(id));
+
+  assert.ok(viaPluginProd, 'the production plugin output has a program');
+  assert.deepStrictEqual(viaPluginProd, viaCliProd, 'the plugin and the CLI compiler emit the same production program');
   console.log('  ✅ Parity with lib/compiler.js passed!');
 }
 

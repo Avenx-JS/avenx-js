@@ -22,6 +22,10 @@ const MODULE_EXTENSIONS = ['.js', '.html', '.avx'];
  */
 export function createCompiler(options = {}) {
   const debug = options.debug ?? false;
+  let isProduction =
+    options.production === true ||
+    options.mode === 'production' ||
+    Boolean(options.config && options.config.mode === 'production');
 
   /**
    * Whether this project asked for a build that needs no `'unsafe-eval'`.
@@ -48,6 +52,9 @@ export function createCompiler(options = {}) {
   function createParser() {
     const styleProcessor = new StyleProcessor(options.style || {}, options.config || null);
     const parser = new ComponentParser(styleProcessor, options.voidTags || [], options.config || null);
+    if (isProduction) {
+      parser.production = true;
+    }
     return { parser, styleProcessor };
   }
 
@@ -231,6 +238,15 @@ export function createCompiler(options = {}) {
       const type = cssPath.endsWith(PAGE_CSS_EXT) ? 'page' : 'component';
       const { css } = compileModule(owner, type);
       return css;
+    },
+
+    /**
+     * Sets the production mode status.
+     * @param {boolean} value
+     * @returns {void}
+     */
+    setProduction(value) {
+      isProduction = Boolean(value);
     },
   };
 }

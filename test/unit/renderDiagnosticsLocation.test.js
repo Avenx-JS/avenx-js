@@ -12,7 +12,6 @@ import '../helpers/register-happy-dom.js';
 import { AvenxError, AvenxErrorCodes, formatMessage } from '../../lib/core/runtime/AvenxError.js';
 import { extractTemplateLocations } from '../../lib/compiler/templateLocations.js';
 import { formatCodeFrame } from '../../lib/core/utils/codeFrame.js';
-import { formatRenderDiagnostic, findExpressionLocation } from '../../lib/core/diagnostics/renderDiagnostics.js';
 import { TemplateRenderer } from '../../lib/core/renderer/renderTemplate.js';
 import { DomPatcher } from '../../lib/core/renderer/domPatch.js';
 import { reportBindingError } from '../../lib/core/renderer/program/bindings.js';
@@ -20,7 +19,6 @@ import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
 import { lowerToProgram } from '../../lib/compiler/ir/lower.js';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
 import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
-import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 
 console.log('🧪 Testing Issue #1178: Component Name & Source Position in Render Diagnostics...');
 
@@ -169,14 +167,16 @@ try {
 
       let callCount = 0;
       try {
-        renderer.render(source, (expr) => {
+        renderer.render(source, () => {
           callCount++;
           if (callCount === 1) {
             throw new TypeError("Cannot read properties of undefined (reading 'name')");
           }
           return 'ok';
         });
-      } catch {}
+      } catch {
+        /* expected render error */
+      }
 
       assert.ok(warnings.length > 0);
       const warnMsg = warnings[0];
@@ -213,14 +213,16 @@ try {
 
       let count = 0;
       try {
-        renderer.render(source, (expr) => {
+        renderer.render(source, () => {
           count++;
           if (count === 2) {
             throw new Error('second occurrence failed');
           }
           return 'first-ok';
         });
-      } catch {}
+      } catch {
+        /* expected render error */
+      }
 
       assert.ok(warnings.length > 0);
       const warnMsg = warnings[0];
@@ -421,12 +423,14 @@ try {
       try {
         renderer.render(
           '{{ slotProps.missing.name }}',
-          (expr) => {
+          () => {
             throw new TypeError("Cannot read properties of undefined (reading 'name')");
           },
           parentLogContext,
         );
-      } catch {}
+      } catch {
+        /* expected render error */
+      }
 
       assert.ok(warnings.length > 0);
       const warn = warnings[0];
