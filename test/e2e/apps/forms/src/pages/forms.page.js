@@ -1,8 +1,12 @@
-<state name="Ada" bio="" subscribed="false" fruits="['apple']" plan="free" city="berlin" ticker="0" username="" email="" password="" submittedData="null" />
+<state name="Ada" bio="" subscribed="false" fruits="['apple']" plan="free" city="berlin" age="7" volume="50" cities="[]" ticker="0" username="" email="" password="" submittedData="null" />
 
 <action name="bumpTicker"> state.ticker = state.ticker + 1; </action>
 
 <action name="renameFromCode"> state.name = 'Grace'; </action>
+
+<action name="ageFromCode"> state.age = 30; </action>
+
+<action name="citiesFromCode"> state.cities = ['lisbon']; </action>
 
 <action name="handleSubmit">
   event.preventDefault();
@@ -49,6 +53,26 @@
     <option value="oslo">Oslo</option>
   </select>
   <p data-testid="city-output">{{ city }}</p>
+
+  <!-- Number and range: write the element's numeric value, null when empty. -->
+  <label for="age-input">Age</label>
+  <input id="age-input" type="number" data-ax-bind="age" data-testid="age-input" />
+  <p data-testid="age-output">{{ JSON.stringify(age) }} {{ typeof age }}</p>
+  <button data-testid="age-from-code" @click="ageFromCode()">Age from code</button>
+
+  <label for="volume-input">Volume</label>
+  <input id="volume-input" type="range" min="0" max="100" data-ax-bind="volume" data-testid="volume-input" />
+  <p data-testid="volume-output">{{ JSON.stringify(volume) }} {{ typeof volume }}</p>
+
+  <!-- Multiple select bound to an array: every selected value, in order. -->
+  <label for="cities-input">Cities</label>
+  <select id="cities-input" multiple data-ax-bind="cities" data-testid="cities-input">
+    <option value="berlin">Berlin</option>
+    <option value="lisbon">Lisbon</option>
+    <option value="oslo">Oslo</option>
+  </select>
+  <p data-testid="cities-output">{{ JSON.stringify(cities) }}</p>
+  <button data-testid="cities-from-code" @click="citiesFromCode()">Cities from code</button>
 
   <!-- Unrelated state, used to force a patch while a field holds focus. -->
   <p data-testid="ticker">{{ ticker }}</p>

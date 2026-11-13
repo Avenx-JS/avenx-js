@@ -56,12 +56,17 @@ try {
     assert.ok(!warnings[0].includes('event.target.value'), 'the frame does not quote the generated handler');
   }
 
-  // Every expansion shape: select (@change), textarea, checkbox, radio.
+  // Every expansion shape: select (@change), multiple select, textarea,
+  // checkbox, radio, number and range. The multiple select's handler names an
+  // arrow parameter and the numeric handler names `Number`; neither is reported.
   for (const template of [
     '<select data-ax-bind="nope"><option>x</option></select>',
+    '<select multiple data-ax-bind="nope"><option>x</option></select>',
     '<textarea data-ax-bind="nope"></textarea>',
     '<input type="checkbox" data-ax-bind="nope" />',
     '<input type="radio" value="x" data-ax-bind="nope" />',
+    '<input type="number" data-ax-bind="nope" />',
+    '<input type="range" data-ax-bind="nope" />',
   ]) {
     const warnings = undeclaredWarnings(`<div>${template}</div>`);
     assert.strictEqual(warnings.length, 1, `one warning for ${template}, got ${warnings.length}`);

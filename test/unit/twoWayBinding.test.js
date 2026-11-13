@@ -12,6 +12,10 @@ const createMockElement = (tagName, value = '', attrs = {}, nodeType = 1) => {
     nodeName: tagName.toUpperCase(),
     tagName: tagName.toUpperCase(),
     value,
+    // A number input's numeric reading of its value: NaN for an empty field.
+    get valueAsNumber() {
+      return this.value === '' ? NaN : Number(this.value);
+    },
     childNodes,
     attributes: [],
     hasAttribute(name) {
@@ -279,6 +283,84 @@ function testCheckboxAndRadioCompilation() {
 }
 
 /**
+ * Number and range inputs write a number; a multiple select writes an array.
+ *
+ * `event.target.value` is a string for every input type, and for a multiple
+ * select it is only the first selected option. Writing it back replaced numeric
+ * state with a string and an array with one of its members.
+ */
+function testTypedInputCompilation() {
+  console.log('🧪 Testing number, range and multiple select binding compilation...');
+  const cp = new ComponentParser(new StyleProcessor());
+
+  const numericHandler = 'age = (Number.isNaN(event.target.valueAsNumber) ? null : event.target.valueAsNumber)';
+  for (const type of ['number', 'range']) {
+    const processed = cp.processBindDirectives(`<input type="${type}" data-ax-bind="age" />`);
+    assert.ok(processed.includes('value="{{ age }}"'), `a ${type} input still binds through value`);
+    assert.ok(processed.includes(`@input="${numericHandler}"`), `a ${type} input writes back its numeric value`);
+    assert.ok(!processed.includes('age = event.target.value"'), `a ${type} input does not write back a string`);
+  }
+
+  // The type is read wherever it appears and however it is quoted.
+  for (const variant of [
+    "<input type='number' data-ax-bind='age' />",
+    '<input TYPE="Number" data-ax-bind="age" />',
+    '<input data-ax-bind="age" type="number" />',
+  ]) {
+    assert.ok(
+      cp.processBindDirectives(variant).includes('valueAsNumber'),
+      `number detection should not depend on attribute order or casing: ${variant}`,
+    );
+  }
+
+  const multipleHandler = 'picked = Array.from(event.target.selectedOptions, (option) => option.value)';
+  const multiple = cp.processBindDirectives('<select multiple data-ax-bind="picked"></select>');
+  assert.ok(multiple.includes('value="{{ picked }}"'), 'a multiple select still binds through value');
+  assert.ok(multiple.includes(`@change="${multipleHandler}"`), 'a multiple select writes back every selected value');
+  assert.ok(multiple.includes('<select multiple '), 'the multiple attribute is kept');
+
+  // `multiple` is a boolean attribute: present in any form, however spelled.
+  for (const variant of [
+    '<select multiple="multiple" data-ax-bind="picked"></select>',
+    '<select multiple="" data-ax-bind="picked"></select>',
+    '<select MULTIPLE data-ax-bind="picked"></select>',
+    '<select data-ax-bind="picked" multiple></select>',
+  ]) {
+    assert.ok(
+      cp.processBindDirectives(variant).includes('selectedOptions'),
+      `multiple detection should not depend on attribute order, value or casing: ${variant}`,
+    );
+  }
+
+  // Every other control keeps writing the string the DOM gives it.
+  for (const template of [
+    '<input type="text" data-ax-bind="x" />',
+    '<input type="date" data-ax-bind="x" />',
+    '<input type="email" data-ax-bind="x" />',
+    '<input data-ax-bind="x" />',
+    '<textarea data-ax-bind="x"></textarea>',
+  ]) {
+    assert.ok(
+      cp.processBindDirectives(template).includes('@input="x = event.target.value"'),
+      `a string-valued control is unchanged: ${template}`,
+    );
+  }
+  // A single select, including one whose `multiple` the renderer's boolean
+  // coercion reads as off.
+  for (const template of [
+    '<select data-ax-bind="x"></select>',
+    '<select multiple="false" data-ax-bind="x"></select>',
+  ]) {
+    assert.ok(
+      cp.processBindDirectives(template).includes('@change="x = event.target.value"'),
+      `a single select is unchanged: ${template}`,
+    );
+  }
+
+  console.log('  ✅ Number, range and multiple select compilation tests passed!');
+}
+
+/**
  *
  */
 async function testRuntimeTwoWayBinding() {
@@ -342,12 +424,48 @@ async function testRuntimeNestedTwoWayBinding() {
   console.log('  ✅ Runtime nested path two-way binding tests passed!');
 }
 
+/**
+ * A number input keeps numeric state numeric, and an empty field writes null.
+ */
+async function testRuntimeNumberBinding() {
+  console.log('🧪 Testing runtime number input two-way binding behavior...');
+
+  const comp = new AvenxComponent({ age: 7 }, {}, {}, '<input type="number" data-ax-bind="age" />', {});
+
+  const targetEl = createMockElement('div');
+  comp.__setMountTarget(targetEl);
+  comp.update();
+
+  const inputEl = targetEl.childNodes[0];
+  assert.ok(inputEl, 'Input child should be rendered');
+  assert.strictEqual(inputEl.value, '7');
+
+  // Typing a number writes a number, not its string.
+  inputEl.setAttribute('value', '42');
+  inputEl.trigger('input', { target: inputEl });
+  assert.strictEqual(comp.state.age, 42, 'the model receives the numeric value');
+
+  // Clearing the field writes null: never "" and never NaN.
+  inputEl.setAttribute('value', '');
+  inputEl.trigger('input', { target: inputEl });
+  assert.strictEqual(comp.state.age, null, 'an empty field writes null');
+
+  // A state change made in code still reaches the control.
+  comp.state.age = 30;
+  await comp.nextTick();
+  assert.strictEqual(inputEl.value, '30');
+
+  console.log('  ✅ Runtime number input two-way binding tests passed!');
+}
+
 (async () => {
   try {
     testParserCompilation();
     testCheckboxAndRadioCompilation();
+    testTypedInputCompilation();
     await testRuntimeTwoWayBinding();
     await testRuntimeNestedTwoWayBinding();
+    await testRuntimeNumberBinding();
     console.log('✅ All two-way binding tests passed!');
   } catch (error) {
     console.error('❌ Two-way binding tests failed!');
