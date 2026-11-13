@@ -44,10 +44,18 @@ export function avenxPlugin(options = {}) {
     enforce: 'pre',
 
     /**
-     * Logs the plugin version when the Vite configuration has been resolved.
+     * Logs the plugin version and configures production posture when the Vite configuration has been resolved.
+     * @param {object} [config] - Resolved Vite configuration.
      * @returns {void}
      */
-    configResolved() {
+    configResolved(config) {
+      if (config) {
+        if (config.isProduction !== undefined) {
+          compiler.setProduction(config.isProduction);
+        } else if (config.mode === 'production') {
+          compiler.setProduction(true);
+        }
+      }
       console.log(`[avenx-vite] v${version} initialized`);
     },
 

@@ -36,7 +36,8 @@
                 {
                   "type": "attr",
                   "name": "href",
-                  "expr": "url"
+                  "expr": "url",
+                  "loc": null
                 }
               ],
               "events": [],
