@@ -92,6 +92,24 @@ test.describe('hash routing', () => {
     await expect(page.getByTestId('page-profile')).toBeVisible();
     await expect(page.getByTestId('profile-id')).toHaveText('7');
   });
+
+  test('keeps a nested route layout and its state across siblings, then removes it on exit', async ({ page }) => {
+    await page.getByTestId('nav-layout-dashboard').click();
+    await expect(page.getByTestId('admin-layout')).toBeVisible();
+    await expect(page.getByTestId('page-dashboard')).toBeVisible();
+
+    await page.getByTestId('layout-select-users').click();
+    await expect(page.getByTestId('layout-active-tab')).toHaveText('users');
+
+    await page.getByTestId('nav-layout-users').click();
+    await expect(page.getByTestId('page-admin')).toBeVisible();
+    await expect(page.getByTestId('layout-active-tab')).toHaveText('users');
+    await expect(page.getByTestId('admin-layout')).toHaveCount(1);
+
+    await page.getByTestId('nav-home').click();
+    await expect(page.getByTestId('page-home')).toBeVisible();
+    await expect(page.getByTestId('admin-layout')).toHaveCount(0);
+  });
 });
 
 test.describe('browser history', () => {

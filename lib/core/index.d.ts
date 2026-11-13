@@ -621,7 +621,17 @@ export interface AvenxRouteDefinition {
     /**
      * The registered page name to mount for this route.
      */
-    page: string;
+    page?: string;
+
+    /**
+     * Optional layout page name or component class shared by this route's children.
+     */
+    layout?: string | typeof AvenxComponent;
+
+    /**
+     * Nested route definitions. Array entries include their relative path.
+     */
+    children?: Array<AvenxRouteDefinition & { path: string }> | Record<string, string | AvenxRouteDefinition>;
 
     /**
      * Optional guards to evaluate before activating this route.
@@ -879,7 +889,11 @@ export class AvenxApp {
      * @param name Page component name.
      * @param params Dynamic parsed path variables.
      */
-    mountPage(name: string, params?: Record<string, any>): void;
+    mountPage(
+        name: string,
+        params?: Record<string, any>,
+        options?: { layout?: string | typeof AvenxComponent; transition?: string; keepAlive?: boolean }
+    ): void;
 
     /**
      * Mounts a standalone component.

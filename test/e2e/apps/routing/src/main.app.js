@@ -1,5 +1,6 @@
 import { AvenxApp } from 'avenx-core/runtime';
 import SiteNav from './components/site-nav/site-nav.component.js';
+import AdminLayout from './components/admin-layout/admin-layout.component.js';
 import AuthGuard from './guards/auth.guard.js';
 
 const app = new AvenxApp({ target: '#app' });
@@ -17,5 +18,12 @@ app.initRouter({
   '#/profile/:id': 'Profile',
   '#/dashboard': 'Dashboard',
   '#/admin': { page: 'Admin', guards: [AuthGuard] },
+  '/admin-layout': {
+    layout: AdminLayout,
+    children: [
+      { path: '/dashboard', page: 'Dashboard' },
+      { path: '/users', page: 'Admin' },
+    ],
+  },
   '*': 'NotFound',
 });

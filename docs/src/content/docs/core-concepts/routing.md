@@ -456,7 +456,7 @@ app.initRouter({
 
 ## 8. Nested Routes & Layout Components
 
-`AvenxRouter` supports **nested routing** and persistent **Layout components** (`children: [...]`, `layout: Component`), allowing child views to share persistent surrounding UI — such as navigation headers, sidebars, breadcrumbs, and footers — without re-rendering or unmounting the wrapper structure during navigation transitions.
+`AvenxRouter` supports one level of nested routes with a persistent parent layout (`children: [...]`, `layout: Component`). Child views can share surrounding UI — such as navigation headers, sidebars, breadcrumbs, and footers — without re-rendering or unmounting the wrapper during sibling transitions. The layout can be a component class, as shown below, or the name of a registered page.
 
 ### Route Configuration Schema
 
@@ -540,25 +540,7 @@ When navigating to `#/org/acme-corp/members/42`:
 - Child parameter `:memberId` = `'42'`
 - Both parameters are merged and passed into `MemberDetail` page component props and `$route.params` (`{ orgId: 'acme-corp', memberId: '42' }`).
 
-#### 3. Multi-Level Layout Nesting
+#### 3. One Parent Layout Per Route Branch
 
-`AvenxRouter` supports arbitrary levels of layout nesting. Each nested route layer renders its corresponding `layout` component, creating modular nested UI views:
-
-```javascript
-app.initRouter({
-  '/app': {
-    layout: GlobalAppLayout,
-    children: [
-      {
-        path: '/workspace/:id',
-        layout: WorkspaceLayout,
-        children: [
-          { path: '/kanban', page: 'KanbanPage' },
-          { path: '/timeline', page: 'TimelinePage' },
-        ],
-      },
-    ],
-  },
-});
-```
+Use one parent route with child routes for a shared layout. For additional visual nesting, compose components inside that layout; nested layout wrappers are not currently supported.
 

@@ -350,7 +350,7 @@ Calling `mountPage` with a compiled page name is enough for Atlas to treat that 
 
 | Key           | Type      | Description |
 | ------------- | --------- | ----------- |
-| `layout`      | `string`  | Name of a registered page used as a layout wrapper. The layout mounts first; the target page mounts into the layout's `[data-ax-router-view]` slot. Throws `PAGE_NOT_FOUND` if the layout name is not registered. |
+| `layout`      | `string \| AvenxComponent class`  | Registered page name or component class used as a layout wrapper. The layout mounts first; the target page mounts into its `<slot>` or `[data-ax-router-view]` outlet. An unknown page name or invalid class throws `PAGE_NOT_FOUND`. |
 | `transition`  | `string`  | Transition name applied as leave/enter animations when replacing the current page. See [Page-Level Transitions](/core-concepts/transitions/#page-level-transitions). |
 | `keepAlive`   | `boolean` | When `true`, navigating away caches the page instance and DOM (subject to [`keepAliveLimit`](#keepalivelimit)) instead of fully unmounting. Restored pages receive `onActivate(params)` rather than a fresh `onMount()`. |
 
@@ -367,6 +367,9 @@ app.mountPage('Profile', { id: '42' }, {
   transition: 'fade',
   keepAlive: true,
 });
+
+// A component class can also be used directly.
+app.mountPage('Profile', { id: '42' }, { layout: AppShell });
 ```
 
 ### `clearKeepAliveCache(pageName)`
