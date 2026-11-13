@@ -112,6 +112,51 @@ try {
     console.log('  ✅ `query` is in scope on a routed page');
   }
 
+  // --- a wildcard route puts `wildcard` in scope --------------------------
+  {
+    fs.writeFileSync(
+      path.join(root, 'src/main.app.js'),
+      [
+        "import { AvenxApp } from 'avenx-core/runtime';",
+        "const app = new AvenxApp({ target: '#app' });",
+        'app.initRouter({',
+        "  '': { page: 'Home', title: 'Home' },",
+        "  '/docs/*': { page: 'Docs', title: 'Docs' },",
+        "  '/profile/:id': { page: 'Profile', title: 'Profile' },",
+        "  '*': { page: 'Home', title: 'Home' },",
+        '});',
+        '',
+      ].join('\n'),
+    );
+    assert.strictEqual(avenx(['generate', 'page', 'docs']).status, 0, 'generate docs should succeed');
+    page('docs', '<state a="1" />\n<h1>DOCS wildcard={{ wildcard }}</h1>');
+
+    const check = avenx(['check']);
+    assert.deepStrictEqual(
+      undeclared(check.output),
+      [],
+      `the routing guide's wildcard example must not be reported as undeclared:\n${check.output}`,
+    );
+    assert.strictEqual(check.status, 0, 'and the project must pass check');
+    console.log('  ✅ `wildcard` is in scope on a wildcard-routed page');
+  }
+
+  // --- wildcard stays scoped to the pages its routes name -----------------
+  {
+    page('profile', '<state a="1" />\n<p>{{ wildcard }} {{ notAThing }}</p>');
+    const output = avenx(['check']).output;
+    assert.deepStrictEqual(
+      undeclared(output),
+      ['notAThing', 'wildcard'],
+      'Profile is not routed with a wildcard, so `wildcard` is undeclared there; ' +
+        'the real mistake is reported beside it',
+    );
+    console.log('  ✅ `wildcard` stays scoped and real typos still warn');
+    // The remaining blocks assume the fixture's original two-page project.
+    fs.rmSync(path.join(root, 'src/pages/docs.page.js'), { force: true });
+    fs.rmSync(path.join(root, 'src/pages/docs.page.css'), { force: true });
+  }
+
   // --- a genuine typo on the same page still warns -----------------------
   {
     page('profile', '<state a="1" />\n<p>{{ id }} {{ notAThing }}</p>');
