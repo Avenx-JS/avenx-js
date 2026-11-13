@@ -148,6 +148,35 @@ These bind through `value`. Text inputs and textareas listen for `input`; select
 <select data-ax-bind="state.city"></select>
 ```
 
+They write the string the DOM gives them, `event.target.value`. That includes the other typed inputs (`date`, `time`, `color`, `email`, and so on): a bound date input writes `"2026-11-13"`, not a `Date`.
+
+### Number and range inputs
+
+`type="number"` and `type="range"` write the element's numeric value, so state declared as a number stays a number:
+
+```html
+<input type="number" data-ax-bind="state.age" />
+<input type="range" min="0" max="100" data-ax-bind="state.volume" />
+```
+
+With `state.age` starting as `7`, typing `42` gives `42`, not `"42"`, so `state.age + 1` is still arithmetic and `state.age > 10` compares two numbers.
+
+An empty field writes `null`: never `""`, which would turn the number back into a string, and never `NaN`. A partially typed value the browser does not accept as a number (`1e`, `-`) reads as empty and writes `null` as well, so code that uses the value should expect `null` while the user is still typing.
+
+### Multiple selects
+
+A `<select multiple>` writes the selected option values as an array, in document order. It is the mirror of the checkbox group:
+
+```html
+<select multiple data-ax-bind="state.cities">
+  <option value="berlin">Berlin</option>
+  <option value="lisbon">Lisbon</option>
+  <option value="oslo">Oslo</option>
+</select>
+```
+
+With `state.cities` starting as `[]`, selecting Berlin and Oslo gives `['berlin', 'oslo']`, and the selection follows the array when it changes in code. The array is rendered into the select as a comma-separated list, so the option values of a bound multiple select must not contain commas.
+
 ### Checkboxes
 
 A checkbox binds through `checked`, not `value`.
@@ -179,6 +208,19 @@ Radios in a group share one bound value. `checked` is the comparison between the
 Selecting the second input sets `state.selectedColor` to `'blue'`, which unchecks the first.
 
 A `checked` attribute written by hand on a bound checkbox or radio is dropped: the binding owns that state. Set the initial value in `<state>` instead.
+
+### What each control writes
+
+| Control | Reads | Listens for | Writes to state |
+| :--- | :--- | :--- | :--- |
+| `<input>` of any type not listed below (`text`, `email`, `date`, …) | `value` | `input` | the string in `event.target.value` |
+| `<textarea>` | `value` | `input` | the string |
+| `<input type="number">`, `<input type="range">` | `value` | `input` | a number, or `null` when the field is empty |
+| `<select>` | `value` | `change` | the selected option's value, a string |
+| `<select multiple>` | `value` | `change` | an array of the selected option values |
+| `<input type="checkbox">` bound to a boolean | `checked` | `change` | `event.target.checked` |
+| `<input type="checkbox">` bound to an array | `checked`, by membership | `change` | adds or removes the input's `value` |
+| `<input type="radio">` | `checked`, by equality | `change` | the input's `value` |
 
 ## 3. Boolean Attributes Coercion
 

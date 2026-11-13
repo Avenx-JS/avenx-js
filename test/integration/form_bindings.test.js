@@ -161,25 +161,57 @@ class MockElementNode extends MockNode {
     delete this.attrs[name];
   }
 
+  // A select's value is its first selected option, as in the DOM; setting it
+  // selects the first option with that value and deselects the rest. For other
+  // controls the attribute is only the default: once the property has been
+  // set, the two diverge, which is what two-way binding has to cope with.
   get value() {
     if (this.tagName === 'SELECT') {
-      return this._selectedValue || '';
+      const selected = this.selectedOptions[0];
+      return selected ? selected.value : '';
     }
-    return this.getAttribute('value') || '';
+    return this._value !== undefined ? this._value : this.getAttribute('value') || '';
   }
 
   set value(val) {
     if (this.tagName === 'SELECT') {
-      const options = this.querySelectorAll('option');
-      const matched = options.find((opt) => opt.value === val);
-      if (matched) {
-        this._selectedValue = val;
-      } else {
-        this._selectedValue = '';
+      let matched = false;
+      for (const option of this.options) {
+        option.selected = !matched && option.value === val;
+        if (option.selected) matched = true;
       }
     } else {
-      this.setAttribute('value', val);
+      this._value = String(val);
     }
+  }
+
+  get type() {
+    return (this.getAttribute('type') || 'text').toLowerCase();
+  }
+
+  get valueAsNumber() {
+    const raw = this.value;
+    return raw === '' ? NaN : Number(raw);
+  }
+
+  get multiple() {
+    return this.hasAttribute('multiple');
+  }
+
+  set multiple(flag) {
+    if (flag) {
+      this.setAttribute('multiple', '');
+    } else {
+      this.removeAttribute('multiple');
+    }
+  }
+
+  get options() {
+    return this.querySelectorAll('option');
+  }
+
+  get selectedOptions() {
+    return this.options.filter((option) => option.selected === true);
   }
 
   get textContent() {
@@ -300,7 +332,7 @@ function parseHTML(htmlStr) {
 
   while (remaining.length > 0) {
     if (remaining.startsWith('<') && !remaining.startsWith('</')) {
-      const closeTagIndex = remaining.indexOf('>');
+      const closeTagIndex = findTagEnd(remaining);
       if (closeTagIndex === -1) {
         nodes.push(createMockTextNode(remaining));
         break;
@@ -360,6 +392,27 @@ function parseHTML(htmlStr) {
   return nodes;
 }
 
+/**
+ * Finds the `>` that ends an open tag, skipping any inside a quoted attribute
+ * value: a bound handler may contain `=>`.
+ * @param {string} str - Markup starting at `<`.
+ * @returns {number} The index of the closing `>`, or -1.
+ */
+function findTagEnd(str) {
+  let quote = null;
+  for (let i = 1; i < str.length; i++) {
+    const char = str[i];
+    if (quote) {
+      if (char === quote) quote = null;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === '>') {
+      return i;
+    }
+  }
+  return -1;
+}
+
 function findClosingTagIndex(str, tagName) {
   const startTagPattern = new RegExp(`<${tagName.toLowerCase()}[\\s>]`, 'i');
   const endTagPattern = new RegExp(`</${tagName.toLowerCase()}>`, 'i');
@@ -412,15 +465,16 @@ global.Node = {
   TEXT_NODE: 3,
 };
 
+function dispatch(element, type) {
+  element.dispatchEvent({ type, target: element, cancelBubble: false });
+}
+
 function triggerChangeEvent(inputElement, checked) {
   inputElement.checked = checked;
-  const event = {
-    type: 'change',
-    target: inputElement,
-    cancelBubble: false,
-  };
-  inputElement.dispatchEvent(event);
+  dispatch(inputElement, 'change');
 }
+
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 // ==========================================
 // 2. Integration Test Cases
@@ -584,12 +638,150 @@ async function testDynamicSelectBinding() {
   console.log('  ✅ Dynamic select element integration tests passed!');
 }
 
+/**
+ * Number and range inputs keep numeric state numeric.
+ *
+ * `event.target.value` is a string for every input type, so writing it back
+ * turned `age + 1` into string concatenation after the first keystroke.
+ * @param {string} type - `number` or `range`.
+ */
+async function testNumericInputBinding(type) {
+  console.log(`🧪 Testing ${type} input binding to numeric state...`);
+
+  const comp = new AvenxComponent({ age: 7 }, {}, {}, `<input type="${type}" id="age-input" data-ax-bind="age" />`, {});
+
+  const rootEl = createMockElementNode('div');
+  comp.__setMountTarget(rootEl);
+  comp.update();
+
+  const input = rootEl.querySelector('#age-input');
+  assert.ok(input, `${type} input should render`);
+  assert.strictEqual(input.value, '7', 'the control shows the initial number');
+
+  // The user types: the model receives a number, not its string.
+  input.value = '42';
+  dispatch(input, 'input');
+  await tick();
+  assert.strictEqual(comp.state.age, 42, 'state stays numeric');
+  assert.strictEqual(input.value, '42', 'the control keeps what was typed');
+
+  // The field is cleared: the model receives null, never "" or NaN.
+  input.value = '';
+  dispatch(input, 'input');
+  await tick();
+  assert.strictEqual(comp.state.age, null, 'an empty field writes null');
+  assert.strictEqual(input.value, '', 'the control stays empty');
+
+  // A change made in code reaches the control.
+  comp.state.age = 30;
+  await tick();
+  assert.strictEqual(input.value, '30', 'the control follows state');
+
+  // "1.0" is the number 1, which renders back as "1". The control must keep
+  // the text the user typed, or the "0" vanishes before the next digit lands.
+  input.value = '1.0';
+  dispatch(input, 'input');
+  await tick();
+  assert.strictEqual(comp.state.age, 1, 'the model holds the number');
+  assert.strictEqual(input.value, '1.0', 'the control is not rewritten while it reads as that number');
+
+  input.value = '1.05';
+  dispatch(input, 'input');
+  await tick();
+  assert.strictEqual(comp.state.age, 1.05, 'the next digit extends the typed value');
+
+  console.log(`  ✅ ${type} input integration tests passed!`);
+}
+
+/**
+ * A multiple select bound to an array writes every selected value and follows
+ * the array when it changes in code. It is the mirror of the checkbox group.
+ */
+async function testMultipleSelectBinding() {
+  console.log('🧪 Testing multiple select binding to reactive array...');
+
+  const comp = new AvenxComponent(
+    { picked: [] },
+    {},
+    {},
+    `<select id="cities" multiple="multiple" data-ax-bind="picked">
+       <option value="a">A</option>
+       <option value="b">B</option>
+       <option value="c">C</option>
+     </select>`,
+    {},
+  );
+
+  const rootEl = createMockElementNode('div');
+  comp.__setMountTarget(rootEl);
+  comp.update();
+
+  const select = rootEl.querySelector('#cities');
+  assert.ok(select, 'Select element should render');
+  assert.strictEqual(select.multiple, true, 'the multiple attribute survives the expansion');
+  const [optionA, optionB, optionC] = select.options;
+  assert.deepStrictEqual(
+    select.selectedOptions.map((option) => option.value),
+    [],
+    'an empty array selects nothing',
+  );
+
+  // The user selects A and C: the array holds both, in option order.
+  optionA.selected = true;
+  optionC.selected = true;
+  dispatch(select, 'change');
+  await tick();
+  assert.ok(Array.isArray(comp.state.picked), 'the model stays an array');
+  assert.deepStrictEqual([...comp.state.picked], ['a', 'c'], 'every selected value is written');
+  assert.deepStrictEqual(
+    select.selectedOptions.map((option) => option.value),
+    ['a', 'c'],
+    'the re-render keeps the selection the user made',
+  );
+
+  // Deselecting one leaves the other.
+  optionA.selected = false;
+  dispatch(select, 'change');
+  await tick();
+  assert.deepStrictEqual([...comp.state.picked], ['c'], 'a deselected value is removed');
+
+  // A change made in code reaches every option.
+  comp.state.picked = ['b'];
+  await tick();
+  assert.deepStrictEqual(
+    [optionA.selected, optionB.selected, optionC.selected],
+    [false, true, false],
+    'replacing the array re-selects the options it names',
+  );
+
+  comp.state.picked.push('c');
+  await tick();
+  assert.deepStrictEqual(
+    [optionA.selected, optionB.selected, optionC.selected],
+    [false, true, true],
+    'mutating the array re-selects the options it names',
+  );
+
+  comp.state.picked = [];
+  await tick();
+  assert.deepStrictEqual(
+    select.selectedOptions.map((option) => option.value),
+    [],
+    'an emptied array deselects every option',
+  );
+
+  console.log('  ✅ Multiple select integration tests passed!');
+}
+
 (async () => {
   try {
     await testCheckboxGroupBinding();
     await testSingleCheckboxBinding();
     await testRadioGroupBinding();
     await testDynamicSelectBinding();
+    await testNumericInputBinding('number');
+    await testNumericInputBinding('range');
+    await testMultipleSelectBinding();
     console.log('✅ Form bindings integration tests passed successfully!');
   } catch (error) {
     console.error('❌ Form bindings integration tests failed!');

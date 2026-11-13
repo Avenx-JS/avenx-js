@@ -268,7 +268,13 @@ app.mount('Plain');
   // Raised from 95 to 100 KB as base runtime grew with route-level code splitting (#132),
   // AVX_R37 (#1617), nested component mounting under app.mount() (#1641), and DeferManager
   // unmount teardown (#1642), taking the fallback bundle from ~92 KB to 97.1 KB gzipped.
-  const FALLBACK_GZIP_CEILING_KB = 100;
+  //
+  // Raised from 100 to 105 KB: render diagnostics with component name and
+  // template position (#1178) had taken the fallback bundle to 100.2 KB, over
+  // the ceiling already, and typed `data-ax-bind` write-back (#1724) adds the
+  // per-option value sync for a multiple select, measured at 100.5 KB. 105
+  // restores headroom inside the kilobytes an unrelated module costs.
+  const FALLBACK_GZIP_CEILING_KB = 105;
   const FALLBACK_OVERHEAD_CEILING_KB = 70;
 
   const cleanBundleBytes = Buffer.byteLength(cleanBundle);

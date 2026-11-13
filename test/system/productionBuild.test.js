@@ -79,9 +79,15 @@ const PRODUCTION_SIZE_CEILING_KB = 385;
  * and DeferManager unmount teardown (#1642): the runtime additions took the
  * gzipped bundle to ~86.1 KB, tripping the ceiling. 88 restores headroom
  * comfortably inside the kilobytes an accidental import costs.
+ *
+ * Raised from 88 to 90 for typed `data-ax-bind` write-back (#1724): number and
+ * range inputs write a number, a multiple select writes an array, and both
+ * renderers apply a multiple select's value per option. The runtime additions
+ * took the gzipped bundle from 87.7 to ~88.0 KB, tripping the ceiling. 90
+ * restores headroom comfortably inside the kilobytes an accidental import costs.
  * @type {number}
  */
-const GZIPPED_CEILING_KB = 88;
+const GZIPPED_CEILING_KB = 90;
 
 /**
  * Source that must never appear in a production bundle.

@@ -86,4 +86,63 @@ test.describe('two-way binding', () => {
 
     await expect(page.getByTestId('city-output')).toHaveText('oslo');
   });
+
+  test('keeps numeric state numeric through a number input', async ({ page }) => {
+    // state.age starts as the number 7. event.target.value is always a string,
+    // so a binding that wrote it back turned `age + 1` into "71".
+    await expect(page.getByTestId('age-input')).toHaveValue('7');
+    await expect(page.getByTestId('age-output')).toHaveText('7 number');
+
+    await page.getByTestId('age-input').fill('42');
+    await expect(page.getByTestId('age-output')).toHaveText('42 number');
+
+    // An empty field writes null: never "" and never NaN.
+    await page.getByTestId('age-input').fill('');
+    await expect(page.getByTestId('age-output')).toHaveText('null object');
+    await expect(page.getByTestId('age-input')).toHaveValue('');
+
+    // The other direction still works after the field has been touched.
+    await page.getByTestId('age-from-code').click();
+    await expect(page.getByTestId('age-input')).toHaveValue('30');
+    await expect(page.getByTestId('age-output')).toHaveText('30 number');
+
+    // "1.0" is the number 1 and renders back as "1". The control has to keep
+    // what was typed, or the "0" is gone before the next digit lands.
+    await page.getByTestId('age-input').fill('1.0');
+    await expect(page.getByTestId('age-output')).toHaveText('1 number');
+    await expect(page.getByTestId('age-input')).toHaveValue('1.0');
+
+    await page.getByTestId('age-input').pressSequentially('5');
+    await expect(page.getByTestId('age-output')).toHaveText('1.05 number');
+    await expect(page.getByTestId('age-input')).toHaveValue('1.05');
+  });
+
+  test('keeps numeric state numeric through a range input', async ({ page }) => {
+    await expect(page.getByTestId('volume-output')).toHaveText('50 number');
+
+    await page.getByTestId('volume-input').fill('80');
+
+    await expect(page.getByTestId('volume-output')).toHaveText('80 number');
+  });
+
+  test('writes every selected value of a multiple select as an array', async ({ page }) => {
+    const select = page.getByTestId('cities-input');
+
+    await expect(page.getByTestId('cities-output')).toHaveText('[]');
+
+    // event.target.value on a multiple select is only the first selected
+    // option; the binding has to read the whole selection.
+    await select.selectOption(['berlin', 'oslo']);
+    await expect(page.getByTestId('cities-output')).toHaveText('["berlin","oslo"]');
+    // The re-render must not collapse the selection to one option.
+    await expect(select).toHaveValues(['berlin', 'oslo']);
+
+    await select.selectOption(['oslo']);
+    await expect(page.getByTestId('cities-output')).toHaveText('["oslo"]');
+
+    // A change made in code selects exactly the options the array names.
+    await page.getByTestId('cities-from-code').click();
+    await expect(select).toHaveValues(['lisbon']);
+    await expect(page.getByTestId('cities-output')).toHaveText('["lisbon"]');
+  });
 });
