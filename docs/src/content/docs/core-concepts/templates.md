@@ -64,7 +64,7 @@ The `data-ax-html` directive binds HTML content directly to an element. Unlike s
 
 ### Default Sanitization
 
-When a normal string is provided, it is sanitized and then injected. Allowed markup such as `<strong>` renders; disallowed tags such as `<script>` and attributes such as `onclick` are stripped and reported as `AVX_W16` / `AVX_W17`. `id` and `name` are stripped too, so injected markup cannot clobber `window` globals.
+When a normal string is provided, it is sanitized and then injected. Allowed markup such as `<strong>` renders; disallowed tags such as `<script>` and attributes such as `onclick` are stripped and reported as `AVX_W16` / `AVX_W17`. `id`, `name` and `target` are stripped too, so injected markup cannot clobber `window` globals or open a new tab that keeps `window.opener`.
 
 ```html
 <div data-ax-html="state.message"></div>

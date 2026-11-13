@@ -954,15 +954,21 @@ async function testHtmlDirectiveSanitizesOnBothPaths() {
       // used here: happy-dom's DOMParser leaks named properties onto the real
       // window, which a browser's does not. The real clobbering case runs in
       // test/e2e/specs/security/ax-html.spec.js.
-      component.state.raw = '<b id="ax-html-probe" class="kept">c</b>';
+      // `target` is stripped so an injected link cannot open a tab that keeps
+      // window.opener.
+      component.state.raw =
+        '<b id="ax-html-probe" class="kept">c</b><a href="https://example.com/" target="_blank">l</a>';
       await component.$nextTick();
       const clobber = target.querySelector('b');
       assert.strictEqual(clobber?.hasAttribute('id'), false, `${path}: id is stripped`);
       assert.strictEqual(clobber?.className, 'kept', `${path}: other allowed attributes stay`);
+      const link = target.querySelector('a');
+      assert.strictEqual(link?.hasAttribute('target'), false, `${path}: target is stripped`);
+      assert.strictEqual(link?.getAttribute('href'), 'https://example.com/', `${path}: the link itself stays`);
       assert.strictEqual(
         warnings.filter((w) => w.includes('AVX_W17')).length,
-        2,
-        `${path}: the stripped id is reported as AVX_W17`,
+        3,
+        `${path}: the stripped id and target are reported as AVX_W17`,
       );
 
       // Markup the browser re-serializes differently from the sanitizer's
