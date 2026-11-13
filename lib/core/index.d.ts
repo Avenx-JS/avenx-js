@@ -940,7 +940,7 @@ export class AvenxApp {
     use(
         plugin:
             | ((app: AvenxApp, options?: Record<string, any>) => any)
-            | { install(app: AvenxApp, options?: Record<string, any>): any }
+            | { name?: string; install(app: AvenxApp, options?: Record<string, any>): any }
             | (() => Promise<any>)
             | Promise<any>,
         options?: Record<string, any>

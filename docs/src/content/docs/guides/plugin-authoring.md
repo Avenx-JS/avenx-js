@@ -25,9 +25,10 @@ Avenx-JS plugins follow an installer contract. A plugin can be authored as an **
 
 ```javascript
 export const myPlugin = {
+  name: "MyPlugin",
   install(app, options = {}) {
     // app provides access to:
-    // app.component(name, definition)
+    // app.register(name, componentClass)
     // app.mixin(mixinObject)
     // app.config
   }
@@ -52,21 +53,23 @@ export function myPlugin(app, options = {}) {
 
 ## 3. Registering Components from a Plugin
 
-Plugins can register reusable components globally using `app.component(name, definition)`:
+Plugins register reusable components globally with `app.register(name, componentClass)`. The name is the PascalCase tag used by templates:
 
 ```javascript
 import IconComponent from "./IconComponent.js";
 
 export const IconPlugin = {
+  name: "IconPlugin",
   install(app) {
-    app.component("ax-icon", IconComponent);
+    app.register("IconComponent", IconComponent);
   }
 };
 ```
 
 ### Tag-Naming Rules
-* Must contain at least one hyphen (`-`) conforming to custom element specifications (e.g., `ax-icon`, `ui-button`).
-* **Prefixing**: Avoid standard HTML tags or internal framework prefixes (`avenx-`). Always namespace your tags with a distinct prefix to avoid collisions.
+* Component names use PascalCase and match the class name, for example `IconComponent`.
+* Use the same PascalCase tag in templates: `<IconComponent />`.
+* Hyphenated tags such as `<ax-icon>` are web components; they are not names registered by `app.register()`.
 
 ---
 
@@ -250,23 +253,15 @@ Here is a complete, minimal plugin providing a notification banner:
 
 ```javascript
 // src/index.js
-const ToastComponent = {
-  template: `
-    <div class="ax-toast-wrap" if="$notifys.length">
-      <div class="ax-toast" each="item in $notifys">{{ item.text }}</div>
-    </div>
-  `,
-  state() {
-    return { $notifys: [] };
-  }
-};
+import ToastComponent from "./components/ToastComponent.component.js";
 
 export const toastPlugin = {
+  name: "toastPlugin",
   install(app, options = {}) {
     const timeout = options.timeout || 3000;
 
     // 1. Register component
-    app.component("ax-toast-container", ToastComponent);
+    app.register("ToastComponent", ToastComponent);
 
     // 2. Attach global property
     app.config.globalProperties.$notify = (text) => {
@@ -281,11 +276,14 @@ export default toastPlugin;
 ### Consuming the Plugin
 
 ```javascript
-import { createApp } from "avenx-core";
+import { AvenxApp } from "avenx-core/runtime";
 import toastPlugin from "avenx-toast";
-import App from "./App.ax";
+import App from "./components/App.component.js";
 
-const app = createApp(App);
+const app = new AvenxApp({ target: "#app" });
 app.use(toastPlugin, { timeout: 5000 });
-app.mount("#app");
+app.register("App", App);
+app.mount("App");
 ```
+
+If an object plugin's `install()` throws or rejects, Avenx reports `[AVX_R17]` with the plugin name and original cause. Set a `name` property on object plugins so the diagnostic can identify them.
