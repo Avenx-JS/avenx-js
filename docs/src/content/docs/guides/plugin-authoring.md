@@ -79,6 +79,39 @@ Because compilation occurs ahead of time, the compiler cannot detect runtime `ap
 ### The Author's Contract
 Always document the required globals in your plugin's README so consumers know which identifiers to register.
 
+The author's other half is publishing the values at runtime. A plugin does that from `install(app)`, by passing a mixin to `app.mixin()` whose **top-level members** are the globals:
+
+```javascript
+export const MyPlugin = {
+  install(app) {
+    app.mixin({
+      t: (key) => `T:${key}`,
+      sharedValue: 'from-mixin'
+    });
+  }
+};
+```
+
+With `"templateGlobals": ["t", "sharedValue"]` in `avenx.config.json`, a template can use `{{ t('hi') }}` and `{{ sharedValue }}`. `@avenx/i18n` is the reference: see `createMixin()` in `plugins/avenx-i18n/src/plugin.js`.
+
+#### Top-level members, not `methods`
+Put each global at the top level of the mixin, not in a `templateGlobals` key and not in `methods`:
+
+```javascript
+// Builds cleanly, but the values are missing at runtime
+app.mixin({ templateGlobals: { t: (key) => `T:${key}`, sharedValue: 'from-mixin' } });
+```
+
+`templateGlobals` is not a mixin option, so that object is just one more top-level member named `templateGlobals`, and `t` and `sharedValue` are never published. The names are still declared in `avenx.config.json`, so the build passes.
+
+`methods` is the obvious place for a function, but it behaves differently. A mixin's `methods` entries are merged into the component's action map, so they are component actions. Top-level members are passed through as plain mixin properties, which is what a value such as `@avenx/i18n`'s `locale`, an object with reactive getters, needs.
+
+#### Where mixin members sit in scope resolution
+A component resolves names in this order, highest first: per-call bindings (a `<@for>` item, an `event`), injected values, framework names (`props`, `styles`, `$route`, `$emit`, ...), the component's own actions, state and computed values, resources, bridges, then **mixin properties**, then `state` itself, then the names the component's module imported. So the component's own state, computed values, actions, resources and bridges win a name collision: a component that declares its own `t` keeps it, and a plugin never shadows application code. The order is documented at the top of `lib/core/runtime/ComponentScope.js`.
+
+#### The config declaration is compile-time only
+Declaring a name in `avenx.config.json` only tells the compiler to treat it as a valid global, which silences the undeclared-reference warning `AVX_W03`. It publishes nothing at runtime. If a name is declared but the plugin does not publish it as a top-level mixin member, the build is clean and the value is empty, and rendering the expression reports a warning such as `[AVX_R08] Failed to render interpolation expression`. If a name is published but not declared, `avenx check` reports `AVX_W03` instead. Keep the two lists identical, and list them in your README.
+
 ### The Consumer's Contract
 Consumers must declare these names in their project's `avenx.config.json` under `templateGlobals`:
 
