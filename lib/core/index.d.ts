@@ -90,6 +90,21 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
     readonly $parent: AvenxComponent<any> | null;
 
     /**
+     * Unique stable instance identifier for the component.
+     */
+    readonly $id: string;
+
+    /**
+     * Unique stable instance identifier for the component (alias of $id).
+     */
+    readonly $instanceId: string;
+
+    /**
+     * The enclosing parent component instance in the rendered component hierarchy, or null for root components.
+     */
+    readonly $parentComponent: AvenxComponent<any> | null;
+
+    /**
      * Template refs collected from `data-ax-ref` markers.
      * Resolves to a component instance when the host element has `__avenx_comp_instance`, otherwise the DOM element.
      */
@@ -1406,7 +1421,12 @@ export function watchEffect(
     options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string }
 ): () => void;
 
-export function initInspector(app: AvenxApp): void;
+export function initInspector(app: AvenxApp, options?: { maxTimelineSize?: number }): void;
+export function getInspectorData(app: AvenxApp): any;
+export function getTimeline(): any[];
+export function clearTimeline(): void;
+export function recordTimelineEntry(type: 'mount' | 'update' | 'unmount', comp: any, extra?: any): any;
+export function buildComponentTree(flatNodes: any[]): any[];
 
 export class LruCache<T = any> {
     limit: number;
