@@ -62,27 +62,27 @@ export default class ForumPost extends AvenxComponent {
 
 The `data-ax-html` directive binds HTML content directly to an element. Unlike standard text interpolation (`{{ ... }}`), it is designed for rendering HTML.
 
-### Default Escaping
+### Default Sanitization
 
-When a normal string is provided, HTML characters are automatically escaped to help prevent Cross-Site Scripting (XSS) attacks.
+When a normal string is provided, it is sanitized and then injected. Allowed markup such as `<strong>` renders; disallowed tags such as `<script>` and attributes such as `onclick` are stripped and reported as `AVX_W16` / `AVX_W17`. `id`, `name` and `target` are stripped too, so injected markup cannot clobber `window` globals or open a new tab that keeps `window.opener`.
 
 ```html
 <div data-ax-html="state.message"></div>
 ```
 
 ```js
-state.message = '<strong>Hello World</strong>';
+state.message = '<strong>Hello</strong><script>alert(1)</script>';
 ```
 
 Output:
 
 ```html
-&lt;strong&gt;Hello World&lt;/strong&gt;
+<strong>Hello</strong>
 ```
 
 ### Rendering Trusted HTML
 
-To render HTML without escaping, wrap the content with `SafeHtml` or generate it using the `html` tagged template helper.
+To render HTML without sanitization, wrap the content with `SafeHtml` or generate it using the `html` tagged template helper.
 
 ```js
 state.message = new SafeHtml('<strong>Hello World</strong>');

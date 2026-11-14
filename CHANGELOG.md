@@ -255,6 +255,7 @@ console. Four separate defects met there, each individually invisible.
 | `AVX_W53`/`AVX_W54`/`AVX_W55` may appear on an existing project | Each is a warning and silenceable with `"warnings": { "AVX_W55": "off" }` |
 | `AVX_W01` no longer counts source maps | None, unless a build relied on failing there |
 | `csp.strict` is validated as a boolean | None; the option is new and off by default. A non-boolean value is refused rather than read as truthy |
+| `data-ax-html` renders sanitized markup from a plain string instead of escaped text | To show markup as text, use `{{ value }}` |
 
 ### Fixed — compiler correctness
 
@@ -320,6 +321,11 @@ console. Four separate defects met there, each individually invisible.
   `@event` bindings and `on*` props on components are unaffected.
 - `avenx trace export` can no longer be made to emit executable code by a
   recorded value, and the dev server refuses cross-origin trace uploads.
+- `data-ax-html` sanitizes a plain string and injects the result, as the
+  directives guide describes. It used to escape the whole value, so `<b>`
+  showed as literal text and the sanitizer never ran. Disallowed tags and
+  attributes are stripped and reported as `AVX_W16` / `AVX_W17`; a `SafeHtml`
+  value is still injected as is. Both renderers share one implementation.
 
 ### Added
 
