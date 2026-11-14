@@ -290,6 +290,15 @@ async function testWatchProjectInputs() {
       await waitFor(() => messages.some((message) => message.includes(file) && /restart/i.test(message)), `${file} should require a restart`);
     }
     assert.strictEqual(reloads.length, 2, 'config and env edits must not reload stale output');
+    // Arbitrary root files are ignored: writing one must neither reload the
+    // page nor ask for a restart, so `avenx serve > serve.log` cannot drive
+    // itself into a reload loop.
+    for (const file of ['serve.log', 'NOTES.txt', '.DS_Store', 'npm-debug.log']) {
+      fs.writeFileSync(path.join(baseDir, file), 'noise');
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assert.strictEqual(reloads.length, 2, `${file} must not reload the page`);
+      assert.ok(!messages.some((message) => message.includes(file)), `${file} must not trigger anything`);
+    }
   } finally {
     if (watcher) watcher.close();
     console.log = originalLog;

@@ -1264,6 +1264,21 @@ export function getErrorOverlayScript() {
 }
 
 /**
+ * The project-root files the dev server actually depends on. Everything else
+ * in the root is ignored by the watcher, so a log file, an editor backup or a
+ * build artifact written there cannot reload the page -- and a server whose
+ * output lands in the project directory cannot drive itself into a reload loop.
+ * An allowlist, not a denylist: the next noisy filename is always one nobody
+ * thought of in advance.
+ */
+const ROOT_RELOAD_FILES = new Set(['index.html']);
+const ROOT_RESTART_FILES = new Set(['avenx.config.json', 'package.json']);
+
+const isRootRestartFile = (filename) => ROOT_RESTART_FILES.has(filename) || /^\.env(?:\.|$)/.test(filename);
+
+const isWatchedRootFile = (filename) => ROOT_RELOAD_FILES.has(filename) || isRootRestartFile(filename);
+
+/**
  * Watches the src directory for changes and triggers a rebuild.
  * @param {object} cli
  */
@@ -1306,7 +1321,7 @@ export function watchProject(cli) {
   const snapshotRootFiles = () => {
     const snapshot = new Map();
     for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
-      if (!entry.isFile()) continue;
+      if (!entry.isFile() || !isWatchedRootFile(entry.name)) continue;
       const entryPath = path.join(baseDir, entry.name);
       const stat = fs.statSync(entryPath, { bigint: true });
       snapshot.set(entryPath, `${stat.mtimeNs}:${stat.size}`);
@@ -1409,10 +1424,7 @@ export function watchProject(cli) {
     const next = snapshotRootFiles();
     for (const filePath of changedPaths(rootSnapshot, next)) {
       const filename = path.basename(filePath);
-      const requiresRestart = filename === 'avenx.config.json'
-        || filename === 'package.json'
-        || /^\.env(?:\.|$)/.test(filename);
-      scheduleChange(requiresRestart ? 3 : 1, filename);
+      scheduleChange(isRootRestartFile(filename) ? 3 : 1, filename);
     }
     rootSnapshot = next;
   };
