@@ -193,4 +193,74 @@ console.log('Testing top-level at-rules inside <@css>...');
   console.log('  ✅ @container is scoped, and @font-face and a trailing statement are copied');
 }
 
+{
+  const { css } = compile(
+    'mediafirst',
+    '<div @css box>x</div>',
+    `<@css>
+    @media (max-width: 600px) { box { width: 10px; } }
+    box { width: 50px; }
+</@css>
+`,
+  );
+  const hash = css.match(/\.avenx-[0-9a-f]+/)[0];
+  const mediaAt = css.indexOf('@media (max-width: 600px)');
+  const baseAt = css.indexOf(`${hash} { width: 50px; }`);
+  assert.ok(mediaAt !== -1, `media query missing from:\n${css}`);
+  assert.ok(baseAt !== -1, `base rule missing from:\n${css}`);
+  assert.ok(mediaAt < baseAt, `base rule should follow the media rule:\n${css}`);
+  assert.ok(css.includes(`${hash} { width: 10px; }`), `media rule was not scoped:\n${css}`);
+  console.log('  ✅ an earlier @media stays ahead of the later base rule');
+}
+
+{
+  const { css } = compile(
+    'repeat',
+    '<div @css box>x</div>',
+    `<@css>
+    box { width: 50px; }
+    @media (max-width: 600px) { box { width: 10px; } }
+    box { color: red; }
+</@css>
+`,
+  );
+  const hash = css.match(/\.avenx-[0-9a-f]+/)[0];
+  assert.ok(css.includes(`${hash} { width: 50px;`), `first body was replaced:\n${css}`);
+  assert.ok(css.includes('@media (max-width: 600px)'), `media query was dropped:\n${css}`);
+  assert.ok(css.includes(`${hash} { width: 10px; }`), `media rule was not scoped:\n${css}`);
+  assert.ok(css.includes('color: red;'), `later plain body was dropped:\n${css}`);
+  console.log('  ✅ a later plain block keeps the media query');
+}
+
+{
+  const { css, codes, args } = compile(
+    'page',
+    '<div @css box>x</div>',
+    `<@css>
+    box { width: 50px; }
+    @page { margin: 1cm; }
+</@css>
+`,
+  );
+  assert.ok(css.includes('@page {'), `page rule missing from:\n${css}`);
+  assert.ok(css.includes('margin: 1cm;'), `page body missing from:\n${css}`);
+  const unused = args.filter((_, index) => codes[index] === AvenxErrorCodes.COMPILER_UNUSED_STYLE_BLOCK);
+  assert.deepStrictEqual(unused, [], `page was named as a style block: ${JSON.stringify(args)}`);
+  console.log('  ✅ @page is copied and is not an unused style block');
+}
+
+{
+  const { css, codes } = compile(
+    'importonly',
+    '<div>x</div>',
+    `<@css>
+    @import "extra.css";
+</@css>
+`,
+  );
+  assert.ok(css.includes('@import "extra.css";'), `lone import was dropped:\n${css}`);
+  assert.ok(!codes.includes(AvenxErrorCodes.COMPILER_UNUSED_STYLE_BLOCK), `lone import was named as a style block:\n${css}`);
+  console.log('  ✅ a sheet that is only @import is copied');
+}
+
 console.log('✅ top-level at-rule tests passed');
