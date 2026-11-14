@@ -1350,14 +1350,44 @@ channel.postMessage('request-inspect-data');
 Whenever a `'request-inspect-data'` message is received, or when application events occur (`avenx:mount`, `avenx:update`, `avenx:unmount`, `app.updateAll()`, `app.mountPage()`), `initInspector` broadcasts an `'inspect-data'` payload message:
 
 ```typescript
+interface ComponentTreeNode {
+  id: string;                                 // Stable instance identifier (e.g. "comp-1")
+  name: string;                               // Component class name (e.g. "UserCard")
+  parentId: string | null;                    // Parent instance id or null for root components
+  key: string | number | null;                // Per-node key identity (from props.key, props.id, or data-ax-key-val)
+  index: number;                              // Sibling index among instances with same parent and name
+  state: Record<string, any>;                 // Sanitized reactive state
+  props: Record<string, any>;                 // Sanitized component props
+  children: ComponentTreeNode[];              // Nested child component nodes
+}
+
+interface TimelineEntry {
+  id: string;                                 // Unique timeline entry identifier (e.g. "tl-1")
+  timestamp: number;                          // Event unix timestamp in milliseconds
+  type: 'mount' | 'update' | 'unmount';       // Lifecycle event type
+  componentId: string | null;                 // Stable component instance ID
+  componentName: string;                      // Component class name
+  key: string | null;                         // Mutated state key name, if available
+  causationTrace: string[];                   // Causal chain trace leading to this update
+  state: Record<string, any>;                 // Sanitized component state captured at this event
+  props: Record<string, any>;                 // Sanitized component props captured at this event
+}
+
 interface InspectorDataMessage {
   type: 'inspect-data';
   data: {
-    activeComponents: Array<{
-      name: string;        // Component class name (e.g. "UserCard")
-      state: object;       // Sanitized component reactive state
-      props: object;       // Sanitized component props
+    version: number;                          // Inspector protocol version (2)
+    componentTree: ComponentTreeNode[];       // Hierarchical nested component tree
+    activeComponents: Array<{                 // Flat array maintained for backward compatibility
+      id: string;
+      name: string;
+      parentId: string | null;
+      key: string | number | null;
+      index: number;
+      state: object;
+      props: object;
     }>;
+    timeline: TimelineEntry[];                // Bounded chronological log of update events
     registeredBridges: Record<string, object>; // Map of active bridge names to instances
     registeredComponents: string[];           // Array of registered component tag names
     registeredPages: string[];                // Array of registered page names
@@ -1366,6 +1396,22 @@ interface InspectorDataMessage {
   };
 }
 ```
+
+### Component Tree & Sibling Identity
+
+The inspector constructs a nested `componentTree` representing mounted components:
+- **Stable Instance IDs:** Every component is assigned a unique instance identifier (`comp.$id` / `comp.$instanceId`, e.g. `"comp-1"`).
+- **Parent Relationships:** Components expose their parent via `comp.$parentComponent`.
+- **Sibling Disambiguation:** Sibling instances of the same component under the same parent are individually distinguished through their `key` (if declared via `data-ax-key-val`, props, or attributes) and relative `index` within that parent.
+- **DOM Hover Highlighting:** The dashboard can highlight elements in the app tab by posting `{ type: 'highlight-component', id: '<component-id>' }` and `{ type: 'clear-highlight' }` over `'avenx-inspector-channel'`.
+
+### Bounded Update Timeline
+
+A bounded update timeline logs `mount`, `update`, and `unmount` events with timestamps, the responsible component, the mutated state key, and the reactivity causation chain (`getActiveCausationTrace`).
+
+- **Configurable History Bound:** By default, the timeline maintains up to 100 entries in a ring buffer (`DEFAULT_MAX_TIMELINE_SIZE = 100`). This can be configured by passing `{ maxTimelineSize: 50 }` to `initInspector(app, options)` or setting `window.__avenx_inspect_max_timeline`.
+- **Zero Retention of Unmounted Components:** Timeline entries hold only serialized, sanitized data cloned with `serializeSafe()`. No live component references, closures, or DOM nodes are retained in history, ensuring garbage collection is unimpeded.
+- **Limitations (No State Replay):** State replay / time-travel replay (restoring earlier states onto live components) is **deliberately not supported**, as arbitrary replay conflicts with asynchronous resources, side effects, and DOM mutations. Historical snapshots exist strictly for timeline inspection and debugging.
 
 ---
 

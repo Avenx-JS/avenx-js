@@ -546,6 +546,95 @@ export function getInspectorHtml(cli) {
             margin: 1.25rem 0;
         }
 
+        .tree-node {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tree-node-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .tree-node-row:hover {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .tree-node-row.selected {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--accent-blue);
+        }
+
+        .tree-toggle {
+            cursor: pointer;
+            width: 1.25rem;
+            display: inline-block;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        .tree-children {
+            padding-left: 1.25rem;
+            border-left: 1px dashed var(--card-border);
+            margin-left: 0.6rem;
+        }
+
+        .tag-badge {
+            font-size: 0.7rem;
+            font-family: monospace;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+        }
+
+        .tag-badge.key-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .timeline-item {
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .timeline-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: #52525b;
+        }
+
+        .timeline-item.selected {
+            background: rgba(59, 130, 246, 0.12);
+            border-color: var(--accent-blue);
+        }
+
+        .badge-mount {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+
+        .badge-update {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .badge-unmount {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+        }
+
         @media (max-width: 768px) {
             .app-header {
             padding: 1rem;
@@ -605,6 +694,18 @@ export function getInspectorHtml(cli) {
                 <section class="card grid-card components-card" role="region" aria-labelledby="components-heading">
                     <h2 id="components-heading">Registered Components</h2>
                     <div id="componentsList" class="info-list" aria-live="off"></div>
+                    <hr />
+                    <h3>Selected Component</h3>
+                    <div id="selectedComponentInfo" class="route-info">Click a component in the tree to inspect its props and state.</div>
+                </section>
+
+                <!-- Update Timeline Section -->
+                <section class="card grid-card timeline-card" role="region" aria-labelledby="timeline-heading">
+                    <h2 id="timeline-heading">Update Timeline</h2>
+                    <div id="timelineList" class="info-list" aria-live="off"></div>
+                    <hr />
+                    <h3>Timeline Snapshot Details</h3>
+                    <div id="timelineDetail" class="route-info">Click a timeline event above to inspect its historical state snapshot.</div>
                 </section>
 
                 <!-- Bridges Section -->
@@ -636,11 +737,53 @@ export function getInspectorHtml(cli) {
             }
         }
 
+        let latestData = null;
+        let selectedComponentId = null;
+        let selectedTimelineId = null;
+        const expandedNodeIds = new Set();
+        let initialExpandDone = false;
+
+        function toggleNode(nodeId) {
+            if (expandedNodeIds.has(nodeId)) {
+                expandedNodeIds.delete(nodeId);
+            } else {
+                expandedNodeIds.add(nodeId);
+            }
+            if (latestData) {
+                renderComponentTree(latestData);
+            }
+        }
+
+        function selectComponent(nodeId) {
+            selectedComponentId = nodeId;
+            if (latestData) {
+                renderComponentTree(latestData);
+                renderSelectedComponent(latestData);
+            }
+        }
+
+        function selectTimelineEntry(entryId) {
+            selectedTimelineId = entryId;
+            if (latestData) {
+                renderTimeline(latestData);
+                renderSelectedTimeline(latestData);
+            }
+        }
+
+        function onNodeHover(id) {
+            channel.postMessage({ type: 'highlight-component', id: id });
+        }
+
+        function onNodeLeave() {
+            channel.postMessage({ type: 'clear-highlight' });
+        }
+
         channel.onmessage = (event) => {
             if (event.data && event.data.type === 'inspect-data') {
                 updateStatus(true);
                 lastUpdate = Date.now();
-                renderDashboard(event.data.data);
+                latestData = event.data.data;
+                renderDashboard(latestData);
             }
         };
 
@@ -677,6 +820,209 @@ export function getInspectorHtml(cli) {
                 .replace(/'/g, '&#39;');
         }
 
+        function findNodeById(nodes, id) {
+            if (!nodes) return null;
+            for (const node of nodes) {
+                if (node.id === id) return node;
+                if (node.children && node.children.length > 0) {
+                    const found = findNodeById(node.children, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function renderSelectedComponent(data) {
+            const container = document.getElementById('selectedComponentInfo');
+            if (!container) return;
+            const tree = data.componentTree || [];
+            const flat = data.activeComponents || [];
+            const node = findNodeById(tree, selectedComponentId) || flat.find(c => c.id === selectedComponentId);
+            if (!node) {
+                container.innerHTML = '<div style="color:var(--text-muted);">Click a component in the tree to inspect its props and state.</div>';
+                return;
+            }
+
+            container.innerHTML = \`
+                <div style="margin-bottom:0.25rem;"><strong>Component:</strong> <span style="color:var(--accent-blue);font-weight:600;">&lt;\${esc(node.name)}&gt;</span></div>
+                <div style="margin-bottom:0.25rem;"><strong>Instance ID:</strong> <span class="tag-badge">\${esc(node.id)}</span></div>
+                \${node.key !== null && node.key !== undefined ? \`<div style="margin-bottom:0.25rem;"><strong>Key:</strong> <span class="tag-badge key-badge">\${esc(node.key)}</span></div>\` : ''}
+                <div style="margin-bottom:0.25rem;"><strong>Parent:</strong> <span class="tag-badge">\${esc(node.parentId || 'Root')}</span></div>
+                <div style="margin-top:0.5rem;"><strong>Props:</strong></div>
+                <pre class="state-explorer">\${esc(JSON.stringify(node.props || {}, null, 2))}</pre>
+                <div style="margin-top:0.5rem;"><strong>State:</strong></div>
+                <pre class="state-explorer">\${esc(JSON.stringify(node.state || {}, null, 2))}</pre>
+            \`;
+        }
+
+        function renderTreeNode(node, container, depth) {
+            const hasChildren = node.children && node.children.length > 0;
+            const isExpanded = expandedNodeIds.has(node.id);
+            const isSelected = node.id === selectedComponentId;
+
+            const nodeWrapper = document.createElement('div');
+            nodeWrapper.className = 'tree-node';
+
+            const row = document.createElement('div');
+            row.className = \`tree-node-row\${isSelected ? ' selected' : ''}\`;
+            row.onmouseenter = () => onNodeHover(node.id);
+            row.onmouseleave = () => onNodeLeave();
+
+            const toggleSpan = document.createElement('span');
+            toggleSpan.className = 'tree-toggle';
+            toggleSpan.textContent = hasChildren ? (isExpanded ? '▼' : '▶') : '•';
+            if (hasChildren) {
+                toggleSpan.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleNode(node.id);
+                };
+            }
+            row.appendChild(toggleSpan);
+
+            const contentSpan = document.createElement('div');
+            contentSpan.style.display = 'flex';
+            contentSpan.style.alignItems = 'center';
+            contentSpan.style.gap = '0.5rem';
+            contentSpan.style.flex = '1';
+            contentSpan.onclick = () => selectComponent(node.id);
+
+            const keyBadge = node.key !== null && node.key !== undefined
+                ? \`<span class="tag-badge key-badge">key="\${esc(node.key)}"</span>\`
+                : (node.index > 0 ? \`<span class="tag-badge">#\${esc(node.index)}</span>\` : '');
+
+            contentSpan.innerHTML = \`
+                <span class="comp-name" style="font-size:0.85rem;">&lt;\${esc(node.name)}&gt;</span>
+                <span class="tag-badge">\${esc(node.id)}</span>
+                \${keyBadge}
+            \`;
+            row.appendChild(contentSpan);
+            nodeWrapper.appendChild(row);
+
+            if (hasChildren && isExpanded) {
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'tree-children';
+                for (const child of node.children) {
+                    renderTreeNode(child, childrenContainer, depth + 1);
+                }
+                nodeWrapper.appendChild(childrenContainer);
+            }
+
+            container.appendChild(nodeWrapper);
+        }
+
+        function renderComponentTree(data) {
+            const componentsList = document.getElementById('componentsList');
+            if (!componentsList) return;
+            componentsList.innerHTML = '';
+
+            const roots = data.componentTree || [];
+
+            if (!initialExpandDone && roots.length > 0) {
+                function expandRecursively(nodes, maxDepth, currentDepth) {
+                    for (const n of nodes) {
+                        expandedNodeIds.add(n.id);
+                        if (n.children && currentDepth < maxDepth) {
+                            expandRecursively(n.children, maxDepth, currentDepth + 1);
+                        }
+                    }
+                }
+                expandRecursively(roots, 3, 0);
+                initialExpandDone = true;
+            }
+
+            if (roots.length > 0) {
+                for (const root of roots) {
+                    renderTreeNode(root, componentsList, 0);
+                }
+            } else if (data.activeComponents && data.activeComponents.length > 0) {
+                data.activeComponents.forEach((comp) => {
+                    const item = document.createElement('div');
+                    item.className = 'info-item';
+                    item.innerHTML = \`
+                        <div class="info-header">
+                            <span class="comp-name">&lt;\${esc(comp.name)}&gt;</span>
+                            <span class="tag-badge">\${esc(comp.id || '-')}</span>
+                        </div>
+                        <div class="comp-details">
+                            <div style="margin-top:0.25rem;"><strong>Props:</strong></div>
+                            <pre class="state-explorer">\${esc(JSON.stringify(comp.props, null, 2))}</pre>
+                            <div style="margin-top:0.5rem;"><strong>State:</strong></div>
+                            <pre class="state-explorer">\${esc(JSON.stringify(comp.state, null, 2))}</pre>
+                        </div>
+                    \`;
+                    componentsList.appendChild(item);
+                });
+            } else {
+                componentsList.innerHTML = '<div class="text-muted" style="font-size:0.85rem;color:var(--text-muted);">No active components in DOM.</div>';
+            }
+        }
+
+        function renderTimeline(data) {
+            const timelineList = document.getElementById('timelineList');
+            if (!timelineList) return;
+            timelineList.innerHTML = '';
+
+            const items = data.timeline || [];
+            if (items.length === 0) {
+                timelineList.innerHTML = '<div class="text-muted" style="font-size:0.85rem;color:var(--text-muted);">No timeline events recorded yet.</div>';
+                return;
+            }
+
+            for (let i = items.length - 1; i >= 0; i--) {
+                const entry = items[i];
+                const isSelected = entry.id === selectedTimelineId;
+                const timeStr = new Date(entry.timestamp).toLocaleTimeString();
+                const typeClass = entry.type === 'mount' ? 'badge-mount' : (entry.type === 'update' ? 'badge-update' : 'badge-unmount');
+
+                const item = document.createElement('div');
+                item.className = \`info-item timeline-item\${isSelected ? ' selected' : ''}\`;
+                item.onclick = () => selectTimelineEntry(entry.id);
+
+                let causationInfo = '';
+                if (entry.causationTrace && entry.causationTrace.length > 0) {
+                    causationInfo = \`<div style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;margin-top:0.25rem;">Trace: \${esc(entry.causationTrace.join(' → '))}</div>\`;
+                }
+
+                item.innerHTML = \`
+                    <div class="info-header">
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="badge \${typeClass}">\${esc(entry.type)}</span>
+                            <span class="comp-name">&lt;\${esc(entry.componentName)}&gt;</span>
+                            <span class="tag-badge">\${esc(entry.componentId || '-')}</span>
+                        </div>
+                        <span style="font-size:0.75rem;color:var(--text-muted);">\${esc(timeStr)}</span>
+                    </div>
+                    \${entry.key ? \`<div style="font-size:0.75rem;color:var(--accent-blue);font-family:monospace;">Mutated: <strong>\${esc(entry.key)}</strong></div>\` : ''}
+                    \${causationInfo}
+                \`;
+                timelineList.appendChild(item);
+            }
+        }
+
+        function renderSelectedTimeline(data) {
+            const container = document.getElementById('timelineDetail');
+            if (!container) return;
+            const items = data.timeline || [];
+            const entry = items.find(e => e.id === selectedTimelineId);
+            if (!entry) {
+                container.innerHTML = '<div style="color:var(--text-muted);">Click a timeline event above to inspect its historical state snapshot.</div>';
+                return;
+            }
+
+            const timeStr = new Date(entry.timestamp).toISOString();
+            container.innerHTML = \`
+                <div style="margin-bottom:0.25rem;"><strong>Event:</strong> <span style="color:var(--accent-blue);font-weight:600;">\${esc(entry.type.toUpperCase())}</span> on &lt;\${esc(entry.componentName)}&gt; (<span class="tag-badge">\${esc(entry.componentId || '-')}</span>)</div>
+                <div style="margin-bottom:0.25rem;"><strong>Timestamp:</strong> <span style="font-size:0.8rem;color:var(--text-muted);">\${esc(timeStr)}</span></div>
+                \${entry.key ? \`<div style="margin-bottom:0.25rem;"><strong>Mutated Key:</strong> <span class="tag-badge key-badge">\${esc(entry.key)}</span></div>\` : ''}
+                \${entry.causationTrace && entry.causationTrace.length > 0 ? \`<div style="margin-bottom:0.25rem;"><strong>Causation Chain:</strong> <span style="font-family:monospace;font-size:0.8rem;color:var(--accent-blue);">\${esc(entry.causationTrace.join(' → '))}</span></div>\` : ''}
+                <div style="margin-top:0.5rem;"><strong>Captured State:</strong></div>
+                <pre class="state-explorer">\${esc(JSON.stringify(entry.state || {}, null, 2))}</pre>
+                <div style="margin-top:0.5rem;"><strong>Captured Props:</strong></div>
+                <pre class="state-explorer">\${esc(JSON.stringify(entry.props || {}, null, 2))}</pre>
+                <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic;">Note: State replay is not supported. Historical snapshot is for inspection only.</div>
+            \`;
+        }
+
         function renderDashboard(data) {
             // 1. Render routes
             const routingList = document.getElementById('routingList');
@@ -711,31 +1057,15 @@ export function getInspectorHtml(cli) {
                 currentRouteInfo.innerHTML = '<div style="color:var(--text-muted);">None (App not routing or on initial load)</div>';
             }
 
-            // 3. Render active components
-            const componentsList = document.getElementById('componentsList');
-            componentsList.innerHTML = '';
-            if (data.activeComponents && data.activeComponents.length > 0) {
-                data.activeComponents.forEach((comp) => {
-                    const item = document.createElement('div');
-                    item.className = 'info-item';
-                    item.innerHTML = \`
-                        <div class="info-header">
-                            <span class="comp-name">\${esc(comp.name)}</span>
-                        </div>
-                        <div class="comp-details">
-                            <div style="margin-top:0.25rem;"><strong>Props:</strong></div>
-                            <pre class="state-explorer">\${esc(JSON.stringify(comp.props, null, 2))}</pre>
-                            <div style="margin-top:0.5rem;"><strong>State:</strong></div>
-                            <pre class="state-explorer">\${esc(JSON.stringify(comp.state, null, 2))}</pre>
-                        </div>
-                    \`;
-                    componentsList.appendChild(item);
-                });
-            } else {
-                componentsList.innerHTML = '<div class="text-muted" style="font-size:0.85rem;color:var(--text-muted);">No active components in DOM.</div>';
-            }
+            // 3. Render component tree & selection
+            renderComponentTree(data);
+            renderSelectedComponent(data);
 
-            // 4. Render bridges
+            // 4. Render update timeline & snapshot
+            renderTimeline(data);
+            renderSelectedTimeline(data);
+
+            // 5. Render bridges
             const bridgesList = document.getElementById('bridgesList');
             bridgesList.innerHTML = '';
             if (data.registeredBridges && Object.keys(data.registeredBridges).length > 0) {
