@@ -125,6 +125,8 @@ Use `&` to reference the current selector when applying pseudo-classes or combin
 
 The `&` nesting reference behaves the same way inside nested at-rules such as `@media`, `@supports`, and `@container`.
 
+A top-level `@media`, `@supports`, `@container`, or `@document` in `<@css>` is the same kind of rule. Name the style blocks inside it (`box { ... }`), and those blocks pick up the at-rule when they are emitted. `@keyframes`, `@font-face`, and other top-level at-rules are copied through as written, and so is a braceless statement such as `@import "extra.css";`. Nesting the at-rule inside one block, as in the example below, still applies it only to that block.
+
 ```css
 <@css>
     card {
