@@ -267,7 +267,16 @@ Avenx-JS exports its testing helpers (`AvenxMock`, `AvenxSandbox`, `mountTestCom
 
 These live behind their own entry point so they can never reach a production bundle. Importing them from `avenx-core/runtime` does not work — the runtime entry contains only what a browser needs at runtime.
 
-`mountTestComponent` requires a DOM environment. Vitest defaults to `environment: 'node'`, where a component cannot render, so install `happy-dom` and set the environment in `vitest.config.js`:
+### Installing the test dependencies
+
+`@avenx/vite` is not on npm yet, so `npm install -D @avenx/vite` fails with a 404. Until a release publishes it, pack `@avenx/vite` and `avenx-core` from a checkout of the Avenx repository as shown in the [Vite plugin package installation guide](/cli-reference/vite-plugin/#package-installation), then install `vitest` and `happy-dom` alongside the packed tarballs:
+
+```bash
+npm install ../avenx-js/avenx-core-<version>.tgz
+npm install -D ../avenx-js/avenx-vite-<version>.tgz vitest happy-dom
+```
+
+`mountTestComponent` requires a DOM environment. Vitest defaults to `environment: 'node'`, where a component cannot render, so set `environment: 'happy-dom'` and register the `@avenx/vite` plugin in `vitest.config.js`:
 
 ```javascript
 import { defineConfig } from 'vitest/config';
