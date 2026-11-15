@@ -889,7 +889,7 @@ test.describe('avenx serve development cycle', () => {
       ).toBeVisible();
 
       await expect(
-        inspector.getByRole('heading', { name: /component/i }),
+        inspector.getByRole('heading', { name: /registered components/i }),
       ).toBeVisible();
 
       await page.bringToFront();
