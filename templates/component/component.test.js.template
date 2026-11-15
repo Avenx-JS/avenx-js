@@ -4,8 +4,11 @@
  * Vitest needs Node ^22.12, ^24 or >=26.
  *
  * Setup instructions:
- * 1. Install dependencies:
- *      npm install -D vitest @avenx/vite happy-dom
+ * 1. Install dependencies (@avenx/vite is not on npm yet — pack it and
+ *    avenx-core from a checkout first; see
+ *    https://docs.avenx-js.com/cli-reference/vite-plugin/#package-installation):
+ *      npm install ../avenx-js/avenx-core-<version>.tgz
+ *      npm install -D ../avenx-js/avenx-vite-<version>.tgz vitest happy-dom
  * 2. Ensure vitest.config.js includes:
  *      import { defineConfig } from 'vitest/config';
  *      import avenx from '@avenx/vite';
