@@ -59,10 +59,10 @@ export function buildProject(cli, options = {}) {
   // is passed only by the commands that keep a process alive across rebuilds.
   // `avenx build` calls this without it and so always builds cold.
   const result = new AvenxCompiler({
-    ...cli.config,
+    rootDir: cli.config.rootDir || baseDir,
     watch: options.watch === true,
     ...(options.codeSplitting !== undefined ? { codeSplitting: options.codeSplitting } : {}),
-  }).build();
+  }, cli.config).build();
 
   runHook('postbuild', hooks.postbuild, baseDir);
 
