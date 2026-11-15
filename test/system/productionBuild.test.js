@@ -171,9 +171,9 @@ app.mount('Hello');`,
  */
 function buildBundle(root, mode) {
   const original = { log: console.log, info: console.info, warn: console.warn };
-  console.log = () => { };
-  console.info = () => { };
-  console.warn = () => { };
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
   try {
     new AvenxCompiler({ rootDir: root, srcDir: 'src', distDir: 'dist', mode }).build();
   } finally {
@@ -234,24 +234,12 @@ function testActionBodiesAreCompiled(production, development) {
   // `count` is state, so this line survives only as source.
   const asWritten = 'count = running;';
 
-  assert.ok(
-    !production.includes(asWritten),
-    'the production bundle still carries an action body as source text',
-  );
-  assert.ok(
-    development.includes(asWritten),
-    'the development bundle dropped the body text that Trace reports',
-  );
+  assert.ok(!production.includes(asWritten), 'the production bundle still carries an action body as source text');
+  assert.ok(development.includes(asWritten), 'the development bundle dropped the body text that Trace reports');
 
   // The compiled form is there, reached by name rather than by source.
-  assert.ok(
-    /__axActions\s*=\s*\{/.test(production),
-    'the production bundle has no compiled action table',
-  );
-  assert.ok(
-    /"tallyUp":\s*\(\$s\)\s*=>/.test(production),
-    'the statement-bodied action was not compiled to a function',
-  );
+  assert.ok(/__axActions\s*=\s*\{/.test(production), 'the production bundle has no compiled action table');
+  assert.ok(/"tallyUp":\s*\(\$s\)\s*=>/.test(production), 'the statement-bodied action was not compiled to a function');
 
   console.log('  ✅ Bodies compile to functions; the text stays in development.');
 }
@@ -279,16 +267,10 @@ function testProductionNeedsNoUnsafeEval(production, development) {
     !/\bnew\s+Function\s*\(/.test(production),
     'the production bundle can still construct a function from a string',
   );
-  assert.ok(
-    !/\bwith\s*\(/.test(production),
-    'the production bundle still contains a with-statement',
-  );
+  assert.ok(!/\bwith\s*\(/.test(production), 'the production bundle still contains a with-statement');
 
   for (const marker of ['AvenxSandbox', 'ExpressionParseError', 'parseExpressionProgram', 'function evalNode']) {
-    assert.ok(
-      !production.includes(marker),
-      `the production bundle still carries the interpreter (found ${marker})`,
-    );
+    assert.ok(!production.includes(marker), `the production bundle still carries the interpreter (found ${marker})`);
   }
 
   // The development build keeps all of it, which is what makes the difference a
@@ -345,7 +327,7 @@ function testSizeCeiling(bundle) {
   assert.ok(
     kb < PRODUCTION_SIZE_CEILING_KB,
     `Hello World production bundle is ${kb.toFixed(1)} KB, over the ${PRODUCTION_SIZE_CEILING_KB} KB ceiling. ` +
-    'Something large joined the module graph — check what the application imports, and what lib/core/index.js re-exports.',
+      'Something large joined the module graph — check what the application imports, and what lib/core/index.js re-exports.',
   );
 
   const gzipKb = zlib.gzipSync(Buffer.from(bundle, 'utf8')).length / 1024;
@@ -356,7 +338,7 @@ function testSizeCeiling(bundle) {
 
   console.log(
     `  ✅ ${kb.toFixed(1)} KB raw / ${gzipKb.toFixed(1)} KB gzipped, under the ` +
-    `${PRODUCTION_SIZE_CEILING_KB} / ${GZIPPED_CEILING_KB} KB ceilings.`,
+      `${PRODUCTION_SIZE_CEILING_KB} / ${GZIPPED_CEILING_KB} KB ceilings.`,
   );
 }
 
@@ -392,10 +374,7 @@ function testStringRendererIsAbsent(bundle) {
 function testUnusedBuiltinIsAbsent(bundle) {
   console.log('🧪 Testing an unreferenced built-in component is not linked...');
 
-  assert.ok(
-    !bundle.includes('class VirtualList'),
-    'VirtualList is in a bundle whose templates never mention it',
-  );
+  assert.ok(!bundle.includes('class VirtualList'), 'VirtualList is in a bundle whose templates never mention it');
   console.log('  ✅ <VirtualList> is linked by use, not by default.');
 }
 

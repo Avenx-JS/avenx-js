@@ -2,18 +2,14 @@ import assert from 'node:assert';
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 import {
-  initInspector,
   getInspectorData,
   recordTimelineEntry,
   getTimeline,
   clearTimeline,
   buildComponentTree,
-  serializeSafe,
   highlightComponent,
   clearComponentHighlight,
-  DEFAULT_MAX_TIMELINE_SIZE,
 } from '../../lib/core/tooling/inspect.js';
-import { getActiveCausationTrace, clearCausationTrace } from '../../lib/core/reactive/watcher.js';
 
 console.log('🧪 Testing Component Tree and Bounded Update Timeline in Dev Server Inspector (#1181)...');
 
@@ -21,8 +17,8 @@ console.log('🧪 Testing Component Tree and Bounded Update Timeline in Dev Serv
 if (typeof globalThis.window === 'undefined') {
   globalThis.window = {
     __avenx_inspect_enabled: true,
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addEventListener: () => { },
+    removeEventListener: () => { },
   };
 } else {
   globalThis.window.__avenx_inspect_enabled = true;
@@ -34,21 +30,25 @@ if (typeof globalThis.document === 'undefined') {
       tagName: tag.toUpperCase(),
       style: {},
       parentNode: null,
-      appendChild() {},
-      removeChild() {},
+      appendChild() { },
+      removeChild() { },
       getBoundingClientRect: () => ({ top: 10, left: 10, width: 100, height: 50 }),
     }),
     body: {
-      appendChild(el) { el.parentNode = this; },
-      removeChild(el) { el.parentNode = null; },
+      appendChild(el) {
+        el.parentNode = this;
+      },
+      removeChild(el) {
+        el.parentNode = null;
+      },
     },
     querySelectorAll: () => [],
     querySelector: () => ({
       tagName: 'DIV',
       style: {},
       parentNode: null,
-      appendChild() {},
-      removeChild() {},
+      appendChild() { },
+      removeChild() { },
       childNodes: [],
       querySelectorAll: () => [],
     }),
@@ -61,9 +61,11 @@ if (typeof globalThis.document === 'undefined') {
 
 if (typeof globalThis.BroadcastChannel === 'undefined') {
   globalThis.BroadcastChannel = class {
-    constructor(name) { this.name = name; }
-    postMessage() {}
-    close() {}
+    constructor(name) {
+      this.name = name;
+    }
+    postMessage() { }
+    close() { }
   };
 }
 
@@ -99,7 +101,15 @@ function testComponentTreeConstruction() {
   console.log('  Testing buildComponentTree and sibling identity...');
   const flatNodes = [
     { id: 'comp-1', name: 'ParentContainer', parentId: null, key: null, index: 0, state: { count: 0 }, props: {} },
-    { id: 'comp-2', name: 'ChildCard', parentId: 'comp-1', key: 'user-a', index: 0, state: {}, props: { user: 'Alice' } },
+    {
+      id: 'comp-2',
+      name: 'ChildCard',
+      parentId: 'comp-1',
+      key: 'user-a',
+      index: 0,
+      state: {},
+      props: { user: 'Alice' },
+    },
     { id: 'comp-3', name: 'ChildCard', parentId: 'comp-1', key: 'user-b', index: 1, state: {}, props: { user: 'Bob' } },
     { id: 'comp-4', name: 'Badge', parentId: 'comp-2', key: null, index: 0, state: {}, props: { text: 'New' } },
   ];

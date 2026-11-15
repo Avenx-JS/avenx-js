@@ -7,17 +7,13 @@
  */
 
 export interface GuardControlObject {
-    cancel?: boolean;
-    silent?: boolean;
-    redirect?: string;
-    state?: Record<string, any>;
+  cancel?: boolean;
+  silent?: boolean;
+  redirect?: string;
+  state?: Record<string, any>;
 }
 
-export type GuardResult =
-    | boolean
-    | string
-    | GuardControlObject
-    | Promise<boolean | string | GuardControlObject>;
+export type GuardResult = boolean | string | GuardControlObject | Promise<boolean | string | GuardControlObject>;
 /**
  * The capabilities a route guard is given when it runs.
  *
@@ -26,46 +22,46 @@ export type GuardResult =
  * a guard that needs one reads it through a bridge.
  */
 export class GuardContext {
-    constructor(options?: { bridges?: Record<string, any>; app?: any; router?: any });
-    /** Registered bridges, by name. */
-    bridges: Record<string, any>;
-    /** The application instance, when the router has one. */
-    app: any | null;
-    /** The router performing this navigation. */
-    router: any | null;
-    /** Looks a bridge up by name; undefined when it is not registered. */
-    bridge<T = any>(name: string): T | undefined;
+  constructor(options?: { bridges?: Record<string, any>; app?: any; router?: any });
+  /** Registered bridges, by name. */
+  bridges: Record<string, any>;
+  /** The application instance, when the router has one. */
+  app: any | null;
+  /** The router performing this navigation. */
+  router: any | null;
+  /** Looks a bridge up by name; undefined when it is not registered. */
+  bridge<T = any>(name: string): T | undefined;
 }
 
 export class AvenxGuard {
-    /**
-     * Guards are constructed by the router with the context for the
-     * navigation being decided.
-     */
-    constructor(context?: GuardContext);
-    /** The capabilities this guard was given. */
-    $context: GuardContext;
-    /** The application's bridges, by name. */
-    readonly $bridges: Record<string, any>;
-    /** Looks a bridge up by name; undefined when it is not registered. */
-    $bridge<T = any>(name: string): T | undefined;
-    /**
-     * Determines whether the route can be activated.
-     * Can return a boolean, a redirect string, control object,
-     * or a Promise resolving to either.
-     * @param to Target route information.
-     * @param from Current route information.
-     * @param context The capabilities for this navigation, also on `this.$context`.
-     */
-    canActivate(
-        to: { hash: string; page: string; params: Record<string, any> },
-        from: { hash: string; page: string; params: Record<string, any> } | null,
-        context?: GuardContext
-    ): GuardResult;
-    canDeactivate?(
-        current: { hash: string; page: string; params: Record<string, any> },
-        next: { hash: string; page: string; params: Record<string, any> }
-    ): boolean | Promise<boolean>;
+  /**
+   * Guards are constructed by the router with the context for the
+   * navigation being decided.
+   */
+  constructor(context?: GuardContext);
+  /** The capabilities this guard was given. */
+  $context: GuardContext;
+  /** The application's bridges, by name. */
+  readonly $bridges: Record<string, any>;
+  /** Looks a bridge up by name; undefined when it is not registered. */
+  $bridge<T = any>(name: string): T | undefined;
+  /**
+   * Determines whether the route can be activated.
+   * Can return a boolean, a redirect string, control object,
+   * or a Promise resolving to either.
+   * @param to Target route information.
+   * @param from Current route information.
+   * @param context The capabilities for this navigation, also on `this.$context`.
+   */
+  canActivate(
+    to: { hash: string; page: string; params: Record<string, any> },
+    from: { hash: string; page: string; params: Record<string, any> } | null,
+    context?: GuardContext,
+  ): GuardResult;
+  canDeactivate?(
+    current: { hash: string; page: string; params: Record<string, any> },
+    next: { hash: string; page: string; params: Record<string, any> },
+  ): boolean | Promise<boolean>;
 }
 
 /**
@@ -73,447 +69,447 @@ export class AvenxGuard {
  * Manages state, reactivity, rendering, and lifecycle.
  */
 export class AvenxComponent<S extends Record<string, any> = Record<string, any>> {
-    /**
-     * The reactive state proxy of the component.
-     * When a generic state shape `S` is provided, this property is fully typed.
-     */
-    state: S;
+  /**
+   * The reactive state proxy of the component.
+   * When a generic state shape `S` is provided, this property is fully typed.
+   */
+  state: S;
 
+  /**
+   * The reactive props of the component.
+   */
+  props: Record<string, any>;
+
+  /**
+   * The component instance that mounted this component, or null for root components.
+   */
+  readonly $parent: AvenxComponent<any> | null;
+
+  /**
+   * Unique stable instance identifier for the component.
+   */
+  readonly $id: string;
+
+  /**
+   * Unique stable instance identifier for the component (alias of $id).
+   */
+  readonly $instanceId: string;
+
+  /**
+   * The enclosing parent component instance in the rendered component hierarchy, or null for root components.
+   */
+  readonly $parentComponent: AvenxComponent<any> | null;
+
+  /**
+   * Template refs collected from `data-ax-ref` markers.
+   * Resolves to a component instance when the host element has `__avenx_comp_instance`, otherwise the DOM element.
+   */
+  readonly $refs: Record<string, Element | AvenxComponent<any> | undefined>;
+
+  /**
+   * True while the component is mounted in the DOM.
+   */
+  readonly $isMounted: boolean;
+
+  /**
+   * True after the component has been unmounted.
+   */
+  readonly $isUnmounted: boolean;
+
+  /**
+   * True when this component renders through a compiled render program.
+   *
+   * The compiler emits a program for every template it can compile
+   * exhaustively; a template using a construct the program runtime does not
+   * implement (a `<@for>`, a child component, a slot, a suspense or error
+   * boundary) renders through the string renderer instead. Both produce the
+   * same DOM -- the difference is that a compiled component updates only the
+   * bindings whose dependencies changed, while the string renderer re-renders
+   * the whole template.
+   *
+   * Read-only and informational. Which path a component takes is decided at
+   * build time and cannot be set from application code.
+   */
+  readonly $compiled: boolean;
+
+  /**
+   * Helpers for inspecting whether the parent provided slot content.
+   */
+  readonly $slots: {
     /**
-     * The reactive props of the component.
+     * Returns true when content was provided for the named slot (or the default slot).
+     * @param slotName Named slot, or `default` / omitted for the default slot.
      */
+    has(slotName?: string): boolean;
+  };
+
+  /**
+   * Programmatically clear cached KeepAlive component instances.
+   */
+  readonly $keepAlive: {
+    clear(componentName?: string): boolean;
+  };
+
+  /**
+   * Helper method to clear cached KeepAlive component instances.
+   * @param pageName Optional component or page name to clear from cache.
+   */
+  clearKeepAliveCache(pageName?: string): boolean;
+
+  /**
+   * The component's root DOM element, or null before mount / after unmount.
+   */
+  readonly $element: Element | null;
+
+  /**
+   * The application instance this component belongs to.
+   */
+  readonly $app?: AvenxApp;
+
+  /**
+   * Diagnostic context used when the component reports a warning or error.
+   */
+  readonly $logContext: {
+    componentName: string;
+    fileName: string | null;
+    component: AvenxComponent<any>;
+  };
+
+  /**
+   * Returns a diagnostic snapshot of the component for runtime debugging.
+   * Props and state are sanitized clones; `element` is the live root element.
+   * Computed properties are listed by key only, so inspecting never evaluates them.
+   */
+  $inspect(): {
+    componentName: string;
     props: Record<string, any>;
+    state: Record<string, any>;
+    computed: string[];
+    slots: string[];
+    element: Element | null;
+  };
 
-    /**
-     * The component instance that mounted this component, or null for root components.
-     */
-    readonly $parent: AvenxComponent<any> | null;
+  /**
+   * Emits a custom DOM event from the component's root element.
+   * @param eventName Name of the event to emit.
+   * @param detail Event detail payload.
+   * @param options Custom event options.
+   */
+  emit(eventName: string, detail?: any, options?: CustomEventInit): void;
 
-    /**
-     * Unique stable instance identifier for the component.
-     */
-    readonly $id: string;
+  /**
+   * Emits a composed custom event to parent components.
+   * @param eventName Name of the event to emit.
+   * @param detail Event detail payload.
+   */
+  $emit(eventName: string, detail?: any): void;
 
-    /**
-     * Unique stable instance identifier for the component (alias of $id).
-     */
-    readonly $instanceId: string;
+  /**
+   * Schedules an asynchronous update in the next microtask flush.
+   */
+  scheduleUpdate(): void;
 
-    /**
-     * The enclosing parent component instance in the rendered component hierarchy, or null for root components.
-     */
-    readonly $parentComponent: AvenxComponent<any> | null;
+  /**
+   * Performs the synchronous render and DOM patch for this component.
+   */
+  runUpdate(): void;
 
-    /**
-     * Template refs collected from `data-ax-ref` markers.
-     * Resolves to a component instance when the host element has `__avenx_comp_instance`, otherwise the DOM element.
-     */
-    readonly $refs: Record<string, Element | AvenxComponent<any> | undefined>;
+  /**
+   * Unmounts the component and tears down watchers and resources.
+   * Alias for {@link AvenxComponent#unmount}.
+   */
+  $destroy(): void | Promise<void>;
 
-    /**
-     * True while the component is mounted in the DOM.
-     */
-    readonly $isMounted: boolean;
+  /**
+   * Trips a named `<@deadlock>` boundary in this component's DOM tree,
+   * rendering its fallback template.
+   * @param boundaryName Boundary name, or null for the first boundary.
+   * @param error Error context passed to the fallback template.
+   */
+  $tripDeadlockBoundary(boundaryName?: string | null, error?: Error | object): void;
 
-    /**
-     * True after the component has been unmounted.
-     */
-    readonly $isUnmounted: boolean;
+  /**
+   * Resets a named `<@deadlock>` boundary in this component's DOM tree.
+   * @param boundaryName Boundary name, or null for the first boundary.
+   */
+  $resetDeadlockBoundary(boundaryName?: string | null): void;
 
-    /**
-     * True when this component renders through a compiled render program.
-     *
-     * The compiler emits a program for every template it can compile
-     * exhaustively; a template using a construct the program runtime does not
-     * implement (a `<@for>`, a child component, a slot, a suspense or error
-     * boundary) renders through the string renderer instead. Both produce the
-     * same DOM -- the difference is that a compiled component updates only the
-     * bindings whose dependencies changed, while the string renderer re-renders
-     * the whole template.
-     *
-     * Read-only and informational. Which path a component takes is decided at
-     * build time and cannot be set from application code.
-     */
-    readonly $compiled: boolean;
+  /**
+   * The active route details.
+   */
+  readonly $route: {
+    hash: string;
+    path: string;
+    page: string;
+    params: Record<string, any>;
+    query: Record<string, string | boolean | number>;
+  };
 
-    /**
-     * Helpers for inspecting whether the parent provided slot content.
-     */
-    readonly $slots: {
-        /**
-         * Returns true when content was provided for the named slot (or the default slot).
-         * @param slotName Named slot, or `default` / omitted for the default slot.
-         */
-        has(slotName?: string): boolean;
-    };
+  /**
+   * The router this component's application initialised, if any.
+   *
+   * Use it to navigate from inside an action: `this.$router.navigate('#/home')`.
+   * Null when the application never called `initRouter`.
+   */
+  readonly $router: AvenxRouter | null;
 
-    /**
-     * Programmatically clear cached KeepAlive component instances.
-     */
-    readonly $keepAlive: {
-        clear(componentName?: string): boolean;
-    };
+  /**
+   * Runs after the current reactive DOM update flush completes.
+   * With a callback, invokes it after the flush. Without a callback, returns a Promise.
+   */
+  $nextTick(callback: () => void): void;
+  $nextTick(): Promise<void>;
 
-    /**
-     * Helper method to clear cached KeepAlive component instances.
-     * @param pageName Optional component or page name to clear from cache.
-     */
-    clearKeepAliveCache(pageName?: string): boolean;
+  /**
+   * Alias for {@link AvenxComponent#$nextTick}.
+   */
+  nextTick(callback: () => void): void;
+  nextTick(): Promise<void>;
 
-    /**
-     * The component's root DOM element, or null before mount / after unmount.
-     */
-    readonly $element: Element | null;
+  /**
+   * Keys or mappings to share reactively with descendant components.
+   */
+  provide?: Record<string, any> | (() => Record<string, any>) | string[];
 
-    /**
-     * The application instance this component belongs to.
-     */
-    readonly $app?: AvenxApp;
+  /**
+   * Keys or mappings injected from ancestor components.
+   * Object values may be provide-key strings or `{ from?, default }` configs.
+   */
+  inject?:
+    | Record<string, string | { from?: string; default?: any }>
+    | (() => Record<string, string | { from?: string; default?: any }>)
+    | string[];
 
-    /**
-     * Diagnostic context used when the component reports a warning or error.
-     */
-    readonly $logContext: {
-        componentName: string;
-        fileName: string | null;
-        component: AvenxComponent<any>;
-    };
+  /**
+   * @param initialState Initial component state variables.
+   * @param computed Map of computed properties to their expression strings.
+   * @param bridges Global reactive bridges injected into this component.
+   * @param template Compiled HTML template string.
+   * @param methods Component action methods.
+   * @param props Input properties passed down from parent.
+   */
+  constructor(
+    initialState?: S,
+    computed?: Record<string, string>,
+    bridges?: Record<string, any>,
+    template?: string,
+    methods?: Record<string, string | Function>,
+    props?: Record<string, any>,
+  );
 
-    /**
-     * Returns a diagnostic snapshot of the component for runtime debugging.
-     * Props and state are sanitized clones; `element` is the live root element.
-     * Computed properties are listed by key only, so inspecting never evaluates them.
-     */
-    $inspect(): {
-        componentName: string;
-        props: Record<string, any>;
-        state: Record<string, any>;
-        computed: string[];
-        slots: string[];
-        element: Element | null;
-    };
+  /**
+   * Renders the component HTML template using current state.
+   */
+  render(): string;
 
-    /**
-     * Emits a custom DOM event from the component's root element.
-     * @param eventName Name of the event to emit.
-     * @param detail Event detail payload.
-     * @param options Custom event options.
-     */
-    emit(eventName: string, detail?: any, options?: CustomEventInit): void;
+  /**
+   * Patches the DOM to update the component UI.
+   */
+  update(): void;
 
-    /**
-     * Emits a composed custom event to parent components.
-     * @param eventName Name of the event to emit.
-     * @param detail Event detail payload.
-     */
-    $emit(eventName: string, detail?: any): void;
+  /**
+   * Mounts the component to a target DOM node or selector.
+   * @param target Target element or selector string.
+   */
+  mount(target: Element | string): void;
 
-    /**
-     * Schedules an asynchronous update in the next microtask flush.
-     */
-    scheduleUpdate(): void;
+  /**
+   * Unmounts the component from the DOM and runs lifecycle cleanup.
+   */
+  unmount(): void | Promise<void>;
 
-    /**
-     * Performs the synchronous render and DOM patch for this component.
-     */
-    runUpdate(): void;
+  /**
+   * Called before the component leaves the DOM. Can return a Promise to delay DOM removal.
+   */
+  onBeforeLeave?(): void | Promise<void>;
 
-    /**
-     * Unmounts the component and tears down watchers and resources.
-     * Alias for {@link AvenxComponent#unmount}.
-     */
-    $destroy(): void | Promise<void>;
+  /**
+   * Called when the component is mounted and enters the DOM.
+   */
+  onEnter?(): void;
 
-    /**
-     * Trips a named `<@deadlock>` boundary in this component's DOM tree,
-     * rendering its fallback template.
-     * @param boundaryName Boundary name, or null for the first boundary.
-     * @param error Error context passed to the fallback template.
-     */
-    $tripDeadlockBoundary(boundaryName?: string | null, error?: Error | object): void;
+  /**
+   * Called when the component leaves the DOM and unmounts.
+   */
+  onLeave?(): void;
 
-    /**
-     * Resets a named `<@deadlock>` boundary in this component's DOM tree.
-     * @param boundaryName Boundary name, or null for the first boundary.
-     */
-    $resetDeadlockBoundary(boundaryName?: string | null): void;
+  /**
+   * Updates the component's props and triggers an update if they changed.
+   * @param newProps The new props to apply.
+   */
+  setProps(newProps: Record<string, any>): void;
 
-    /**
-     * The active route details.
-     */
-    readonly $route: {
-        hash: string;
-        path: string;
-        page: string;
-        params: Record<string, any>;
-        query: Record<string, string | boolean | number>;
-    };
+  /**
+   * Component mount lifecycle hook (action).
+   */
+  onMount?(): void;
 
-    /**
-     * The router this component's application initialised, if any.
-     *
-     * Use it to navigate from inside an action: `this.$router.navigate('#/home')`.
-     * Null when the application never called `initRouter`.
-     */
-    readonly $router: AvenxRouter | null;
+  /**
+   * Component update lifecycle hook (action).
+   */
+  onUpdate?(): void;
 
-    /**
-     * Runs after the current reactive DOM update flush completes.
-     * With a callback, invokes it after the flush. Without a callback, returns a Promise.
-     */
-    $nextTick(callback: () => void): void;
-    $nextTick(): Promise<void>;
+  /**
+   * Component before update lifecycle hook (action).
+   */
+  onBeforeUpdate?(): void;
 
-    /**
-     * Alias for {@link AvenxComponent#$nextTick}.
-     */
-    nextTick(callback: () => void): void;
-    nextTick(): Promise<void>;
+  /**
+   * Component unmount lifecycle hook (action).
+   */
+  onUnmount?(): void;
 
-    /**
-     * Keys or mappings to share reactively with descendant components.
-     */
-    provide?: Record<string, any> | (() => Record<string, any>) | string[];
+  /**
+   * Component activated from keep-alive cache hook.
+   */
+  onActivate?(params?: Record<string, any>): void;
 
-    /**
-     * Keys or mappings injected from ancestor components.
-     * Object values may be provide-key strings or `{ from?, default }` configs.
-     */
-    inject?:
-        | Record<string, string | { from?: string; default?: any }>
-        | (() => Record<string, string | { from?: string; default?: any }>)
-        | string[];
+  /**
+   * Component deactivated/cached hook.
+   */
+  onDeactivate?(): void;
 
-    /**
-     * @param initialState Initial component state variables.
-     * @param computed Map of computed properties to their expression strings.
-     * @param bridges Global reactive bridges injected into this component.
-     * @param template Compiled HTML template string.
-     * @param methods Component action methods.
-     * @param props Input properties passed down from parent.
-     */
-    constructor(
-        initialState?: S,
-        computed?: Record<string, string>,
-        bridges?: Record<string, any>,
-        template?: string,
-        methods?: Record<string, string | Function>,
-        props?: Record<string, any>
-    );
+  /**
+   * Programmatically registers a watcher on a reactive expression/function.
+   * @param getter Evaluation function returning value to watch.
+   * @param callback Triggers when the value changes.
+   * @param options Config options.
+   */
+  watch(
+    getter: () => any,
+    callback: (newValue: any, oldValue: any) => void,
+    options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number },
+  ): AvenxWatcher;
 
-    /**
-     * Renders the component HTML template using current state.
-     */
-    render(): string;
+  /**
+   * Reactively listens to changes in specific state values or getters.
+   * @param source State property key string, getter function, or array of sources.
+   * @param callback Triggered when value changes.
+   * @param options Config options.
+   */
+  $watch(
+    source: string | (() => any) | Array<string | (() => any)>,
+    callback: (newValue: any, oldValue: any) => void,
+    options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number },
+  ): AvenxWatcher;
 
-    /**
-     * Patches the DOM to update the component UI.
-     */
-    update(): void;
+  /**
+   * Reactively runs an immediate effect hook that automatically tracks dependencies and re-runs on state mutation.
+   * Automatically registers watcher in _watchers and tears it down on unmount.
+   * @param effect Effect function to run immediately and track.
+   * @param options Config options.
+   * @returns Stop handle function.
+   */
+  $watchEffect(
+    effect: () => void,
+    options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string },
+  ): () => void;
 
-    /**
-     * Mounts the component to a target DOM node or selector.
-     * @param target Target element or selector string.
-     */
-    mount(target: Element | string): void;
+  /**
+   * Evaluates validation rules for an element and updates state.$validation.
+   * @param el Element to validate.
+   */
+  $validateElement(el: Element): string[];
 
-    /**
-     * Unmounts the component from the DOM and runs lifecycle cleanup.
-     */
-    unmount(): void | Promise<void>;
+  /**
+   * Internal method to set mount target element.
+   * @param target
+   * @private
+   */
+  __setMountTarget(target: Element): void;
 
-    /**
-     * Called before the component leaves the DOM. Can return a Promise to delay DOM removal.
-     */
-    onBeforeLeave?(): void | Promise<void>;
+  /**
+   * Internal lifecycle callback after mount is completed.
+   * @private
+   */
+  __afterMount(): void;
 
-    /**
-     * Called when the component is mounted and enters the DOM.
-     */
-    onEnter?(): void;
+  /**
+   * Retrieves the component root element.
+   * @protected
+   */
+  _getElement(): Element | null;
 
-    /**
-     * Called when the component leaves the DOM and unmounts.
-     */
-    onLeave?(): void;
+  /**
+   * Retrieves bridges available to the component.
+   * @protected
+   */
+  _getBridges(): Record<string, any>;
 
-    /**
-     * Updates the component's props and triggers an update if they changed.
-     * @param newProps The new props to apply.
-     */
-    setProps(newProps: Record<string, any>): void;
+  /**
+   * Retrieves the transcluded groups for this component.
+   * @protected
+   */
+  _getTranscludedGroups(): Record<string, any>;
 
-    /**
-     * Component mount lifecycle hook (action).
-     */
-    onMount?(): void;
+  /**
+   * Helper method to programmatically create component subclasses without ES class boilerplate.
+   * @param options Component definition options.
+   * @returns A new component subclass.
+   */
+  static extend<
+    S extends Record<string, any> = Record<string, any>,
+    M extends Record<string, Function> = Record<string, Function>,
+    C extends Record<string, any> = Record<string, any>,
+    P extends Record<string, any> = Record<string, any>,
+  >(
+    options?: ComponentExtendOptions<S, M, C, P>,
+  ): typeof AvenxComponent & (new (bridges?: Record<string, any>, props?: P) => AvenxComponent<S> & M & C);
 
-    /**
-     * Component update lifecycle hook (action).
-     */
-    onUpdate?(): void;
+  /**
+   * Registers a global mixin.
+   * @param mixin The mixin definition.
+   */
+  static mixin(mixin: Record<string, any>): void;
 
-    /**
-     * Component before update lifecycle hook (action).
-     */
-    onBeforeUpdate?(): void;
-
-    /**
-     * Component unmount lifecycle hook (action).
-     */
-    onUnmount?(): void;
-
-    /**
-     * Component activated from keep-alive cache hook.
-     */
-    onActivate?(params?: Record<string, any>): void;
-
-    /**
-     * Component deactivated/cached hook.
-     */
-    onDeactivate?(): void;
-
-    /**
-     * Programmatically registers a watcher on a reactive expression/function.
-     * @param getter Evaluation function returning value to watch.
-     * @param callback Triggers when the value changes.
-     * @param options Config options.
-     */
-    watch(
-        getter: () => any,
-        callback: (newValue: any, oldValue: any) => void,
-        options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number }
-    ): AvenxWatcher;
-
-    /**
-     * Reactively listens to changes in specific state values or getters.
-     * @param source State property key string, getter function, or array of sources.
-     * @param callback Triggered when value changes.
-     * @param options Config options.
-     */
-    $watch(
-        source: string | (() => any) | Array<string | (() => any)>,
-        callback: (newValue: any, oldValue: any) => void,
-        options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number }
-    ): AvenxWatcher;
-
-    /**
-     * Reactively runs an immediate effect hook that automatically tracks dependencies and re-runs on state mutation.
-     * Automatically registers watcher in _watchers and tears it down on unmount.
-     * @param effect Effect function to run immediately and track.
-     * @param options Config options.
-     * @returns Stop handle function.
-     */
-    $watchEffect(
-        effect: () => void,
-        options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string }
-    ): () => void;
-
-    /**
-     * Evaluates validation rules for an element and updates state.$validation.
-     * @param el Element to validate.
-     */
-    $validateElement(el: Element): string[];
-
-    /**
-     * Internal method to set mount target element.
-     * @param target
-     * @private
-     */
-    __setMountTarget(target: Element): void;
-
-    /**
-     * Internal lifecycle callback after mount is completed.
-     * @private
-     */
-    __afterMount(): void;
-
-    /**
-     * Retrieves the component root element.
-     * @protected
-     */
-    _getElement(): Element | null;
-
-    /**
-     * Retrieves bridges available to the component.
-     * @protected
-     */
-    _getBridges(): Record<string, any>;
-
-    /**
-     * Retrieves the transcluded groups for this component.
-     * @protected
-     */
-    _getTranscludedGroups(): Record<string, any>;
-
-    /**
-     * Helper method to programmatically create component subclasses without ES class boilerplate.
-     * @param options Component definition options.
-     * @returns A new component subclass.
-     */
-    static extend<
-        S extends Record<string, any> = Record<string, any>,
-        M extends Record<string, Function> = Record<string, Function>,
-        C extends Record<string, any> = Record<string, any>,
-        P extends Record<string, any> = Record<string, any>
-    >(
-        options?: ComponentExtendOptions<S, M, C, P>
-    ): typeof AvenxComponent & (new (bridges?: Record<string, any>, props?: P) => AvenxComponent<S> & M & C);
-
-    /**
-     * Registers a global mixin.
-     * @param mixin The mixin definition.
-     */
-    static mixin(mixin: Record<string, any>): void;
-
-    /**
-     * Resets/clears the global mixins list.
-     */
-    static clearMixins(): void;
+  /**
+   * Resets/clears the global mixins list.
+   */
+  static clearMixins(): void;
 }
 
 /**
  * Options accepted by {@link AvenxComponent.extend}.
  */
 export interface ComponentExtendOptions<
-    S extends Record<string, any> = Record<string, any>,
-    M extends Record<string, Function> = Record<string, Function>,
-    C extends Record<string, any> = Record<string, any>,
-    P extends Record<string, any> = Record<string, any>
+  S extends Record<string, any> = Record<string, any>,
+  M extends Record<string, Function> = Record<string, Function>,
+  C extends Record<string, any> = Record<string, any>,
+  P extends Record<string, any> = Record<string, any>,
 > {
-    name?: string;
-    state?: S | (() => S);
-    data?: S | (() => S);
-    computed?: C;
-    methods?: M;
-    template?: string;
-    props?: P;
-    styles?: Record<string, string>;
-    resources?: Record<string, any>;
-    watch?: Record<
-        string,
-        | ((newVal: any, oldVal: any) => void)
-        | { handler: (newVal: any, oldVal: any) => void; immediate?: boolean; deep?: boolean }
-    >;
-    provide?: Record<string, any> | (() => Record<string, any>) | string[];
-    inject?:
-        | Record<string, string | { from?: string; default?: any }>
-        | (() => Record<string, string | { from?: string; default?: any }>)
-        | string[];
-    contracts?: string[] | Set<string>;
-    options?: Record<string, any>;
-    onBeforeMount?(): void;
-    onMount?(): void;
-    onBeforeUpdate?(): void;
-    onUpdate?(): void;
-    onUnmount?(): void;
-    onActivate?(params?: Record<string, any>): void;
-    onDeactivate?(): void;
-    onErrorCaptured?(error: Error): boolean | void;
-    onEnter?(): void;
-    onLeave?(): void;
-    onBeforeLeave?(): void | Promise<void>;
-    [key: string]: any;
+  name?: string;
+  state?: S | (() => S);
+  data?: S | (() => S);
+  computed?: C;
+  methods?: M;
+  template?: string;
+  props?: P;
+  styles?: Record<string, string>;
+  resources?: Record<string, any>;
+  watch?: Record<
+    string,
+    | ((newVal: any, oldVal: any) => void)
+    | { handler: (newVal: any, oldVal: any) => void; immediate?: boolean; deep?: boolean }
+  >;
+  provide?: Record<string, any> | (() => Record<string, any>) | string[];
+  inject?:
+    | Record<string, string | { from?: string; default?: any }>
+    | (() => Record<string, string | { from?: string; default?: any }>)
+    | string[];
+  contracts?: string[] | Set<string>;
+  options?: Record<string, any>;
+  onBeforeMount?(): void;
+  onMount?(): void;
+  onBeforeUpdate?(): void;
+  onUpdate?(): void;
+  onUnmount?(): void;
+  onActivate?(params?: Record<string, any>): void;
+  onDeactivate?(): void;
+  onErrorCaptured?(error: Error): boolean | void;
+  onEnter?(): void;
+  onLeave?(): void;
+  onBeforeLeave?(): void | Promise<void>;
+  [key: string]: any;
 }
 
 /**
@@ -521,190 +517,187 @@ export interface ComponentExtendOptions<
  * It automatically mounts child components defined in its template via [data-avenx-comp].
  */
 export class AvenxPage<S extends Record<string, any> = Record<string, any>> extends AvenxComponent<S> {
-    /**
-     * @param initialState Initial page state.
-     * @param computed Page computed properties.
-     * @param bridges Page shared bridges.
-     * @param template Page HTML template.
-     * @param methods Page methods / lifecycle actions.
-     * @param componentRegistry Component class registry map.
-     */
-    constructor(
-        initialState?: S,
-        computed?: Record<string, string>,
-        bridges?: Record<string, any>,
-        template?: string,
-        methods?: Record<string, string | Function>,
-        componentRegistry?: Map<string, typeof AvenxComponent>,
-        props?: Record<string, any>
-    );
+  /**
+   * @param initialState Initial page state.
+   * @param computed Page computed properties.
+   * @param bridges Page shared bridges.
+   * @param template Page HTML template.
+   * @param methods Page methods / lifecycle actions.
+   * @param componentRegistry Component class registry map.
+   */
+  constructor(
+    initialState?: S,
+    computed?: Record<string, string>,
+    bridges?: Record<string, any>,
+    template?: string,
+    methods?: Record<string, string | Function>,
+    componentRegistry?: Map<string, typeof AvenxComponent>,
+    props?: Record<string, any>,
+  );
 }
 
 /**
  * Built-in component for high-performance virtualized list rendering.
  */
 export class VirtualList extends AvenxComponent<any> {
-    constructor(
-        bridges?: Record<string, any>,
-        props?: Record<string, any>
-    );
-    currentPage: number;
-    goToPage(targetPage: number): void;
-    nextPage(): void;
-    prevPage(): void;
+  constructor(bridges?: Record<string, any>, props?: Record<string, any>);
+  currentPage: number;
+  goToPage(targetPage: number): void;
+  nextPage(): void;
+  prevPage(): void;
 }
 
 export interface RouterA11yOptions {
-    /**
-     * Whether to shift focus to the new page or target after navigation (default is true).
-     */
-    focusOnNavigate?: boolean;
+  /**
+   * Whether to shift focus to the new page or target after navigation (default is true).
+   */
+  focusOnNavigate?: boolean;
 
-    /**
-     * Whether to announce the route title change to screen readers via a live region (default is true).
-     */
-    announceRouteChanges?: boolean;
+  /**
+   * Whether to announce the route title change to screen readers via a live region (default is true).
+   */
+  announceRouteChanges?: boolean;
 
-    /**
-     * Optional CSS selector to target for focus (default is '[data-ax-page-heading]').
-     */
-    focusTarget?: string;
+  /**
+   * Optional CSS selector to target for focus (default is '[data-ax-page-heading]').
+   */
+  focusTarget?: string;
 }
 
 /**
  * Configuration options for the AvenxRouter.
  */
 export interface AvenxRouterOptions {
-    /**
-     * Optional path prefix for all routes (e.g. 'app').
-     */
-    prefix?: string;
+  /**
+   * Optional path prefix for all routes (e.g. 'app').
+   */
+  prefix?: string;
 
-    /**
-     * Optional custom navigation delegate.
-     */
-    delegate?: NavigationDelegate;
+  /**
+   * Optional custom navigation delegate.
+   */
+  delegate?: NavigationDelegate;
 
-    /**
-     * Navigation mode ('hash' | 'memory').
-     */
-    mode?: 'hash' | 'memory' | string;
+  /**
+   * Navigation mode ('hash' | 'memory').
+   */
+  mode?: 'hash' | 'memory' | string;
 
-    /**
-     * Initial hash string for memory navigation delegate.
-     */
-    initialHash?: string;
+  /**
+   * Initial hash string for memory navigation delegate.
+   */
+  initialHash?: string;
 
-    /**
-     * The time in milliseconds to wait before a route guard execution times out (default is 5000ms).
-     */
-    guardTimeout?: number;
+  /**
+   * The time in milliseconds to wait before a route guard execution times out (default is 5000ms).
+   */
+  guardTimeout?: number;
 
-    /**
-     * The target hash path to redirect to if a route guard times out (e.g. '#/').
-     */
-    guardTimeoutRedirect?: string;
+  /**
+   * The target hash path to redirect to if a route guard times out (e.g. '#/').
+   */
+  guardTimeoutRedirect?: string;
 
-    /**
-     * A string prepended to every resolved route title.
-     */
-    titlePrefix?: string;
+  /**
+   * A string prepended to every resolved route title.
+   */
+  titlePrefix?: string;
 
-    /**
-     * A string appended to every resolved route title (e.g. ' — MyApp').
-     */
-    titleSuffix?: string;
+  /**
+   * A string appended to every resolved route title (e.g. ' — MyApp').
+   */
+  titleSuffix?: string;
 
-    /**
-     * Controls scroll position after successful navigation.
-     * - `'top'` (default): scroll to (0, 0)
-     * - `'auto'`: restore the last saved position for the target hash, otherwise scroll to top
-     * - `'manual'`: do not change scroll position
-     */
-    scrollRestoration?: 'top' | 'auto' | 'manual';
-    
-    /**
-     * Accessibility options for focus management and route announcements.
-     */
-    a11y?: RouterA11yOptions;
+  /**
+   * Controls scroll position after successful navigation.
+   * - `'top'` (default): scroll to (0, 0)
+   * - `'auto'`: restore the last saved position for the target hash, otherwise scroll to top
+   * - `'manual'`: do not change scroll position
+   */
+  scrollRestoration?: 'top' | 'auto' | 'manual';
+
+  /**
+   * Accessibility options for focus management and route announcements.
+   */
+  a11y?: RouterA11yOptions;
 }
 
 /**
  * Definition object for a single route entry.
  */
 export interface AvenxRouteDefinition {
-    /**
-     * The registered page name to mount for this route.
-     */
-    page?: string;
+  /**
+   * The registered page name to mount for this route.
+   */
+  page?: string;
 
-    /**
-     * Optional layout page name or component class shared by this route's children.
-     */
-    layout?: string | typeof AvenxComponent;
+  /**
+   * Optional layout page name or component class shared by this route's children.
+   */
+  layout?: string | typeof AvenxComponent;
 
-    /**
-     * Nested route definitions. Array entries include their relative path.
-     */
-    children?: Array<AvenxRouteDefinition & { path: string }> | Record<string, string | AvenxRouteDefinition>;
+  /**
+   * Nested route definitions. Array entries include their relative path.
+   */
+  children?: Array<AvenxRouteDefinition & { path: string }> | Record<string, string | AvenxRouteDefinition>;
 
-    /**
-     * Optional guards to evaluate before activating this route.
-     */
-    guards?: Array<typeof AvenxGuard | AvenxGuard>;
+  /**
+   * Optional guards to evaluate before activating this route.
+   */
+  guards?: Array<typeof AvenxGuard | AvenxGuard>;
 
-    /**
-     * Optional page title. Can be a static string or a function receiving
-     * the parsed route params and returning a string.
-     */
-    title?: string | ((params: Record<string, any>) => string);
+  /**
+   * Optional page title. Can be a static string or a function receiving
+   * the parsed route params and returning a string.
+   */
+  title?: string | ((params: Record<string, any>) => string);
 
-    /**
-     * Optional transition name for page enter/leave animations.
-     */
-    transition?: string;
+  /**
+   * Optional transition name for page enter/leave animations.
+   */
+  transition?: string;
 }
 
 /**
  * Base abstract class defining the navigation delegate interface.
  */
 export class NavigationDelegate {
-    getHash(): string;
-    setHash(hash: string, options?: { replace?: boolean }): void;
-    back(): void;
-    forward(): void;
-    go(delta: number): void;
-    onHashChange(callback: (hash: string) => void): () => void;
-    onLinkClick(callback: (route: string) => void): () => void;
-    setTitle(title: string): void;
-    registerRouter(router: any): void;
-    unregisterRouter(router: any): void;
-    getActiveRouters(): Set<any>;
-    destroy(): void;
+  getHash(): string;
+  setHash(hash: string, options?: { replace?: boolean }): void;
+  back(): void;
+  forward(): void;
+  go(delta: number): void;
+  onHashChange(callback: (hash: string) => void): () => void;
+  onLinkClick(callback: (route: string) => void): () => void;
+  setTitle(title: string): void;
+  registerRouter(router: any): void;
+  unregisterRouter(router: any): void;
+  getActiveRouters(): Set<any>;
+  destroy(): void;
 }
 
 /**
  * Browser navigation delegate interacting with window, location, and history.
  */
 export class BrowserNavigationDelegate extends NavigationDelegate {
-    hashListeners: Set<(hash: string) => void>;
-    linkClickListeners: Set<(route: string) => void>;
-    onWindowHashChange: () => void;
-    onWindowClick: (e: any) => void;
+  hashListeners: Set<(hash: string) => void>;
+  linkClickListeners: Set<(route: string) => void>;
+  onWindowHashChange: () => void;
+  onWindowClick: (e: any) => void;
 }
 
 /**
  * In-memory navigation delegate for Node.js / SSR / headless environments.
  */
 export class MemoryNavigationDelegate extends NavigationDelegate {
-    history: string[];
-    cursorIndex: number;
-    currentHash: string;
-    title: string;
-    hashListeners: Set<(hash: string) => void>;
-    linkClickListeners: Set<(route: string) => void>;
-    activeRouters: Set<any>;
-    constructor(initialHash?: string);
+  history: string[];
+  cursorIndex: number;
+  currentHash: string;
+  title: string;
+  hashListeners: Set<(hash: string) => void>;
+  linkClickListeners: Set<(route: string) => void>;
+  activeRouters: Set<any>;
+  constructor(initialHash?: string);
 }
 
 /**
@@ -717,98 +710,94 @@ export function createNavigationDelegate(options?: AvenxRouterOptions): Navigati
  * It maps URL hashes to specific Page components.
  */
 export class AvenxRouter {
-    /**
-     * The main application instance.
-     */
-    app: AvenxApp;
+  /**
+   * The main application instance.
+   */
+  app: AvenxApp;
 
-    /**
-     * Map of route pattern strings to Page names or route config definitions.
-     */
-    routes: Record<string, string | AvenxRouteDefinition>;
+  /**
+   * Map of route pattern strings to Page names or route config definitions.
+   */
+  routes: Record<string, string | AvenxRouteDefinition>;
 
-    /**
-     * Returns the registered routes as pattern/definition pairs.
-     */
-    getRoutes(): Array<{ pattern: string; definition: string | AvenxRouteDefinition }>;
+  /**
+   * Returns the registered routes as pattern/definition pairs.
+   */
+  getRoutes(): Array<{ pattern: string; definition: string | AvenxRouteDefinition }>;
 
-    /**
-     * Info about the currently loaded route.
-     */
-    currentRoute: { hash: string; page: string; params: Record<string, any> } | null;
+  /**
+   * Info about the currently loaded route.
+   */
+  currentRoute: { hash: string; page: string; params: Record<string, any> } | null;
 
-    /**
-     * Active navigation delegate.
-     */
-    delegate: NavigationDelegate;
+  /**
+   * Active navigation delegate.
+   */
+  delegate: NavigationDelegate;
 
-    /**
-     * @param app AvenxApp instance.
-     * @param routes Mapped routes.
-     * @param options Router options.
-     */
-    constructor(
-        app: AvenxApp,
-        routes?: Record<string, string | AvenxRouteDefinition>,
-        options?: AvenxRouterOptions
-    );
+  /**
+   * @param app AvenxApp instance.
+   * @param routes Mapped routes.
+   * @param options Router options.
+   */
+  constructor(app: AvenxApp, routes?: Record<string, string | AvenxRouteDefinition>, options?: AvenxRouterOptions);
 
-    /**
-     * Registers a global guard callback that executes before route guards on navigation transitions.
-     * @param callback The guard callback or guard instance/class.
-     * @returns Unregister function.
-     */
-    beforeEach(
-        callback: (
-            to: { hash: string; page: string; params: Record<string, any> },
-            from: { hash: string; page: string; params: Record<string, any> } | null
-        ) => boolean | string | object | void | Promise<boolean | string | object | void> | typeof AvenxGuard | AvenxGuard
-    ): () => void;
+  /**
+   * Registers a global guard callback that executes before route guards on navigation transitions.
+   * @param callback The guard callback or guard instance/class.
+   * @returns Unregister function.
+   */
+  beforeEach(
+    callback: (
+      to: { hash: string; page: string; params: Record<string, any> },
+      from: { hash: string; page: string; params: Record<string, any> } | null,
+    ) => boolean | string | object | void | Promise<boolean | string | object | void> | typeof AvenxGuard | AvenxGuard,
+  ): () => void;
 
-    /**
-     * Registers a global after hook callback that executes after successful route navigation.
-     * @param callback The callback to execute after navigation.
-     * @returns Unregister function.
-     */
-    afterEach(
-        callback: (
-            to: { hash: string; page: string; params: Record<string, any> },
-            from: { hash: string; page: string; params: Record<string, any> } | null
-        ) => void
-    ): () => void;
+  /**
+   * Registers a global after hook callback that executes after successful route navigation.
+   * @param callback The callback to execute after navigation.
+   * @returns Unregister function.
+   */
+  afterEach(
+    callback: (
+      to: { hash: string; page: string; params: Record<string, any> },
+      from: { hash: string; page: string; params: Record<string, any> } | null,
+    ) => void,
+  ): () => void;
 
-    /**
-     * Starts listening to hash changes and processes the initial route.
-     */
-    start(): void;
+  /**
+   * Starts listening to hash changes and processes the initial route.
+   */
+  start(): void;
 
-    /**
-     * Triggers a manual router navigation.
-     * @param hash Target path hash (e.g. `#/profile/123`).
-     * @param options Navigation options.
-     */
-    navigate(hash: string, options?: { replace?: boolean }): void;
+  /**
+   * Triggers a manual router navigation.
+   * @param hash Target path hash (e.g. `#/profile/123`).
+   * @param options Navigation options.
+   */
+  navigate(hash: string, options?: { replace?: boolean }): void;
 
-    /**
-     * Steps backward in navigation history.
-     */
-    back(): void;
+  /**
+   * Steps backward in navigation history.
+   */
+  back(): void;
 
-    /**
-     * Steps forward in navigation history.
-     */
-    forward(): void;
+  /**
+   * Steps forward in navigation history.
+   */
+  forward(): void;
 
-    /**
-     * Moves to a specific history position relative to current position.
-     * @param delta Relative step count in history (e.g. -1 for back, 1 for forward).
-     */
-    go(delta: number): void;
+  /**
+   * Moves to a specific history position relative to current position.
+   * @param delta Relative step count in history (e.g. -1 for back, 1 for forward).
+   */
+  go(delta: number): void;
 
-    /**
-     * Destroys the router and cleans up event listeners.
-     */
-    destroy(): void;
+  /**
+   * Destroys the router and cleans up event listeners.
+   */
+  destroy(): void;
 }
 
 /**
@@ -816,166 +805,166 @@ export class AvenxRouter {
  * Manages component registration, bridge registration, and mounting.
  */
 export class AvenxApp {
-    /**
-     * Registered page classes map.
-     */
-    pages: Map<string, typeof AvenxPage>;
+  /**
+   * Registered page classes map.
+   */
+  pages: Map<string, typeof AvenxPage>;
 
-    /**
-     * Registered component classes map.
-     */
-    components: Map<string, typeof AvenxComponent>;
+  /**
+   * Registered component classes map.
+   */
+  components: Map<string, typeof AvenxComponent>;
 
-    /**
-     * Shared reactive bridges dictionary.
-     */
-    bridges: Record<string, any>;
+  /**
+   * Shared reactive bridges dictionary.
+   */
+  bridges: Record<string, any>;
 
-    /**
-     * Registered custom directives.
-     */
-    directives: Map<string, any>;
+  /**
+   * Registered custom directives.
+   */
+  directives: Map<string, any>;
 
-    /**
-     * Active router instance.
-     */
-    router: AvenxRouter | null;
+  /**
+   * Active router instance.
+   */
+  router: AvenxRouter | null;
 
-    /**
-     * The currently active page component instance, or null when none is mounted.
-     */
-    readonly activePage: AvenxComponent<any> | null;
+  /**
+   * The currently active page component instance, or null when none is mounted.
+   */
+  readonly activePage: AvenxComponent<any> | null;
 
-    /**
-     * Retrieves all currently active top-level components (e.g. active layout and page).
-     */
-    readonly activeComponents: AvenxComponent<any>[];
+  /**
+   * Retrieves all currently active top-level components (e.g. active layout and page).
+   */
+  readonly activeComponents: AvenxComponent<any>[];
 
-    /**
-     * Returns the names of all registered components.
-     */
-    getRegisteredComponents(): string[];
+  /**
+   * Returns the names of all registered components.
+   */
+  getRegisteredComponents(): string[];
 
-    /**
-     * Returns the names of all registered pages.
-     */
-    getRegisteredPages(): string[];
+  /**
+   * Returns the names of all registered pages.
+   */
+  getRegisteredPages(): string[];
 
-    /**
-     * @param config Main app configurations.
-     */
-    constructor(config: { target: string; logging?: any; enableProfiling?: boolean });
+  /**
+   * @param config Main app configurations.
+   */
+  constructor(config: { target: string; logging?: any; enableProfiling?: boolean });
 
-    /**
-     * Registers a reusable component class.
-     * @param name Component identifier (PascalCase).
-     * @param compClass Component class extension.
-     */
-    register(name: string, compClass: typeof AvenxComponent): void;
+  /**
+   * Registers a reusable component class.
+   * @param name Component identifier (PascalCase).
+   * @param compClass Component class extension.
+   */
+  register(name: string, compClass: typeof AvenxComponent): void;
 
-    /**
-     * Registers a routing page component class or async loader function.
-     * @param name Page name identifier.
-     * @param pageClass Page class extension or async loader function returning the page class.
-     */
-    registerPage(name: string, pageClass: typeof AvenxPage | (() => Promise<any>)): void;
+  /**
+   * Registers a routing page component class or async loader function.
+   * @param name Page name identifier.
+   * @param pageClass Page class extension or async loader function returning the page class.
+   */
+  registerPage(name: string, pageClass: typeof AvenxPage | (() => Promise<any>)): void;
 
-    /**
-     * Checks if a registered page is an unresolved async loader function.
-     * @param name Page name identifier.
-     */
-    isPageLoader(name: string): boolean;
+  /**
+   * Checks if a registered page is an unresolved async loader function.
+   * @param name Page name identifier.
+   */
+  isPageLoader(name: string): boolean;
 
-    /**
-     * Asynchronously resolves a page component class.
-     * @param name Page name identifier.
-     */
-    resolvePage(name: string): Promise<typeof AvenxPage>;
+  /**
+   * Asynchronously resolves a page component class.
+   * @param name Page name identifier.
+   */
+  resolvePage(name: string): Promise<typeof AvenxPage>;
 
-    /**
-     * Registers a shared state bridge.
-     * @param name Bridge global identifier (e.g. `AuthBridge`).
-     * @param bridgeData Raw object schema or instance.
-     */
-    registerBridge(name: string, bridgeData: Record<string, any>): void;
+  /**
+   * Registers a shared state bridge.
+   * @param name Bridge global identifier (e.g. `AuthBridge`).
+   * @param bridgeData Raw object schema or instance.
+   */
+  registerBridge(name: string, bridgeData: Record<string, any>): void;
 
-    /**
-     * Forces updates on all active component nodes.
-     */
-    updateAll(): void;
+  /**
+   * Forces updates on all active component nodes.
+   */
+  updateAll(): void;
 
-    /**
-     * Mounts page by routing name.
-     * @param name Page component name.
-     * @param params Dynamic parsed path variables.
-     */
-    mountPage(
-        name: string,
-        params?: Record<string, any>,
-        options?: { layout?: string | typeof AvenxComponent; transition?: string; keepAlive?: boolean }
-    ): void;
+  /**
+   * Mounts page by routing name.
+   * @param name Page component name.
+   * @param params Dynamic parsed path variables.
+   */
+  mountPage(
+    name: string,
+    params?: Record<string, any>,
+    options?: { layout?: string | typeof AvenxComponent; transition?: string; keepAlive?: boolean },
+  ): void;
 
-    /**
-     * Mounts a standalone component.
-     * @param name Component registered name.
-     * @param targetSelector Target DOM element query selector.
-     */
-    mount(name: string, targetSelector?: string | null): void;
+  /**
+   * Mounts a standalone component.
+   * @param name Component registered name.
+   * @param targetSelector Target DOM element query selector.
+   */
+  mount(name: string, targetSelector?: string | null): void;
 
-    /**
-     * Programmatically clears cached KeepAlive component instances.
-     * @param componentName Optional component or page name to purge.
-     * @returns boolean True if cache entries were evicted.
-     */
-    clearKeepAliveCache(componentName?: string): boolean;
+  /**
+   * Programmatically clears cached KeepAlive component instances.
+   * @param componentName Optional component or page name to purge.
+   * @returns boolean True if cache entries were evicted.
+   */
+  clearKeepAliveCache(componentName?: string): boolean;
 
-    /**
-     * Scaffolds hash-change router listeners.
-     * @param routes Map of URL hashes.
-     * @param options Router options.
-     */
-    initRouter(
-        routes: Record<string, string | AvenxRouteDefinition>,
-        options?: AvenxRouterOptions
-    ): AvenxRouter;
+  /**
+   * Scaffolds hash-change router listeners.
+   * @param routes Map of URL hashes.
+   * @param options Router options.
+   */
+  initRouter(routes: Record<string, string | AvenxRouteDefinition>, options?: AvenxRouterOptions): AvenxRouter;
 
-    /**
-     * Registers an application-wide error handler callback.
-     * @param callback Callback triggered when an unhandled lifecycle or event handler error occurs.
-     */
-    onError(callback: (error: Error, component: AvenxComponent, origin: string) => void): this;
+  /**
+   * Registers an application-wide error handler callback.
+   * @param callback Callback triggered when an unhandled lifecycle or event handler error occurs.
+   */
+  onError(callback: (error: Error, component: AvenxComponent, origin: string) => void): this;
 
-    /**
-     * Registers an application-wide warning handler callback.
-     * @param callback Callback triggered when a framework warning is reported.
-     */
-    onWarn(callback: (warningMessage: string, component?: AvenxComponent, code?: string) => void): this;
+  /**
+   * Registers an application-wide warning handler callback.
+   * @param callback Callback triggered when a framework warning is reported.
+   */
+  onWarn(callback: (warningMessage: string, component?: AvenxComponent, code?: string) => void): this;
 
-    /**
-     * Registers a plugin with the application. Supports synchronous plugins, async installer functions, dynamic import loaders, or Promises.
-     * @param plugin The plugin object, installer function, async loader function, or Promise.
-     * @param options Optional configurations for the plugin.
-     * @returns The app instance or a Promise resolving to the app instance.
-     */
-    use(
-        plugin:
-            | ((app: AvenxApp, options?: Record<string, any>) => any)
-            | { name?: string; install(app: AvenxApp, options?: Record<string, any>): any }
-            | (() => Promise<any>)
-            | Promise<any>,
-        options?: Record<string, any>
-    ): this | Promise<this>;
+  /**
+   * Registers a plugin with the application. Supports synchronous plugins, async installer functions, dynamic import loaders, or Promises.
+   * @param plugin The plugin object, installer function, async loader function, or Promise.
+   * @param options Optional configurations for the plugin.
+   * @returns The app instance or a Promise resolving to the app instance.
+   */
+  use(
+    plugin:
+      | ((app: AvenxApp, options?: Record<string, any>) => any)
+      | { name?: string; install(app: AvenxApp, options?: Record<string, any>): any }
+      | (() => Promise<any>)
+      | Promise<any>,
+    options?: Record<string, any>,
+  ): this | Promise<this>;
 
-    /**
-     * Registers a custom directive.
-     * @param name Directive name.
-     * @param definition Directive lifecycle definition.
-     */
-    directive(name: string, definition: {
-        mounted?(el: any, binding: { value: any; expression: string }): void;
-        updated?(el: any, binding: { value: any; oldValue: any; expression: string }): void;
-        unmounted?(el: any, binding: { value: any; oldValue: any; expression: string }): void;
-    }): this;
+  /**
+   * Registers a custom directive.
+   * @param name Directive name.
+   * @param definition Directive lifecycle definition.
+   */
+  directive(
+    name: string,
+    definition: {
+      mounted?(el: any, binding: { value: any; expression: string }): void;
+      updated?(el: any, binding: { value: any; oldValue: any; expression: string }): void;
+      unmounted?(el: any, binding: { value: any; oldValue: any; expression: string }): void;
+    },
+  ): this;
 }
 
 /** Releases a bridge subscription. Safe to call more than once. */
@@ -983,12 +972,12 @@ export type BridgeUnsubscribe = () => void;
 
 /** Keys of a bridge definition that name an action. */
 type BridgeActionKeys<D> = {
-    [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? K : never;
+  [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? K : never;
 }[keyof D];
 
 /** Keys of a bridge definition that name a derived (getter) value. */
 type BridgeDerivedKeys<D> = {
-    [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? never : K;
+  [K in keyof D]: K extends 'state' | 'setup' ? never : D[K] extends (...args: any[]) => any ? never : K;
 }[keyof D];
 
 /** The shared state object declared by a bridge definition. */
@@ -1006,31 +995,31 @@ type BridgeDerivedOf<D> = Pick<D, BridgeDerivedKeys<D>>;
  * consumers so that every mutation and every event has one origin.
  */
 export type BridgeSelf<D> = BridgeStateOf<D> &
-    Readonly<BridgeDerivedOf<D>> &
-    BridgeActionsOf<D> & {
-        /** Broadcasts an event to every subscriber. */
-        emit(event: string, payload?: unknown): void;
-    };
+  Readonly<BridgeDerivedOf<D>> &
+  BridgeActionsOf<D> & {
+    /** Broadcasts an event to every subscriber. */
+    emit(event: string, payload?: unknown): void;
+  };
 
 /**
  * The bridge instance a module exports and components import.
  * State and derived values are read-only; mutation goes through actions.
  */
 export type Bridge<D> = Readonly<BridgeStateOf<D>> &
-    Readonly<BridgeDerivedOf<D>> &
-    BridgeActionsOf<D> & {
-        /**
-         * Subscribes to an event emitted by this bridge.
-         * Called from a component lifecycle hook or event handler, the
-         * subscription is released automatically when that component unmounts.
-         * @returns A function that unsubscribes early.
-         */
-        on<P = any>(event: string, handler: (payload: P) => void): BridgeUnsubscribe;
-        /** Runs the cleanup from `setup()`, drops listeners and restores initial state. */
-        $dispose(): void;
-        /** Diagnostic name, derived from the file name by the compiler. */
-        readonly $name: string;
-    };
+  Readonly<BridgeDerivedOf<D>> &
+  BridgeActionsOf<D> & {
+    /**
+     * Subscribes to an event emitted by this bridge.
+     * Called from a component lifecycle hook or event handler, the
+     * subscription is released automatically when that component unmounts.
+     * @returns A function that unsubscribes early.
+     */
+    on<P = any>(event: string, handler: (payload: P) => void): BridgeUnsubscribe;
+    /** Runs the cleanup from `setup()`, drops listeners and restores initial state. */
+    $dispose(): void;
+    /** Diagnostic name, derived from the file name by the compiler. */
+    readonly $name: string;
+  };
 
 /**
  * Creates a Bridge: a reactive unit of shared state and behaviour that
@@ -1061,9 +1050,9 @@ export type RewindConflictPolicy = 'safe' | 'force' | 'abort';
 
 /** The conflict policies, as values. */
 export const ConflictPolicy: {
-    readonly SAFE: 'safe';
-    readonly FORCE: 'force';
-    readonly ABORT: 'abort';
+  readonly SAFE: 'safe';
+  readonly FORCE: 'force';
+  readonly ABORT: 'abort';
 };
 
 /** How many entries a collection may hold before the journal stops saving it. */
@@ -1071,29 +1060,29 @@ export const DEFAULT_MAX_SNAPSHOT_ITEMS: number;
 
 /** What a rewind managed to do. */
 export interface RewindOutcome {
-    /** How many paths and collections were put back. */
-    restored: number;
-    /** Paths left alone because they no longer held the value the transaction wrote. */
-    conflicts: Array<{ path: string; expected: unknown; found: unknown }>;
-    /** Collections that were never saved, and why. */
-    unrewindable: string[];
+  /** How many paths and collections were put back. */
+  restored: number;
+  /** Paths left alone because they no longer held the value the transaction wrote. */
+  conflicts: Array<{ path: string; expected: unknown; found: unknown }>;
+  /** Collections that were never saved, and why. */
+  unrewindable: string[];
 }
 
 /** One transaction's record of what it changed. */
 export class JournalFrame {
-    constructor(options?: {
-        owner?: string;
-        name?: string;
-        onConflict?: RewindConflictPolicy;
-        maxSnapshotItems?: number;
-    });
-    readonly owner: string;
-    readonly name: string;
-    readonly onConflict: RewindConflictPolicy;
-    /** True when a rewind would have nothing to do. */
-    readonly empty: boolean;
-    /** Plays the frame backwards and reports what it could not restore. */
-    rewind(): RewindOutcome;
+  constructor(options?: {
+    owner?: string;
+    name?: string;
+    onConflict?: RewindConflictPolicy;
+    maxSnapshotItems?: number;
+  });
+  readonly owner: string;
+  readonly name: string;
+  readonly onConflict: RewindConflictPolicy;
+  /** True when a rewind would have nothing to do. */
+  readonly empty: boolean;
+  /** Plays the frame backwards and reports what it could not restore. */
+  rewind(): RewindOutcome;
 }
 
 /**
@@ -1104,22 +1093,22 @@ export class JournalFrame {
  * the rare case that needs a transaction the compiler cannot see.
  */
 export const journal: {
-    /** True while a transaction is recording. Read once per state write. */
-    readonly active: boolean;
-    /** Applies `rewind` from avenx.config.json. */
-    configure(options?: { onConflict?: RewindConflictPolicy; maxSnapshotItems?: number }): void;
-    /** The innermost open frame, or null. */
-    current(): JournalFrame | null;
-    /**
-     * Runs a function as a transaction. It commits by returning and rewinds by
-     * throwing, or by returning a promise that rejects.
-     */
-    run<T>(
-        spec: { owner?: string; name?: string; onConflict?: RewindConflictPolicy; maxSnapshotItems?: number },
-        fn: () => T,
-    ): T;
-    /** Drops every open frame. */
-    reset(): void;
+  /** True while a transaction is recording. Read once per state write. */
+  readonly active: boolean;
+  /** Applies `rewind` from avenx.config.json. */
+  configure(options?: { onConflict?: RewindConflictPolicy; maxSnapshotItems?: number }): void;
+  /** The innermost open frame, or null. */
+  current(): JournalFrame | null;
+  /**
+   * Runs a function as a transaction. It commits by returning and rewinds by
+   * throwing, or by returning a promise that rejects.
+   */
+  run<T>(
+    spec: { owner?: string; name?: string; onConflict?: RewindConflictPolicy; maxSnapshotItems?: number },
+    fn: () => T,
+  ): T;
+  /** Drops every open frame. */
+  reset(): void;
 };
 
 /**
@@ -1136,10 +1125,7 @@ export const journal: {
  *   addQty: atomic(function (id: string, n: number) { ... }),
  * });
  */
-export function atomic<T extends (...args: any[]) => any>(
-    fn: T,
-    options?: { onConflict?: RewindConflictPolicy },
-): T;
+export function atomic<T extends (...args: any[]) => any>(fn: T, options?: { onConflict?: RewindConflictPolicy }): T;
 
 /** Reports whether a function was declared atomic. */
 export function isAtomic(fn: unknown): boolean;
@@ -1152,13 +1138,13 @@ export function atomicOptions(fn: unknown): { onConflict?: RewindConflictPolicy 
  * and dispose it on unmount, which is how bridge subscriptions are released.
  */
 export class DisposalScope {
-    constructor(name?: string);
-    readonly name: string;
-    readonly disposed: boolean;
-    /** Registers a teardown callback; returns a run-once release function. */
-    add(disposer: () => void): () => void;
-    /** Runs every registered teardown callback. */
-    dispose(): void;
+  constructor(name?: string);
+  readonly name: string;
+  readonly disposed: boolean;
+  /** Registers a teardown callback; returns a run-once release function. */
+  add(disposer: () => void): () => void;
+  /** Runs every registered teardown callback. */
+  dispose(): void;
 }
 
 /** Returns the scope that currently owns new teardown callbacks. */
@@ -1174,8 +1160,8 @@ export function onScopeDispose(disposer: () => void): () => void;
  * Factory for creating reactive state proxies.
  */
 export class StateFactory {
-    constructor(handlerFactoryClass?: typeof ProxyHandlerFactory);
-    create<T extends Record<string, any> = Record<string, any>>(initialState?: T, options?: Record<string, any>): T;
+  constructor(handlerFactoryClass?: typeof ProxyHandlerFactory);
+  create<T extends Record<string, any> = Record<string, any>>(initialState?: T, options?: Record<string, any>): T;
 }
 
 /** Returns the underlying raw object for a reactive proxy. */
@@ -1203,152 +1189,157 @@ export const PROXY_REF_SYMBOL: symbol;
  * Factory for creating state proxy traps.
  */
 export class ProxyHandlerFactory {
-    constructor(options?: {
-        computedKeys?: string[];
-        onChange?: () => void;
-        getComputedValue?: (key: string, target: any) => any;
-    });
-    create(): ProxyHandler<any>;
+  constructor(options?: {
+    computedKeys?: string[];
+    onChange?: () => void;
+    getComputedValue?: (key: string, target: any) => any;
+  });
+  create(): ProxyHandler<any>;
 }
 
 /**
  * Handles virtual DOM recursive diffing and attribute syncs.
  */
 export class DomPatcher {
-    patch(target: Element, html: string): void;
+  patch(target: Element, html: string): void;
 }
 
 /**
  * Manages keyed template iteration for lists.
  */
 export class ListManager {
-    constructor(evaluator: DynamicEvaluator, renderer: TemplateRenderer);
-    process(root: Element, scope: Record<string, any>, state: Record<string, any>): void;
+  constructor(evaluator: DynamicEvaluator, renderer: TemplateRenderer);
+  process(root: Element, scope: Record<string, any>, state: Record<string, any>): void;
 }
 
 /**
  * Manages deferred loading (<@defer>) of DOM subtrees.
  */
 export class DeferManager {
-    constructor(evaluator: DynamicEvaluator, renderer: TemplateRenderer, eventBinder?: EventBinder, componentName?: string);
-    process(root: Element, scope: Record<string, any>, state: Record<string, any>, app?: any): void;
-    isLoaded(el: Element): boolean;
-    loadDeferredContent(container: Element, scope: Record<string, any>, state: Record<string, any>, app?: any): void;
-    destroy(): void;
+  constructor(
+    evaluator: DynamicEvaluator,
+    renderer: TemplateRenderer,
+    eventBinder?: EventBinder,
+    componentName?: string,
+  );
+  process(root: Element, scope: Record<string, any>, state: Record<string, any>, app?: any): void;
+  isLoaded(el: Element): boolean;
+  loadDeferredContent(container: Element, scope: Record<string, any>, state: Record<string, any>, app?: any): void;
+  destroy(): void;
 }
 
 /**
  * Provides static HTML diff string algorithms.
  */
 export class HtmlDiff {
-    diff(oldHtml: string, newHtml: string): string;
+  diff(oldHtml: string, newHtml: string): string;
 }
 
 /**
  * Binds event listeners recursively on elements.
  */
 export class EventBinder {
-    bind(root: Element | DocumentFragment, dispatcher: EventExecutor): void;
+  bind(root: Element | DocumentFragment, dispatcher: EventExecutor): void;
 }
 
 /**
  * Event wrapper to invoke custom methods.
  */
 export class EventExecutor {
-    constructor(runHandler: (source: string | Function, event: Event | null) => any);
-    execute(source: string, event?: Event | null): any;
+  constructor(runHandler: (source: string | Function, event: Event | null) => any);
+  execute(source: string, event?: Event | null): any;
 }
 
 /**
  * Safe expression evaluation context binder.
  */
 export class DynamicEvaluator {
-    evaluateExpression(expression: string, scope?: Record<string, any>, thisArg?: any): any;
-    executeStatement(source: string, scope?: Record<string, any>, thisArg?: any): any;
-    createMethodMap(
-        methods: Record<string, string | Function>,
-        getScope: (methods: any) => Record<string, any>,
-        getThisArg: () => any
-    ): Record<string, Function>;
+  evaluateExpression(expression: string, scope?: Record<string, any>, thisArg?: any): any;
+  executeStatement(source: string, scope?: Record<string, any>, thisArg?: any): any;
+  createMethodMap(
+    methods: Record<string, string | Function>,
+    getScope: (methods: any) => Record<string, any>,
+    getThisArg: () => any,
+  ): Record<string, Function>;
 }
 
 /**
  * Evaluates template bracket expressions.
  */
 export class TemplateRenderer {
-    constructor(capacityOrConfig?: number | { capacity?: number; templateCacheCapacity?: number });
-    capacity: number;
-    cache: LruCache;
-    clearCache(): void;
-    render(template: string, resolver: (expr: string) => any): string;
+  constructor(capacityOrConfig?: number | { capacity?: number; templateCacheCapacity?: number });
+  capacity: number;
+  cache: LruCache;
+  clearCache(): void;
+  render(template: string, resolver: (expr: string) => any): string;
 }
 
 /**
  * Triggers initial mounting states.
  */
 export class LifecycleManager {
-    mount(component: AvenxComponent<any>, target: Element | string): void;
+  mount(component: AvenxComponent<any>, target: Element | string): void;
 }
 
 export class ComputedRegistry {
-    constructor(computed?: Record<string, string>);
-    keys(): string[];
-    get(key: string): string;
+  constructor(computed?: Record<string, string>);
+  keys(): string[];
+  get(key: string): string;
 }
 
 export class HtmlEscaper {
-    escape(str: string): string;
-    unescape(str: string): string;
+  escape(str: string): string;
+  unescape(str: string): string;
 }
 
 export class SafeHtml {
-    value: string;
-    constructor(value: any);
-    toString(): string;
+  value: string;
+  constructor(value: any);
+  toString(): string;
 }
 
 export function html(strings: string | TemplateStringsArray, ...values: any[]): SafeHtml;
 export function unescapeHtml(str: string): string;
 
 export class Sanitizer {
-    sanitize(html: string): string;
-    static sanitizeUrl(url: string, allowedProtocols?: string[]): string;
-    static stripTags(html: string): string;
+  sanitize(html: string): string;
+  static sanitizeUrl(url: string, allowedProtocols?: string[]): string;
+  static stripTags(html: string): string;
 }
 
 export interface AvenxLoggerOptions {
-    level?: string;
-    silent?: boolean;
-    formatter?: (level: string, args: any[]) => any[];
-    transports?: Array<any | ((level: string, formattedArgs: any[], rawArgs: any[]) => void)>;
+  level?: string;
+  silent?: boolean;
+  formatter?: (level: string, args: any[]) => any[];
+  transports?: Array<any | ((level: string, formattedArgs: any[], rawArgs: any[]) => void)>;
 }
 
 export interface AvenxLoggerBindings {
-    prefix?: string;
-    componentName?: string;
+  prefix?: string;
+  componentName?: string;
 }
 
 export class AvenxLogger {
-    config: {
-        level: string;
-        silent: boolean;
-        formatter: (level: string, args: any[]) => any[];
-        transports: any[];
-    };
-    bindings: Record<string, any>;
-    constructor(config?: AvenxLoggerOptions);
-    configure(config: AvenxLoggerOptions): void;
-    setLevel(level: string): void;
-    shouldLog(level: string): boolean;
-    write(level: string, ...args: any[]): void;
-    child(bindings?: string | AvenxLoggerBindings): AvenxLogger;
-    trace(...args: any[]): void;
-    debug(...args: any[]): void;
-    info(...args: any[]): void;
-    log(...args: any[]): void;
-    warn(...args: any[]): void;
-    error(...args: any[]): void;
-    fatal(...args: any[]): void;
+  config: {
+    level: string;
+    silent: boolean;
+    formatter: (level: string, args: any[]) => any[];
+    transports: any[];
+  };
+  bindings: Record<string, any>;
+  constructor(config?: AvenxLoggerOptions);
+  configure(config: AvenxLoggerOptions): void;
+  setLevel(level: string): void;
+  shouldLog(level: string): boolean;
+  write(level: string, ...args: any[]): void;
+  child(bindings?: string | AvenxLoggerBindings): AvenxLogger;
+  trace(...args: any[]): void;
+  debug(...args: any[]): void;
+  info(...args: any[]): void;
+  log(...args: any[]): void;
+  warn(...args: any[]): void;
+  error(...args: any[]): void;
+  fatal(...args: any[]): void;
 }
 
 export const logger: AvenxLogger;
@@ -1360,13 +1351,13 @@ export function formatContextTag(context: any): string;
 export function defaultFormatter(level: string, args: any[]): any[];
 
 export const consoleTransport: {
-    log(level: string, formattedArgs: any[]): void;
+  log(level: string, formattedArgs: any[]): void;
 };
 
 /** Framework error with a stable diagnostic code; the message is `[code] text`. */
 export class AvenxError extends Error {
-    constructor(code: string, ...args: any[]);
-    readonly code: string;
+  constructor(code: string, ...args: any[]);
+  readonly code: string;
 }
 
 /** Registry of stable diagnostic codes, keyed by code name. */
@@ -1379,51 +1370,69 @@ export const AvenxErrorMessages: Record<string, string>;
 export function formatMessage(code: string, ...args: any[]): string;
 
 export interface ResourceOptions {
-    pollInterval?: number;
+  pollInterval?: number;
 }
 
 export type ResourceStatus = 'idle' | 'pending' | 'resolved' | 'rejected';
 
 export class Resource<T = any> {
-    constructor(
-        name: string,
-        handlerFn: () => any,
-        componentContext?: object | ResourceOptions,
-        options?: ResourceOptions
-    );
+  constructor(
+    name: string,
+    handlerFn: () => any,
+    componentContext?: object | ResourceOptions,
+    options?: ResourceOptions,
+  );
 
-    name: string;
-    status: ResourceStatus;
-    value: T | undefined;
-    error: any;
-    promise: Promise<T> | null;
-    pollInterval: number;
+  name: string;
+  status: ResourceStatus;
+  value: T | undefined;
+  error: any;
+  promise: Promise<T> | null;
+  pollInterval: number;
 
-    read(): T;
-    fetch(result?: any): void;
-    teardown(): void;
+  read(): T;
+  fetch(result?: any): void;
+  teardown(): void;
 }
 
 export class AvenxWatcher {
-    getter: () => any;
-    callback: ((newValue: any, oldValue: any) => void) | null;
-    options: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string; isEffect?: boolean; effect?: boolean };
-    value: any;
-    dirty: boolean;
-    isEffect: boolean;
-    constructor(
-        getter: () => any,
-        callback?: ((newValue: any, oldValue: any) => void) | object | null,
-        options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string; isEffect?: boolean; effect?: boolean }
-    );
-    get(): any;
-    evaluate(): any;
-    teardown(): void;
+  getter: () => any;
+  callback: ((newValue: any, oldValue: any) => void) | null;
+  options: {
+    immediate?: boolean;
+    lazy?: boolean;
+    deep?: boolean;
+    debounce?: number;
+    throttle?: number;
+    name?: string;
+    isEffect?: boolean;
+    effect?: boolean;
+  };
+  value: any;
+  dirty: boolean;
+  isEffect: boolean;
+  constructor(
+    getter: () => any,
+    callback?: ((newValue: any, oldValue: any) => void) | object | null,
+    options?: {
+      immediate?: boolean;
+      lazy?: boolean;
+      deep?: boolean;
+      debounce?: number;
+      throttle?: number;
+      name?: string;
+      isEffect?: boolean;
+      effect?: boolean;
+    },
+  );
+  get(): any;
+  evaluate(): any;
+  teardown(): void;
 }
 
 export function watchEffect(
-    effect: () => void,
-    options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string }
+  effect: () => void,
+  options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string },
 ): () => void;
 
 export function initInspector(app: AvenxApp, options?: { maxTimelineSize?: number }): void;
@@ -1434,43 +1443,41 @@ export function recordTimelineEntry(type: 'mount' | 'update' | 'unmount', comp: 
 export function buildComponentTree(flatNodes: any[]): any[];
 
 export class LruCache<T = any> {
-    limit: number;
-    onEvict: ((key: string, value: T) => void) | null;
-    cache: Map<string, T>;
-    constructor(limit: number, onEvict?: ((key: string, value: T) => void) | null);
-    get(key: string): T | undefined;
-    set(key: string, value: T): void;
-    has(key: string): boolean;
-    delete(key: string): boolean;
-    clear(): void;
-    readonly size: number;
+  limit: number;
+  onEvict: ((key: string, value: T) => void) | null;
+  cache: Map<string, T>;
+  constructor(limit: number, onEvict?: ((key: string, value: T) => void) | null);
+  get(key: string): T | undefined;
+  set(key: string, value: T): void;
+  has(key: string): boolean;
+  delete(key: string): boolean;
+  clear(): void;
+  readonly size: number;
 }
 
 export function profile<T = any>(enableProfiling: boolean, componentName: string, phase: string, fn: () => T): T;
 export function getComponentProfilingInfo(element: any): { enableProfiling: boolean; componentName: string };
 
 export class DeadlockManager {
-    constructor(evaluator: any, renderer: any, eventBinder?: any, componentName?: string);
-    isTripped(container: any): boolean;
-    findBoundaries(root: any): any[];
-    trip(container: any, error?: Error | object, scope?: object): void;
-    reset(container: any): void;
+  constructor(evaluator: any, renderer: any, eventBinder?: any, componentName?: string);
+  isTripped(container: any): boolean;
+  findBoundaries(root: any): any[];
+  trip(container: any, error?: Error | object, scope?: object): void;
+  reset(container: any): void;
 }
 
 export function setSchedulerMaxFlushCount(count: number): void;
 export function getSchedulerMaxFlushCount(): number;
 export interface SchedulerDeadlockEvent {
-    cyclePath: string;
-    triggeringJobId?: any;
-    executionHistory?: Array<{ id: any; name: string; job: Function }>;
+  cyclePath: string;
+  triggeringJobId?: any;
+  executionHistory?: Array<{ id: any; name: string; job: Function }>;
 }
 export function onSchedulerDeadlock(handler: (event: SchedulerDeadlockEvent) => void): () => void;
 export function resetScheduler(): void;
 
 export function getActiveCausationTrace(): string[];
 export function clearCausationTrace(): void;
-
-
 
 /**
  * Queues a job to run in the next scheduler flush. Duplicate jobs are ignored.
@@ -1493,8 +1500,8 @@ export function setDebugReactivity(enabled: boolean): void;
 export function isDebugReactivityEnabled(): boolean;
 
 export interface ValidationRule {
-    name: string;
-    param?: string;
+  name: string;
+  param?: string;
 }
 
 /**
@@ -1506,9 +1513,9 @@ export function parseValidationRules(ruleString: string): ValidationRule[];
  * Validates a value against parsed rules, returning the resulting error messages.
  */
 export function validateValue(
-    value: any,
-    rules: ValidationRule[],
-    options?: { state?: Record<string, any>; customMessages?: Record<string, string> }
+  value: any,
+  rules: ValidationRule[],
+  options?: { state?: Record<string, any>; customMessages?: Record<string, string> },
 ): string[];
 
 /**
@@ -1525,31 +1532,31 @@ export function updateValidationState(state: Record<string, any>, fieldName: str
  * Matches hash routes against route definitions.
  */
 export class RouteMatcher {
-    static normalizeHash(hash: string, prefix?: string): string | null;
-    static matches(routes: Record<string, any>, hash: string, options?: object): boolean;
-    static matchRoute(
-        routes: Record<string, any>,
-        hash: string,
-        options?: object,
-        activeRouters?: Iterable<object>,
-        currentRouter?: object | null
-    ): {
-        matchedRoute: { definition: any; parent?: any } | null;
-        params: Record<string, any>;
-        query?: Record<string, any>;
-        path?: string;
-        otherRouterMatches?: boolean;
-        normalizedHash: string | null;
-    };
+  static normalizeHash(hash: string, prefix?: string): string | null;
+  static matches(routes: Record<string, any>, hash: string, options?: object): boolean;
+  static matchRoute(
+    routes: Record<string, any>,
+    hash: string,
+    options?: object,
+    activeRouters?: Iterable<object>,
+    currentRouter?: object | null,
+  ): {
+    matchedRoute: { definition: any; parent?: any } | null;
+    params: Record<string, any>;
+    query?: Record<string, any>;
+    path?: string;
+    otherRouterMatches?: boolean;
+    normalizedHash: string | null;
+  };
 }
 
 /**
  * Mounts and de-duplicates component `<style>` blocks in the document head.
  */
 export class StyleMountManager {
-    mount(id: string, css: string): void;
-    unmount(id: string): void;
-    clear(): void;
+  mount(id: string, css: string): void;
+  unmount(id: string): void;
+  clear(): void;
 }
 
 /**
@@ -1568,86 +1575,81 @@ export const styleMountManager: StyleMountManager;
 
 /** How a trace node relates to Avenx's execution model. */
 export type TraceNodeKind =
-    | 'event'
-    | 'action'
-    | 'bridge-action'
-    | 'bridge-emit'
-    | 'write'
-    | 'watcher'
-    | 'computed'
-    | 'dom'
-    | 'resource'
-    | 'navigation'
-    | 'global'
-    | 'error'
-    | 'contract';
+  | 'event'
+  | 'action'
+  | 'bridge-action'
+  | 'bridge-emit'
+  | 'write'
+  | 'watcher'
+  | 'computed'
+  | 'dom'
+  | 'resource'
+  | 'navigation'
+  | 'global'
+  | 'error'
+  | 'contract';
 
 /** Whether a recorded session can be faithfully replayed. */
 export type TraceDeterminism = 'deterministic' | 'best-effort';
 
 /** A reference to a DOM node that both reads well and resolves again on replay. */
 export interface TraceNodeRef {
-    selector: string;
-    nth: number;
+  selector: string;
+  nth: number;
 }
 
 /** One recorded step. Causality is expressed by `parent`, not by nesting. */
 export interface TraceNode {
-    id: number;
-    parent: number | null;
-    seq: number;
-    /** Milliseconds since the recording started. */
-    t: number;
-    type: TraceNodeKind;
-    [field: string]: any;
+  id: number;
+  parent: number | null;
+  seq: number;
+  /** Milliseconds since the recording started. */
+  t: number;
+  type: TraceNodeKind;
+  [field: string]: any;
 }
 
 /** A complete recording. */
 export interface Trace {
-    traceVersion: number;
-    id: string;
-    createdAt: string;
-    determinism: {
-        status: TraceDeterminism;
-        reasons: Array<{ reason: string; detail?: string }>;
-    };
-    meta: Record<string, any>;
-    /** Non-deterministic values the sandbox handed out, in observation order. */
-    globals: { now?: number[]; random?: number[] };
-    /** Property-path patterns whose values were withheld. */
-    redactions: string[];
-    redacted?: boolean;
-    /** How many nodes the ring buffer dropped, if any. */
-    dropped: number;
-    nodes: TraceNode[];
+  traceVersion: number;
+  id: string;
+  createdAt: string;
+  determinism: {
+    status: TraceDeterminism;
+    reasons: Array<{ reason: string; detail?: string }>;
+  };
+  meta: Record<string, any>;
+  /** Non-deterministic values the sandbox handed out, in observation order. */
+  globals: { now?: number[]; random?: number[] };
+  /** Property-path patterns whose values were withheld. */
+  redactions: string[];
+  redacted?: boolean;
+  /** How many nodes the ring buffer dropped, if any. */
+  dropped: number;
+  nodes: TraceNode[];
 }
 
 /** Records one session's causal trace. */
 export class TraceRecorder {
-    constructor(options?: {
-        id?: string;
-        maxNodes?: number;
-        redact?: string[];
-        meta?: Record<string, any>;
-    });
-    readonly id: string;
-    readonly nodes: TraceNode[];
-    /** Only ever downgrades: a recording never talks itself back up to deterministic. */
-    readonly isDeterministic: boolean;
-    readonly componentCount: number;
-    /** Switches from application startup to recording user interaction. */
-    arm(): TraceRecorder;
-    stop(): TraceRecorder;
-    toJSON(): Trace;
-    serialize(indent?: number): string;
+  constructor(options?: { id?: string; maxNodes?: number; redact?: string[]; meta?: Record<string, any> });
+  readonly id: string;
+  readonly nodes: TraceNode[];
+  /** Only ever downgrades: a recording never talks itself back up to deterministic. */
+  readonly isDeterministic: boolean;
+  readonly componentCount: number;
+  /** Switches from application startup to recording user interaction. */
+  arm(): TraceRecorder;
+  stop(): TraceRecorder;
+  toJSON(): Trace;
+  serialize(indent?: number): string;
 }
 
 /** Starts recording, replacing any recording already in progress. */
 export function startRecording(options?: {
-    id?: string;
-    maxNodes?: number;
-    redact?: string[];
-    meta?: Record<string, any>;
+  id?: string;
+  maxNodes?: number;
+  redact?: string[];
+  meta?: Record<string, any>;
 }): TraceRecorder;
 
 /** Stops the active recording and returns the finished trace. */
@@ -1658,14 +1660,14 @@ export function activeRecorder(): TraceRecorder | null;
 
 /** The control surface `avenx serve --trace` publishes on `window.avenxTrace`. */
 export interface TraceController {
-    readonly id: string;
-    readonly size: number;
-    readonly deterministic: boolean;
-    /** Posts the current trace to the dev server. */
-    save(): Promise<{ ok: boolean; id?: string; error?: string }>;
-    /** The trace as it stands, without saving it. */
-    snapshot(): Trace;
-    stop(): Trace | null;
+  readonly id: string;
+  readonly size: number;
+  readonly deterministic: boolean;
+  /** Posts the current trace to the dev server. */
+  save(): Promise<{ ok: boolean; id?: string; error?: string }>;
+  /** The trace as it stands, without saving it. */
+  snapshot(): Trace;
+  stop(): Trace | null;
 }
 
 /**
@@ -1675,10 +1677,10 @@ export interface TraceController {
  * trace runtime runs until this is called.
  */
 export function installTraceRecorder(options?: {
-    endpoint?: string;
-    redact?: string[];
-    maxNodes?: number;
-    autoSave?: boolean;
+  endpoint?: string;
+  redact?: string[];
+  maxNodes?: number;
+  autoSave?: boolean;
 }): TraceController;
 
 /** Stops a recording started by installTraceRecorder. */

@@ -82,6 +82,9 @@ export default [
         Blob: 'readonly',
         AbortController: 'readonly',
         AbortSignal: 'readonly',
+        BroadcastChannel: 'readonly',
+        queueMicrotask: 'readonly',
+        structuredClone: 'readonly',
 
         // Node / Common JS / ES Module / Test globals
         process: 'readonly',
@@ -125,7 +128,16 @@ export default [
         'error',
         {
           properties: 'always',
-          allow: ['__avenx_comp_instance', '__avenx_routers', '__avenx_enable_profiling', '__avenx_directives'],
+          allow: [
+            '__avenx_comp_instance',
+            '__avenx_routers',
+            '__avenx_enable_profiling',
+            '__avenx_directives',
+            '__avenx_inspect_enabled',
+            '__avenx_inspect_max_timeline',
+            '__avenx_app_instance',
+            '__avenx_inspect_highlight',
+          ],
         },
       ],
 
