@@ -53,6 +53,10 @@ if (typeof globalThis.document === 'undefined') {
       querySelectorAll: () => [],
     }),
   };
+} else if (globalThis.document.body && !globalThis.document.querySelector('#app')) {
+  const mountEl = globalThis.document.createElement('div');
+  mountEl.id = 'app';
+  globalThis.document.body.appendChild(mountEl);
 }
 
 if (typeof globalThis.BroadcastChannel === 'undefined') {

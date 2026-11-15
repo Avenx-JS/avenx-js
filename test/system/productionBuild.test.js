@@ -47,9 +47,14 @@ import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
  * Raised from 375 to 385 for nested component mounting under app.mount() (#1641)
  * and DeferManager unmount teardown (#1642), which took the raw bundle to ~371 KB.
  * 385 restores adequate headroom.
+ *
+ * Raised from 385 to 400 for typed `data-ax-bind` write-back (#1724), AVX_R08 runtime
+ * render diagnostics with template position and code frame (#1178), and DevTools
+ * inspector component tree and bounded update timeline (#1181): the runtime additions
+ * took the raw bundle to ~389.3 KB. 400 restores adequate headroom.
  * @type {number}
  */
-const PRODUCTION_SIZE_CEILING_KB = 385;
+const PRODUCTION_SIZE_CEILING_KB = 400;
 
 /**
  * Ceiling for the same bundle over the wire, in KB.
@@ -85,9 +90,14 @@ const PRODUCTION_SIZE_CEILING_KB = 385;
  * renderers apply a multiple select's value per option. The runtime additions
  * took the gzipped bundle from 87.7 to ~88.0 KB, tripping the ceiling. 90
  * restores headroom comfortably inside the kilobytes an accidental import costs.
+ *
+ * Raised from 90 to 93 for AVX_R08 runtime render diagnostics with code frames (#1178)
+ * and DevTools inspector component tree and bounded update timeline (#1181): the additions
+ * brought the gzipped bundle to ~90.4 KB. 93 restores headroom comfortably inside
+ * the kilobytes an accidental import costs.
  * @type {number}
  */
-const GZIPPED_CEILING_KB = 90;
+const GZIPPED_CEILING_KB = 93;
 
 /**
  * Source that must never appear in a production bundle.
@@ -161,9 +171,9 @@ app.mount('Hello');`,
  */
 function buildBundle(root, mode) {
   const original = { log: console.log, info: console.info, warn: console.warn };
-  console.log = () => {};
-  console.info = () => {};
-  console.warn = () => {};
+  console.log = () => { };
+  console.info = () => { };
+  console.warn = () => { };
   try {
     new AvenxCompiler({ rootDir: root, srcDir: 'src', distDir: 'dist', mode }).build();
   } finally {
@@ -335,7 +345,7 @@ function testSizeCeiling(bundle) {
   assert.ok(
     kb < PRODUCTION_SIZE_CEILING_KB,
     `Hello World production bundle is ${kb.toFixed(1)} KB, over the ${PRODUCTION_SIZE_CEILING_KB} KB ceiling. ` +
-      'Something large joined the module graph — check what the application imports, and what lib/core/index.js re-exports.',
+    'Something large joined the module graph — check what the application imports, and what lib/core/index.js re-exports.',
   );
 
   const gzipKb = zlib.gzipSync(Buffer.from(bundle, 'utf8')).length / 1024;
@@ -346,7 +356,7 @@ function testSizeCeiling(bundle) {
 
   console.log(
     `  ✅ ${kb.toFixed(1)} KB raw / ${gzipKb.toFixed(1)} KB gzipped, under the ` +
-      `${PRODUCTION_SIZE_CEILING_KB} / ${GZIPPED_CEILING_KB} KB ceilings.`,
+    `${PRODUCTION_SIZE_CEILING_KB} / ${GZIPPED_CEILING_KB} KB ceilings.`,
   );
 }
 

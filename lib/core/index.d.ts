@@ -847,6 +847,11 @@ export class AvenxApp {
     readonly activePage: AvenxComponent<any> | null;
 
     /**
+     * Retrieves all currently active top-level components (e.g. active layout and page).
+     */
+    readonly activeComponents: AvenxComponent<any>[];
+
+    /**
      * Returns the names of all registered components.
      */
     getRegisteredComponents(): string[];
