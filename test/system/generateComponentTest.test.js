@@ -38,12 +38,15 @@ try {
   fs.mkdirSync(path.join(nodeModules, '@avenx'), { recursive: true });
   fs.symlinkSync(repoRoot, path.join(nodeModules, 'avenx-core'), 'junction');
   for (const pkg of header.match(/npm install -D (.+)/)[1].split(' ')) {
-    const target =
-      pkg === '@avenx/vite'
-        ? path.join(repoRoot, 'plugins/avenx-vite')
-        : path.join(repoRoot, 'node_modules', pkg);
+    const isVitePlugin = pkg === '@avenx/vite' || pkg.includes('avenx-vite-');
+    const target = isVitePlugin
+      ? path.join(repoRoot, 'plugins/avenx-vite')
+      : path.join(repoRoot, 'node_modules', pkg);
+    const linkPath = isVitePlugin
+      ? path.join(nodeModules, '@avenx/vite')
+      : path.join(nodeModules, pkg);
     if (fs.existsSync(target)) {
-      fs.symlinkSync(target, path.join(nodeModules, pkg), 'junction');
+      fs.symlinkSync(target, linkPath, 'junction');
     }
   }
   const [, config] = header.match(/vitest\.config\.js includes:\n([\s\S]*?)\n \* 3\. Run:/);
@@ -52,6 +55,11 @@ try {
   assert.match(header, /npx vitest run/, 'the header should name the Vitest run command');
   // Vitest resolves the environment from its own install, so the run alone would not catch this.
   assert.match(header, /npm install -D .*happy-dom/, 'the header should install the DOM package');
+  assert.doesNotMatch(
+    header,
+    /npm install[^\n]*@avenx\/vite/,
+    'the header must not instruct installing unpublished @avenx/vite from npm',
+  );
 
   // Vitest 5 supports Node ^22.12 || ^24 || >=26, and CI also runs versions outside that range.
   const vitestBin = path.join(repoRoot, 'node_modules/vitest/vitest.mjs');
