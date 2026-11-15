@@ -215,6 +215,22 @@ async function runTest() {
 
     assert.match(buildOutput, /bundle\.css: \d+\.\d{2} KB/, 'prints bundle.css size');
 
+    console.log('🧪 Testing unknown config warnings...');
+
+    const unknownOptionsConfigPath = path.join(TEST_DIR, 'avenx.config.json');
+    fs.writeFileSync(unknownOptionsConfigPath, JSON.stringify({ unknownBuildOption: true, anotherUnknownOption: false }));
+    const buildWithUnknownOptions = runCli(['build']);
+    fs.rmSync(unknownOptionsConfigPath);
+    assert.strictEqual(buildWithUnknownOptions.status, 0, buildWithUnknownOptions.stderr);
+    for (const key of ['unknownBuildOption', 'anotherUnknownOption']) {
+      const warning = `Unknown configuration option "${key}"`;
+      assert.strictEqual(
+        buildWithUnknownOptions.stderr.split(warning).length - 1,
+        1,
+        `Expected one warning for ${key}:\n${buildWithUnknownOptions.stderr}`,
+      );
+    }
+
     console.log('🧪 Testing custom output bundle name...');
 
     fs.writeFileSync(path.join(TEST_DIR, 'avenx.config.json'), JSON.stringify({ outputName: 'app' }));

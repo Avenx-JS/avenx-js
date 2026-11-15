@@ -40,7 +40,6 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `hooks.postbuild` | `string` | `undefined`          | Synchronous shell command executed after a successful compiler build. See [Build lifecycle hooks](#build-lifecycle-hooks-hooks). |
 | `trace.redact` | `string[]` | `[]`                  | Property-path patterns redacted from causal trace recordings. See [Causality trace settings](#causality-trace-settings-trace). |
 | `trace.maxNodes` | `number` | `0`                   | Maximum number of nodes retained in the trace ring buffer (defaults to 5000 in recorder). See [Causality trace settings](#causality-trace-settings-trace). |
-| `enableProfiling` | `boolean` | `false` | Enables performance profiling by wrapping lifecycle hooks, rendering, and DOM patching with browser Performance API marks and measures. |
 | `debug.debugReactivity` | `boolean` | `false` | Enables verbose reactivity dependency tracking and watcher execution logging to the browser console during development. |
 | `treeShakeComponents` | `boolean` | `true` | Removes unused components from the compiled bundle during compilation. Set to `false` to compile all discovered components. |
 | `codeSplitting` | `boolean` | `false` | Emits every page under `src/pages/` as its own chunk in `<distDir>/pages/`, fetched on first navigation, instead of bundling it into `<outputName>.js`. `avenx build --code-splitting` sets it for one build. See [Code splitting](#code-splitting-codesplitting). |
@@ -471,13 +470,8 @@ Avenx-JS can generate high-resolution browser performance timings (marks and mea
 
 Profiling can be enabled in two ways:
 
-1. **Build Configuration (`avenx.config.json`)**:
-   Enable profiling project-wide by setting `enableProfiling` to `true`:
-   ```json
-   {
-     "enableProfiling": true
-   }
-   ```
+1. **App constructor**:
+   Pass `enableProfiling: true` when creating the app. See the [AvenxApp API reference](../api-reference/app.md) for the constructor options.
 
 2. **Dynamic Runtime Flag (`window.__avenx_enable_profiling`)**:
    Activate profiling dynamically in the browser console at runtime without restarting the application:
