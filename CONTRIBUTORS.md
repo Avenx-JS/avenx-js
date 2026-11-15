@@ -232,6 +232,9 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/IG-ABHINAV"><img src="https://avatars.githubusercontent.com/u/127868165?v=4&size=100" width="100px" height="100px" alt="ABHINAV DHAWAN"/><br /><sub><b>ABHINAV DHAWAN</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=IG-ABHINAV" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://www.keyboardcheatcodes.com"><img src="https://avatars.githubusercontent.com/u/74741855?v=4&size=100" width="100px" height="100px" alt="Kemal Codes"/><br /><sub><b>Kemal Codes</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=techkayacodes" title="Documentation">📖</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://awais-ur-rehman-personal-website.vercel.app/"><img src="https://avatars.githubusercontent.com/u/75811924?v=4&size=100" width="100px" height="100px" alt="Awais Ur Rehman"/><br /><sub><b>Awais Ur Rehman</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=awais-ur-rehman" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 
