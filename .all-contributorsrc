@@ -1472,6 +1472,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "techkayacodes",
+      "name": "Kemal Codes",
+      "avatar_url": "https://avatars.githubusercontent.com/u/74741855?v=4",
+      "profile": "http://www.keyboardcheatcodes.com",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
