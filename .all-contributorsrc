@@ -1481,6 +1481,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "awais-ur-rehman",
+      "name": "Awais Ur Rehman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/75811924?v=4",
+      "profile": "https://awais-ur-rehman-personal-website.vercel.app/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
