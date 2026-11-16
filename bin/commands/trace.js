@@ -336,7 +336,7 @@ export function traceExport(cli, id, args = []) {
     console.log(yellow(`\n⚠ ${formatViolation(violation)}`));
   }
 
-  console.log(gray(`\nRun it with your test runner, e.g. \`node --test ${outPath}\`.`));
+  console.log(gray(`\nRun it with your test runner, e.g. \`npx vitest run ${outPath}\`.`));
 }
 
 /**
