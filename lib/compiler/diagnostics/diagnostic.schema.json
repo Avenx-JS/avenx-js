@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://avenx-js.com/schemas/diagnostic.schema.json",
+  "title": "AvenxDiagnosticRecord",
+  "description": "Structured diagnostic record produced by the Avenx compiler diagnostic channel.",
+  "type": "object",
+  "required": ["file", "code", "severity", "message"],
+  "properties": {
+    "file": {
+      "type": ["string", "null"],
+      "description": "The file path where the diagnostic occurred, or null if unknown."
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^AVX_[A-Z0-9]+$",
+      "description": "The Avenx diagnostic code (e.g. AVX_W03, AVX_C02)."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["warning", "error"],
+      "description": "Diagnostic severity level."
+    },
+    "message": {
+      "type": "string",
+      "description": "Clean diagnostic message text without ANSI color codes, error code bracket, or trailing code frames."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based source line number where available."
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based source column number where available."
+    },
+    "frame": {
+      "type": "string",
+      "description": "Caret-formatted code frame excerpt if available."
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "CheckReport": {
+      "type": "object",
+      "required": ["valid", "errorCount", "warningCount", "blockingWarningCount", "diagnostics"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "description": "Local timestamp when running check in watch mode."
+        },
+        "valid": {
+          "type": "boolean",
+          "description": "Whether the check pass completed without blocking errors or warnings."
+        },
+        "errorCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of error diagnostics."
+        },
+        "warningCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of warning diagnostics."
+        },
+        "blockingWarningCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of warnings that block validation (excluding non-blocking accessibility warnings in non-strict mode)."
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#"
+          },
+          "description": "List of structured diagnostic records."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
