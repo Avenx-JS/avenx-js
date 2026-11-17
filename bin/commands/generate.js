@@ -2,6 +2,60 @@ import fs from 'fs';
 import path from 'path';
 import { parseName, readTemplate, abortIfGeneratedPathExists, fail } from '../utils.js';
 import { yellow, cyan, green, gray } from '../colors.js';
+import { getClosestKey } from '../../lib/config.js';
+
+/**
+ * Renders generator placeholders while preserving runtime bindings in component and page templates.
+ * @param {string} template
+ * @param {string} templateFile
+ * @param {object} names
+ * @param {object} [options]
+ * @returns {string}
+ */
+function renderTemplate(template, templateFile, names, options = {}) {
+  const { allowRuntimeBindings = false, legacyTestName = false } = options;
+  const supported = ['PascalCaseName', 'name', 'file'];
+
+  return template.replace(/{{\s*([^{}]*?)\s*}}/g, (match, rawKey) => {
+    const key = rawKey.trim();
+
+    if (key === 'PascalCaseName') return names.pascalName;
+    if (key === 'file') return names.fileName;
+
+    if (key === 'name') {
+      // The original test template used {{name}} as a filename.
+      if (legacyTestName && match === '{{name}}') {
+        return names.fileName;
+      }
+
+      // Preserve the legacy meaning of the spaced placeholder.
+      return match === '{{name}}' ? names.pascalName : names.legacyName;
+    }
+
+    const suggestion = getClosestKey(key, supported);
+
+    if (allowRuntimeBindings) {
+      // Component/page files also contain runtime expressions.
+      // Only reject clear generator-like misspellings.
+      const looksLikeGeneratorTypo =
+        /^pascal/i.test(key) ||
+        (/^[A-Z]/.test(key) && suggestion !== null) ||
+        (/^(?:file|name)/i.test(key) && suggestion !== null);
+
+      if (!looksLikeGeneratorTypo) {
+        return match;
+      }
+    }
+
+    const didYouMean = suggestion ? ` Did you mean "{{${suggestion}}}"?` : '';
+
+    throw new Error(
+      `Unknown generator placeholder "${match}" in "${templateFile}".` +
+        didYouMean +
+        ` Supported placeholders: ${supported.map((value) => `{{${value}}}`).join(', ')}.`,
+    );
+  });
+}
 
 /**
  * Checks if test generation is enabled via CLI flag or avenx config.
@@ -113,22 +167,31 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
 
   if (dryRun) {
     console.log(
-      cyan(`🧪 [Dry Run] Bridge '${bridgeName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`),
+      cyan(
+        `🧪 [Dry Run] Bridge '${bridgeName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`,
+      ),
     );
     console.log(cyan('🧪 [Dry Run] No files were written.'));
     return;
   }
 
-  if (!fs.existsSync(globalDir)) {
-    fs.mkdirSync(globalDir, { recursive: true });
-  }
-
-  const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'bridge', 'bridge.js.template', templateName);
-
-  fs.writeFileSync(
-    bridgePath,
-    template.replace(/{{ name }}/g, bridgeName).replace(/{{ file }}/g, lowerName),
+  const template = readTemplate(
+    cli.baseDir,
+    cli.config,
+    cli.frameworkDir,
+    'bridge',
+    'bridge.js.template',
+    templateName,
   );
+
+  const content = renderTemplate(template, 'bridge/bridge.js.template', {
+    legacyName: bridgeName,
+    pascalName: parseName(name).capitalizedName,
+    fileName: lowerName,
+  });
+
+  fs.mkdirSync(globalDir, { recursive: true });
+  fs.writeFileSync(bridgePath, content);
 
   console.log(green(`✅ Bridge '${bridgeName}' generated at ${cli.config.srcDir}/global/${lowerName}.bridge.js`));
   console.log(
@@ -172,19 +235,24 @@ export function generateGuard(cli, name, dryRun = false, force = false, template
 
   if (dryRun) {
     console.log(
-      cyan(`🧪 [Dry Run] Guard '${capitalizedName}' would be created at ${cli.config.srcDir}/guards/${lowerName}.guard.js`),
+      cyan(
+        `🧪 [Dry Run] Guard '${capitalizedName}' would be created at ${cli.config.srcDir}/guards/${lowerName}.guard.js`,
+      ),
     );
     console.log(cyan('🧪 [Dry Run] No files were written.'));
     return;
   }
 
-  if (!fs.existsSync(guardDir)) {
-    fs.mkdirSync(guardDir, { recursive: true });
-  }
-
   const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'guard', 'guard.js.template', templateName);
 
-  fs.writeFileSync(guardPath, template.replace(/{{ name }}/g, capitalizedName));
+  const content = renderTemplate(template, 'guard/guard.js.template', {
+    legacyName: capitalizedName,
+    pascalName: capitalizedName,
+    fileName: lowerName,
+  });
+
+  fs.mkdirSync(guardDir, { recursive: true });
+  fs.writeFileSync(guardPath, content);
 
   console.log(green(`✅ Guard '${capitalizedName}' generated at ${cli.config.srcDir}/guards/${lowerName}.guard.js`));
   console.log(gray(`ℹ️ It can be used in your route configurations.`));
@@ -232,15 +300,30 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
     return;
   }
 
-  if (!fs.existsSync(pageDir)) {
-    fs.mkdirSync(pageDir, { recursive: true });
-  }
-
   const jsTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.js.template', templateName);
-  const cssTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.css.template', templateName);
 
-  fs.writeFileSync(jsPath, jsTemplate.replace(/{{ name }}/g, capitalizedName));
-  fs.writeFileSync(cssPath, cssTemplate);
+  const cssTemplate = readTemplate(
+    cli.baseDir,
+    cli.config,
+    cli.frameworkDir,
+    'page',
+    'page.css.template',
+    templateName,
+  );
+
+  const pageNames = {
+    legacyName: capitalizedName,
+    pascalName: capitalizedName,
+    fileName: lowerName,
+  };
+
+  const jsContent = renderTemplate(jsTemplate, 'page/page.js.template', pageNames, { allowRuntimeBindings: true });
+
+  const cssContent = renderTemplate(cssTemplate, 'page/page.css.template', pageNames);
+
+  fs.mkdirSync(pageDir, { recursive: true });
+  fs.writeFileSync(jsPath, jsContent);
+  fs.writeFileSync(cssPath, cssContent);
 
   console.log(green(`✅ Page '${capitalizedName}' generated at ${cli.config.srcDir}/pages/${lowerName}.page.js`));
   reportPageWiring(cli, capitalizedName, lowerName);
@@ -358,25 +441,52 @@ export function generateComponent(
     return;
   }
 
+  const jsTemplate = readTemplate(
+    cli.baseDir,
+    cli.config,
+    cli.frameworkDir,
+    'component',
+    'component.js.template',
+    templateName,
+  );
+
+  const cssTemplate = readTemplate(
+    cli.baseDir,
+    cli.config,
+    cli.frameworkDir,
+    'component',
+    'component.css.template',
+    templateName,
+  );
+
+  const testTemplate = willGenerateTest
+    ? readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.test.js.template', templateName)
+    : null;
+
+  const names = {
+    legacyName: capitalizedName,
+    pascalName: capitalizedName,
+    fileName: lowerName,
+  };
+
+  // Validate all templates before writing any generated files.
+  const jsContent = renderTemplate(jsTemplate, 'component/component.js.template', names, {
+    allowRuntimeBindings: true,
+  });
+
+  const cssContent = renderTemplate(cssTemplate, 'component/component.css.template', names);
+
+  const testContent = willGenerateTest
+    ? renderTemplate(testTemplate, 'component/component.test.js.template', names, { legacyTestName: true })
+    : null;
+
   fs.mkdirSync(compDir, { recursive: true });
 
-  const jsTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.js.template', templateName);
-  const cssTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.css.template', templateName);
-
-  fs.writeFileSync(
-    jsPath,
-    jsTemplate.replace(/{{ name }}/g, capitalizedName),
-  );
-  fs.writeFileSync(cssPath, cssTemplate);
+  fs.writeFileSync(jsPath, jsContent);
+  fs.writeFileSync(cssPath, cssContent);
 
   if (willGenerateTest) {
-    const testTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.test.js.template', templateName);
-    fs.writeFileSync(
-      testPath,
-      testTemplate
-        .replace(/{{PascalCaseName}}/g, capitalizedName)
-        .replace(/{{name}}/g, lowerName),
-    );
+    fs.writeFileSync(testPath, testContent);
   }
 
   console.log(green(`✅ Component '${lowerName}' generated at ${cli.config.srcDir}/components/${lowerName}/`));
