@@ -10,12 +10,9 @@ import { fileURLToPath } from 'url';
 import {
   DiagnosticChannel,
   createDiagnosticRecord,
-  pushToDiagnosticSink,
-  splitCodeFrame,
-  stripAnsi,
 } from '../../lib/compiler/diagnostics/DiagnosticChannel.js';
 import { reportWarning } from '../../lib/compiler/utils/warningReporter.js';
-import { TemplateValidationError, BuildError, CompilerError } from '../../lib/compiler/errors/index.js';
+import { TemplateValidationError } from '../../lib/compiler/errors/index.js';
 import AvenxCompiler from '../../lib/compiler.js';
 
 const __filename = fileURLToPath(import.meta.url);

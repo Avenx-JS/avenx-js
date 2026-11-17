@@ -460,7 +460,7 @@ function testDiagnosticCodeFrames() {
   assert.strictEqual(diagnostic.severity, 'error');
   assert.strictEqual(diagnostic.line, 19);
   assert.strictEqual(diagnostic.column, 1);
-  assert.strictEqual(diagnostic.frame, ' 19 | <broken\n    | ^');
+  assert.strictEqual(diagnostic.frame, '19 | <broken\n    | ^');
   assert.ok(!diagnostic.message.includes('^'), 'the frame is no longer part of the message');
 }
 

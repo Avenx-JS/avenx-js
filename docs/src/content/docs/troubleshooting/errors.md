@@ -449,6 +449,7 @@ const app = new AvenxApp({
 | `[AVX_W68]` | Form control <{0}> has no associated <label>, aria-label, or aria-labelledby. | **Identifier:** `COMPILER_A11Y_FORM_LABEL`.<br />**Cause:** An `<input>`, `<select>`, or `<textarea>` lacks an accessible label.<br />**Resolution:** Associate a `<label for="...">`, wrap the control in `<label>`, or provide an `aria-label` or `aria-labelledby` attribute. Silence with `"warnings": { "AVX_W68": "off" }` in `avenx.config.json`. |
 | `[AVX_W69]` | <button> has no accessible name (in component <{0}>). | **Identifier:** `COMPILER_A11Y_BUTTON_NAME`.<br />**Cause:** A `<button>` element contains no text content and has no `aria-label` or `aria-labelledby`.<br />**Resolution:** Provide visible text inside `<button>` or add an `aria-label` or `aria-labelledby` attribute. Silence with `"warnings": { "AVX_W69": "off" }` in `avenx.config.json`. |
 | `[AVX_W70]` | Positive tabindex "{0}" disrupts document navigation order. | **Identifier:** `COMPILER_A11Y_POSITIVE_TABINDEX`.<br />**Cause:** An element specifies `tabindex > 0`, disrupting the natural keyboard tab navigation sequence.<br />**Resolution:** Use `tabindex="0"` for natural tab order or `tabindex="-1"` for programmatic focus. Silence with `"warnings": { "AVX_W70": "off" }` in `avenx.config.json`. |
+| `[AVX_W71]` | Bare identifier "{0}" in {1} at line {2}.{3} | **Identifier:** `COMPILER_BARE_DOLLAR_MEMBER`.<br />**Cause:** A bare identifier starting with `$` was referenced in an `<action>` body or template expression that is not an injected helper (`$route`, `$router`, `$emit`, `$watch`, `$watchEffect`, `$nextTick`, `$refs`, `$element`, `$slots`, `$app`).<br />**Resolution:** Access component instance members via `this.<member>` (e.g. `this.$destroy()`). Verify the spelling of injected helpers. Silence with `"warnings": { "AVX_W71": "off" }` in `avenx.config.json`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
 | `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
@@ -3422,6 +3423,42 @@ Positive tabindex "{0}" disrupts document navigation order.
 ```html
 <input type="text">
 <div tabindex="0">Focusable custom element</div>
+```
+
+### AVX_W71 — COMPILER_BARE_DOLLAR_MEMBER
+
+**Warning Message**
+
+```text
+Bare identifier "{0}" in {1} at line {2}.{3}
+```
+
+**Cause:** A bare identifier starting with `$` was referenced in an `<action>` body or template expression, but is not one of the 10 injected helpers (`$route`, `$router`, `$emit`, `$watch`, `$watchEffect`, `$nextTick`, `$refs`, `$element`, `$slots`, `$app`). This commonly occurs when invoking component lifecycle/diagnostic methods (such as `$destroy`, `$isMounted`, or `$inspect`) without `this.`, or when mistyping an injected helper name.
+
+**Resolution:** Access component instance methods and getters through `this.` (e.g. `this.$destroy()`). Check the spelling of injected helpers. Silence with `"warnings": { "AVX_W71": "off" }` in `avenx.config.json` if intentional.
+
+**Incorrect**
+
+```html
+<action name="cleanup">
+  $destroy();
+</action>
+
+<div>
+  <p data-ax-show="$isMounted">Active</p>
+</div>
+```
+
+**Correct**
+
+```html
+<action name="cleanup">
+  this.$destroy();
+</action>
+
+<div>
+  <p data-ax-show="this.$isMounted">Active</p>
+</div>
 ```
 
 ## Runtime Codes (`AVX_R*`)

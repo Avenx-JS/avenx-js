@@ -17,6 +17,7 @@ import {
   scanReferences,
 } from '../../lib/compiler/atlas/resolve.js';
 import { Confidence, UnresolvedReason } from '../../lib/compiler/atlas/AppModel.js';
+import { BARE_DOLLAR_HELPERS } from '../../lib/core/runtime/componentHelpers.js';
 
 console.log('🧪 Testing Atlas expression resolution...');
 
@@ -278,17 +279,16 @@ function scope(overrides = {}) {
   assert.ok(AMBIENT_ROOTS.has('Math'));
 }
 
-// ── ComponentScope-injected $ helpers are ambient (#1615) ───────────────────
+// ── ComponentScope-injected $ helpers are ambient (#1615, #1659) ────────────
 {
-  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick']) {
+  for (const name of BARE_DOLLAR_HELPERS) {
     assert.ok(AMBIENT_ROOTS.has(name), `${name} must be ambient like ComponentScope injects`);
   }
   // Bare ambient roots are skipped by the scanner; a member access is recorded
   // and must resolve without unknown-identifier.
-  const { references } = scanReferences(
-    '$route.path; $emit.x; $watch.x; $watchEffect.x; $nextTick.x',
-  );
-  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick']) {
+  const code = BARE_DOLLAR_HELPERS.map((name) => `${name}.x`).join('; ');
+  const { references } = scanReferences(code);
+  for (const name of BARE_DOLLAR_HELPERS) {
     const entry = references.find((item) => item.root === name);
     assert.ok(entry, `${name} should be scanned when it has a member`);
     const resolved = resolveReference(entry, scope());
