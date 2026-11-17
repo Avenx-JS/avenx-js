@@ -1490,6 +1490,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "miku782005-droid",
+      "name": "Charlotte",
+      "avatar_url": "https://avatars.githubusercontent.com/u/246676609?v=4",
+      "profile": "https://github.com/miku782005-droid",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",

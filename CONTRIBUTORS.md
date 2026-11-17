@@ -234,6 +234,7 @@ If you have questions or want to contribute, feel free to reach out.
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://awais-ur-rehman-personal-website.vercel.app/"><img src="https://avatars.githubusercontent.com/u/75811924?v=4&size=100" width="100px" height="100px" alt="Awais Ur Rehman"/><br /><sub><b>Awais Ur Rehman</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=awais-ur-rehman" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/miku782005-droid"><img src="https://avatars.githubusercontent.com/u/246676609?v=4&size=100" width="100px" height="100px" alt="Charlotte"/><br /><sub><b>Charlotte</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=miku782005-droid" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
