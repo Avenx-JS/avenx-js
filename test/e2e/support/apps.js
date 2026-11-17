@@ -92,6 +92,10 @@ export const APPS = [
     summary: 'Enter and leave transitions, duration detection, rapid toggle cleanup and list transitions.',
   },
   {
+    name: 'async',
+    summary: 'Declarative async data: <resource>, <@suspense>, <@errorBoundary>, refetch, mutate, polling and abort.',
+  },
+  {
     name: 'fallback',
     summary: 'Constructs the IR refuses -- <@suspense>, <@errorBoundary>, <@deadlock> -- beside a compiled parent.',
     developmentBuild: true,

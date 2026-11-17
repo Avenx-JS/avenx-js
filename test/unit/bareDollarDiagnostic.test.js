@@ -123,6 +123,8 @@ function runTests() {
   $element.focus();
   $slots.default;
   $app.title;
+  $resources.data;
+  signal;
 </action>
 <div>{{ count }}</div>
 `;
@@ -214,6 +216,8 @@ function runTests() {
   <button @click="$watch('count', () => {})">Watch</button>
   <button @click="$watchEffect(() => {})">WatchEffect</button>
   <button @click="$nextTick(() => {})">NextTick</button>
+  <div>{{ $resources }}</div>
+  <div>{{ signal }}</div>
 </template>
 `;
 

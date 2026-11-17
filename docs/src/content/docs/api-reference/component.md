@@ -194,6 +194,7 @@ Avenx-JS injects a canonical set of runtime helpers directly into expression and
 | `$element` | Bare or `this.` | The component's root DOM element (`null` pre-mount). | `$element.scrollTop = 0` or `this.$element.focus()` |
 | `$slots` | Bare or `this.` | Slot introspection helpers (e.g., checking if parent provided a slot). | `<@if $slots.has('header')>` |
 | `$app` | Bare or `this.` | The parent `AvenxApp` application instance. | `$app.title` or `this.$app` |
+| `$resources` | Bare or `this.` | Imperative resource controls and status accessors. | `$resources.profile.mutate(data)` or `this.$resources.profile.refetch()` |
 | **All Other `$` Members** (`$destroy`, `$isMounted`, `$isUnmounted`, `$keepAlive`, `$inspect`, ...) | **`this.`-only** | Lifecycle control, diagnostic inspection, and internal component state. | `this.$destroy()`, `this.$isMounted`, `this.$inspect()` |
 
 > [!NOTE]

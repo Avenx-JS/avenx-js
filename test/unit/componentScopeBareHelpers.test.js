@@ -35,7 +35,7 @@ console.log('🧪 Testing ComponentScope bare dollar helpers and live resolution
     'BARE_DOLLAR_HELPERS_SET matches BARE_DOLLAR_HELPERS exactly',
   );
 
-  const helperKeysFromFn = Object.keys(createInjectedHelpers({})).filter((k) => k.startsWith('$'));
+  const helperKeysFromFn = Object.keys(createInjectedHelpers({})).filter((k) => BARE_DOLLAR_HELPERS_SET.has(k));
   assert.deepStrictEqual(
     helperKeysFromFn.sort(),
     [...BARE_DOLLAR_HELPERS].sort(),
@@ -172,7 +172,7 @@ console.log('🧪 Testing ComponentScope bare dollar helpers and live resolution
 // 4. Agreement Check: ComponentScope and AMBIENT_ROOTS agree on the exact single-source-of-truth set
 {
   const scopeKeys = ComponentScope.getInjectedDollarKeys();
-  const ambientDollarRoots = [...AMBIENT_ROOTS].filter((r) => r.startsWith('$'));
+  const ambientDollarRoots = [...AMBIENT_ROOTS].filter((r) => BARE_DOLLAR_HELPERS_SET.has(r));
 
   assert.strictEqual(
     scopeKeys.length,

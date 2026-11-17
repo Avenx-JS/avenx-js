@@ -62,11 +62,93 @@ function send(res, status, body) {
   res.end(body);
 }
 
+/**
+ * Writes a JSON response with cache disabled.
+ * @param {import('http').ServerResponse} res - The response.
+ * @param {number} status - HTTP status code.
+ * @param {any} body - JSON payload.
+ * @returns {void}
+ */
+function sendJson(res, status, body) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+  });
+  res.end(JSON.stringify(body));
+}
+
+let flakyArmed = true;
+let pollCounter = 0;
+
 const server = http.createServer((req, res) => {
-  const { pathname } = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const { pathname, searchParams } = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
   if (pathname === '/health') {
     send(res, 200, 'ok');
+    return;
+  }
+
+  if (pathname === '/api/delay') {
+    const ms = Number(searchParams.get('ms')) || 100;
+    const val = searchParams.get('val') || 'delayed data';
+    const timer = setTimeout(() => {
+      sendJson(res, 200, { data: val });
+    }, ms);
+    req.on('close', () => clearTimeout(timer));
+    return;
+  }
+
+  if (pathname === '/api/flaky') {
+    if (flakyArmed) {
+      send(res, 500, 'Internal Server Error: Flaky endpoint failure');
+    } else {
+      sendJson(res, 200, { message: 'recovered data' });
+    }
+    return;
+  }
+
+  if (pathname === '/api/flaky/arm') {
+    flakyArmed = true;
+    sendJson(res, 200, { status: 'armed' });
+    return;
+  }
+
+  if (pathname === '/api/flaky/recover') {
+    flakyArmed = false;
+    sendJson(res, 200, { status: 'recovered' });
+    return;
+  }
+
+  if (pathname === '/api/user') {
+    const id = searchParams.get('id') || '1';
+    sendJson(res, 200, { id, name: `User ${id}` });
+    return;
+  }
+
+  if (pathname === '/api/search') {
+    const q = searchParams.get('q') || '';
+    const delay = Number(searchParams.get('delay')) || 50;
+    const timer = setTimeout(() => {
+      sendJson(res, 200, { query: q, result: `Result for ${q}` });
+    }, delay);
+    req.on('close', () => clearTimeout(timer));
+    return;
+  }
+
+  if (pathname === '/api/poll') {
+    pollCounter++;
+    sendJson(res, 200, { count: pollCounter });
+    return;
+  }
+
+  if (pathname === '/api/poll/reset') {
+    pollCounter = 0;
+    sendJson(res, 200, { status: 'reset' });
+    return;
+  }
+
+  if (pathname === '/api/profile') {
+    sendJson(res, 200, { name: 'Alice', role: 'Engineer' });
     return;
   }
 
