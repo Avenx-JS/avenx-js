@@ -26,6 +26,19 @@ interface AvenxCspConfig {
 }
 
 /**
+ * Structured diagnostic record produced by the Avenx compiler.
+ */
+interface DiagnosticRecord {
+    file: string | null;
+    code: string;
+    severity: 'warning' | 'error';
+    message: string;
+    line?: number;
+    column?: number;
+    frame?: string;
+}
+
+/**
  * Compiler options, as accepted by the constructor.
  *
  * Only the options this declaration file describes are listed; the compiler
@@ -44,6 +57,8 @@ interface AvenxCompilerOptions {
     codeSplitting?: boolean;
     /** Content-Security-Policy posture. */
     csp?: AvenxCspConfig;
+    /** Optional diagnostics sink (array or receiver) for structured diagnostics. */
+    diagnostics?: DiagnosticRecord[] | { push(record: DiagnosticRecord): void };
     [option: string]: unknown;
 }
 
@@ -90,7 +105,17 @@ declare class AvenxCompiler {
      */
     cspStrict: boolean;
 
+    /**
+     * Diagnostic channel or collection of structured diagnostics.
+     */
+    diagnostics: DiagnosticRecord[];
+
     constructor(options?: AvenxCompilerOptions);
+
+    /**
+     * Subscribes a listener to compiler diagnostic records.
+     */
+    onDiagnostic(listener: (diagnostic: DiagnosticRecord) => void): () => void;
 
     /**
      * Executes the full build process, bundling all core runtime files,
@@ -108,14 +133,14 @@ declare class AvenxCompiler {
     /**
      * Compiles a single page file.
      */
-compilePage(filePath: string): string;
+    compilePage(filePath: string): string;
 }
 
 // `export =` cannot sit beside named exports, so the interfaces above are
 // published through a namespace merged with the class -- which is also how a
 // consumer reaches them: `AvenxCompiler.AvenxCspConfig`.
 declare namespace AvenxCompiler {
-    export { AvenxCspConfig, AvenxCompilerOptions, AvenxBuildResult };
+    export { AvenxCspConfig, AvenxCompilerOptions, AvenxBuildResult, DiagnosticRecord };
 }
 
 export = AvenxCompiler;

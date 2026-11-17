@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { checkProject, parseDiagnostic } from '../../bin/commands/build.js';
+import AvenxCompiler, { DiagnosticChannel, createDiagnosticRecord } from '../../lib/compiler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,6 +73,9 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-json');
     assert.strictEqual(warningReport.diagnostics[0].code, 'AVX_W03');
     assert.strictEqual(warningReport.diagnostics[0].severity, 'warning');
     assert.ok(warningReport.diagnostics[0].message.includes('undeclaredUser'));
+    assert.strictEqual(warningReport.diagnostics[0].line, 1, 'diagnostic carries line number');
+    assert.strictEqual(warningReport.diagnostics[0].column, 12, 'diagnostic carries column number');
+    assert.ok(warningReport.diagnostics[0].frame, 'diagnostic carries code frame');
     assert.strictEqual(process.exitCode, 1);
 
     // 5. Project with an unresolved component reference (AVX_W46) check --json
@@ -97,7 +101,58 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures-check-json');
     assert.ok(w46[0].message.includes('UserCrad'), 'the diagnostic names the offending tag');
     assert.ok(w46[0].message.includes('UserCard'), 'the diagnostic suggests the closest name');
     assert.ok(w46[0].file && w46[0].file.includes('home.component.js'), 'the diagnostic carries the file');
+    assert.strictEqual(w46[0].line, 1, 'AVX_W46 carries line number');
+    assert.strictEqual(w46[0].column, 6, 'AVX_W46 carries column number');
+    assert.ok(w46[0].frame, 'AVX_W46 carries frame');
     assert.strictEqual(process.exitCode, 1);
+
+    // 6. Global console methods are never monkey-patched
+    console.log('  Testing global console methods remain untouched...');
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    const originalLog = console.log;
+    checkProject(mockCli, ['--json']);
+    assert.strictEqual(console.warn, originalWarn, 'console.warn was not monkey-patched');
+    assert.strictEqual(console.error, originalError, 'console.error was not monkey-patched');
+    assert.strictEqual(console.log, originalLog, 'console.log was not monkey-patched');
+
+    // 7. Structured diagnostic record for custom/rephrased messages
+    console.log('  Testing diagnostic with custom message that does not match legacy regexes...');
+    const customRecord = createDiagnosticRecord(
+      'warning',
+      'AVX_W99',
+      new Error('Arbitrary custom prose with no matching keywords or file mentions'),
+      {},
+      {
+        filename: 'src/custom/special.component.js',
+        line: 42,
+        column: 15,
+      },
+    );
+    assert.strictEqual(customRecord.code, 'AVX_W99');
+    assert.strictEqual(customRecord.severity, 'warning');
+    assert.strictEqual(customRecord.file, 'src/custom/special.component.js');
+    assert.strictEqual(customRecord.line, 42);
+    assert.strictEqual(customRecord.column, 15);
+    assert.strictEqual(customRecord.message, 'Arbitrary custom prose with no matching keywords or file mentions');
+
+    // 8. Rephrasing does not change JSON fields
+    console.log('  Testing rephrasing message preserves structured fields...');
+    const rec1 = createDiagnosticRecord('warning', 'AVX_W03', new Error('Original phrasing'), {}, { filename: 'header.component.js', line: 10, column: 5 });
+    const rec2 = createDiagnosticRecord('warning', 'AVX_W03', new Error('Completely altered text'), {}, { filename: 'header.component.js', line: 10, column: 5 });
+    assert.strictEqual(rec1.file, rec2.file);
+    assert.strictEqual(rec1.code, rec2.code);
+    assert.strictEqual(rec1.severity, rec2.severity);
+    assert.strictEqual(rec1.line, rec2.line);
+    assert.strictEqual(rec1.column, rec2.column);
+
+    // 9. Diagnostic schema file exists and is valid JSON Schema
+    console.log('  Testing diagnostic JSON schema...');
+    const schemaPath = path.resolve(__dirname, '../../lib/compiler/diagnostics/diagnostic.schema.json');
+    assert.ok(fs.existsSync(schemaPath), 'diagnostic.schema.json must exist');
+    const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
+    assert.strictEqual(schema.title, 'AvenxDiagnosticRecord');
+    assert.deepStrictEqual(schema.required, ['file', 'code', 'severity', 'message']);
 
     // Cleanup fixture
     fs.rmSync(FIXTURE_DIR, { recursive: true, force: true });

@@ -9,6 +9,14 @@ import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 import { A11Y_WARNING_CODES } from '../../lib/compiler/rules/accessibility.js';
 import { watchDirectories } from '../utils.js';
+import {
+  DiagnosticChannel,
+  createDiagnosticRecord,
+  splitCodeFrame,
+  stripAnsi,
+} from '../../lib/compiler/diagnostics/DiagnosticChannel.js';
+
+export { splitCodeFrame, stripAnsi, createDiagnosticRecord, DiagnosticChannel };
 
 /**
  * Runs a configured lifecycle hook.
@@ -61,6 +69,7 @@ export function buildProject(cli, options = {}) {
   const result = new AvenxCompiler({
     rootDir: cli.config.rootDir || baseDir,
     watch: options.watch === true,
+    ...(options.diagnostics ? { diagnostics: options.diagnostics } : {}),
     ...(options.codeSplitting !== undefined ? { codeSplitting: options.codeSplitting } : {}),
   }, cli.config).build();
 
@@ -87,28 +96,17 @@ export function buildProject(cli, options = {}) {
  * @returns {{ok: boolean, result: object|null, error: Error|null, diagnostics: object[]}}
  */
 export function runBuildPass(cli, options = {}) {
-  const diagnostics = [];
-  const originalWarn = console.warn;
-  const originalError = console.error;
-
-  console.warn = (...messages) => {
-    diagnostics.push(parseDiagnostic('warning', messages));
-    originalWarn(...messages);
-  };
-  console.error = (...messages) => {
-    diagnostics.push(parseDiagnostic('error', messages));
-    originalError(...messages);
-  };
+  const diagnostics = options.diagnostics || [];
 
   try {
-    const result = buildProject(cli, options);
+    const result = buildProject(cli, { ...options, diagnostics });
     return { ok: true, result, error: null, diagnostics };
   } catch (error) {
-    diagnostics.push(parseDiagnostic('error', [error]));
+    if (!error.__avenxRecorded) {
+      diagnostics.push(createDiagnosticRecord('error', error));
+      error.__avenxRecorded = true;
+    }
     return { ok: false, result: null, error, diagnostics };
-  } finally {
-    console.warn = originalWarn;
-    console.error = originalError;
   }
 }
 
@@ -132,140 +130,15 @@ export function cleanProject(cli) {
  * @param {string} str
  * @returns {string}
  */
-function stripAnsi(str) {
-  if (typeof str !== 'string') return String(str || '');
-  const ansiPattern = '(?:\\u001b|\\u009b)[[(#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nseries]';
-  const ansiRegex = new RegExp(ansiPattern, 'g');
-  return str.replace(ansiRegex, '').trim();
-}
-
-/**
- * Splits a trailing caret code frame off a diagnostic message.
- *
- * Compiler errors append their frame to `message` (see
- * `CompilerError.setLocation`), and warnings printed with one do the same. A
- * consumer that renders the message and the frame in different places -- the
- * dev-server error overlay puts the frame in a monospaced block -- needs them
- * apart, so the frame is recognised by its gutter (` 12 | ...` and ` | ^^^`)
- * and removed from the message.
- * @param {string} message - The diagnostic text, frame included.
- * @returns {{message: string, frame: string|null}} The split parts.
- */
-export function splitCodeFrame(message) {
-  if (typeof message !== 'string' || message === '') {
-    return { message: typeof message === 'string' ? message : '', frame: null };
-  }
-
-  const lines = message.split(/\r?\n/);
-  const isFrameLine = (line) => /^\s*(?:\d+\s*)?\|/.test(line);
-
-  let start = lines.length;
-  while (start > 0) {
-    const line = lines[start - 1];
-    if (isFrameLine(line) || (line.trim() === '' && start < lines.length)) {
-      start -= 1;
-      continue;
-    }
-    break;
-  }
-
-  // A block of blank lines alone is not a frame.
-  if (!lines.slice(start).some(isFrameLine)) {
-    return { message, frame: null };
-  }
-
-  const frame = lines.slice(start).join('\n').replace(/^\n+|\n+$/g, '');
-  const head = lines.slice(0, start).join('\n').replace(/\s+$/, '');
-  return { message: head, frame: frame || null };
-}
-
-/**
- * Parses raw diagnostic inputs into a structured object.
- * @param {string} severity - 'warning' or 'error'
- * @param {any[]} args - Log or error arguments
- * @returns {object} Diagnostic object
- */
 export function parseDiagnostic(severity, args) {
-  let file = null;
-  let code = null;
-  let rawMsg;
-  let line = null;
-  let column = null;
-
   const firstArg = args && args[0];
   if (firstArg instanceof Error) {
-    rawMsg = firstArg.message || String(firstArg);
-    if (firstArg.code) code = firstArg.code;
-    if (firstArg.filePath || firstArg.fileName || firstArg.filename || firstArg.file) {
-      file = firstArg.filePath || firstArg.fileName || firstArg.filename || firstArg.file;
-    }
-    if (typeof firstArg.line === 'number') line = firstArg.line;
-    if (typeof firstArg.column === 'number') column = firstArg.column;
-  } else if (Array.isArray(args)) {
-    rawMsg = args.map((a) => (typeof a === 'object' && a !== null ? (a.message || JSON.stringify(a)) : String(a))).join(' ');
-  } else {
-    rawMsg = String(args || '');
+    return createDiagnosticRecord(severity, firstArg);
   }
-
-  rawMsg = stripAnsi(rawMsg);
-
-  // Extract error code if not found on error object
-  if (!code) {
-    const codeMatch = rawMsg.match(/\[?(AVX_[A-Z0-9]+)\]?/);
-    if (codeMatch) {
-      code = codeMatch[1];
-    }
+  if (Array.isArray(args)) {
+    return createDiagnosticRecord(severity, null, ...args);
   }
-
-  // Extract file path/name if not found on error object
-  if (!file) {
-    const searchable = rawMsg.replace(/avenx\.config\.json/gi, '');
-
-    const fileMatch =
-      searchable.match(/in template of\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
-      searchable.match(/in stylesheet\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
-      searchable.match(/in component\s+<([^>]+)>/i) ||
-      searchable.match(/at\s+["']?([^"'\s]+\.[a-zA-Z0-9]+)["']?/i) ||
-      searchable.match(/["']?([a-zA-Z0-9_\-/\\]+\.(?:component\.js|page\.js|js|mjs|cjs|html|css|json))(?![\w.])["']?/i);
-
-    if (fileMatch) {
-      file = fileMatch[1];
-    }
-  }
-
-  if (line === null) {
-    const locMatch = rawMsg.match(/:(\d+):(\d+)/) || rawMsg.match(/line\s+(\d+),\s+column\s+(\d+)/i);
-    if (locMatch) {
-      line = parseInt(locMatch[1], 10);
-      column = parseInt(locMatch[2], 10);
-    }
-  }
-
-  // Strip leading code bracket like "[AVX_W03] " from clean message
-  let cleanMessage = rawMsg;
-  if (code) {
-    cleanMessage = cleanMessage.replace(new RegExp(`^\\[?${code}\\]?\\s*:?\\s*`), '');
-  }
-
-  // The frame is carried as its own field so a consumer can render it as code
-  // rather than as prose. `error.frame` is authoritative when the diagnostic
-  // came from a CompilerError; otherwise it is recovered from the text.
-  const split = splitCodeFrame(cleanMessage);
-  let frame = split.frame;
-  if (!frame && firstArg instanceof Error && typeof firstArg.frame === 'string' && firstArg.frame !== '') {
-    frame = stripAnsi(firstArg.frame);
-  }
-
-  const result = {
-    file: file || null,
-    code: code || 'AVX_UNK',
-    severity: severity === 'error' ? 'error' : 'warning',
-    message: split.message.trim(),
-  };
-  if (line !== null) result.line = line;
-  if (column !== null) result.column = column;
-  if (frame) result.frame = frame;
-  return result;
+  return createDiagnosticRecord(severity, null, args);
 }
 
 /**
@@ -287,93 +160,45 @@ function getTimestamp() {
  */
 export function runCheckPass(cli, args = [], options = {}) {
   const isJson = args.includes('--json') || args.includes('-j');
-  const diagnostics = [];
-
-  const originalWarn = console.warn;
-  const originalError = console.error;
-  const originalLog = console.log;
-  const originalInfo = console.info;
-  const originalDebug = console.debug;
-  const originalTrace = console.trace;
-
-  let warningCount = 0;
-  let errorCount = 0;
-  let blockingWarningCount = 0;
-
-  const handleWarning = (...messages) => {
-    warningCount++;
-    const diag = parseDiagnostic('warning', messages);
-    diagnostics.push(diag);
-    if (!A11Y_WARNING_CODES.has(diag.code)) {
-      blockingWarningCount++;
-    }
-  };
-
-  const handleError = (...messages) => {
-    errorCount++;
-    diagnostics.push(parseDiagnostic('error', messages));
-  };
-
-  if (isJson) {
-    console.warn = handleWarning;
-    console.error = handleError;
-
-    console.log = () => {};
-    console.info = () => {};
-    console.debug = () => {};
-    console.trace = () => {};
-  } else {
-    console.warn = (...messages) => {
-      handleWarning(...messages);
-      originalWarn(...messages);
-    };
-
-    console.error = (...messages) => {
-      handleError(...messages);
-      originalError(...messages);
-    };
-  }
+  const diagnostics = options.diagnostics || [];
 
   try {
-    // analyze() is the same pipeline the build runs, so check sees exactly
-    // what a build would: bridges included, which the previous
-    // processComponents/processPages pair skipped entirely. It is tolerant so
-    // one broken bridge cannot hide every template diagnostic behind it; the
-    // failure itself is reported below.
-    const compiler = new AvenxCompiler({
+    const checkConfig = {
       ...cli.config,
       ...(cli.baseDir ? { rootDir: cli.baseDir } : {}),
       watch: options.watch === true,
-    });
+      diagnostics,
+      json: isJson,
+      logging: isJson ? { silent: true } : (cli.config && cli.config.logging),
+    };
+
+    const compiler = new AvenxCompiler(checkConfig);
     const model = compiler.analyze();
 
     for (const failure of model.errors) {
-      errorCount++;
       const message = `[${failure.code}] ${failure.message}`;
-      if (isJson) {
-        diagnostics.push(parseDiagnostic('error', [message]));
-      } else {
-        originalError(red(`❌ ${message}`));
+      if (!isJson) {
+        console.error(red(`❌ ${message}`));
       }
     }
 
-    reportAtlasDiagnostics(model, cli.config);
-    reportRewindDiagnostics(model, cli.config);
+    reportAtlasDiagnostics(model, checkConfig);
+    reportRewindDiagnostics(model, checkConfig);
   } catch (err) {
-    errorCount++;
-    if (isJson) {
-      diagnostics.push(parseDiagnostic('error', [err]));
-    } else {
-      originalError(red(`❌ ${err.message || err}`));
+    if (!err.__avenxRecorded) {
+      diagnostics.push(createDiagnosticRecord('error', err));
+      err.__avenxRecorded = true;
     }
-  } finally {
-    console.warn = originalWarn;
-    console.error = originalError;
-    console.log = originalLog;
-    console.info = originalInfo;
-    console.debug = originalDebug;
-    console.trace = originalTrace;
+    if (!isJson) {
+      console.error(red(`❌ ${err.message || err}`));
+    }
   }
+
+  const warningCount = diagnostics.filter((d) => d.severity === 'warning').length;
+  const errorCount = diagnostics.filter((d) => d.severity === 'error').length;
+  const blockingWarningCount = diagnostics.filter(
+    (d) => d.severity === 'warning' && !A11Y_WARNING_CODES.has(d.code),
+  ).length;
 
   const isStrict = args.includes('--strict') || args.includes('--strict-a11y');
   const effectiveBlocking = errorCount + (isStrict ? warningCount : blockingWarningCount);
