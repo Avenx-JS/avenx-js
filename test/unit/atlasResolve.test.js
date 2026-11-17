@@ -280,15 +280,15 @@ function scope(overrides = {}) {
 
 // ── ComponentScope-injected $ helpers are ambient (#1615) ───────────────────
 {
-  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick']) {
+  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick', '$resources']) {
     assert.ok(AMBIENT_ROOTS.has(name), `${name} must be ambient like ComponentScope injects`);
   }
   // Bare ambient roots are skipped by the scanner; a member access is recorded
   // and must resolve without unknown-identifier.
   const { references } = scanReferences(
-    '$route.path; $emit.x; $watch.x; $watchEffect.x; $nextTick.x',
+    '$route.path; $emit.x; $watch.x; $watchEffect.x; $nextTick.x; $resources.x',
   );
-  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick']) {
+  for (const name of ['$route', '$emit', '$watch', '$watchEffect', '$nextTick', '$resources']) {
     const entry = references.find((item) => item.root === name);
     assert.ok(entry, `${name} should be scanned when it has a member`);
     const resolved = resolveReference(entry, scope());

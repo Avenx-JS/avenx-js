@@ -40,6 +40,7 @@ anything a test can see was put there by the framework.
 ```text
 test/e2e/
   apps/           real Avenx projects, one per feature cluster
+    async/          declarative async data (<resource>, <@suspense>, <@errorBoundary>)
     browser-apis/    browser API access
     fallback/        fallback renderer and boundary behaviour
     security/        dynamic attribute names and srcdoc handling
@@ -157,11 +158,12 @@ product running in a browser.
 
 ## Current coverage
 
-148 tests across 23 spec files. All tests are expected to pass; the six previously pinned failures have been fixed.
+155 tests across 24 spec files. All tests are expected to pass; the six previously pinned failures have been fixed.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
 | `actions/` | 6 | Browser APIs |
+| `async/` | 7 | Declarative async data (<resource>, <@suspense>, <@errorBoundary>, recovery, sequencing, mutation, polling and abort on unmount) |
 | `build/` | 8 | Production and development runtime parity, code-split page chunks |
 | `components/` | 12 | Component composition |
 | `composition/` | 5 | Reactive provide/inject, live DOM retention, uncached reset and lifecycle order |
@@ -185,7 +187,7 @@ while every test in this suite stayed green. A component that renders nothing
 raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
-Not yet covered, in rough priority order: resources, rewind rollback, transitions,
+Not yet covered, in rough priority order: rewind rollback, transitions,
 declarative form validation, live reload, and trace capture under
 `avenx serve --trace`.
 
