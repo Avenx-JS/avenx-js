@@ -480,7 +480,7 @@ export default class AuthGuard extends AvenxGuard {
 
 The Avenx guard uses a hash redirect rather than Angular's `UrlTree`. Keep `/login` unguarded to avoid a redirect loop. For asynchronous checks, make `canActivate` `async` and return the same supported result after awaiting the check. **Do not use a client-side flag as real authentication:** enforce authorization on your server.
 
-Unlike Angular's dependency-injected guards, Avenx guards currently cannot reliably import application Bridges through relative imports; the guard compiler has a known limitation. The example uses browser storage only to demonstrate the guard contract. Consult [current guard limitations](/api-reference/router-guard/#current-guard-module-limitations) before migrating complex authentication logic.
+Unlike Angular's dependency-injected guards, Avenx guards import what they need directly, including application Bridges through relative imports. The example uses browser storage only to demonstrate the guard contract; for shared sign-in state, read it from a Bridge as shown in [Guard Modules](/api-reference/router-guard/#guard-modules).
 
 ### 5.3 `ActivatedRoute` and `routerLink`
 

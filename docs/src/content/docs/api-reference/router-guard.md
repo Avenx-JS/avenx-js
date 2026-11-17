@@ -416,20 +416,82 @@ When a guard returns a redirect path:
 
 The router waits for a promise returned by `canActivate` to resolve before acting on its value. When the resolved value is a string or redirect control object, the router stops the current guard chain and starts a new navigation to that hash. Avoid redirecting to a route protected by the same guard unless that route can pass the guard, or the redirects will loop indefinitely.
 
-## Current Guard Module Limitations
+## Guard Modules
 
-Guard modules are not ordinary ES modules at build time. Until the tracking bugs are fixed, treat these as hard constraints:
+A guard file is ordinary JavaScript: a default-exported class that extends `AvenxGuard`, with ordinary imports. The compiler does not rewrite it. Its imports are resolved through the same module graph as the rest of your application, so each import means what it says.
 
-- Guard sources are concatenated into one script scope rather than bundled as modules. Two guards that each import `AvenxGuard` from `avenx-core/runtime` emit the same binding twice and the bundle fails to parse ([#1244](https://github.com/Avenx-JS/avenx-js/issues/1244)).
-- Relative imports inside a guard are removed instead of being rewired, so `import auth from '../bridges/auth.bridge.js'` disappears and navigation fails with `AVX_R07` ([#1246](https://github.com/Avenx-JS/avenx-js/issues/1246)).
-- There is currently no supported injection path for shared application state from a guard. Prefer keeping auth decisions in data the guard can read without relative imports, or wait for the fixes above.
+A guard can import:
+
+- `AvenxGuard` from `avenx-core/runtime`. Any number of guards can import it.
+- Bridges, with a relative import such as `import session from '../bridges/session.bridge.js'`.
+- Plain helper modules, with a relative import such as `import { LOGIN } from '../utils/redirect.js'`.
+
+Rules that apply to guards:
+
+- Guard files end in `.guard.js` and live in `src/guards/` or `src/global/`.
+- A guard is part of the bundle only when your application imports it, normally in `main.app.js` where it is listed on a route. A guard that nothing imports is not emitted.
+
+### Example: a guard that reads a bridge
+
+Share the sign-in state in a bridge:
+
+```js
+// src/bridges/session.bridge.js
+import { bridge } from 'avenx-core/runtime';
+
+export default bridge({
+  state: { signedIn: false },
+
+  signIn() {
+    this.signedIn = true;
+  },
+
+  signOut() {
+    this.signedIn = false;
+  },
+});
+```
+
+Import it in the guard and decide from it:
+
+```js
+// src/guards/auth.guard.js
+import { AvenxGuard } from 'avenx-core/runtime';
+import session from '../bridges/session.bridge.js';
+
+export default class AuthGuard extends AvenxGuard {
+  canActivate() {
+    return session.signedIn ? true : '#/login';
+  }
+}
+```
+
+Then list the guard on a route:
+
+```js
+// src/main.app.js
+import { AvenxApp } from 'avenx-core/runtime';
+import AuthGuard from './guards/auth.guard.js';
+
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '': 'Home',
+  '#/login': 'Login',
+  '#/secret': { page: 'Secret', guards: [AuthGuard] },
+});
+```
+
+Until `session.signIn()` runs, navigating to `#/secret` redirects to `#/login`. Keep `#/login` itself unguarded, as described above, so the redirect cannot loop.
+
+A guard only controls navigation in the browser. Enforce authorization on your server as well.
 
 ### Guard Diagnostics
 
 | Code | Constant | When it appears |
 | --- | --- | --- |
 | `AVX_R06` | `ROUTER_GUARD_DENIED` | A guard returned `false` or `{ cancel: true }`. |
-| `AVX_R07` | `ROUTER_GUARD_ERROR` | A guard threw, or a stripped import left an undefined reference. |
+| `AVX_R07` | `ROUTER_GUARD_ERROR` | A guard threw an error. |
 | `AVX_R14` | `ROUTER_GUARD_TIMEOUT` | `canActivate` exceeded `guardTimeout`. |
 | `AVX_W27` | `ROUTER_GUARD_UNDEFINED_RETURN` | A guard returned `undefined`; navigation continues with a warning. |
 
