@@ -84,13 +84,13 @@ import { bridge } from 'avenx-core/runtime';
  * {{ name }} - custom bridge template
  */
 export default bridge({
-    state: {
-        value: null,
-    },
+  state: {
+    value: null,
+  },
 
-    setValue(next) {
-        this.value = next;
-    },
+  setValue(next) {
+    this.value = next;
+  },
 });
 ```
 
