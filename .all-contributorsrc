@@ -1499,6 +1499,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "urumb",
+      "name": "Noel Jacob Antony",
+      "avatar_url": "https://avatars.githubusercontent.com/u/174009811?v=4",
+      "profile": "https://github.com/urumb",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
