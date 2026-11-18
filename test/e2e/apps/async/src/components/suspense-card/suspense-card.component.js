@@ -10,4 +10,3 @@
     <div data-testid="suspense-resolved">{{ delayedItem.data }}</div>
   </@suspense>
 </div>
-

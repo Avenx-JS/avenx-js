@@ -136,4 +136,3 @@ test.describe('declarative async data (<resource>, <@suspense>, <@errorBoundary>
     await expect(page.getByTestId('unmount-page')).toBeVisible();
   });
 });
-

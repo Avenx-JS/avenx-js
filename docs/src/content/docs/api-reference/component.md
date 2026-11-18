@@ -9,8 +9,12 @@ The base class from which all standard UI components inherit. It manages reactiv
 
 - `this.state` (Proxy): The reactive state instance for local properties. Changing state triggers updates automatically.
 - `this.props` (Proxy): The reactive attributes passed by parent tags. Modifications from parents trigger updates.
-- `this.$element` (`Element | null`): Getter for the component's root DOM element (also aliased as `this.el`). Returns `null` pre-mount and post-unmount, and returns the mounted DOM element during `onMount`, `onBeforeUpdate`, `onUpdate`, and event handlers.
-- `this.$refs` (`Record<string, Element>`): Map of direct DOM element references marked with the [`data-ax-ref="refName"`](/core-concepts/directives#built-in-element-reference-directive-data-ax-ref) directive within the component template.
+- `this.$element` (`Element | null`): Getter for the component's root DOM element (also aliased as `this.el`). Returns `null` pre-mount and post-unmount, and returns the mounted DOM element during `onMount`, `onBeforeUpdate`, `onUpdate`, and event handlers. Available bare as `$element` in actions and templates.
+- `this.$refs` (`Record<string, Element>`): Map of direct DOM element references marked with the [`data-ax-ref="refName"`](/core-concepts/directives#built-in-element-reference-directive-data-ax-ref) directive within the component template. Available bare as `$refs` in actions and templates.
+- `this.$slots` (`object`): Slot helpers for determining whether specific slots were provided by parent components. Available bare as `$slots` in actions and templates.
+- `this.$isMounted` (`boolean`): Whether the component is currently mounted in the document DOM (`this.`-only).
+- `this.$isUnmounted` (`boolean`): Whether the component has been unmounted (`this.`-only).
+- `this.$keepAlive` (`object | null`): KeepAlive state manager for cached page instances (`this.`-only).
 - `this.provide` / `provide()`: Defines state, properties, or methods to provide to descendant components.
 - `static inject` / `this.inject`: Defines ancestor properties to inject and make available locally on `this`.
 
@@ -172,10 +176,32 @@ export default class ThemedCard extends AvenxComponent {
 ```
 
 
-## Lifecycle Hooks
-Implement these functions in your component logic to execute code at specific points in the component's lifespan:
-* `onActivate`: Called when a keep-alive page is activated.
-* `onDeactivate`: Called when a keep-alive page is deactivated.
+## Component Scope & `$` Member Access Matrix
+
+Avenx-JS injects a canonical set of runtime helpers directly into expression and `<action>` scopes without requiring `this.`. All other component instance properties, lifecycle methods, and internal state members must be accessed via `this.`.
+
+### Bare Injected Helpers vs. `this.`-Only Members
+
+| Helper / Member | Scope Availability | Description | Example Usage |
+| :--- | :--- | :--- | :--- |
+| `$route` | Bare or `this.` | Active route descriptor (`path`, `params`, `query`, `hash`). | `$route.path` or `this.$route.path` |
+| `$router` | Bare or `this.` | Application router instance for programmatic navigation. | `$router.push('/dashboard')` or `this.$router.push('/dashboard')` |
+| `$emit` | Bare or `this.` | Dispatches a custom DOM event up the component hierarchy. | `$emit('save', { id })` or `this.$emit('save', { id })` |
+| `$watch` | Bare or `this.` | Creates a reactive watcher on component state or computed values. | `$watch('count', (newVal) => {})` |
+| `$watchEffect` | Bare or `this.` | Executes a reactive effect immediately and tracks dependencies. | `$watchEffect(() => {})` |
+| `$nextTick` | Bare or `this.` | Defers execution until after the next microtask DOM update cycle. | `$nextTick(() => {})` or `await this.$nextTick()` |
+| `$refs` | Bare or `this.` | Map of DOM element references marked with `data-ax-ref`. Resolves dynamically post-mount. | `$refs.box.value` or `this.$refs.box.focus()` |
+| `$element` | Bare or `this.` | The component's root DOM element (`null` pre-mount). | `$element.scrollTop = 0` or `this.$element.focus()` |
+| `$slots` | Bare or `this.` | Slot introspection helpers (e.g., checking if parent provided a slot). | `<@if $slots.has('header')>` |
+| `$app` | Bare or `this.` | The parent `AvenxApp` application instance. | `$app.title` or `this.$app` |
+| `$resources` | Bare or `this.` | Imperative resource controls and status accessors. | `$resources.profile.mutate(data)` or `this.$resources.profile.refetch()` |
+| **All Other `$` Members** (`$destroy`, `$isMounted`, `$isUnmounted`, `$keepAlive`, `$inspect`, ...) | **`this.`-only** | Lifecycle control, diagnostic inspection, and internal component state. | `this.$destroy()`, `this.$isMounted`, `this.$inspect()` |
+
+> [!NOTE]
+> Bare injected helpers (`$refs`, `$element`, `$slots`, `$router`, `$app`, `$route`, `$emit`, `$watch`, `$watchEffect`, `$nextTick`) use live property getters on the component instance. Accessing `$refs` or `$element` in an action or template before mount returns `{}` or `null`, and reflects the mounted element or reference map as soon as the component attaches to the DOM.
+
+> [!WARNING]
+> Referencing a `this.`-only member bare without `this.` in an `<action>` body or template expression (e.g. `$destroy()` instead of `this.$destroy()`) triggers compile-time warning **`[AVX_W71]`** (`COMPILER_BARE_DOLLAR_MEMBER`). Typos (such as `$ref` instead of `$refs` or `$emits` instead of `$emit`) are also detected at build time with targeted `Did you mean ...?` suggestions.
 
 ## Component Lifecycle Hooks
 
@@ -440,6 +466,10 @@ btn.setProps({
 ### `unmount()`
 
 Cleans up event listeners and empties the mounted container.
+
+### `$destroy()`
+
+Alias for `unmount()`. Destroys the component instance, unmounts its DOM elements, and performs teardown of watchers and resources. Must be called via `this.$destroy()`.
 
 ### `nextTick(callback)`
 

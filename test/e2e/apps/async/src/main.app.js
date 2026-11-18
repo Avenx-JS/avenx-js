@@ -26,4 +26,3 @@ app.initRouter({
   '#/polling': 'Polling',
   '#/unmount': 'Unmount',
 });
-

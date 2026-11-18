@@ -20,4 +20,3 @@
   <button data-testid="slow-search-btn" @click="searchSlow()">Slow Search</button>
   <button data-testid="fast-search-btn" @click="searchFast()">Fast Search</button>
 </div>
-

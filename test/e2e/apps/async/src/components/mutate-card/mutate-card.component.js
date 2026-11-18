@@ -16,4 +16,3 @@
   </@suspense>
   <button data-testid="mutate-btn" @click="mutateLocal()">Mutate Profile</button>
 </div>
-

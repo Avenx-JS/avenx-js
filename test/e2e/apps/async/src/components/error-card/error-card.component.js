@@ -20,4 +20,3 @@
     <div data-testid="flaky-resolved">{{ flakyData.message }}</div>
   </@errorBoundary>
 </div>
-

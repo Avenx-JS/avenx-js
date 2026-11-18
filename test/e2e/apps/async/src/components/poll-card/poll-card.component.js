@@ -8,4 +8,3 @@
     <span data-testid="poll-count">{{ ticker.count }}</span>
   </@suspense>
 </div>
-

@@ -8,4 +8,3 @@
     <div data-testid="child-resolved">{{ slowData.data }}</div>
   </@suspense>
 </div>
-

@@ -20,4 +20,3 @@
   <button data-testid="select-user-2" @click="selectUserTwo()">User 2</button>
   <button data-testid="select-user-3" @click="selectUserThree()">User 3</button>
 </div>
-
