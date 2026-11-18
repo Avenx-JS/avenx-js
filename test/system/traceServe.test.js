@@ -53,12 +53,21 @@ function startServer(args, port) {
   child.stdout.on('data', (chunk) => output.push(String(chunk)));
   child.stderr.on('data', (chunk) => output.push(String(chunk)));
 
-  return waitFor(() => output.join('').includes('Dev-Server running')).then((up) => {
+  const isReady = () => {
+    const text = output.join('');
+    if (!text.includes('Dev-Server running')) return false;
+    if (args.includes('--trace') && !text.includes('Trace recording is ON')) return false;
+    return true;
+  };
+
+  return waitFor(isReady).then((up) => {
     if (!up) {
       child.kill('SIGKILL');
       throw new Error(`server did not start:\n${output.join('')}`);
     }
-    return { child, output, url: `http://localhost:${port}` };
+    const match = output.join('').match(/Dev-Server running at (https?:\/\/[^\s]+)/);
+    const url = match ? match[1] : `http://localhost:${port}`;
+    return { child, output, url };
   });
 }
 
@@ -93,14 +102,21 @@ try {
     'the trace directory is not even created without --trace',
   );
 
-  running.child.kill('SIGKILL');
-  running = null;
+  if (running && running.child) {
+    const prevChild = running.child;
+    prevChild.kill('SIGKILL');
+    await new Promise((resolve) => {
+      prevChild.once('exit', resolve);
+      setTimeout(resolve, 500);
+    });
+    running = null;
+  }
 
   // --- With --trace, the bootstrap is injected ------------------------------
 
   running = await startServer(['--trace'], 4612);
   assert.ok(
-    running.output.join('').includes('Trace recording is ON'),
+    await waitFor(() => running.output.join('').includes('Trace recording is ON')),
     'the server says recording is on',
   );
 
