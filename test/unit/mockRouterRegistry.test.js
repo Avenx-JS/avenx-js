@@ -11,7 +11,8 @@ global.window = {};
 try {
   // A real router registered before the mock must survive the helper.
   const realRouter = { name: 'real' };
-  window.__avenx_routers = new Set([realRouter]);
+  const previousMockRouter = { $isMock: true, name: 'previous mock' };
+  window.__avenx_routers = new Set([realRouter, previousMockRouter]);
 
   const mockRouter = AvenxMock.createMockRouter({ hash: '#/mock' });
 
@@ -20,6 +21,7 @@ try {
     'window.__avenx_routers must be a Set after createMockRouter()'
   );
   assert.ok(window.__avenx_routers.has(realRouter), 'existing router must stay registered');
+  assert.ok(!window.__avenx_routers.has(previousMockRouter), 'older mock router must be removed');
   assert.ok(window.__avenx_routers.has(mockRouter), 'mock router must be added to the registry');
 
   // A real router must still be able to register and unregister itself.
