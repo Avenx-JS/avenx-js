@@ -1517,6 +1517,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Aaqibhafeezkhan",
+      "name": "Aaqibhafeez Khan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/292322256?v=4",
+      "profile": "https://aaqibhafeezkhan.github.io/aaqibhafeezkhan.cv/",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
