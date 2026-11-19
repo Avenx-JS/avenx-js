@@ -568,7 +568,15 @@ The `avenx doctor` command performs comprehensive diagnostic health checks on yo
 ```bash
 # Run environment and project health diagnostics
 npx avenx doctor
+
+# Emit machine-readable output for CI tooling
+npx avenx doctor --json
 ```
+
+`--json` (alias `-j`) writes a single JSON document to stdout with `root`, a `checks` array
+(each with `area`, `status`, `message` and an optional `hint`), and the `pass`, `warn` and `fail`
+counts. Section headings and the human summary are suppressed in this mode. Exit codes keep
+their usual meaning: `0` when there are no failures, `1` when a check fails.
 
 ---
 
