@@ -160,6 +160,46 @@ try {
   }
 
   {
+    // A function inside the options object has parentheses of its own. The
+    // registrations must follow the whole constructor call, not its first `)`.
+    const shapes = [
+      {
+        name: 'method shorthand',
+        option: '  errorHandler(error, instance, info) {\n    console.error(error, info);\n  },',
+        after: '});',
+      },
+      {
+        name: 'expression arrow',
+        option: '  errorHandler: (err) => console.warn(err),',
+        after: '});',
+      },
+      {
+        name: 'block-bodied arrow',
+        option: '  errorHandler: (err) => { console.warn(err); },',
+        after: '});',
+      },
+      {
+        name: 'function expression',
+        option: '  errorHandler: function (err) { console.warn(err); },',
+        after: '});',
+      },
+      {
+        name: 'a closing parenthesis inside a string literal',
+        option: "  title: 'Done ) yet',\n  errorHandler(err) { console.warn(err); },",
+        after: '});',
+      },
+    ];
+    for (const shape of shapes) {
+      const source = ['const app = new AvenxApp({', "  target: '#app',", shape.option, '});', ''].join('\n');
+      const result = entryModule({ source, registrations: [registrations[0]] });
+      assert.ok(
+        result.includes(`${shape.after}\napp.registerPage("Home", __avx_page_0);`),
+        `registrations must follow the whole constructor call (${shape.name}), got:\n${result}`,
+      );
+    }
+  }
+
+  {
     // A project with no pages and no bridges gets its own file back, plus the
     // prelude, and nothing injected into it.
     const bare = entryModule({ source: 'const app = new AvenxApp({});\n', registrations: [] });
