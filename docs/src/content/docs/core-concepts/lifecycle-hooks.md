@@ -229,6 +229,8 @@ onDeactivate() {
 
 Hooks run from the nearest component towards the page, then the application's error handler. Returning nothing lets the error continue to the next ancestor. This applies to lifecycle errors and, when no declarative error fallback handles them, rendering errors and rejected resources. The `instance` argument identifies the child that failed.
 
+Returning `false` stops the error from propagating further and from reaching the application's error handler. It also changes how the failure is reported: the `AVX_R09` (event handler) and `AVX_R12` (lifecycle hook) diagnostics of an error that a hook claimed are written at the `debug` log level and end with `(handled: <Component> claimed it in onErrorCaptured)`, so a handled failure does not show up as a console error. An error that nothing claims is still logged at the `error` level. Set `logging.level` to `debug` to see the diagnostics of claimed errors as well. Your own hook still receives the error object and decides what else to record.
+
 ```javascript
 onErrorCaptured(error, instance, info) {
   console.error(`Captured error from ${instance.constructor.name} during ${info}:`, error);
