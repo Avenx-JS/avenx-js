@@ -1508,6 +1508,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "emreocell",
+      "name": "Emre Öcel",
+      "avatar_url": "https://avatars.githubusercontent.com/u/73295089?v=4",
+      "profile": "https://www.webioo.com.tr/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
