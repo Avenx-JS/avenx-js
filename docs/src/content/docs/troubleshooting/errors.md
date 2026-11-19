@@ -450,6 +450,10 @@ const app = new AvenxApp({
 | `[AVX_W69]` | <button> has no accessible name (in component <{0}>). | **Identifier:** `COMPILER_A11Y_BUTTON_NAME`.<br />**Cause:** A `<button>` element contains no text content and has no `aria-label` or `aria-labelledby`.<br />**Resolution:** Provide visible text inside `<button>` or add an `aria-label` or `aria-labelledby` attribute. Silence with `"warnings": { "AVX_W69": "off" }` in `avenx.config.json`. |
 | `[AVX_W70]` | Positive tabindex "{0}" disrupts document navigation order. | **Identifier:** `COMPILER_A11Y_POSITIVE_TABINDEX`.<br />**Cause:** An element specifies `tabindex > 0`, disrupting the natural keyboard tab navigation sequence.<br />**Resolution:** Use `tabindex="0"` for natural tab order or `tabindex="-1"` for programmatic focus. Silence with `"warnings": { "AVX_W70": "off" }` in `avenx.config.json`. |
 | `[AVX_W71]` | Bare identifier "{0}" in {1} at line {2}.{3} | **Identifier:** `COMPILER_BARE_DOLLAR_MEMBER`.<br />**Cause:** A bare identifier starting with `$` was referenced in an `<action>` body or template expression that is not an injected helper (`$route`, `$router`, `$emit`, `$watch`, `$watchEffect`, `$nextTick`, `$refs`, `$element`, `$slots`, `$app`).<br />**Resolution:** Access component instance members via `this.<member>` (e.g. `this.$destroy()`). Verify the spelling of injected helpers. Silence with `"warnings": { "AVX_W71": "off" }` in `avenx.config.json`. |
+| `[AVX_W72]` | Unknown ARIA role "{0}" on element <{1}> (in component <{2}>). | **Identifier:** `COMPILER_A11Y_ARIA_UNKNOWN_ROLE`.<br />**Cause:** An element specifies an unknown or invalid WAI-ARIA role attribute, or uses an abstract role.<br />**Resolution:** Use a valid non-abstract WAI-ARIA role (such as `role="button"`, `role="dialog"`, `role="status"`). Silence with `"warnings": { "AVX_W72": "off" }` in `avenx.config.json`. |
+| `[AVX_W73]` | Unknown ARIA attribute "{0}" on element <{1}> (in component <{2}>). | **Identifier:** `COMPILER_A11Y_ARIA_UNKNOWN_ATTRIBUTE`.<br />**Cause:** An element specifies an unknown or misspelled `aria-*` attribute name.<br />**Resolution:** Check spelling against the WAI-ARIA 1.2 specification. Silence with `"warnings": { "AVX_W73": "off" }` in `avenx.config.json`. |
+| `[AVX_W74]` | Invalid value "{0}" for ARIA attribute "{1}" on element <{2}> (in component <{3}>). | **Identifier:** `COMPILER_A11Y_ARIA_INVALID_VALUE`.<br />**Cause:** An `aria-*` attribute receives a value that does not match its expected type (boolean, token, integer, number).<br />**Resolution:** Provide a valid value matching the ARIA specification type requirements (e.g. `aria-hidden="true"` or `"false"`). Silence with `"warnings": { "AVX_W74": "off" }` in `avenx.config.json`. |
+| `[AVX_W75]` | Focusable element <{0}> has aria-hidden="true" (in component <{1}>). | **Identifier:** `COMPILER_A11Y_ARIA_HIDDEN_FOCUSABLE`.<br />**Cause:** An interactive or focusable element (`<button>`, `<input>`, `<a>` with `href`, or element with non-negative `tabindex`) specifies `aria-hidden="true"`.<br />**Resolution:** Remove `aria-hidden="true"` from focusable elements or use `tabindex="-1"`. Silence with `"warnings": { "AVX_W75": "off" }` in `avenx.config.json`. |
 | `[AVX_R36]` | Child components are still being mounted after {0} passes. | **Identifier:** `COMPONENT_NESTING_LIMIT`.<br />**Cause:** Mounting a child renders its template, which can introduce mount points of its own, so a page reconciles children in repeated passes until a pass mounts nothing new. Each pass reaches one level deeper. Reaching the limit means the tree nests components more than 50 deep, or a component renders its own tag. Anything below that depth is missing from the page rather than wrong.<br />**Resolution:** Look first for a component whose template renders itself, directly or through a cycle; that is almost always the cause. Otherwise flatten the tree. See [Nesting Components](/core-concepts/components#nesting-components). |
 | `[AVX_R35]` | Refused to set the inline event-handler attribute "{0}". | **Identifier:** `SECURITY_BLOCKED_EVENT_ATTRIBUTE`.<br />**Cause:** At run time a dynamic attribute name (`:[expr]`) resolved to an `on*` handler, whose value would run as JavaScript.<br />**Resolution:** Use `@event="handler"` rather than assembling an `on*` name. A bound `on*` written literally is refused earlier, at build time (`AVX_C28`). |
 | `[AVX_W35]` | Failed to parse <@deadlock> tag in component "{0}": {1} | **Cause:** Malformed attributes, an unclosed tag, or an invalid `maxDepth` on a `<@deadlock>` block. The compiler skips the boundary entirely, so it silently does not exist at runtime.<br />**Resolution:** Format `<@deadlock>` with valid attributes (`name`, `maxDepth`, `action`) and ensure nested `<@fallback as="...">` is properly closed. See the [<@deadlock> guide](/core-concepts/deadlock/). |
@@ -3459,6 +3463,115 @@ Bare identifier "{0}" in {1} at line {2}.{3}
 <div>
   <p data-ax-show="this.$isMounted">Active</p>
 </div>
+```
+
+### AVX_W72 — COMPILER_A11Y_ARIA_UNKNOWN_ROLE
+
+**Warning Message**
+
+```text
+Unknown ARIA role "{0}" on element <{1}> (in component <{2}>). Specify a valid non-abstract WAI-ARIA role.
+```
+
+**Cause:** An element has a `role` attribute with a value that is not recognized in the WAI-ARIA 1.2 specification, or specifies an abstract role (such as `command`, `widget`, or `roletype`) which is prohibited in authoring markup.
+
+**Resolution:** Specify a valid, non-abstract WAI-ARIA role (e.g. `role="button"`, `role="dialog"`, `role="status"`). Check for common spelling typos; the compiler will suggest the closest matching standard role. Silence with `"warnings": { "AVX_W72": "off" }` in `avenx.config.json` if intentional.
+
+**Incorrect**
+
+```html
+<div role="btn">Click me</div>
+<div role="roletype">Widget container</div>
+```
+
+**Correct**
+
+```html
+<div role="button">Click me</div>
+<div role="group">Widget container</div>
+```
+
+### AVX_W73 — COMPILER_A11Y_ARIA_UNKNOWN_ATTRIBUTE
+
+**Warning Message**
+
+```text
+Unknown ARIA attribute "{0}" on element <{1}> (in component <{2}>). Specify a valid WAI-ARIA attribute.
+```
+
+**Cause:** An element has an attribute starting with `aria-` that is not defined in the WAI-ARIA specification, typically caused by a typo (such as `aria-labeledby` instead of `aria-labelledby`).
+
+**Resolution:** Correct the spelling of the `aria-*` attribute against the WAI-ARIA 1.2 specification. The compiler diagnostic provides a suggestion for close matches. Silence with `"warnings": { "AVX_W73": "off" }` in `avenx.config.json` if intentional.
+
+**Incorrect**
+
+```html
+<input type="text" aria-labeledby="label-id">
+<button aria-rolee="button">Save</button>
+```
+
+**Correct**
+
+```html
+<input type="text" aria-labelledby="label-id">
+<button aria-label="Save">Save</button>
+```
+
+### AVX_W74 — COMPILER_A11Y_ARIA_INVALID_VALUE
+
+**Warning Message**
+
+```text
+Invalid value "{0}" for ARIA attribute "{1}" on element <{2}> (in component <{3}>). Expected {4}.
+```
+
+**Cause:** An `aria-*` attribute was assigned a value that violates the data type required by the WAI-ARIA specification (e.g. setting a boolean attribute to `"yes"` or `"0"` instead of `"true"` or `"false"`, or providing an unrecognized token).
+
+**Resolution:** Supply a valid value matching the expected attribute type (e.g. `"true"`, `"false"`, or a permitted token). Silence with `"warnings": { "AVX_W74": "off" }` in `avenx.config.json` if intentional.
+
+**Incorrect**
+
+```html
+<div aria-hidden="yes">Hidden content</div>
+<div aria-live="fast">Urgent notice</div>
+```
+
+**Correct**
+
+```html
+<div aria-hidden="true">Hidden content</div>
+<div aria-live="assertive">Urgent notice</div>
+```
+
+### AVX_W75 — COMPILER_A11Y_ARIA_HIDDEN_FOCUSABLE
+
+**Warning Message**
+
+```text
+Focusable element <{0}> has aria-hidden="true" (in component <{1}>). Remove aria-hidden="true" or use tabindex="-1".
+```
+
+**Cause:** An element that is naturally focusable (such as `a[href]`, `button`, `input`, `select`, `textarea`, `summary`, `iframe`) or has a non-negative `tabindex` specifies `aria-hidden="true"`. Hiding interactive elements from assistive technologies while leaving them keyboard-focusable creates inaccessible dead-ends for screen reader users.
+
+**Resolution:** Remove `aria-hidden="true"` from focusable elements. If the element must remain hidden from both screen readers and keyboard navigation, remove it from the tab sequence with `tabindex="-1"` or disable it. Silence with `"warnings": { "AVX_W75": "off" }` in `avenx.config.json` if intentional.
+
+**Incorrect**
+
+```html
+<button aria-hidden="true">Action</button>
+<a href="/dashboard" aria-hidden="true">Dashboard</a>
+<div tabindex="0" aria-hidden="true">Custom focusable</div>
+```
+
+**Correct**
+
+```html
+<!-- Visible and accessible -->
+<button>Action</button>
+
+<!-- Or completely removed from tab sequence -->
+<button tabindex="-1" aria-hidden="true">Action</button>
+<div tabindex="-1" aria-hidden="true">Custom non-focusable</div>
 ```
 
 ## Runtime Codes (`AVX_R*`)
