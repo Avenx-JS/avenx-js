@@ -161,7 +161,7 @@ When navigating to `#/admin`, the router executes `AuthGuard` first, followed by
 
 ### Global Navigation Guards
 
-Use `router.beforeEach()` to register guards that execute before **every** route transition:
+Use `router.beforeEach()` to register guards that execute before **every** route transition, including the entry route when the page is first loaded (for example, a direct deep link to `#/admin`). A global guard applies to the entry route only if it is registered synchronously after `initRouter()` returns. A guard registered later does not run for the entry route. Per-route guards (`guards: [...]`) always run for a deep link.
 
 ```javascript
 const router = AvenxApp.initRouter(routes);
