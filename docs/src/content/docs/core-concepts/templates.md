@@ -538,6 +538,95 @@ When the iterable source is empty (e.g. `[]`, `{}`, or `0`), you can display a f
 
 ### Keys (`key="..."`)
 
+A key gives each row in a `<@for>` loop a stable identity. When the list changes,
+Avenx-JS uses keys to match the new rows with the existing ones. Matching rows
+can be moved or updated instead of being torn down and created again. This
+preserves the DOM and component instances inside a row, including input values,
+focus, and other local UI state, when items are reordered.
+
+Choose a key that is **stable and unique for each item**:
+
+```html
+<@for item in state.todos key="item.id">
+  <li>{{ item.title }}</li>
+</@for>
+```
+
+The key expression is evaluated in each row's scope. It can use the loop
+variable (such as `item.id`), the item itself (for lists of unique primitive
+values), or the implicit zero-based `index`. If the loop destructures entries,
+use the names declared in that destructuring pattern. For object records,
+prefer a stable identifier such as `item.id`; using the object itself is not a
+portable substitute for an identifier across rendering paths.
+
+#### What if you omit the key?
+
+When `key` is omitted, Avenx-JS uses the row's `index`. This is positional
+identity: row 0 is matched with row 0, row 1 with row 1, and so on. It is fine
+for a list whose order and membership never change, but it does not identify
+the underlying item when rows are inserted, removed, or reordered.
+
+For example, after reversing this list, an index-keyed renderer reuses the
+first row's DOM for the new first item. An input value or component state that
+belonged to Alice can therefore appear beside Bob:
+
+```html
+<!-- Avoid this when the list can change order. -->
+<@for person in state.people key="index">
+  <label>
+    {{ person.name }}
+    <input value="{{ person.note }}" />
+  </label>
+</@for>
+```
+
+Use the item's stable identifier instead:
+
+```html
+<@for person in state.people key="person.id">
+  <label>
+    {{ person.name }}
+    <input value="{{ person.note }}" />
+  </label>
+</@for>
+```
+
+With `person.id`, the row for each person keeps its identity even when the
+array is reordered. The same warning applies to the implicit index used when
+you omit `key`: both identify a position, not an item.
+
+#### Duplicate keys
+
+Every row must produce a different key. If two rows produce the same value,
+Avenx-JS emits **[AVX_W20](/troubleshooting/errors#avx_w20--render_list_duplicate_key)**.
+The runtime has a recovery path to avoid treating colliding rows as one
+identity: the string-renderer path adds the row index as a suffix (for example,
+`key_0` and `key_1`), while the compiled renderer warns and creates a separate
+row range for the colliding entry. This is a fallback, not a substitute for
+unique keys; duplicate keys can still cause extra DOM work and state or focus
+surprises.
+
+Use a genuinely unique field, such as a database ID or UUID. Avoid shared
+values such as a category or status:
+
+```html
+<!-- Wrong: several people can have the same team. -->
+<@for person in state.people key="person.team">
+  <p>{{ person.name }}</p>
+</@for>
+
+<!-- Right: each person has a stable, unique ID. -->
+<@for person in state.people key="person.id">
+  <p>{{ person.name }}</p>
+</@for>
+```
+
+For more on how list rows are reconciled and moved during updates, see the
+[rendering guide](./rendering.md). The later
+[reconciliation marker note](#11-static-subtree-optimization--reconciliation-markers-data-ax-static-data-ax-skip-data-ax-key)
+explains the internal `data-ax-key` attribute; templates should normally use
+the `key` expression on `<@for>` rather than setting that marker themselves.
+
 ## 8. Slots & Transclusion
 
 Components can receive child HTML blocks using `<slot>` elements. Both default and named slots are fully supported.
