@@ -189,6 +189,11 @@ console. Four separate defects met there, each individually invisible.
 - `AVX_W01` weighed source maps against the bundle budget, so every development
   build warned about `bundle.js.map` by default and a project escalating
   `AVX_W01` to `"error"` could not run one at all.
+- An error that an `onErrorCaptured` hook claimed by returning `false` was
+  logged at error level exactly like one nothing handled, so the console could
+  not tell a handled failure from an unhandled one. The `AVX_R09` and `AVX_R12`
+  diagnostics of a claimed error are now written at debug level and name the
+  component that claimed it; an unclaimed error is still logged at error level.
 
 ### Fixed — silent failures elsewhere
 
