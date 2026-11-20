@@ -118,8 +118,8 @@ async function runTests() {
   // Call the click callback
   clickCall.callback({ target: button, type: 'click' });
 
-  // Verify event error triggered handlers with origin as the source code statement
-  const eventErrors = errorsHandled.filter(e => e.origin === 'doSomething()');
+  // Verify event error triggered handlers with origin as the execution phase (#1788)
+  const eventErrors = errorsHandled.filter(e => e.origin === 'eventHandler:doSomething');
   assert.strictEqual(eventErrors.length, 2);
   assert.strictEqual(eventErrors[0].err.message, 'Event Fail');
   assert.strictEqual(eventErrors[0].comp, compInstance);

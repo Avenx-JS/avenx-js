@@ -132,8 +132,9 @@ test('an async event-handler failure is reported like a sync throw', async (t) =
   assert.strictEqual(handlerCalls.length, 1, 'async rejection should reach errorHandler once');
   assert.strictEqual(handlerCalls[0].error.message, 'plain async failed');
   assert.strictEqual(handlerCalls[0].instance, instance);
-  // The origin is the handler source, exactly as the sync throw reports it.
-  assert.strictEqual(handlerCalls[0].origin, 'plain()');
+  // The origin is the execution phase, not the handler source (#1788):
+  // the async path reports it exactly as the sync throw does.
+  assert.strictEqual(handlerCalls[0].origin, 'eventHandler:plain');
   assert.deepEqual(
     unhandled.map((err) => err && err.message),
     [],
