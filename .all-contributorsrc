@@ -1526,6 +1526,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "aryankalantri",
+      "name": "aryankalantri",
+      "avatar_url": "https://avatars.githubusercontent.com/u/184456664?v=4",
+      "profile": "https://github.com/aryankalantri",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
