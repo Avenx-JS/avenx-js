@@ -230,6 +230,25 @@ function testUnclaimedDirectiveAttributeStays() {
 }
 
 /**
+ * A custom directive's op carries the attribute's source text in `s` (issue
+ * #1802). The runtime reads it for `binding.expression`; the development-only
+ * `__axProgramExprSrc` table is not emitted in production, so the op is the
+ * only place the source survives.
+ */
+function testCustomDirectiveOpCarriesExpressionSource() {
+  console.log('🧪 Testing a custom directive op carries its expression source...');
+
+  const program = compiled('<p data-ax-mark.once="n">x</p>');
+  assert.strictEqual(ops(program).length, 1);
+  const op = ops(program)[0];
+  assert.strictEqual(op.k, OpKind.CUSTOM);
+  assert.strictEqual(op.n, 'mark');
+  assert.deepStrictEqual(op.m, ['once']);
+  assert.strictEqual(op.x, 'n');
+  assert.strictEqual(op.s, 'n', 'the op must carry the directive attribute source text');
+}
+
+/**
  * A subtree the compiler proved static is emitted whole and never descended
  * into, and its marker attribute is dropped.
  *
@@ -396,6 +415,7 @@ testAttributePartsOps();
 testDirectiveOps();
 testEventsAreNotOps();
 testUnclaimedDirectiveAttributeStays();
+testCustomDirectiveOpCarriesExpressionSource();
 testStaticSubtrees();
 testRefusals();
 testChildComponentProps();
