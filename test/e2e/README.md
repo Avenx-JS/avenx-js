@@ -56,6 +56,7 @@ test/e2e/
     virtual-list/   VirtualList windowing over large datasets
     code-splitting/  lazy page chunks under codeSplitting, with template expressions
     guard-gaps/     regression tests for previously fixed guard bugs
+    parity/         every documented template construct, built in both modes
   specs/          tests, grouped by the behaviour they describe
     smoke/ reactivity/ rendering/ components/ events/
     styling/ routing/ forms/ performance/ build/
@@ -158,25 +159,26 @@ product running in a browser.
 
 ## Current coverage
 
-155 tests across 24 spec files. All tests are expected to pass; the six previously pinned failures have been fixed.
+265 tests across 33 spec files. Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
 | `actions/` | 6 | Browser APIs |
 | `async/` | 7 | Declarative async data (<resource>, <@suspense>, <@errorBoundary>, recovery, sequencing, mutation, polling and abort on unmount) |
-| `build/` | 8 | Production and development runtime parity, code-split page chunks |
+| `build/` | 51 | Production and development parity: the counter app, and every documented template construct (see "Construct parity" below); code-split page chunks |
 | `components/` | 12 | Component composition |
 | `composition/` | 5 | Reactive provide/inject, live DOM retention, uncached reset and lifecycle order |
 | `events/` | 12 | Event bindings, modifiers and loop scope |
-| `forms/` | 12 | Focus retention and two-way binding |
+| `forms/` | 20 | Focus retention and two-way binding |
 | `performance/` | 6 | `<@defer>` triggers |
 | `reactivity/` | 19 | Compiled rendering, fine-grained updates and state-to-DOM |
-| `rendering/` | 26 | Fallback renderer, lists, conditionals and state initialisers |
-| `routing/` | 21 | Navigation, guards and guard regression tests |
-| `security/` | 5 | Dynamic attribute names and `srcdoc` |
-| `serve/` | 9 | Development server |
-| `smoke/` | 4 | Application boot |
+| `rendering/` | 35 | Fallback renderer, lists, conditionals and state initialisers |
+| `routing/` | 22 | Navigation, guards and guard regression tests |
+| `security/` | 15 | Dynamic attribute names and `srcdoc` |
+| `serve/` | 17 | Development server |
+| `smoke/` | 21 | Application boot |
 | `styling/` | 12 | Attribute content and scoped CSS |
+| `transitions/` | 4 | List-row enter and leave classes, rapid toggling |
 | `virtual-list/` | 1 | Fixed-height VirtualList windowing and scroll boundaries |
 
 `<@suspense>`, `<@errorBoundary>` and `<@deadlock>` are covered by
@@ -187,9 +189,95 @@ while every test in this suite stayed green. A component that renders nothing
 raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
-Not yet covered, in rough priority order: rewind rollback, transitions,
-declarative form validation, live reload, and trace capture under
-`avenx serve --trace`.
+Not yet covered, in rough priority order: rewind rollback, live reload, and
+trace capture under `avenx serve --trace`.
+
+## Construct parity: the shipped arrangement
+
+The unit and integration tiers run every test with the expression interpreter
+and the string renderer installed (see `test/run-tests.js`). That is what a
+development build does and what no production bundle does, so a defect that
+exists only in a production bundle cannot be seen there. This is the tier
+where the shipped arrangement is exercised.
+
+The `parity` fixture uses every template construct the documentation lists,
+taken from the "What's in the box" tables in the top-level `README.md` and the
+sections of `docs/src/content/docs/core-concepts/templates.md`. The global
+setup builds it with `avenx build` and `avenx build --dev`, and
+`specs/build/construct-parity.spec.js` drives each construct through the same
+steps on both bundles. Each construct sits in its own `data-construct` section
+and gets one test, which checks three things:
+
+1. **Content.** Particular text, attributes and styles, on both bundles. If
+   the only check were that the two bundles agree, two bundles that both
+   rendered nothing would pass.
+2. **Parity.** The section is serialised (markup, live form state, computed
+   `display` and `color`), and the production snapshot must equal the
+   development one. There is no allowlist, so any divergence fails.
+3. **Nothing went unreported.** The fixture must build with no `AVX_W48`,
+   and the global setup stops the run if it does not. So the development
+   bundle's interpreter should never run. It records what it is handed
+   (`Avenx.interpretedSources()`), and the spec requires that list to be
+   empty. An entry there is an expression the build neither compiled nor
+   reported. It renders under `--dev` and throws `AVX_R32` in production.
+
+The third check found two such expressions on its first run, both silent in
+production. `<Component :is="{{ name }}">` left its mount point empty, and
+`<transition name="fade">` produced `'fade'-enter-active` (quotes included),
+so no stylesheet matched. Both were missing from the compiler's expression
+collector; `test/unit/expressionCollectorCoverage.test.js` pins the fix.
+
+| Construct group | Page | Constructs |
+| :--- | :--- | :--- |
+| Construct group | Page | Engine | Constructs |
+| :--- | :--- | :--- | :--- |
+| Text and attributes | `#/` | compiled | interpolation, raw interpolation, boolean attribute coercion, `data-ax-show`, `-class` (string and object), `-style`, `-html` (sanitised), SVG |
+| Control flow | `#/control` | compiled | `<@if>` / `<@elseif>` / `<@else>`; keyed `<@for>` over an array, object, `Map`, `Set` and numeric range, each with `<@empty>` |
+| Forms | `#/forms` | compiled | `data-ax-bind` on text, textarea, number, range, date, select, multiple select, boolean checkbox, checkbox group and radio |
+| Components | `#/components` | compiled | static nesting to a grandchild, props, default / named / fallback slots, the `<template slot>` wrapper |
+| Async | `#/async` | both | `<@defer>` on `idle`, `timer(ms)`, `interaction`, an expression and `visible`; `<resource>`, `<@suspense>`, `<@deadlock>` (in `<AsyncPanel>`); `<@errorBoundary>` (in `<ErrorPanel>`) |
+| Motion | `#/motion` | string | `<transition>` on a keyed list row, `<VirtualList>` |
+| Routing | `#/shell/outlet` | string | a layout's router view (`data-ax-router-view`) |
+| String renderer | `#/string-path` | string | dynamic attribute names, `data-ax-ref`, `data-ax-validate`, scoped slots, `<Component :is>`, and the string renderer's pinned gaps |
+
+Each construct is placed on a page that compiles to a render program wherever
+it can be. The constructs the IR refuses (`AVX_W47`) are grouped on pages that
+render through the string renderer. So each engine is compared across both
+build modes, and a compiled construct is not silently moved to the string path
+by an unrelated neighbour. Adding a construct takes a `data-construct` section
+in the fixture and an entry in the spec's `CONSTRUCTS`. A coverage test fails
+if the two lists disagree.
+
+Writing the fixture against the documentation turned up a few places where
+the documentation and the framework disagree. They hold identically in both
+builds, so none of them is a parity defect. Each is either pinned under "Known
+gaps" below or worked around and noted in the fixture:
+
+- A caught `<@errorBoundary>` replaces the whole component's template, its
+  siblings included, not only the boundary's own subtree. `<ErrorPanel>`
+  therefore holds nothing else.
+- In a template, a `<resource>` name resolves to its value. Its status is
+  `$resources.<name>.status`; the `<name>.status` spelling in `resources.md`
+  renders nothing.
+
+Deliberately left out, and why:
+
+- **Typed inputs other than `date`** (`email`, `time`, `color`, ...). They
+  share the `value`/`input` channel and write the string, as `date` does, so
+  they would exercise no other code path.
+- **The `click` / `hover` aliases and combined `<@defer>` triggers**
+  (`visible; interaction`). They reach the same trigger implementations as
+  `interaction` and `visible`, which are covered.
+- **A tripped `<@deadlock>`.** Tripping a boundary needs a runaway reactive
+  cycle, which logs `AVX_R18` and depends on scheduler timing, so the two
+  bundles cannot be snapshotted at the same point. The healthy boundary is
+  covered here, and the trip is covered by the unit tier.
+- **Event modifiers, watchers, lifecycle hooks, scoped CSS, bridges and the
+  router's guards and params.** These are behaviours rather than template
+  constructs; their fixtures (`events/`, `styling/`, `routing/`, ...) run
+  them against the production bundle.
+- **`data-ax-static`, `data-ax-skip` and `data-ax-key`.** Templates are not
+  meant to write these internal markers; the compiler adds them.
 
 ## The failure mode that has no symptom
 
@@ -210,9 +298,20 @@ covering a rendering path should carry something equivalent.
 
 ## Known gaps this suite documents
 
-Every test in this suite is expected to pass. One framework limitation is
-recorded here rather than pinned, because pinning it would mean asserting
-behaviour that is wrong:
+Five gaps are pinned under `test.fail()`, all in
+`build/construct-parity.spec.js`. All five fail identically in both builds,
+and all but the last work on a compiled page:
+
+| Pinned gap | Construct |
+| :--- | :--- |
+| `data-ax-style` applies nothing in a template that falls back to the string renderer. It is a render-program op the string renderer does not implement, so the attribute is interpolated to `"[object Object]"` | `style-on-string-path` |
+| A bound `<textarea>` renders empty on the string path: its initial value is written as a `value` attribute, which a textarea ignores | `textarea-on-string-path` |
+| The `<template slot="...">` wrapper is unwrapped only on the compiled path. On the string path the `<template>` itself is projected, so its content stays inert and invisible | `template-slot-on-string-path` |
+| Updating the value of a dynamic attribute name (`:[name]="value"`) removes the attribute instead of setting the new value | `dynamic-attribute-update` |
+| `<transition>` around a `data-ax-show` element applies no transition classes; the element appears and disappears immediately. `templates.md` and `transitions.md` both document the pairing, and `specs/transitions/` drives only list rows | `transition-on-show` |
+
+One framework limitation is recorded here rather than pinned, because pinning
+it would mean asserting behaviour that is wrong:
 
 **A component does not mount its own child components.** Only `AvenxPage` walks
 `[data-avenx-comp]` and instantiates what it finds. A component nesting

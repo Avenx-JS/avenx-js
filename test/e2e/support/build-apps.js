@@ -50,6 +50,26 @@ function fail(headline, output) {
 }
 
 /**
+ * Fails the run when a build reported a diagnostic the app forbids.
+ *
+ * A build that succeeds can still have said something the fixture depends on
+ * it not saying. The parity fixture is the case in point: its spec treats any
+ * expression the development interpreter runs as unreported, which is only
+ * true while the build emitted no AVX_W48 at all.
+ * @param {{name: string, forbiddenDiagnostics?: string[]}} app - The app that was built.
+ * @param {string} mode - Which build, for the message.
+ * @param {string} output - The build's combined output.
+ * @returns {void}
+ */
+function refuseForbiddenDiagnostics(app, mode, output) {
+  for (const code of app.forbiddenDiagnostics || []) {
+    if (output.includes(`[${code}]`)) {
+      fail(`E2E setup: the ${mode} build of fixture app "${app.name}" reported ${code}, which it forbids.`, output);
+    }
+  }
+}
+
+/**
  * Compiles one fixture application into the given output directory.
  *
  * The compiler always emits into the app's configured `distDir`, so a
@@ -75,6 +95,7 @@ function buildApp(app) {
     if (dev.status !== 0) {
       fail(`E2E setup: development build of fixture app "${app.name}" failed.`, dev.output);
     }
+    refuseForbiddenDiagnostics(app, 'development', dev.output);
     fs.renameSync(dist, distDev);
   }
 
@@ -82,6 +103,7 @@ function buildApp(app) {
   if (prod.status !== 0) {
     fail(`E2E setup: build of fixture app "${app.name}" failed.`, prod.output);
   }
+  refuseForbiddenDiagnostics(app, 'production', prod.output);
 
   const bundle = path.join(dist, 'bundle.js');
   if (!fs.existsSync(bundle)) {
