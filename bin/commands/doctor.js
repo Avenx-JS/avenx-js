@@ -70,10 +70,15 @@ function resolveDoctorRoot(cli) {
 /**
  * Runs environment and project health diagnostics.
  * @param {object} cli
+ * @param {string[]} [args] - Additional command line arguments.
+ * @returns {{ projectRoot: string, checks: Array<{ area: string, status: 'pass'|'warn'|'fail', message: string, hint?: string }>, summary: { pass: number, warn: number, fail: number } }} The diagnostic report.
  */
-export function runDoctor(cli) {
+export function runDoctor(cli, args = []) {
+  const asJson = args.includes('--json') || args.includes('-j');
   const root = resolveDoctorRoot(cli);
   const results = { pass: 0, warn: 0, fail: 0 };
+  const checks = [];
+  let area = '';
   /**
    * @param {'pass'|'warn'|'fail'} status
    * @param {string} message
@@ -81,14 +86,20 @@ export function runDoctor(cli) {
    */
   const record = (status, message, hint) => {
     results[status] += 1;
-    printCheck(status, message, hint);
+    const check = { area, status, message };
+    if (hint) check.hint = hint;
+    checks.push(check);
+    if (!asJson) printCheck(status, message, hint);
   };
 
-  console.log(bold(cyan('Avenx Doctor')));
-  console.log(`${gray(`Project root: ${root}`)}\n`);
+  if (!asJson) {
+    console.log(bold(cyan('Avenx Doctor')));
+    console.log(`${gray(`Project root: ${root}`)}\n`);
+  }
 
   // --- Node.js ---
-  console.log(bold('Node.js'));
+  area = 'Node.js';
+  if (!asJson) console.log(bold('Node.js'));
   const current = process.versions.node.split('.').map(Number);
   if (compareVersions(current, MIN_NODE_VERSION)) {
     record('pass', `Node.js ${process.versions.node} (>= ${MIN_NODE_VERSION.join('.')})`);
@@ -101,7 +112,8 @@ export function runDoctor(cli) {
   }
 
   // --- package.json ---
-  console.log(`\n${bold('Project files')}`);
+  area = 'Project files';
+  if (!asJson) console.log(`\n${bold('Project files')}`);
   const pkgPath = path.join(root, 'package.json');
   let isFrameworkRepo = false;
   if (fs.existsSync(pkgPath)) {
@@ -159,7 +171,8 @@ export function runDoctor(cli) {
   }
 
   // --- Directories ---
-  console.log(`\n${bold('Project structure')}`);
+  area = 'Project structure';
+  if (!asJson) console.log(`\n${bold('Project structure')}`);
   const srcRel = (userConfig && userConfig.srcDir) || cli.config.srcDir || 'src';
   const distRel = (userConfig && userConfig.distDir) || cli.config.distDir || 'dist';
   const srcDir = path.join(root, srcRel);
@@ -225,7 +238,8 @@ export function runDoctor(cli) {
   }
 
   // --- Git ---
-  console.log(`\n${bold('Git')}`);
+  area = 'Git';
+  if (!asJson) console.log(`\n${bold('Git')}`);
   try {
     const output = execSync('git status --porcelain', {
       cwd: root,
@@ -242,14 +256,24 @@ export function runDoctor(cli) {
   }
 
   // --- Summary ---
-  console.log(`\n${bold('Summary')}`);
-  console.log(
-    `  ${green(`${results.pass} passed`)} · ${yellow(`${results.warn} warnings`)} · ${red(`${results.fail} failed`)}`,
-  );
-  if (results.fail > 0) {
-    console.log(`\n${red('Doctor found issues that should be fixed.')}\n`);
-    process.exitCode = 1;
+  const report = { projectRoot: root, checks, summary: { ...results } };
+  if (asJson) {
+    // The only output in JSON mode: a CI step piping this into a parser must
+    // not have to skip a prose header first.
+    console.log(JSON.stringify(report, null, 2));
   } else {
-    console.log(`\n${green('Environment looks healthy.')}\n`);
+    console.log(`\n${bold('Summary')}`);
+    console.log(
+      `  ${green(`${results.pass} passed`)} · ${yellow(`${results.warn} warnings`)} · ${red(`${results.fail} failed`)}`,
+    );
+    if (results.fail > 0) {
+      console.log(`\n${red('Doctor found issues that should be fixed.')}\n`);
+    } else {
+      console.log(`\n${green('Environment looks healthy.')}\n`);
+    }
   }
+  if (results.fail > 0) {
+    process.exitCode = 1;
+  }
+  return report;
 }

@@ -24,7 +24,7 @@ The following flags can be passed globally to `avenx` commands:
 | `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
 | `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
 | `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
-| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
+| `--json` | `-j` | Machine-readable output. | `check`, `doctor`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--help` | | Prints the command and option summary and exits before the command runs. | Global |
@@ -558,6 +558,29 @@ The `avenx doctor` command performs comprehensive diagnostic health checks on yo
 4. **Git Repository Status**:
    - Checks Git status and warns if the working tree has uncommitted local changes.
 
+#### Options
+
+| Flag / Option | Alias | Description |
+| --- | --- | --- |
+| `--json` | `-j` | Outputs the full diagnostic report as structured JSON instead of the human-readable report. |
+
+#### Machine-readable output (`--json`)
+
+With `--json`, the command prints a single JSON object and nothing else, so a CI step can pipe it straight into a parser:
+
+```json
+{
+  "projectRoot": "/path/to/my-app",
+  "checks": [
+    { "area": "Node.js", "status": "pass", "message": "Node.js 24.2.0 (>= 18.0.0)" },
+    { "area": "Project files", "status": "fail", "message": "package.json not found", "hint": "Run doctor from an Avenx project root, or create one with `avenx init`." }
+  ],
+  "summary": { "pass": 12, "warn": 3, "fail": 1 }
+}
+```
+
+Every check the human report shows appears in `checks`, with its `area` (`Node.js`, `Project files`, `Project structure`, or `Git`), `status` (`pass`, `warn`, or `fail`), `message`, and a `hint` when the human report prints one. `summary` carries the same pass/warn/fail counts as the human report. The exit code keeps its usual meaning: `1` when any check fails, `0` otherwise.
+
 #### Exit Codes
 
 - `0`: Diagnostic checks passed successfully (or only non-critical warnings were reported).
@@ -568,6 +591,9 @@ The `avenx doctor` command performs comprehensive diagnostic health checks on yo
 ```bash
 # Run environment and project health diagnostics
 npx avenx doctor
+
+# Machine-readable report for CI/CD tooling
+npx avenx doctor --json
 ```
 
 ---

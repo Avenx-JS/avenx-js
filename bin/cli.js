@@ -334,7 +334,7 @@ export class AvenxCLI {
         checkProject(this, args);
         break;
       case 'doctor':
-        runDoctor(this);
+        runDoctor(this, args);
         break;
       case 'env':
         runEnv(this);
