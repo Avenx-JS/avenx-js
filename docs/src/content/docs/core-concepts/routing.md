@@ -212,6 +212,34 @@ In addition to `router.navigate(hash)`, `AvenxRouter` exposes methods for traver
 | `router.forward()` | Navigates forward one step in the history stack. | `router.go(1)` / `window.history.forward()` |
 | `router.go(delta)` | Moves to a relative history position given by the integer `delta` (negative to go back, positive to go forward). | `window.history.go(delta)` |
 
+### Declarative navigation with `data-ax-link`
+
+Besides `href="#/..."` and `this.$router.navigate(...)`, any element can navigate on click with `data-ax-link`:
+
+```html
+<!-- src/pages/home.page.js -->
+<div><a data-ax-link="#/other">other</a></div>
+```
+
+```javascript
+app.initRouter({ '/': 'Home', '#/other': 'Other' });
+```
+
+Clicking the element navigates to `#/other`, exactly as `this.$router.navigate('#/other')` would. The browser delegate (`BrowserNavigationDelegate`) listens for clicks on the whole document, finds the nearest ancestor carrying `data-ax-link`, suppresses the browser's default action, and hands the value to `router.navigate()` — so it works on any element (`<a>`, `<button>`, `<div>`), not only anchors, and on elements added to the page after mount. An empty value suppresses the click but navigates nowhere.
+
+How it differs from a plain `href`:
+
+- A plain `href="#/about"` only works on an anchor and lets the browser perform its default anchor behavior. `data-ax-link` suppresses that default and routes through `navigate()`, so guards, prefix handling and the router's navigation flow apply exactly as for a programmatic call.
+- The value is a route, not a URL: write it as a hash path (`#/about`) or a clean path (`/about`, which `navigate()` turns into `#/about`). A bare word (`about`) becomes `#about` and matches no route.
+
+Prefix: unlike a plain `href`, which must carry the full hash including the prefix, the `data-ax-link` value is written relative to the router's prefix, exactly like a route pattern. On a router with prefix `/widget`, `data-ax-link="#/home"` navigates to `#/widget/home` — do not include the prefix in the value, or it is added twice.
+
+`data-ax-link` is a framework-reserved name: registering a custom directive called `link` warns and never runs, and the attribute stays in the DOM for the delegate to act on.
+
+:::note
+There is no document to click under `MemoryNavigationDelegate` (tests, SSR), so nothing dispatches link clicks there. Drive navigation with `router.navigate(...)` instead.
+:::
+
 ### Back Buttons
 
 ```html
