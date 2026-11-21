@@ -215,6 +215,124 @@ try {
       'the prelude is imported before anything else',
     );
   }
+
+  {
+    // Two apps (host plus embedded widget, #1813): each page is registered on
+    // the app whose route table names it, after that app's constructor call.
+    // Before the fix both pages landed on the first app and the widget's
+    // routes failed with AVX_R02.
+    const twoAppSource = [
+      "import { AvenxApp } from 'avenx-core/runtime';",
+      '',
+      "const hostApp = new AvenxApp({ target: '#app' });",
+      "hostApp.initRouter({ '/': 'Home', '*': 'Home' });",
+      '',
+      "const widgetApp = new AvenxApp({ target: '#widget' });",
+      "widgetApp.initRouter({ '/home': 'Widgethome', '*': 'Widgethome' }, { prefix: '/widget' });",
+      '',
+    ].join('\n');
+    const twoAppRegistrations = [
+      { name: 'Home', file: '/project/src/pages/home.page.js', kind: 'page' },
+      { name: 'Widgethome', file: '/project/src/pages/widgethome.page.js', kind: 'page' },
+    ];
+    const twoApp = entryModule({ source: twoAppSource, registrations: twoAppRegistrations });
+    assert.ok(
+      twoApp.includes('hostApp.registerPage("Home", __avx_page_0);'),
+      `Home must register on hostApp:\n${twoApp}`,
+    );
+    assert.ok(
+      twoApp.includes('widgetApp.registerPage("Widgethome", __avx_page_1);'),
+      `Widgethome must register on widgetApp:\n${twoApp}`,
+    );
+    assert.ok(
+      !twoApp.includes('hostApp.registerPage("Widgethome"'),
+      `Widgethome must not register on hostApp:\n${twoApp}`,
+    );
+    assert.ok(
+      twoApp.indexOf('hostApp.registerPage("Home"') > twoApp.indexOf('const hostApp = new AvenxApp'),
+      'the host registration must follow the host constructor',
+    );
+    assert.ok(
+      twoApp.indexOf('widgetApp.registerPage("Widgethome"') > twoApp.indexOf('const widgetApp = new AvenxApp'),
+      'the widget registration must follow the widget constructor',
+    );
+
+    // A page named by two routers registers on both apps.
+    const sharedSource = [
+      "const firstApp = new AvenxApp({ target: '#one' });",
+      "firstApp.initRouter({ '/': 'Shared' });",
+      "const secondApp = new AvenxApp({ target: '#two' });",
+      "secondApp.initRouter({ '/': 'Shared' });",
+      '',
+    ].join('\n');
+    const shared = entryModule({
+      source: sharedSource,
+      registrations: [{ name: 'Shared', file: '/project/src/pages/shared.page.js', kind: 'page' }],
+    });
+    assert.ok(shared.includes('firstApp.registerPage("Shared", __avx_page_0);'), `Shared must register on firstApp:\n${shared}`);
+    assert.ok(shared.includes('secondApp.registerPage("Shared", __avx_page_0);'), `Shared must register on secondApp:\n${shared}`);
+    assert.ok(
+      (shared.match(/import __avx_page_0 from/g) || []).length === 1,
+      'a page shared by two apps is imported once',
+    );
+
+    // A page no router names stays on the first app, as before, so the
+    // unreachable-page reasoning still sees it. Bridges have no route table
+    // and stay on the first app too.
+    const unowned = entryModule({
+      source: sharedSource,
+      registrations: [
+        { name: 'Orphan', file: '/project/src/pages/orphan.page.js', kind: 'page' },
+        { name: 'Auth', file: '/project/src/bridges/auth.bridge.js', kind: 'bridge' },
+      ],
+    });
+    assert.ok(unowned.includes('firstApp.registerPage("Orphan", __avx_page_0);'), `Orphan must stay on firstApp:\n${unowned}`);
+    assert.ok(!unowned.includes('secondApp.registerPage("Orphan"'), `Orphan must not land on secondApp:\n${unowned}`);
+    assert.ok(unowned.includes('firstApp.registerBridge("Auth", __avx_bridge_1);'), `bridges stay on firstApp:\n${unowned}`);
+
+    // Object-form route values ({ page, guards }) name their page too, and a
+    // lazy page owned by the second app gets its lazy call there.
+    const objectForm = entryModule({
+      source: [
+        "const hostApp = new AvenxApp({ target: '#app' });",
+        "hostApp.initRouter({ '#/secret': { page: 'Secret', guards: [] } });",
+        "const widgetApp = new AvenxApp({ target: '#widget' });",
+        "widgetApp.initRouter({ '/home': 'Widgethome' });",
+        '',
+      ].join('\n'),
+      registrations: [
+        { name: 'Secret', file: '/project/src/pages/secret.page.js', kind: 'page' },
+        { name: 'Widgethome', file: '/project/src/pages/widgethome.page.js', kind: 'page', lazy: true },
+      ],
+    });
+    assert.ok(objectForm.includes('hostApp.registerPage("Secret", __avx_page_0);'), `object-form page must register on hostApp:\n${objectForm}`);
+    assert.ok(
+      objectForm.includes('widgetApp.registerPage("Widgethome", () => import("./pages/widgethome.page.js"));'),
+      `lazy page must register on widgetApp:\n${objectForm}`,
+    );
+
+    // With // @avenx-inject, both receivers' calls land at the marker, and
+    // the marker is gone.
+    const withMarker = entryModule({
+      source: [
+        "const hostApp = new AvenxApp({ target: '#app' });",
+        "hostApp.initRouter({ '/': 'Home' });",
+        "const widgetApp = new AvenxApp({ target: '#widget' });",
+        "widgetApp.initRouter({ '/home': 'Widgethome' });",
+        '// @avenx-inject',
+        'hostApp.mount();',
+        '',
+      ].join('\n'),
+      registrations: twoAppRegistrations,
+    });
+    assert.ok(!withMarker.includes('// @avenx-inject'), 'the marker must be replaced');
+    assert.ok(withMarker.includes('hostApp.registerPage("Home", __avx_page_0);'), `marker build must keep Home on hostApp:\n${withMarker}`);
+    assert.ok(withMarker.includes('widgetApp.registerPage("Widgethome", __avx_page_1);'), `marker build must keep Widgethome on widgetApp:\n${withMarker}`);
+    assert.ok(
+      withMarker.indexOf('widgetApp.registerPage("Widgethome"') < withMarker.indexOf('hostApp.mount();'),
+      'the injected block must sit at the marker, before mount',
+    );
+  }
   console.log('  ✅ Entry module generation tests passed!');
 
   console.log('🧪 Testing component and bridge module generation...');
