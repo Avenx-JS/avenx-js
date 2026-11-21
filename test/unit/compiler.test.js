@@ -296,6 +296,60 @@ try {
   }
 
   {
+    // Guards named by string in a route (#1769): the compiler imports the
+    // guard file and registers it on the app whose route table names it, so
+    // the router resolves the name instead of silently passing it.
+    const guardSource = [
+      "import { AvenxApp } from 'avenx-core/runtime';",
+      '',
+      "const app = new AvenxApp({ target: '#app' });",
+      "app.initRouter({ '#/secret': { page: 'Secret', guards: ['AuthGuard'] } });",
+      '',
+    ].join('\n');
+    const withGuard = entryModule({
+      source: guardSource,
+      registrations: [{ name: 'Secret', file: '/project/src/pages/secret.page.js', kind: 'page' }],
+      guards: [{ name: 'AuthGuard', file: '/project/src/guards/auth.guard.js' }],
+    });
+    assert.ok(
+      withGuard.includes('import __avx_guard_0 from "/project/src/guards/auth.guard.js";'),
+      `the guard file must be imported:\n${withGuard}`,
+    );
+    assert.ok(
+      withGuard.includes('app.registerGuard("AuthGuard", __avx_guard_0);'),
+      `the guard must be registered on the app:\n${withGuard}`,
+    );
+    assert.ok(
+      withGuard.indexOf('app.registerGuard("AuthGuard"') > withGuard.indexOf('const app = new AvenxApp'),
+      'the guard registration must follow the constructor call',
+    );
+
+    // A guard the route tables never name by string is skipped: the class
+    // form needs no registration, and an unused guard stays out of the bundle.
+    const unusedGuard = entryModule({
+      source: guardSource,
+      registrations: [],
+      guards: [{ name: 'RoleGuard', file: '/project/src/guards/role.guard.js' }],
+    });
+    assert.ok(!unusedGuard.includes('registerGuard'), 'an unquoted guard must not be registered');
+    assert.ok(!unusedGuard.includes('role.guard.js'), 'and its file must not be imported');
+
+    // A bare (unquoted) guard name is the class the developer imported, so
+    // it needs no registration either.
+    const classGuard = entryModule({
+      source: [
+        "import AuthGuard from './guards/auth.guard.js';",
+        "const app = new AvenxApp({ target: '#app' });",
+        'app.initRouter({ \'#/secret\': { page: \'Secret\', guards: [AuthGuard] } });',
+        '',
+      ].join('\n'),
+      registrations: [],
+      guards: [{ name: 'AuthGuard', file: '/project/src/guards/auth.guard.js' }],
+    });
+    assert.ok(!classGuard.includes('registerGuard'), 'a class-reference guard must not be registered');
+  }
+
+  {
     // Two apps (host plus embedded widget, #1813): each page is registered on
     // the app whose route table names it, after that app's constructor call.
     // Before the fix both pages landed on the first app and the widget's

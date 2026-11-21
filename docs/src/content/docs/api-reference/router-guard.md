@@ -431,6 +431,22 @@ Rules that apply to guards:
 - Guard files end in `.guard.js` and live in `src/guards/` or `src/global/`.
 - A guard is part of the bundle only when your application imports it, normally in `main.app.js` where it is listed on a route. A guard that nothing imports is not emitted.
 
+A guard can also be given by name string instead of by class:
+
+```js
+// src/main.app.js -- no import of AuthGuard needed
+app.initRouter({
+  '#/secret': { page: 'Secret', guards: ['AuthGuard'] },
+});
+```
+
+The compiler resolves the name to the guard file that declares it (the class
+it exports, falling back to the file name), imports it and registers it on the
+app, so the string form behaves exactly like passing the class. A name with no
+guard file is warned about at build time, and the router denies navigation to
+a route naming it at run time: a route that looks guarded is never silently
+open.
+
 ### Example: a guard that reads a bridge
 
 Share the sign-in state in a bridge:
