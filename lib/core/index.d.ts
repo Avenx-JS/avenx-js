@@ -644,7 +644,7 @@ export interface AvenxRouteDefinition {
   /**
    * Optional guards to evaluate before activating this route.
    */
-  guards?: Array<typeof AvenxGuard | AvenxGuard>;
+  guards?: Array<typeof AvenxGuard | AvenxGuard | string | ((...args: any[]) => any)>;
 
   /**
    * Optional page title. Can be a static string or a function receiving
@@ -826,6 +826,11 @@ export class AvenxApp {
   directives: Map<string, any>;
 
   /**
+   * Registered route guards dictionary.
+   */
+  guards: Record<string, typeof AvenxGuard | ((...args: any[]) => any)>;
+
+  /**
    * Active router instance.
    */
   router: AvenxRouter | null;
@@ -868,6 +873,13 @@ export class AvenxApp {
    * @param pageClass Page class extension or async loader function returning the page class.
    */
   registerPage(name: string, pageClass: typeof AvenxPage | (() => Promise<any>)): void;
+
+  /**
+   * Registers a guard with the application, by name.
+   * @param name The name of the guard.
+   * @param guardClass The guard class or function.
+   */
+  registerGuard(name: string, guardClass: typeof AvenxGuard | ((...args: any[]) => any)): void;
 
   /**
    * Checks if a registered page is an unresolved async loader function.
