@@ -32,7 +32,15 @@
  * survives an update, where the string renderer's diff removes it.
  */
 import assert from 'assert';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { compileComponent } from '../../benches/support/compileFixture.js';
+import ComponentParser from '../../lib/compiler/ComponentParser.js';
+import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
+import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
+import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
+import { EXPRESSION_OPS } from '../../lib/core/expression/ops.js';
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 import { buildTemplateIR } from '../../lib/compiler/ir/build.js';
 import { RefusalReason } from '../../lib/compiler/ir/nodes.js';
@@ -1050,6 +1058,100 @@ async function testHtmlDirectiveSanitizesOnBothPaths() {
   console.log('  ✅ data-ax-html injects sanitized markup on both render paths.');
 }
 
+/**
+ * Compiles component source in the given mode and returns the class.
+ * compileComponent always compiles in development mode; this helper covers
+ * production too, which is where #1757 bites.
+ * @param {string} source - Component source in Avenx authoring format.
+ * @param {string} name - Base name, which becomes the class name.
+ * @param {boolean} production - Whether to compile as a production build.
+ * @returns {Function} The compiled component class.
+ */
+function compileInMode(source, name, production) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-parity-diag-'));
+  const file = path.join(dir, `${name}.component.js`);
+  fs.writeFileSync(file, source);
+  const parser = new ComponentParser(new StyleProcessor(), [], {});
+  parser.production = production;
+  const code = parser.parse(file, 'component');
+  const opNames = Object.keys(EXPRESSION_OPS);
+  const opValues = opNames.map((n) => EXPRESSION_OPS[n]);
+  const factory = new Function('AvenxComponent', 'AvenxPage', ...opNames, `${code}\nreturn ${name};`);
+  const ComponentClass = factory(AvenxComponent, AvenxPage, ...opValues);
+  fs.rmSync(dir, { recursive: true, force: true });
+  return ComponentClass;
+}
+
+/**
+ * Mounts a component and returns the warnings it logged.
+ * @param {Function} ComponentClass - The compiled component class.
+ * @param {string} hostId - The mount point id.
+ * @returns {Promise<string[]>} The collected warnings.
+ */
+async function mountWarnings(ComponentClass, hostId) {
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (msg) => warnings.push(String(msg));
+  const host = document.createElement('div');
+  host.id = hostId;
+  document.body.appendChild(host);
+  const app = new AvenxApp({ target: `#${hostId}` });
+  const component = new ComponentClass({}, {});
+  component.$app = app;
+  try {
+    component.mount(host);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await component.$nextTick();
+  } finally {
+    console.warn = originalWarn;
+    component.unmount();
+    host.remove();
+  }
+  return warnings;
+}
+
+async function testRenderDiagnosticParity() {
+  console.log('🧪 Testing render diagnostic parity (AVX_R08, #1757)...');
+
+  // The issue's reproduction: the interpolation fails because obj is null.
+  // The fallback side carries the same template plus a <resource>, which
+  // refuses compilation, so it renders through the string renderer. The
+  // resource sits after the interpolation, so both templates fail on the
+  // same line and column.
+  const template = '<state obj="null" />\n\n<div><p id="out">v={{ obj.deep.value }}</p></div>';
+  const fallbackTemplate = `${template}\n<resource name="feed">\n  return fetch('/api/feed').then((res) => res.json());\n</resource>`;
+
+  for (const production of [false, true]) {
+    const mode = production ? 'production' : 'development';
+    const compiledWarnings = await mountWarnings(
+      compileInMode(template, `ParityDiagCompiled${seq++}`, production),
+      `parity-diag-compiled-${mode}`,
+    );
+    const compiledR08 = compiledWarnings.find((w) => w.includes('[AVX_R08]'));
+    assert.ok(compiledR08, `${mode}: the compiled path must warn AVX_R08`);
+
+    const fallbackWarnings = await mountWarnings(
+      compileInMode(fallbackTemplate, `ParityDiagFallback${seq++}`, production),
+      `parity-diag-fallback-${mode}`,
+    );
+    const fallbackR08 = fallbackWarnings.find((w) => w.includes('[AVX_R08]'));
+    assert.ok(fallbackR08, `${mode}: the fallback path must warn AVX_R08`);
+
+    for (const [pathName, msg] of [
+      ['compiled', compiledR08],
+      ['fallback', fallbackR08],
+    ]) {
+      assert.ok(msg.includes('obj.deep.value'), `${mode} ${pathName}: names the expression source, not the table index`);
+      assert.ok(!msg.includes('"0"'), `${mode} ${pathName}: must not name the expression "0"`);
+      assert.ok(msg.includes(':3:23'), `${mode} ${pathName}: carries file:line:column`);
+      assert.ok(msg.includes('{{ obj.deep.value }}'), `${mode} ${pathName}: carries the code frame`);
+      assert.ok(msg.includes('^'), `${mode} ${pathName}: carries the caret line`);
+    }
+  }
+
+  console.log('  ✅ AVX_R08 names the source with position and frame on both render paths.');
+}
+
 testConditionalCannotFallBack();
 await testCustomDirectiveCompiledPath();
 await testCustomDirectiveExpressionWithoutDebugTable();
@@ -1061,6 +1163,7 @@ await testCustomDirectiveModifierConsumed();
 await testReservedNameDirectiveNeverRuns();
 await testDuplicateKeyWarningParity();
 await testHtmlDirectiveSanitizesOnBothPaths();
+await testRenderDiagnosticParity();
 
 await testKnownDifference();
 await testBoundBooleanWithNoValue();
