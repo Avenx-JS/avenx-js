@@ -145,7 +145,9 @@ function printUnresolved(entries) {
     console.log(`\n${gray('0 unresolved relationships in this answer.')}`);
     return;
   }
-  console.log(`\n${yellow(`${entries.length} unresolved relationship${entries.length === 1 ? '' : 's'}`)} — this answer may be incomplete:`);
+  console.log(
+    `\n${yellow(`${entries.length} unresolved relationship${entries.length === 1 ? '' : 's'}`)} — this answer may be incomplete:`,
+  );
   for (const entry of entries) {
     const where = entry.loc ? gray(`  ${entry.loc.file}${entry.loc.line ? `:${entry.loc.line}` : ''}`) : '';
     console.log(`  ? ${entry.reason}${entry.expr ? `  ${entry.expr}` : ''}${where}`);
@@ -171,13 +173,21 @@ export function runAtlas(cli, args = []) {
   if (model.errors.length > 0) {
     // A partial model must announce itself. An absence in it is not evidence
     // of an absence in the application.
-    console.log(yellow(`   ⚠ ${model.errors.length} part${model.errors.length === 1 ? '' : 's'} of this project could not be analysed:`));
+    console.log(
+      yellow(
+        `   ⚠ ${model.errors.length} part${model.errors.length === 1 ? '' : 's'} of this project could not be analysed:`,
+      ),
+    );
     for (const failure of model.errors) {
       console.log(yellow(`     [${failure.code}] ${failure.message.split('\n')[0]}`));
     }
     console.log(gray('   Everything below is what Atlas could still see.'));
   }
-  console.log(gray(`   ${model.nodes.size} nodes · ${model.edges.length} relationships · ${model.unresolved.length} unresolved\n`));
+  console.log(
+    gray(
+      `   ${model.nodes.size} nodes · ${model.edges.length} relationships · ${model.unresolved.length} unresolved\n`,
+    ),
+  );
 
   const rows = [
     ['Components', counts[AtlasNodeKind.COMPONENT]],
@@ -208,7 +218,8 @@ export function runAtlas(cli, args = []) {
         .filter((edge) => edge.kind === 'declares')
         .map((edge) => model.getNode(edge.to))
         .filter((member) => member && member.kind !== AtlasNodeKind.BINDING && member.kind !== AtlasNodeKind.HANDLER);
-      const summary = members.length > 0 ? gray(` — ${members.length} declaration${members.length === 1 ? '' : 's'}`) : '';
+      const summary =
+        members.length > 0 ? gray(` — ${members.length} declaration${members.length === 1 ? '' : 's'}`) : '';
       console.log(`  ${node.name}${summary}${node.file ? gray(`  ${node.file}`) : ''}`);
     }
   }
@@ -216,12 +227,32 @@ export function runAtlas(cli, args = []) {
   const routes = model.nodesOfKind(AtlasNodeKind.ROUTE);
   if (routes.length > 0) {
     console.log(`\n${bold('Routes')}`);
+    // Routes belong to the router that declared them: group by prefix so a
+    // prefixed route is never mistaken for the host's route of the same
+    // declared pattern. A project with one router prints the flat list.
+    const groups = new Map();
     for (const route of routes) {
-      const outgoing = model.outgoing(route.id);
-      const page = outgoing.find((edge) => edge.kind === 'routes-to');
-      const guards = outgoing.filter((edge) => edge.kind === 'guarded-by').map((edge) => model.getNode(edge.to).name);
-      const target = page ? model.getNode(page.to).name : yellow('unresolved');
-      console.log(`  ${route.name.padEnd(12)} → ${target}${guards.length ? gray(`  guarded by ${guards.join(', ')}`) : ''}`);
+      const key = route.prefix || '';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(route);
+    }
+    const grouped = groups.size > 1;
+    for (const [prefix, group] of groups) {
+      if (grouped) {
+        const router = group.find((route) => route.router)?.router;
+        const label = prefix ? `prefix ${prefix}` : 'no prefix';
+        console.log(`  ${bold(`Router${router ? ` ${router}` : ''} (${label})`)}`);
+      }
+      for (const route of group) {
+        const outgoing = model.outgoing(route.id);
+        const page = outgoing.find((edge) => edge.kind === 'routes-to');
+        const guards = outgoing.filter((edge) => edge.kind === 'guarded-by').map((edge) => model.getNode(edge.to).name);
+        const target = page ? model.getNode(page.to).name : yellow('unresolved');
+        const indent = grouped ? '    ' : '  ';
+        console.log(
+          `${indent}${route.name.padEnd(12)} → ${target}${guards.length ? gray(`  guarded by ${guards.join(', ')}`) : ''}`,
+        );
+      }
     }
   }
 
@@ -266,7 +297,17 @@ export function runQuery(cli, args, direction) {
 
   if (matches.length !== 1) {
     if (wantsJson(args)) {
-      console.log(JSON.stringify({ query: symbol, error: matches.length === 0 ? 'not-found' : 'ambiguous', candidates: matches.map((node) => node.id) }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            query: symbol,
+            error: matches.length === 0 ? 'not-found' : 'ambiguous',
+            candidates: matches.map((node) => node.id),
+          },
+          null,
+          2,
+        ),
+      );
     } else {
       reportAmbiguous(model, symbol, matches);
     }
@@ -302,10 +343,20 @@ export function runQuery(cli, args, direction) {
   console.log(gray(`   ${target.kind}${locationOf(target) ? `  ${locationOf(target)}` : ''}\n`));
 
   if (result.children.length === 0) {
-    console.log(gray(direction === 'in' ? '  Nothing in the application depends on this.' : '  This depends on nothing Atlas models.'));
+    console.log(
+      gray(
+        direction === 'in'
+          ? '  Nothing in the application depends on this.'
+          : '  This depends on nothing Atlas models.',
+      ),
+    );
   } else {
     printTree(model, result.root);
-    console.log(gray(`\n${reached.length} related node${reached.length === 1 ? '' : 's'}${result.truncated ? ' (depth limit reached — pass --depth=N for more)' : ''}`));
+    console.log(
+      gray(
+        `\n${reached.length} related node${reached.length === 1 ? '' : 's'}${result.truncated ? ' (depth limit reached — pass --depth=N for more)' : ''}`,
+      ),
+    );
   }
 
   printUnresolved(unresolved);
