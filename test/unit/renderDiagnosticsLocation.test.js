@@ -251,12 +251,23 @@ try {
     assert.strictEqual(textOp.loc.column, 9);
     assert.strictEqual(textOp.loc.file, 'src/Compiled.component.js');
 
-    // Production lowering omits loc
+    // Production lowering attaches loc too (#1757): without it a compiled
+    // binding can only name its interned table index, and the position is
+    // lost. The location carries its own source line, because a production
+    // bundle does not ship the template the frame would otherwise read.
     const prodProgram = lowerToProgram(built.ir, { production: true });
     assert.ok(prodProgram.program);
     const prodTextOp = prodProgram.program.ops.find((op) => op.k === 'text');
     assert.ok(prodTextOp);
-    assert.strictEqual(prodTextOp.loc, undefined);
+    assert.ok(prodTextOp.loc, 'production ops carry loc');
+    assert.strictEqual(prodTextOp.loc.line, 2);
+    assert.strictEqual(prodTextOp.loc.column, 9);
+    assert.strictEqual(prodTextOp.loc.file, 'src/Compiled.component.js');
+    assert.strictEqual(prodTextOp.loc.expr, 'item.missing.prop');
+    assert.ok(
+      prodTextOp.loc.lineText.includes('{{ item.missing.prop }}'),
+      'production loc carries its source line for the frame',
+    );
 
     // reportBindingError format check
     const warnings = [];
@@ -283,6 +294,34 @@ try {
       assert.ok(warnMsg.includes('at src/Compiled.component.js:2:9'));
       assert.ok(warnMsg.includes('item.missing.prop'));
       assert.ok(warnMsg.includes('^'));
+    } finally {
+      console.warn = origWarn;
+    }
+
+    // The production shape: no expression-source table, no template text.
+    // The op's own location still names the source, the position, and the
+    // frame, so a production bundle reports the same diagnostic (#1757).
+    warnings.length = 0;
+    console.warn = (msg) => warnings.push(String(msg));
+    try {
+      const prodHost = {
+        component: {
+          $logContext: {
+            componentName: 'CompiledComp',
+            fileName: 'src/Compiled.component.js',
+          },
+        },
+      };
+      reportBindingError(prodTextOp, new TypeError("Cannot read properties of undefined (reading 'prop')"), prodHost);
+
+      assert.ok(warnings.length > 0);
+      const prodWarnMsg = warnings[0];
+      assert.ok(prodWarnMsg.includes('[AVX_R08]'), 'production R08 is reported');
+      assert.ok(prodWarnMsg.includes('item.missing.prop'), 'production R08 names the source, not the table index');
+      assert.ok(!prodWarnMsg.includes('"0"'), 'production R08 must not name the expression "0"');
+      assert.ok(prodWarnMsg.includes('at src/Compiled.component.js:2:9'), 'production R08 carries the position');
+      assert.ok(prodWarnMsg.includes('{{ item.missing.prop }}'), 'production R08 carries the code frame');
+      assert.ok(prodWarnMsg.includes('^'), 'production R08 carries the caret line');
     } finally {
       console.warn = origWarn;
     }
@@ -374,10 +413,18 @@ try {
       prodParser.production = true;
       const prodCode = prodParser.parse(compFile);
 
-      assert.ok(!prodCode.includes('ProductCard.__axExprLocations'), 'production omits __axExprLocations');
+      // Production still omits the template source and the statement sources,
+      // but it ships the diagnostic tables (#1757): the slim locations list
+      // and the expression sources, so a compiled binding can name its
+      // source and position instead of its table index.
       assert.ok(!prodCode.includes('ProductCard.__source'), 'production omits __source');
-      assert.ok(!prodCode.includes('exprLocations:'), 'production omits exprLocations in options');
-      assert.ok(!prodCode.includes('"line":3'), 'production omits line numbers');
+      assert.ok(!prodCode.includes('__axProgramStmtSrc'), 'production omits __axProgramStmtSrc');
+      assert.ok(prodCode.includes('ProductCard.__axExprLocations'), 'production ships __axExprLocations');
+      assert.ok(prodCode.includes('exprLocations:'), 'production ships exprLocations in options');
+      assert.ok(prodCode.includes('"line":3'), 'production locations carry line numbers');
+      assert.ok(prodCode.includes('__axProgramExprSrc'), 'production ships __axProgramExprSrc');
+      assert.ok(!prodCode.includes('byExpr'), 'production locations omit the byExpr index');
+      assert.ok(!prodCode.includes('byType'), 'production locations omit the byType index');
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
