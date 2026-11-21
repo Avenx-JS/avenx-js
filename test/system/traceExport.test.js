@@ -65,7 +65,7 @@ import { generateTest } from ${JSON.stringify(pathToFileURL(path.join(repoRoot, 
 const Counter = loadComponent(${JSON.stringify(componentPath)});
 const wrapper = await mountTestComponent(Counter, {});
 
-const recorder = startRecording({ id: 'trace-export', meta: { url: 'http://localhost:3000/' } });
+const recorder = startRecording({ id: 'trace-export', redact: process.argv[2] === 'redacted' ? ['count'] : [], meta: { url: 'http://localhost:3000/' } });
 recorder.arm();
 for (let i = 0; i < 2; i++) {
   wrapper.find('button.inc').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -178,7 +178,57 @@ console.log('DETERMINISM:' + trace.determinism.status);
     'and what the changed code actually did',
   );
 
-  console.log('✅ Trace export produces a regression test that passes, and fails when the code regresses.');
+  // A redacted recording still exports a runnable test, but it must not claim
+  // full verification for the values deliberately withheld from the trace.
+  write(
+    componentPath,
+    [
+      '<state count="0" />',
+      '',
+      '<action name="increment"> state.count = state.count + 1; </action>',
+      '',
+      '<div class="counter">',
+      '  <span class="value">{{ count }}</span>',
+      '  <button class="inc" @click="increment()">+</button>',
+      '</div>',
+      '',
+    ].join('\n'),
+  );
+  const redactedRecordRun = spawnSync(
+    process.execPath,
+    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), recordScript, 'redacted'],
+    { encoding: 'utf8', cwd: repoRoot },
+  );
+  assert.strictEqual(redactedRecordRun.status, 0, `redacted recording failed:\n${redactedRecordRun.stderr}`);
+  const redactedGenerated = fs.readFileSync(generatedPath, 'utf8');
+  assert.ok(redactedGenerated.includes('Redacted paths'), 'the generated test explains withheld values');
+  assert.ok(!redactedGenerated.includes('result.verified'), 'the generated test does not claim full verification');
+
+  write(
+    runnablePath,
+    redactedGenerated
+      .replace(
+        "'avenx-core/testing'",
+        JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/testing.js')).href),
+      )
+      .replace(
+        "'avenx-core/tooling'",
+        JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/tooling/index.js')).href),
+      ),
+  );
+
+  const redactedRunnable = spawnSync(
+    process.execPath,
+    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), runnablePath],
+    { encoding: 'utf8', cwd: repoRoot },
+  );
+  assert.strictEqual(
+    redactedRunnable.status,
+    0,
+    `the exported redacted test should pass without claiming verification:\n${redactedRunnable.stdout}\n${redactedRunnable.stderr}`,
+  );
+
+  console.log('✅ Trace export produces runnable regression tests for ordinary and redacted traces.');
 } finally {
   fs.rmSync(workDir, { recursive: true, force: true });
 }

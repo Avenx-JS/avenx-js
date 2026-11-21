@@ -292,6 +292,32 @@ assert.ok(
 );
 renamedWrapper.unmount();
 
+// --- Redacted writes are excluded and cannot claim full verification --------
+
+const redactedTrace = await record(
+  CounterComponent,
+  (wrapper) => click(wrapper, 'button.inc', 1),
+  { id: 'trace-redacted', redact: ['count'] },
+);
+assert.strictEqual(redactedTrace.redacted, true);
+const withheldWrite = redactedTrace.nodes.find((node) => node.type === 'write');
+assert.strictEqual(withheldWrite.from, '[redacted]');
+assert.strictEqual(withheldWrite.to, '[redacted]');
+
+const redactedResult = await replay(redactedTrace, {
+  mount: async () => {
+    mountedWrapper = await mountTestComponent(CounterComponent, {});
+    return mountedWrapper;
+  },
+});
+assert.strictEqual(redactedResult.ok, true, 'redacted writes do not cause false divergences');
+assert.strictEqual(redactedResult.verified, false, 'a partial replay is never fully verified');
+assert.ok(
+  redactedResult.steps.every((step) => !step.expected.some((entry) => entry.startsWith('write '))),
+  'withheld writes are absent from the comparison',
+);
+mountedWrapper.unmount();
+
 // --- The tracer is left clean after every replay ----------------------------
 
 const { tracer } = await import('../../lib/core/trace/tracer.js');
