@@ -202,6 +202,21 @@ Then:
 ```javascript
 this.$route.params.id; // "42"
 ```
+
+## Declarative Navigation (`data-ax-link`)
+
+Use `<a href="#/about">About</a>` for a standard link. The browser follows the hash in `href` directly. This button uses `data-ax-link` to navigate to the home route (`/`).
+
+```html
+<button type="button" data-ax-link="/">Home</button>
+```
+
+The default browser delegate catches clicks on any element with `data-ax-link`, including clicks on its children and on elements added after mount. It prevents the default click action and passes the attribute value to `router.navigate()`. Both `/about` and `#/about` target the `/about` route.
+
+With a single browser router configured with `prefix: '/widget'`, both About targets produce `#/widget/about`. Leave the prefix out of `data-ax-link` because the router adds it. A plain `href` needs the full hash, such as `#/widget/about`. When several browser routers share a page, they all receive delegated clicks. Use a plain hash link with the full destination or call `this.$router.navigate('/about')` from a component action to select a router explicitly.
+
+The `MemoryNavigationDelegate` has no DOM click listener. Call `router.navigate('/')` to exercise the Home transition in memory-mode tests.
+
 ## Programmatic History Navigation
 
 In addition to `router.navigate(hash)`, `AvenxRouter` exposes methods for traversing the browser / session history stack programmatically: `back()`, `forward()`, and `go(delta)`. These are available on the router instance and, inside components, via `this.$router`.
