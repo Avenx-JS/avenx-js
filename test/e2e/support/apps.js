@@ -34,8 +34,14 @@ export const APPS_DIR = path.resolve(here, '../apps');
  * Every fixture application, in build order.
  *
  * `developmentBuild` asks the global setup for a second compilation against the
- * unminified runtime, emitted to `dist-dev/`. Only the app used by the
- * production-parity spec needs one; the extra build is not free, so it is opt-in.
+ * unminified runtime, emitted to `dist-dev/`. Only the apps the parity specs
+ * compare need one; the extra build is not free, so it is opt-in.
+ *
+ * `forbiddenDiagnostics` are diagnostic codes whose appearance in either
+ * build's output fails the global setup. The parity fixture forbids AVX_W48:
+ * its construct-parity spec asserts the development interpreter never runs,
+ * and that assertion only means "nothing went unreported" if the build
+ * reported nothing.
  *
  * `documentsKnownGaps` marks an app that is expected not to work, because it
  * exists to pin a framework bug. Those are excluded from the smoke boot loop,
@@ -47,7 +53,7 @@ export const APPS_DIR = path.resolve(here, '../apps');
  * policy that forbids `'unsafe-eval'`, which cannot be expressed in the page
  * itself -- a `<meta>` CSP is weaker than a header and is not what a
  * deployment uses.
- * @type {Array<{name: string, summary: string, developmentBuild?: boolean, documentsKnownGaps?: boolean, headers?: Object<string, string>}>}
+ * @type {Array<{name: string, summary: string, developmentBuild?: boolean, documentsKnownGaps?: boolean, forbiddenDiagnostics?: string[], headers?: Object<string, string>}>}
  */
 export const APPS = [
   {
@@ -134,6 +140,12 @@ export const APPS = [
         "base-uri 'none'",
       ].join('; '),
     },
+  },
+  {
+    name: 'parity',
+    summary: 'Every documented template construct, built in both modes and compared section by section.',
+    developmentBuild: true,
+    forbiddenDiagnostics: ['AVX_W48'],
   },
   {
     name: 'code-splitting',

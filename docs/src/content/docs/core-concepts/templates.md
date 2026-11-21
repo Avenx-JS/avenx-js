@@ -481,6 +481,10 @@ Pass an object whose **truthy** keys become class names (quote keys that are not
 
 > **Note:** Object and string forms are evaluated as template expressions in the component scope (same rules as other `data-ax-*` bindings). Prefer object form for multiple independent toggles.
 
+## Click Navigation (`data-ax-link`)
+
+The `data-ax-link` attribute lets an element such as a button trigger a route change on click. See [Declarative Navigation](/core-concepts/routing/#declarative-navigation-data-ax-link) for an example and how it works with a router prefix.
+
 ## 7. Loops (`<@for>`)
 
 Render lists, objects, sets, maps, or numeric ranges using the custom `<@for>` loop tag. Loop bodies are compiled to their own block -- a skeleton parsed once for the life of the page and cloned per row -- and reconciled by key:

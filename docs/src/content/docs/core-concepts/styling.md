@@ -125,7 +125,7 @@ Use `&` to reference the current selector when applying pseudo-classes or combin
 
 The `&` nesting reference behaves the same way inside nested at-rules such as `@media`, `@supports`, and `@container`.
 
-A top-level `@media`, `@supports`, `@container`, or `@document` in `<@css>` is the same kind of rule. Name the style blocks inside it (`box { ... }`), and those blocks pick up the at-rule when they are emitted. `@keyframes`, `@font-face`, and other top-level at-rules are copied through as written, and so is a braceless statement such as `@import "extra.css";`. Nesting the at-rule inside one block, as in the example below, still applies it only to that block.
+A top-level `@media`, `@supports`, `@container`, or `@document` in `<@css>` is the same kind of rule. Name the style blocks inside it (`box { ... }`), and those blocks pick up the at-rule when they are emitted. `@keyframes` is automatically scoped to prevent collisions across components, `@font-face` and other top-level at-rules are copied through as written, and so is a braceless statement such as `@import "extra.css";`. Nesting the at-rule inside one block, as in the example below, still applies it only to that block.
 
 ```css
 <@css>
@@ -309,6 +309,91 @@ It's worth distinguishing the two variable systems available inside `<@css>` and
 - **Native custom properties** (e.g. `--color-primary: #6366f1;`, referenced as `var(--color-primary)`) remain real CSS custom properties in the compiled output. They are only renamed to avoid cross-component collisions â€” they still behave like normal CSS variables at runtime, including being overridable via inline styles or JavaScript.
 
 Use `@def` macros for static design tokens that never need to change at runtime, and native custom properties when you need actual runtime-computed or overridable CSS variables scoped to a component.
+
+## 5b. CSS Animations & `@keyframes` Scoping
+
+Avenx-JS automatically scopes `@keyframes` and `@-webkit-keyframes` at-rules declared inside `<@css>` blocks. When two different components declare an animation with the same name (such as `spin` or `fade-in`), their keyframe rules no longer collide in the compiled `bundle.css`.
+
+### How `@keyframes` Scoping Works
+
+When the compiler processes a `<@css>` block, `StyleProcessor` performs a two-pass transformation:
+
+1. **Header Scoping:** Every `@keyframes <name>` or `@-webkit-keyframes <name>` header inside `<@css>` is rewritten to `<name>-<scopeHash>` (e.g. `@keyframes spin-a1b2c3d4`). Quoted names (`"spin"`, `'spin'`) are preserved with their quotes. Keyframe frame definitions (`from`, `to`, `0%`, `100%`) remain completely untouched.
+2. **Declaration Rewriting:** Any references to the declared keyframe in `animation`, `animation-name`, `-webkit-animation`, or `-webkit-animation-name` declarations within the component are automatically rewritten to point to the scoped name. In shorthand `animation` values, the compiler safely differentiates the animation name from CSS keywords (`infinite`, `alternate`, `both`, `linear`, `ease-in-out`), timing values (`1s`, `250ms`), iterations (`2`, `0`), and timing functions like `cubic-bezier(...)` or `steps(...)`.
+
+### Example
+
+```css
+<@css>
+    spinner {
+        /* Shorthand declaration referencing local @keyframes spin */
+        animation: spin 1s linear infinite;
+
+        /* Nested or sibling @keyframes is automatically scoped */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    }
+</@css>
+```
+
+Conceptually, this compiles in `bundle.css` to:
+
+```css
+.avenx-a1b2c3d4 {
+  animation: spin-a1b2c3d4 1s linear infinite;
+}
+
+@keyframes spin-a1b2c3d4 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+```
+
+Forward references are fully supported: you can declare `animation: spin 1s infinite;` before or after `@keyframes spin`. If multiple style blocks in the same component stylesheet reference the same keyframe, they resolve to the exact same scoped name.
+
+### Scoped vs. Global Animations
+
+Like custom properties, keyframes declared inside `<@global>` are **not** hashed. They are emitted verbatim with their original global names intact:
+
+```css
+<@global>
+    /* Global animation available to all components */
+    @keyframes globalPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</@global>
+
+<@css>
+    badge {
+        /* References the global animation without scoping it */
+        animation: globalPulse 2s ease-in-out infinite;
+    }
+</@css>
+```
+
+| | Declared inside `<@css>` | Declared in `<@global>` |
+| --- | --- | --- |
+| Renamed at compile time | Yes, to `<name>-<scopeHash>` | No, emitted verbatim |
+| Visibility | Component-private; isolated from other components | Global across the entire application |
+| Best for | Component-specific animations and transitions | Shared design-system animations or dynamic bindings |
+
+### When to Move an Animation to `<@global>`
+
+Keep animations in `<@css>` by default for clean encapsulation. Move an animation to `<@global>` when:
+
+- **Shared across components:** The animation (e.g. `skeleton-shimmer`, `bounce-in`) is part of your global design system and used by many independent components.
+- **Dynamic inline styles (`data-ax-style`):** Inline style bindings in templates (e.g. `<div data-ax-style="{{ { animation: 'globalPulse 1s' } }}">`) are evaluated dynamically at runtime by JavaScript. Because the compiler cannot rewrite dynamic runtime strings, dynamic animation bindings should target unscoped animations declared in `<@global>`.
 
 ## 6. Scoping Limitations and Nesting Rules
 

@@ -135,6 +135,57 @@ async function testCustomDirectiveCompiledPath() {
 }
 
 /**
+ * A custom directive's `binding.expression` must be the attribute's source
+ * text on the compiled path, in every hook, even without the development-only
+ * `__axProgramExprSrc` table (issue #1802). Production builds do not emit
+ * that table, so the CUSTOM op itself has to carry the source.
+ */
+async function testCustomDirectiveExpressionWithoutDebugTable() {
+  const ComponentClass = compileComponent(
+    '<state n="1" />\n<div><p id="always" data-ax-mark="n">always</p></div>',
+    `ParityDirectiveExpr${seq++}`,
+  );
+  delete ComponentClass.__axProgramExprSrc;
+
+  const host = document.createElement('div');
+  host.id = 'directive-expr-app';
+  document.body.appendChild(host);
+  const app = new AvenxApp({ target: '#directive-expr-app' });
+  const seen = [];
+  app.directive('mark', {
+    mounted(el, binding) {
+      seen.push(['mounted', binding.expression]);
+    },
+    updated(el, binding) {
+      seen.push(['updated', binding.expression]);
+    },
+    unmounted(el, binding) {
+      seen.push(['unmounted', binding.expression]);
+    },
+  });
+
+  const component = new ComponentClass({}, {});
+  component.$app = app;
+  component.mount(host);
+
+  assert.deepStrictEqual(seen, [['mounted', 'n']], 'mounted must report the directive attribute source');
+  component.state.n = 2;
+  await component.$nextTick();
+  assert.deepStrictEqual(
+    seen,
+    [['mounted', 'n'], ['updated', 'n']],
+    'updated must report the directive attribute source',
+  );
+  component.unmount();
+  assert.deepStrictEqual(
+    seen,
+    [['mounted', 'n'], ['updated', 'n'], ['unmounted', 'n']],
+    'unmounted must report the directive attribute source',
+  );
+  host.remove();
+}
+
+/**
  * Mounts a compiled class, optionally with its render program removed.
  * @param {Function} ComponentClass - The compiled class.
  * @param {boolean} compiled - Whether to keep the program.
@@ -1001,6 +1052,7 @@ async function testHtmlDirectiveSanitizesOnBothPaths() {
 
 testConditionalCannotFallBack();
 await testCustomDirectiveCompiledPath();
+await testCustomDirectiveExpressionWithoutDebugTable();
 await testListParity();
 await testNestedBlocksThroughTheCompiler();
 await testSlotFallbackParity();
