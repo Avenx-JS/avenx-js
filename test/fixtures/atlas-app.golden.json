@@ -359,6 +359,8 @@
       "kind": "route",
       "name": "/",
       "pattern": "",
+      "prefix": null,
+      "router": "app",
       "file": "src/main.app.js",
       "loc": {
         "file": "src/main.app.js",
@@ -370,6 +372,8 @@
       "kind": "route",
       "name": "/cart",
       "pattern": "#/cart",
+      "prefix": null,
+      "router": "app",
       "file": "src/main.app.js",
       "loc": {
         "file": "src/main.app.js",
@@ -381,6 +385,8 @@
       "kind": "route",
       "name": "/checkout",
       "pattern": "#/checkout",
+      "prefix": null,
+      "router": "app",
       "file": "src/main.app.js",
       "loc": {
         "file": "src/main.app.js",
