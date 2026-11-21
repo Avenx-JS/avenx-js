@@ -3169,6 +3169,38 @@ app.initRouter({
 });
 ```
 
+### AVX_W76 — COMPILER_GUARD_AS_STRING
+
+**Warning Message**
+
+```text
+[AVX_W76] Guard "{0}" on route "{1}" is given as a string, not a guard class or object. The route is not guarded.
+
+Cause: A guards entry in app.initRouter() is a quoted string (e.g. guards: ['AuthGuard']) instead of the imported guard class or an object with a canActivate method. There is no registry that resolves a guard by name, so a string guard cannot run — and the route it was meant to protect is left unguarded. Atlas therefore records no GUARDED_BY edge for it, and the router denies any navigation that would have run it.
+
+Resolution: To resolve this warning:
+
+1. Import the guard class and pass the class itself, not its name as a string.
+
+2. Or pass an object with a canActivate method.
+
+3. Verify with `avenx atlas` that the route now shows a GUARDED_BY edge.
+
+Incorrect
+
+app.initRouter({
+  '#/secret': { page: 'Secret', guards: ['AuthGuard'] }, // ❌ String guard; the route is not guarded and emits AVX_W76
+});
+
+Correct
+
+import AuthGuard from './guards/auth.guard.js';
+
+app.initRouter({
+  '#/secret': { page: 'Secret', guards: [AuthGuard] }, // ✅ Guard class; the route is guarded
+});
+```
+
 ### AVX_W60 — COMPILER_UNDEFINED_PUBLIC_ENV
 
 **Warning Message**
