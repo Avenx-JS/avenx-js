@@ -67,6 +67,19 @@ const unread = (model) => findUnreadState(model).map((finding) => finding.node.i
 const unreachable = (model) => findUnreachableActions(model).map((finding) => finding.node.id).sort();
 
 try {
+  // A dynamic attribute reads both its name and value, but not unrelated state.
+  {
+    const model = analyze({
+      'src/components/card/card.component.js': `<state attrName="title" attrVal="hello" spare="unused" />
+<p :[attrName]="attrVal">dynamic</p>`,
+    });
+    assert.deepStrictEqual(unread(model), ['state:component:Card.spare']);
+    const expressions = [...model.nodes.values()]
+      .filter((node) => node.binding && node.binding.startsWith('dynamic-attribute-'))
+      .map((node) => node.expression).sort();
+    assert.deepStrictEqual(expressions, ['attrName', 'attrVal']);
+  }
+
   // ── AVX_W40 fires on genuinely dead state ─────────────────────────────────
   {
     const model = analyze({
