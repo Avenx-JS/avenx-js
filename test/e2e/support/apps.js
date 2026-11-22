@@ -57,6 +57,10 @@ export const APPS_DIR = path.resolve(here, '../apps');
  */
 export const APPS = [
   {
+    name: 'rewind',
+    summary: 'Atomic action rollback, shared bridge observers, collections, conflicts and commits.',
+  },
+  {
     name: 'counter',
     summary: 'State, computed values, actions and bound boolean attributes.',
     developmentBuild: true,
