@@ -1,57 +1,44 @@
 import assert from 'assert';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import '../helpers/register-happy-dom.js';
 
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
-import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
+import { loadComponent } from '../../lib/core/tooling/loadComponent.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 import { requireStringRenderer, hasStringRenderer, installStringRenderer } from '../../lib/core/renderer/stringRenderer.js';
 import { AvenxComponent } from '../../lib/core/index.js';
 import { nextTick } from '../../lib/core/reactive/scheduler.js';
-import { setupDOMMock, teardownDOMMock } from '../helpers/dom-mock.js';
 
 /**
- * AVX_R34 raised by a page transition must name the operation, not the
- * placeholder `<a component>` -- a transition runs on a page wrapper, with no
- * component of its own to name.
+ * Compiled pages can transition without installing the string renderer.
+ * Uncompiled components must still report their missing renderer by name.
  */
-console.log('🧪 Testing AVX_R34 names the operation for a page transition...');
-
-class PageTwo extends AvenxPage {
-  render() {
-    return '<div>Two</div>';
-  }
-}
+console.log('Testing page transitions without the string renderer...');
 
 const saved = hasStringRenderer() ? requireStringRenderer() : null;
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-page-transition-'));
+let app;
 
 try {
-  setupDOMMock();
+  document.body.innerHTML = '<div id="app"><p>Loading</p></div>';
   installStringRenderer(null);
 
-  const app = new AvenxApp({ target: 'div' });
-  app.registerPage('Two', PageTwo);
-
-  let thrown = null;
-  try {
-    app.mountPage('Two', {}, { transition: 'fade' });
-  } catch (error) {
-    thrown = error;
+  app = new AvenxApp({ target: '#app' });
+  for (const name of ['one', 'two']) {
+    const file = path.join(root, `${name}.page.js`);
+    fs.writeFileSync(file, `<div id="${name}">${name}</div>`);
+    app.registerPage(name, loadComponent(file));
   }
-
-  assert.ok(thrown, 'mounting a page with a transition should raise when the string renderer is absent');
-  assert.strictEqual(
-    thrown.code,
-    AvenxErrorCodes.RENDERER_UNAVAILABLE,
-    'the transition should raise AVX_R34',
-  );
-  assert.ok(
-    !String(thrown.message).includes('<a component>'),
-    `the message should not use the placeholder, got: ${thrown.message}`,
-  );
-  assert.ok(
-    String(thrown.message).includes('page transition'),
-    `the message should name the page transition, got: ${thrown.message}`,
-  );
-  console.log('  ✅ a page transition raises AVX_R34 naming the operation');
+  assert.doesNotThrow(() => app.mountPage('one', {}, { transition: 'fade' }));
+  assert.ok(document.querySelector('.fade-leave-active'), 'existing content leaves');
+  assert.doesNotThrow(() => app.mountPage('two', {}, { transition: 'fade' }));
+  await nextTick();
+  const entering = document.querySelector('#two');
+  assert.ok(entering, 'the destination page renders');
+  assert.ok(entering.classList.contains('fade-enter-active'), 'the enter animation starts');
+  assert.strictEqual(hasStringRenderer(), false, 'transitions do not install a renderer');
 
   // Component call sites (#renderer, #patcher, #listManager, #deferManager)
   // all pass this.constructor.name, so the message names the component and
@@ -85,6 +72,8 @@ try {
 
   console.log('✅ All transition diagnostic tests passed!');
 } finally {
+  for (const component of app?.activeComponents || []) component.unmount();
   installStringRenderer(saved);
-  teardownDOMMock();
+  document.body.innerHTML = '';
+  fs.rmSync(root, { recursive: true, force: true });
 }
