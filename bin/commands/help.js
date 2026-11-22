@@ -52,7 +52,7 @@ ${bold(cyan('Options:'))}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
-  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why and explain (explain: --json only, with --list too)')}
+  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only, with --list too)')}
   ${green('--list')}                    ${gray('explain: list every code with severity, category and whether warnings can configure it')}
   ${green('--category <name>')}         ${gray('explain --list: keep only one category (compiler, runtime, styling, routing, accessibility, environment)')}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}

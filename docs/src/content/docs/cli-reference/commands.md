@@ -24,7 +24,7 @@ The following flags can be passed globally to `avenx` commands:
 | `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
 | `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
 | `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
-| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `trace list`, `trace view` |
+| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--help` | | Prints the command and option summary and exits before the command runs. | Global |
