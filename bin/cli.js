@@ -143,6 +143,8 @@ export class AvenxCLI {
    */
   constructor(options = {}) {
     this.baseDir = options.baseDir || findProjectRoot(process.cwd());
+    // Snapshot before loading so `env --json` can tell process values from .env values.
+    this.preloadedEnvKeys = new Set(Object.keys(process.env));
     loadEnv(this.baseDir);
     this.frameworkDir = path.join(__dirname, '..');
     this.config = { ...loadConfig(this.baseDir), ...options };
@@ -337,11 +339,11 @@ export class AvenxCLI {
         runDoctor(this, args.includes('--json') || args.includes('-j'));
         break;
       case 'env':
-        runEnv(this);
+        runEnv(this, args);
         break;
       case 'inspect':
       case 'i':
-        runInspect(this);
+        runInspect(this, args);
         break;
       case 'stats':
       case 's':

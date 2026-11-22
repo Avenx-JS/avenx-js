@@ -54,10 +54,19 @@ function readEnvFileMeta(rootDir) {
 
 /**
  * Prints active environment configuration (public vs private).
- * @param {{ baseDir: string }} cli
+ * With `--json` (or `-j`) it prints the same resolved environment as JSON.
+ * System values stay masked in both forms; public values are inlined into the
+ * build, so they are shown as-is.
+ * @param {{ baseDir: string, config?: { mode?: string }, preloadedEnvKeys?: Set<string> }} cli
+ * @param {string[]} [args] - Command arguments.
  */
-export function runEnv(cli) {
+export function runEnv(cli, args = []) {
+  const isJson = args.includes('--json') || args.includes('-j');
   const rootDir = cli.baseDir || process.cwd();
+  // The CLI constructor loads .env before any command runs, so it records the
+  // keys that were already set; fall back to a snapshot taken here otherwise.
+  // A value already in the process environment wins over the .env file.
+  const preloaded = cli.preloadedEnvKeys || new Set(Object.keys(process.env));
   loadEnv(rootDir);
 
   const meta = readEnvFileMeta(rootDir);
@@ -76,6 +85,30 @@ export function runEnv(cli) {
     } else {
       systemKeys.add(key);
     }
+  }
+
+  if (isJson) {
+    const sourceOf = (key) => (preloaded.has(key) ? 'process' : 'env-file');
+    const configPath = path.join(rootDir, 'avenx.config.json');
+    const payload = {
+      project: rootDir,
+      mode: (cli.config && cli.config.mode) || null,
+      configFile: fs.existsSync(configPath) ? configPath : null,
+      envFile: { path: meta.path, exists: meta.exists, error: meta.error },
+      public: [...publicKeys].sort().map((key) => ({
+        key,
+        value: process.env[key] ?? '',
+        source: sourceOf(key),
+      })),
+      system: [...systemKeys].sort().map((key) => ({
+        key,
+        value: maskSecret(process.env[key] ?? ''),
+        source: sourceOf(key),
+      })),
+    };
+    console.log(JSON.stringify(payload, null, 2));
+    if (meta.error) process.exitCode = 1;
+    return;
   }
 
   console.log(`\n${bold(cyan('Avenx Environment'))}`);

@@ -52,7 +52,7 @@ ${bold(cyan('Options:'))}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
-  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why and explain (explain: --json only)')}
+  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only)')}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
   ${green('--watch, -w')}               ${gray('Watch project component files for continuous template linting')}
   ${green('--strict, --strict-a11y')}   ${gray('Make "check" fail on accessibility warnings too')}
