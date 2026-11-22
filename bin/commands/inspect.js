@@ -25,12 +25,14 @@ function isUnused(model, node) {
 }
 
 /**
- * Prints the project's page, component and bridge hierarchy.
+ * Builds the project's page, component, bridge and guard inventory from the
+ * compiler's model. Shared by the text tree and the `--json` payload so the
+ * two cannot disagree.
  * @param {object} cli - The AvenxCLI instance.
- * @returns {void}
+ * @returns {{ srcDir: string, pages: object[], components: object[], bridges: object[], guards: object[], unresolved: number }}
  */
-export function runInspect(cli) {
-  const srcRel = (cli.config && cli.config.srcDir) || 'src';
+function collectHierarchy(cli) {
+  const srcDir = (cli.config && cli.config.srcDir) || 'src';
   const model = buildModel(cli);
 
   /** @type {Map<string, string>} */
@@ -46,41 +48,84 @@ export function runInspect(cli) {
     }
   }
 
-  const pages = model.nodesOfKind(AtlasNodeKind.PAGE);
-  const components = model.nodesOfKind(AtlasNodeKind.COMPONENT);
-  const bridges = model.nodesOfKind(AtlasNodeKind.BRIDGE);
-  const guards = model.nodesOfKind(AtlasNodeKind.GUARD);
+  const pages = model.nodesOfKind(AtlasNodeKind.PAGE).map((page) => ({
+    name: page.name,
+    route: routeOfPage.get(page.id) ?? null,
+    file: page.file,
+  }));
+
+  const components = model.nodesOfKind(AtlasNodeKind.COMPONENT).map((component) => ({
+    name: component.name,
+    file: component.file,
+    unused: isUnused(model, component),
+  }));
+
+  const bridges = model.nodesOfKind(AtlasNodeKind.BRIDGE).map((bridge) => ({
+    name: bridge.name,
+    file: bridge.file,
+    unused: model.incoming(bridge.id).filter((edge) => edge.kind === AtlasEdgeKind.IMPORTS).length === 0,
+  }));
+
+  const guards = model.nodesOfKind(AtlasNodeKind.GUARD).map((guard) => ({
+    name: guard.name,
+    file: guard.file,
+    routes: model
+      .incoming(guard.id)
+      .filter((edge) => edge.kind === AtlasEdgeKind.GUARDED_BY)
+      .map((edge) => model.getNode(edge.from).name),
+  }));
+
+  return { srcDir, pages, components, bridges, guards, unresolved: model.unresolved.length };
+}
+
+/**
+ * Prints the project's page, component and bridge hierarchy.
+ * With `--json` (or `-j`) it prints the same inventory as a JSON document.
+ * @param {object} cli - The AvenxCLI instance.
+ * @param {string[]} [args] - Command arguments.
+ * @returns {void}
+ */
+export function runInspect(cli, args = []) {
+  const isJson = args.includes('--json') || args.includes('-j');
+  const hierarchy = collectHierarchy(cli);
+  const { srcDir: srcRel, pages, components, bridges, guards, unresolved } = hierarchy;
+
+  if (isJson) {
+    const payload = {
+      srcDir: srcRel,
+      pages,
+      components,
+      bridges,
+      guards,
+      unresolved,
+    };
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
 
   console.log(bold(cyan(`📦 Avenx Project Hierarchy (${srcRel}/)`)));
 
   const categories = [
     {
       title: `📄 Pages (${pages.length})`,
-      items: pages.map((page) => {
-        const route = routeOfPage.get(page.id);
-        return { text: `${page.name}${route ? ` (${route})` : ''} -> ${page.file}`, warn: false };
-      }),
+      items: pages.map((page) => ({
+        text: `${page.name}${page.route ? ` (${page.route})` : ''} -> ${page.file}`,
+        warn: false,
+      })),
     },
     {
       title: `🧩 Components (${components.length})`,
-      items: components.map((component) => {
-        const unused = isUnused(model, component);
-        return {
-          text: `${component.name} -> ${component.file}${unused ? ' (⚠️ Unused)' : ''}`,
-          warn: unused,
-        };
-      }),
+      items: components.map((component) => ({
+        text: `${component.name} -> ${component.file}${component.unused ? ' (⚠️ Unused)' : ''}`,
+        warn: component.unused,
+      })),
     },
     {
       title: `🌉 Bridges (${bridges.length})`,
-      items: bridges.map((bridge) => {
-        const consumers = model.incoming(bridge.id).filter((edge) => edge.kind === AtlasEdgeKind.IMPORTS).length;
-        const unused = consumers === 0;
-        return {
-          text: `${bridge.name} -> ${bridge.file}${unused ? ' (⚠️ Not imported anywhere)' : ''}`,
-          warn: unused,
-        };
-      }),
+      items: bridges.map((bridge) => ({
+        text: `${bridge.name} -> ${bridge.file}${bridge.unused ? ' (⚠️ Not imported anywhere)' : ''}`,
+        warn: bridge.unused,
+      })),
     },
   ];
 
@@ -88,13 +133,9 @@ export function runInspect(cli) {
     categories.push({
       title: `🛡️  Guards (${guards.length})`,
       items: guards.map((guard) => {
-        const routes = model
-          .incoming(guard.id)
-          .filter((edge) => edge.kind === AtlasEdgeKind.GUARDED_BY)
-          .map((edge) => model.getNode(edge.from).name);
-        const unused = routes.length === 0;
+        const unused = guard.routes.length === 0;
         return {
-          text: `${guard.name} -> ${guard.file}${routes.length ? ` (${routes.join(', ')})` : ' (⚠️ Not attached to any route)'}`,
+          text: `${guard.name} -> ${guard.file}${guard.routes.length ? ` (${guard.routes.join(', ')})` : ' (⚠️ Not attached to any route)'}`,
           warn: unused,
         };
       }),
@@ -119,11 +160,10 @@ export function runInspect(cli) {
     }
   }
 
-  if (model.unresolved.length > 0) {
+  if (unresolved > 0) {
     console.log(
-      gray(
-        `\n${model.unresolved.length} relationship${model.unresolved.length === 1 ? '' : 's'} could not be resolved; run \`avenx atlas\` for detail.`,
-      ),
+      gray(`
+${unresolved} relationship${unresolved === 1 ? '' : 's'} could not be resolved; run \`avenx atlas\` for detail.`),
     );
   }
 }
