@@ -86,6 +86,10 @@ export const APPS = [
     summary: 'Hash routes, params, query strings, the wildcard fallback and a bridge-backed guard.',
   },
   {
+    name: 'global-guard-deeplink',
+    summary: 'A synchronous global beforeEach guard covering direct deep links.',
+  },
+  {
     name: 'forms',
     summary: 'Two-way binding across every input type, and focus retention across patches.',
   },
