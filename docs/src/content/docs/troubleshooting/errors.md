@@ -3169,6 +3169,22 @@ app.initRouter({
 });
 ```
 
+### AVX_W78 — ATLAS_NO_ENTRY_POINT
+
+The application entry file has no `mount()`, `mountPage()` or `initRouter()` startup.
+The warning lists the compiled components and pages. Registering a component
+alone does not put it on screen: call `app.mount('Solo')` for a registered
+component, `app.mountPage('Home')` for a page, or configure `app.initRouter()`.
+
+Comments and string examples do not count as startup calls. Unknown helper
+modules, computed calls and exported applications suppress this absence claim;
+the compiler cannot prove what those paths mount. When this warning applies,
+AVX_W53 is suppressed to avoid reporting the same missing startup twice.
+
+For an intentionally unmounted library bundle, set
+`"warnings": { "AVX_W78": "off" }` in `avenx.config.json`. Set it to `"error"`
+to fail builds that have no startup.
+
 ### AVX_W76 — COMPILER_GUARD_AS_STRING
 
 **Warning Message**
