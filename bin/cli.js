@@ -15,7 +15,7 @@ import { runDoctor } from './commands/doctor.js';
 import { runInspect } from './commands/inspect.js';
 import { runStats } from './commands/stats.js';
 import { runEnv } from './commands/env.js';
-import { explainDiagnostic } from './commands/explain.js';
+import { explainDiagnostic, listDiagnostics } from './commands/explain.js';
 import { runTrace } from './commands/trace.js';
 import { runAtlas, runQuery } from './commands/atlas.js';
 
@@ -143,6 +143,8 @@ export class AvenxCLI {
    */
   constructor(options = {}) {
     this.baseDir = options.baseDir || findProjectRoot(process.cwd());
+    // Snapshot before loading so `env --json` can tell process values from .env values.
+    this.preloadedEnvKeys = new Set(Object.keys(process.env));
     loadEnv(this.baseDir);
     this.frameworkDir = path.join(__dirname, '..');
     this.config = { ...loadConfig(this.baseDir), ...options };
@@ -337,11 +339,11 @@ export class AvenxCLI {
         runDoctor(this, args.includes('--json') || args.includes('-j'));
         break;
       case 'env':
-        runEnv(this);
+        runEnv(this, args);
         break;
       case 'inspect':
       case 'i':
-        runInspect(this);
+        runInspect(this, args);
         break;
       case 'stats':
       case 's':
@@ -436,6 +438,10 @@ export class AvenxCLI {
         break;
       case 'explain': {
         const asJson = args.includes('--json');
+        if (args.includes('--list')) {
+          listDiagnostics(args, asJson);
+          break;
+        }
         const codeArg = args.find((a) => !a.startsWith('-'));
         explainDiagnostic(this, codeArg, asJson);
         break;

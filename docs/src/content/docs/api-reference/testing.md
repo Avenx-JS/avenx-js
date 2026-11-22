@@ -290,6 +290,33 @@ export default defineConfig({
 
 Vitest needs Node `^22.12`, `^24` or `>=26`, which is narrower than the Node `>=18` that `avenx-core` supports.
 
+### Loading a component without a bundler transform
+
+A `.component.js` file contains Avenx template markup, not an ordinary JavaScript module. The direct component imports in the examples below require a transform such as `@avenx/vite` in the Vitest configuration above.
+
+For the Node test runner, Jest without a component transform, or a Node-side Playwright script, use `loadComponent` from `avenx-core/tooling` to compile the file into a class:
+
+```javascript
+import { fileURLToPath } from 'node:url';
+import { loadComponent } from 'avenx-core/tooling';
+import { mountTestComponent } from 'avenx-core/testing';
+
+const Counter = loadComponent(
+  fileURLToPath(new URL('../src/components/counter/counter.component.js', import.meta.url)),
+);
+
+const wrapper = await mountTestComponent(Counter);
+try {
+  // Interact with wrapper and assert the rendered output here.
+} finally {
+  wrapper.unmount();
+}
+```
+
+The URL resolves relative to the test module rather than the runner's working directory. `fileURLToPath` also handles Windows paths and escaped characters such as spaces. `loadComponent` is synchronous and runs in Node because it reads from disk; it cannot run inside Playwright's browser page. Mounting still requires a DOM environment such as Happy DOM or jsdom, installed by your runner's setup before this test executes.
+
+For a component that imports bridges, pass their instances as `loadComponent(filePath, { bridges: { cart } })`; `bridgeDependencies(filePath)` from the same tooling entry point lists the required names. Project compiler settings can be supplied through the `config` option.
+
 ### `mountTestComponent(ComponentClass, options)`
 
 Instantiates and mounts an Avenx component or page into a test container, pre-configuring props, reactive state overrides, transcluded slots, and mock bridges.

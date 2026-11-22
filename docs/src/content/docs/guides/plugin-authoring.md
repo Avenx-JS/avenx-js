@@ -170,15 +170,21 @@ export function preprocess(source, context) {
 }
 ```
 
-Consumers wire preprocessors into their build pipeline via `avenx.config.json`:
+Consumers import the function into a JavaScript build script and pass it as the top-level `preprocessors` option:
 
-```json
-{
-  "compiler": {
-    "preprocessors": ["@avenx/charts/preprocessor"]
-  }
-}
+```javascript
+import AvenxCompiler from 'avenx-core';
+import { preprocess } from '@avenx/charts/preprocessor';
+
+const compiler = new AvenxCompiler({
+  preprocessors: { template: preprocess },
+});
+compiler.build();
 ```
+
+The hook receives `(source, { filePath, lang })` and must return the transformed template as a string synchronously. It may also be keyed by a `<template lang="...">` language, or supplied directly as `preprocessors: preprocess`. See [Template preprocessors](/getting-started/configuration/#template-preprocessors-preprocessors) for selection and fallback rules.
+
+`avenx.config.json` cannot contain functions. A nested `compiler.preprocessors` array of package names is not supported and does not load a plugin; the build script must import the function itself.
 
 ---
 

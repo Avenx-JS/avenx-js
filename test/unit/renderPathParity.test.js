@@ -4,7 +4,7 @@
  *
  * Avenx has two renderers. The compiled one drives templates it can compile
  * exhaustively; the string one drives what is left -- suspense and error
- * boundaries, deadlock boundaries, transitions, refs, declarative validation
+ * boundaries, deadlock boundaries, transitions, declarative validation
  * and dynamic component tags -- and will keep doing so until the IR models
  * those too. Two renderers is a maintenance hazard exactly to the extent that
  * they can disagree, so this file is the seam between them.
@@ -1152,7 +1152,55 @@ async function testRenderDiagnosticParity() {
   console.log('  ✅ AVX_R08 names the source with position and frame on both render paths.');
 }
 
+async function testRefParity() {
+  await parity('plain and list refs', `
+<state rows="[{id: 1}, {id: 2}]" count="0" />
+<div>
+  <input aria-label="Focus target" data-ax-ref="box" />
+  <p>{{ count }}</p>
+  <@for row in rows key="row.id"><span data-ax-ref="last">{{ row.id }}</span></@for>
+</div>`, async (component, host) => {
+    const box = component.$refs.box;
+    assert.equal(box, host.querySelector('input'));
+    box.focus();
+    assert.equal(document.activeElement, box);
+    assert.equal(component.$refs.last.textContent, '2');
+    component.state.count++;
+    component.state.rows = [{id: 2}, {id: 1}];
+    await component.$nextTick();
+    assert.equal(component.$refs.box, box);
+    assert.equal(component.$refs.last.textContent, '1');
+    component.state.rows = [];
+    await component.$nextTick();
+    assert.equal(component.$refs.last, undefined);
+    component.unmount();
+    assert.deepEqual(component.$refs, {});
+  });
+  // <@if> has no string-renderer implementation, so test its compiled range
+  // directly rather than comparing against literal, unprocessed markup.
+  const Conditional = compileComponent(`
+<state visible="true" />
+<div><@if visible><span data-ax-ref="conditional">shown</span></@if></div>`, `RefsConditional${seq++}`);
+  const { component, host } = mount(Conditional, true);
+  try {
+    const first = component.$refs.conditional;
+    assert.ok(first.isConnected);
+    component.state.visible = false;
+    await component.$nextTick();
+    assert.equal(component.$refs.conditional, undefined);
+    assert.equal(first.isConnected, false);
+    component.state.visible = true;
+    await component.$nextTick();
+    assert.ok(component.$refs.conditional.isConnected);
+    assert.notEqual(component.$refs.conditional, first);
+  } finally {
+    component.unmount();
+    host.remove();
+  }
+}
+
 testConditionalCannotFallBack();
+await testRefParity();
 await testCustomDirectiveCompiledPath();
 await testCustomDirectiveExpressionWithoutDebugTable();
 await testListParity();

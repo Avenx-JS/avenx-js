@@ -293,7 +293,6 @@ function testRefusals() {
     ['an error boundary', '<@errorBoundary><p>x</p></@errorBoundary>'],
     ['a deadlock boundary', '<@deadlock name="d"><p>x</p></@deadlock>'],
     ['a transition', '<transition name="fade"><p>x</p></transition>'],
-    ['a template ref', '<div data-ax-ref="box"></div>'],
     ['form validation', '<input data-ax-validate="required" />'],
     ['a router view', '<div data-ax-router-view="true"></div>'],
     ['a dynamic attribute name', '<div :[name]="value"></div>'],

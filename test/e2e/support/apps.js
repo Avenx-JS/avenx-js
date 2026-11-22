@@ -61,6 +61,11 @@ export const APPS = [
     summary: 'Atomic action rollback, shared bridge observers, collections, conflicts and commits.',
   },
   {
+    name: 'refs',
+    summary: 'Compiled refs across conditional blocks, keyed lists and child component instances.',
+    forbiddenDiagnostics: ['AVX_W47'],
+  },
+  {
     name: 'counter',
     summary: 'State, computed values, actions and bound boolean attributes.',
     developmentBuild: true,
@@ -88,6 +93,10 @@ export const APPS = [
   {
     name: 'routing',
     summary: 'Hash routes, params, query strings, the wildcard fallback and a bridge-backed guard.',
+  },
+  {
+    name: 'global-guard-deeplink',
+    summary: 'A synchronous global beforeEach guard covering direct deep links.',
   },
   {
     name: 'forms',

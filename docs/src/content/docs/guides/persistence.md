@@ -115,13 +115,17 @@ Install it before any persisted bridge is read. A bridge hydrates on first use
 and reads its configuration once at that moment; a plugin installed later warns
 that it arrived too late rather than applying to only half the application.
 
-:::caution
-**Toolchain.** With a bundler (Vite via `@avenx/vite`, Rollup, webpack) the
-imports above are all you need. The **Avenx CLI compiler** analyses
-`*.bridge.js` statically, so a bridge module may only import the Avenx runtime
-and other bridges — third-party runtime packages are reached through a global
-instead. Load `dist/avenx-persistence.global.js` from `index.html` and call
-`AvenxPersistence.persist(this, …)`. See the plugin README for both forms.
+:::note
+**Toolchain.** The Avenx CLI resolves and bundles imports from bridge modules,
+including third-party packages. The imports above use the same form with the
+CLI, Vite via `@avenx/vite`, Rollup, and webpack. The plugin also provides
+`dist/avenx-persistence.global.js` for applications that prefer a script tag;
+it is an alternative, not a requirement of the CLI. See the plugin README for
+both forms.
+
+Successful bundling does not verify persistence at runtime. The reported
+`persist()` failure in bridge `setup()` is tracked separately in
+[#1798](https://github.com/Avenx-JS/avenx-js/issues/1798).
 :::
 
 ## Choosing what is persisted

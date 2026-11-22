@@ -108,21 +108,23 @@ half the application.
 
 ### 4. Toolchain note
 
-With a bundler — Vite (via `@avenx/vite`), Rollup, webpack — the imports above
-are all you need.
+The **Avenx CLI compiler** resolves and bundles imports from bridge modules,
+including third-party packages. Use the imports above with the CLI or with
+Vite (via `@avenx/vite`), Rollup, or webpack.
 
-The **Avenx CLI compiler** is different: it compiles an application into one
-self-contained bundle and analyses `*.bridge.js` statically, so a bridge module
-may only import the Avenx runtime and other bridges. Third-party runtime
-packages are reached through a global instead. Load the standalone build in
-`index.html`:
+Successful bundling does not verify persistence at runtime. The reported
+`persist()` failure in bridge `setup()` is tracked separately in
+[#1798](https://github.com/Avenx-JS/avenx-js/issues/1798).
+
+The standalone build is an alternative for applications that prefer a script
+tag. To use it, load it in `index.html`:
 
 ```html
 <script src="node_modules/@avenx/persistence/dist/avenx-persistence.global.js"></script>
 <script src="dist/bundle.js"></script>
 ```
 
-and drop the imports:
+and replace the persistence imports with the global API:
 
 ```javascript
 setup() {

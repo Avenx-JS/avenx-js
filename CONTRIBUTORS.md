@@ -241,6 +241,9 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/aryankalantri"><img src="https://avatars.githubusercontent.com/u/184456664?v=4&size=100" width="100px" height="100px" alt="aryankalantri"/><br /><sub><b>aryankalantri</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=aryankalantri" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jamesyshd19-cmyk"><img src="https://avatars.githubusercontent.com/u/335269212?v=4&size=100" width="100px" height="100px" alt="James Yoshida"/><br /><sub><b>James Yoshida</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=jamesyshd19-cmyk" title="Documentation">📖</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Aschenbath"><img src="https://avatars.githubusercontent.com/u/184111764?v=4&size=100" width="100px" height="100px" alt="Nash Aschenbath"/><br /><sub><b>Nash Aschenbath</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Aschenbath" title="Documentation">📖</a></td>
+    </tr>
   </tbody>
 </table>
 

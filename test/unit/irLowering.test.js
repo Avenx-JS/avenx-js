@@ -200,6 +200,19 @@ function testStaticSubtree() {
   console.log('  ✅ proven-static markup is emitted whole');
 }
 
+function testComponentRefs() {
+  const plain = lower('<Card data-ax-ref="card" />');
+  assert.ok(plain.program.html.includes('data-ax-ref="card"'));
+  assert.deepStrictEqual(plain.program.ops, []);
+  const bound = lower('<Card data-ax-ref="{{ name }}" />');
+  assert.strictEqual(op(bound.program, OpKind.ATTR).a, 'data-ax-ref');
+  assert.deepStrictEqual(bound.expressions, ['name']);
+  const parts = lower('<Card data-ax-ref="card-{{ id }}" />');
+  assert.strictEqual(op(parts.program, OpKind.ATTR_PARTS).a, 'data-ax-ref');
+  assert.deepStrictEqual(op(parts.program, OpKind.ATTR_PARTS).p, ['card-', {x: 0}]);
+}
+
+testComponentRefs();
 testFlatTemplate();
 testExpressionsAreIndices();
 testConditionalLowering();

@@ -3169,6 +3169,22 @@ app.initRouter({
 });
 ```
 
+### AVX_W78 — ATLAS_NO_ENTRY_POINT
+
+The application entry file has no `mount()`, `mountPage()` or `initRouter()` startup.
+The warning lists the compiled components and pages. Registering a component
+alone does not put it on screen: call `app.mount('Solo')` for a registered
+component, `app.mountPage('Home')` for a page, or configure `app.initRouter()`.
+
+Comments and string examples do not count as startup calls. Unknown helper
+modules, computed calls and exported applications suppress this absence claim;
+the compiler cannot prove what those paths mount. When this warning applies,
+AVX_W53 is suppressed to avoid reporting the same missing startup twice.
+
+For an intentionally unmounted library bundle, set
+`"warnings": { "AVX_W78": "off" }` in `avenx.config.json`. Set it to `"error"`
+to fail builds that have no startup.
+
 ### AVX_W76 — COMPILER_GUARD_AS_STRING
 
 **Warning Message**
@@ -3634,6 +3650,7 @@ Focusable element <{0}> has aria-hidden="true" (in component <{1}>). Remove aria
 | `[AVX_R31]` | Invalid component class for "{0}". Expected a constructor extending AvenxComponent, received "{1}". | **Identifier:** `COMPONENT_INVALID_CLASS`.<br />**Cause:** Component or page registration receives a plain object, an unrelated class, or another value that is not an `AvenxComponent` constructor. The diagnostic code is defined, but `app.register()` and `app.registerPage()` currently throw an ordinary `Error` for this condition.<br />**Resolution:** Import the intended constructor and make sure it extends `AvenxComponent`; pass the class itself to `app.register()` instead of an instance or object. |
 | `[AVX_R33]` | <{0}> failed to render and nothing handled the error, so it is showing nothing. | **Identifier:** `COMPONENT_RENDER_ABORTED`.<br />**Cause:** A component fails during rendering and neither a component/ancestor error capture hook nor an application error handler claims the failure. The component stays mounted but empty; failures already reported by a more specific diagnostic are not re-reported under this code.<br />**Resolution:** Inspect the recorded origin and cause, fix the failing render expression or hook, or handle the error with `onErrorCaptured`, an `<@errorBoundary>`, or `app.onError()`. |
 | `[AVX_R34]` | <{0}> needs {1}, and this bundle does not contain it. | **Identifier:** `RENDERER_UNAVAILABLE`.<br />**Cause:** A component requires the string renderer after a compilation fallback, but the running bundle has no usable renderer registered. The compiler normally links it when reporting `AVX_W47`; mismatched build artifacts or duplicate runtime copies can split its registry.<br />**Resolution:** Rebuild from a clean `dist/`, confirm the build reports `AVX_W47` if a fallback is needed, and ensure only one runtime copy is bundled. If a fresh bundle still fails, report it as a compiler/runtime defect. |
+| `[AVX_R38]` | A nested component ({0}) was skipped because the component whose template it is written in is not mounted, so it does not render. | **Identifier:** `PAGE_MOUNT_POINT_OWNER_UNMOUNTED`.<br />**Cause:** The owning component is not mounted, so the nested component has no scope to resolve its props in. The owning component is reported separately. |
 | `[AVX_R37]` | <{0}> cannot render in this environment: {1}, and the string renderer it falls back to is not in this bundle. | **Identifier:** `COMPILED_TEMPLATE_ENVIRONMENT_UNSUPPORTED`.<br />**Cause:** The environment has no usable DOM — for example a test runner in its default `node` environment — so a compiled template's skeleton cannot be prepared, and the string renderer the component falls back to is not in the bundle.<br />**Resolution:** Run in a browser, or configure a DOM environment in the test runner: install `happy-dom` or `jsdom` and set `test: { environment: 'happy-dom' }` in the Vitest config. The bundle is not mislinked; do not rebuild for this code. |
 
 ### AVX_R01 — MOUNT_TARGET_NOT_FOUND
@@ -4585,6 +4602,18 @@ The "{3}" conflict policy refuses to overwrite a value the transaction did not w
 
 See the [Avenx Rewind guide](/core-concepts/rewind) for the full model.
 
+### AVX_R38 — PAGE_MOUNT_POINT_OWNER_UNMOUNTED
+
+**Warning Message**
+
+```text
+A nested component ({0}) was skipped because the component whose template it is written in is not mounted, so it does not render.
+```
+
+**Cause:** A component is written inside another component's template, and that owning component is not mounted, so the nested component has no scope to resolve its props in. The owning component is reported separately, so this warning points at the chain rather than the cause.
+
+**Resolution:** Fix why the owning component did not mount, such as a missing registration or a dynamic component expression that did not resolve. The nested component mounts once its owner does.
+
 ### AVX_R36 — COMPONENT_NESTING_LIMIT
 
 **Error Message**
@@ -4622,3 +4651,19 @@ See [Nesting Components](/core-concepts/components#nesting-components) for how c
 1. Run the component in a browser, or give the test runner a DOM environment. For Vitest, install `happy-dom` or `jsdom` and set `test: { environment: 'happy-dom' }` in the Vitest config.
 2. If a DOM mock is in use, replace it with a complete DOM implementation (happy-dom, jsdom, or a real browser) whose parser preserves the compiled skeleton.
 3. Do not rebuild from a clean `dist/` for this code, and do not file it as a compiler defect — nothing about the build is wrong.
+
+### AVX_W77 — COMPILER_RECONCILIATION_MARKER
+
+**Cause:** A template explicitly writes `data-ax-static`, `data-ax-key`, or
+`data-ax-skip`. These attributes are compiler and renderer bookkeeping, not a
+supported way to control template updates. The warning names the attribute and
+the element that carries it, including bare attributes and `="true"` forms.
+
+**Resolution:** Remove `data-ax-static` and `data-ax-skip`; the compiler
+identifies static subtrees and the renderer manages skipping. For list identity,
+write a `key` expression on `<@for>` instead of `data-ax-key`.
+
+The check runs on authored markup before compiler-generated markers are added,
+so normal static subtree optimization and keyed lists do not warn. This warning
+does not change rendering. To silence intentional usage, set
+`"warnings": { "AVX_W77": "off" }` in `avenx.config.json`; use `"error"` to reject it.

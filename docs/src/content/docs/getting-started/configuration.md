@@ -44,6 +44,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `treeShakeComponents` | `boolean` | `true` | Removes unused components from the compiled bundle during compilation. Set to `false` to compile all discovered components. |
 | `codeSplitting` | `boolean` | `false` | Emits every page under `src/pages/` as its own chunk in `<distDir>/pages/`, fetched on first navigation, instead of bundling it into `<outputName>.js`. `avenx build --code-splitting` sets it for one build. See [Code splitting](#code-splitting-codesplitting). |
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
+| `preprocessors` | `function` or `object` | `{}` | Synchronous template transform, or a map of transforms keyed by template language. Functions must be supplied from JavaScript, not JSON. See [Template preprocessors](#template-preprocessors-preprocessors). |
 | `templateGlobals` | `string[]` | `[]`                 | Identifiers a plugin publishes into every component's template scope through `app.mixin()`. Declaring them lets template validation accept `{{ t('home.title') }}` without weakening the check for anything else. See [Plugin-provided template globals](#plugin-provided-template-globals). |
 | `warnings`     | `object`   | `{}`                   | Map of compiler warning codes (`AVX_W01`, `AVX_W03`, etc.) to severity overrides (`"off"`, `"ignore"`, `"warn"`, or `"error"`). |
 | `expressionCacheCapacity` | `number` | `1000` | Sets the maximum capacity of the compiled-expression cache, the cache of parsed expressions a build holds. Must be a positive integer. A larger capacity keeps more parsed expressions between builds, which can reduce recompilation at the cost of memory. |
@@ -52,6 +53,30 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `csp.strict`   | `boolean`  | `false`                | Refuses to emit anything that would need `script-src 'unsafe-eval'`, in a development build as well as a production one. See [CSP-strict builds](#csp-strict-builds-cspstrict). |
 
 Path options must be relative paths. Absolute paths are rejected during configuration loading.
+
+## Template preprocessors (`preprocessors`)
+
+`preprocessors` transforms template source before parsing. Supply a synchronous function `(source, { filePath, lang }) => html`, or an object containing such functions. A function must return a string; a Promise or another return type leaves the template content unchanged. A thrown error produces a compiler warning.
+
+Functions cannot be written in `avenx.config.json`, and strings naming modules are not imported automatically. Import the transform in a JavaScript build script and pass it to the compiler:
+
+```javascript
+// build.mjs, run from the project root with node build.mjs
+import AvenxCompiler from 'avenx-core';
+
+const compiler = new AvenxCompiler({
+  preprocessors: {
+    template(source, { filePath, lang }) {
+      return source.replaceAll('<app-banner />', '<header>Welcome</header>');
+    },
+  },
+});
+compiler.build();
+```
+
+For `<template lang="pug">...</template>`, the compiler passes the inner content and `lang: 'pug'`, selecting `preprocessors.pug` or `preprocessors['.pug']` first. Otherwise it tries `template`, `html`, then `default`. If no entry matches and the map has exactly one entry, that entry is used. A single function applies to every template. Without a language wrapper, `lang` is `null`.
+
+This is separate from `style.preprocessor`, which selects a CSS processor such as Sass or Less. See [Compiler preprocessors](/guides/plugin-authoring/#6-compiler-preprocessors) for a plugin integration example.
 
 ## Path aliases (`alias`)
 

@@ -255,7 +255,6 @@ Falls back today:
 | Transitions | Enter/leave hooks are driven by the patcher. |
 | A dynamic component tag | Its class can change between renders, which means unmounting one instance and mounting another. |
 | A dynamic attribute name (`:[expr]`) | There is no attribute for the program to address until the name is evaluated. |
-| `data-ax-ref` | Refs are collected by scanning the subtree after a render, which a program does not do. |
 | `data-ax-validate` | Declarative validation is driven by the same post-render scan. |
 | An expression the code generator cannot compile | The program is withdrawn rather than shipped with a hole in its expression table. |
 
@@ -265,13 +264,18 @@ Falls back today:
 [AVX_W47] 2 template(s) could not be compiled to a render program and will
 render through the string renderer:
   a <@suspense> boundary: ProductList
-  a template ref: SearchBox
+  declarative validation: SearchBox
 ```
 
 Those components still work. They cost time proportional to their whole
 template on every update, which is worth knowing about rather than absorbing.
 Silence the class with `"warnings": { "AVX_W47": "off" }` in
 `avenx.config.json`.
+
+Template refs (`data-ax-ref`) keep their render program. `$refs` collects them
+lazily from the current DOM after bindings change, including conditional and
+list ranges. Repeated names resolve to the last element in document order;
+refs on mounted child components resolve to the component instance.
 
 You can ask a mounted component directly:
 
