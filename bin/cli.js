@@ -77,7 +77,6 @@ function refuseInvalidScaffoldName(command, name) {
   return false;
 }
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const findProjectRoot = loadConfig.findProjectRoot;
@@ -294,21 +293,21 @@ export class AvenxCLI {
           break;
         }
 
-        const targetDestroyName = SCAFFOLD_TYPES.includes(type) ? name : (name || type);
+        const targetDestroyName = SCAFFOLD_TYPES.includes(type) ? name : name || type;
         if (refuseInvalidScaffoldName('d', targetDestroyName)) {
           break;
         }
 
         if (type === 'bridge') {
-          destroyBridge(this, name, dryRun);
+          destroyBridge(this, name, dryRun, force);
         } else if (type === 'guard') {
-          destroyGuard(this, name, dryRun);
+          destroyGuard(this, name, dryRun, force);
         } else if (type === 'page' || type === 'p') {
-          destroyPage(this, name, dryRun);
+          destroyPage(this, name, dryRun, force);
         } else if (type === 'component' || type === 'c') {
-          destroyComponent(this, name, dryRun);
+          destroyComponent(this, name, dryRun, force);
         } else {
-          destroyComponent(this, name || type, dryRun);
+          destroyComponent(this, name || type, dryRun, force);
         }
         break;
       }
