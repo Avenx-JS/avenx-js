@@ -88,6 +88,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname === '/api/rewind') {
+    sendJson(res, 200, { ok: searchParams.get('outcome') === 'success' });
+    return;
+  }
+
   if (pathname === '/api/delay') {
     const ms = Number(searchParams.get('ms')) || 100;
     const val = searchParams.get('val') || 'delayed data';

@@ -49,6 +49,7 @@ test/e2e/
     components/     nesting, props from parent state, slot projection
     composition/    provide/inject descendants and keep-alive routes
     events/         @click and the modifier grammar
+    rewind/         atomic rollback, shared bridges, collections and concurrent writes
     styling/        scoped CSS, isolation, @def globals
     routing/        hash routes, params, query, wildcard, guards, a bridge
     forms/          data-ax-bind across input types, focus retention
@@ -159,7 +160,7 @@ product running in a browser.
 
 ## Current coverage
 
-265 tests across 33 spec files. Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
+272 tests across 34 spec files. Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
@@ -173,10 +174,11 @@ product running in a browser.
 | `performance/` | 6 | `<@defer>` triggers |
 | `reactivity/` | 19 | Compiled rendering, fine-grained updates and state-to-DOM |
 | `rendering/` | 35 | Fallback renderer, lists, conditionals and state initialisers |
+| `rewind/` | 6 | Synchronous and asynchronous rollback, shared bridge observers, nested and collection writes, key restoration, safe conflicts and commits |
 | `routing/` | 22 | Navigation, guards and guard regression tests |
 | `security/` | 15 | Dynamic attribute names and `srcdoc` |
 | `serve/` | 17 | Development server |
-| `smoke/` | 21 | Application boot |
+| `smoke/` | 22 | Application boot |
 | `styling/` | 12 | Attribute content and scoped CSS |
 | `transitions/` | 4 | List-row enter and leave classes, rapid toggling |
 | `virtual-list/` | 1 | Fixed-height VirtualList windowing and scroll boundaries |
@@ -189,8 +191,14 @@ while every test in this suite stayed green. A component that renders nothing
 raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
-Not yet covered, in rough priority order: rewind rollback, live reload, and
+Not yet covered, in rough priority order: live reload and
 trace capture under `avenx serve --trace`.
+
+The Rewind specs hold actual browser requests until their optimistic DOM
+assertions complete, then let the fixture server respond. No timer determines
+whether the test observes the optimistic state. Synchronous throws restore
+before the browser can paint; that case checks the reported error and restored
+DOM, while asynchronous rejection cases check both visible states.
 
 ## Construct parity: the shipped arrangement
 

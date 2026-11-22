@@ -57,6 +57,10 @@ export const APPS_DIR = path.resolve(here, '../apps');
  */
 export const APPS = [
   {
+    name: 'rewind',
+    summary: 'Atomic action rollback, shared bridge observers, collections, conflicts and commits.',
+  },
+  {
     name: 'refs',
     summary: 'Compiled refs across conditional blocks, keyed lists and child component instances.',
     forbiddenDiagnostics: ['AVX_W47'],
