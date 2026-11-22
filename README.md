@@ -622,7 +622,7 @@ is compiled entirely or not at all.
 
 | | |
 | :--- | :--- |
-| `<@suspense>` and `<@errorBoundary>` | transitions, template refs |
+| `<@suspense>` and `<@errorBoundary>` | transitions |
 | Virtualised lists, form validation | dynamic component tags |
 | Dynamic attribute names, router view | `<@deadlock>` boundary |
 

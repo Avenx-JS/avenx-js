@@ -210,7 +210,6 @@ function testRefusals() {
   const cases = [
     ['<@suspense><p>x</p></@suspense>', RefusalReason.SUSPENSE],
     ['<@deadlock name="d"><p>x</p></@deadlock>', RefusalReason.DEADLOCK],
-    ['<div data-ax-ref="box">x</div>', RefusalReason.REF],
     ['<div data-ax-validate="x">y</div>', RefusalReason.VALIDATION],
     ['<@else><p>x</p></@else>', RefusalReason.MALFORMED],
     ['<@empty><p>x</p></@empty>', RefusalReason.MALFORMED],
