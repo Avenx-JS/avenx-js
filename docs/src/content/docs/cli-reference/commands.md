@@ -864,6 +864,7 @@ Codes surfaced by `avenx build`, `avenx check`, and the runtime (e.g. `AVX_C01`,
 
 ```bash
 npx avenx explain <CODE> [options]
+npx avenx explain --list [error|warning|C|R|W] [--category <name>] [--json]
 ```
 
 #### Code Normalization
@@ -881,6 +882,20 @@ All three resolve to the same diagnostic. Normalization uppercases the input and
 | Flag / Option | Description |
 | :--- | :--- |
 | `--json` | Outputs the full diagnostic metadata as structured JSON. Ideal for IDE plugins, editor tooling, and CI/CD pipelines that consume diagnostics programmatically. |
+| `--list` | Lists every catalogued code, grouped by category, with its default severity and whether a `warnings` entry in `avenx.config.json` can configure it. Takes an optional filter: `error`, `warning`, or a code letter (`C`, `R`, `W`). |
+| `--category <name>` | With `--list`, keeps only one category (`compiler`, `runtime`, `styling`, `routing`, `accessibility`, `environment`). |
+
+#### Listing the Catalogue
+
+`avenx explain --list` prints every code in the catalogue, so you can find a code without grepping the source:
+
+```text
+COMPILER (73)
+  AVX_C01  error     not configurable  CompilerDistCreationFailed
+  ...
+```
+
+With `--json`, the same entries are emitted as an array. Each entry has the fields of the single-code `--json` payload plus `configurable`, a boolean that is `true` only for `AVX_W*` warning codes. Filters combine: `avenx explain --list W --category runtime` lists the runtime warnings.
 
 #### Terminal Color Output
 
@@ -918,6 +933,10 @@ npx avenx explain w29
 
 # Machine-readable metadata for tooling and CI
 npx avenx explain AVX_R18 --json
+
+# List every code, or only the warnings
+npx avenx explain --list
+npx avenx explain --list warning --json
 ```
 
 **Sample Output (warning):**
