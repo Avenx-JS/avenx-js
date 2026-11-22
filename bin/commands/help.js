@@ -23,7 +23,7 @@ ${bold(cyan('Commands:'))}
   ${green('check (lint)')}              ${gray('Validate templates without building')}
   ${green('doctor')}                    ${gray('Diagnose environment, config, and project health (--json for machine-readable output)')}
   ${green('env')}                       ${gray('Print and validate active environment variables')}
-  ${green('explain <CODE>')}            ${gray('Explain a compiler/runtime error or warning code')}
+  ${green('explain <CODE|--list>')}     ${gray('Explain a compiler/runtime error or warning code, or list them all')}
   ${green('inspect (i)')}               ${gray('Inspect project route and component hierarchy')}
   ${green('stats (s)')}                 ${gray('Display component & bundle footprint metrics')}
   ${green('atlas')}                     ${gray('Show the compiler\'s semantic map of the application')}
@@ -52,7 +52,9 @@ ${bold(cyan('Options:'))}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
-  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only)')}
+  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only, with --list too)')}
+  ${green('--list')}                    ${gray('explain: list every code with severity, category and whether warnings can configure it')}
+  ${green('--category <name>')}         ${gray('explain --list: keep only one category (compiler, runtime, styling, routing, accessibility, environment)')}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
   ${green('--watch, -w')}               ${gray('Watch project component files for continuous template linting')}
   ${green('--strict, --strict-a11y')}   ${gray('Make "check" fail on accessibility warnings too')}

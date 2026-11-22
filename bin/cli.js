@@ -15,7 +15,7 @@ import { runDoctor } from './commands/doctor.js';
 import { runInspect } from './commands/inspect.js';
 import { runStats } from './commands/stats.js';
 import { runEnv } from './commands/env.js';
-import { explainDiagnostic } from './commands/explain.js';
+import { explainDiagnostic, listDiagnostics } from './commands/explain.js';
 import { runTrace } from './commands/trace.js';
 import { runAtlas, runQuery } from './commands/atlas.js';
 
@@ -438,6 +438,10 @@ export class AvenxCLI {
         break;
       case 'explain': {
         const asJson = args.includes('--json');
+        if (args.includes('--list')) {
+          listDiagnostics(args, asJson);
+          break;
+        }
         const codeArg = args.find((a) => !a.startsWith('-'));
         explainDiagnostic(this, codeArg, asJson);
         break;
