@@ -4635,3 +4635,19 @@ See [Nesting Components](/core-concepts/components#nesting-components) for how c
 1. Run the component in a browser, or give the test runner a DOM environment. For Vitest, install `happy-dom` or `jsdom` and set `test: { environment: 'happy-dom' }` in the Vitest config.
 2. If a DOM mock is in use, replace it with a complete DOM implementation (happy-dom, jsdom, or a real browser) whose parser preserves the compiled skeleton.
 3. Do not rebuild from a clean `dist/` for this code, and do not file it as a compiler defect — nothing about the build is wrong.
+
+### AVX_W77 — COMPILER_RECONCILIATION_MARKER
+
+**Cause:** A template explicitly writes `data-ax-static`, `data-ax-key`, or
+`data-ax-skip`. These attributes are compiler and renderer bookkeeping, not a
+supported way to control template updates. The warning names the attribute and
+the element that carries it, including bare attributes and `="true"` forms.
+
+**Resolution:** Remove `data-ax-static` and `data-ax-skip`; the compiler
+identifies static subtrees and the renderer manages skipping. For list identity,
+write a `key` expression on `<@for>` instead of `data-ax-key`.
+
+The check runs on authored markup before compiler-generated markers are added,
+so normal static subtree optimization and keyed lists do not warn. This warning
+does not change rendering. To silence intentional usage, set
+`"warnings": { "AVX_W77": "off" }` in `avenx.config.json`; use `"error"` to reject it.
