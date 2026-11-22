@@ -57,6 +57,11 @@ export const APPS_DIR = path.resolve(here, '../apps');
  */
 export const APPS = [
   {
+    name: 'refs',
+    summary: 'Compiled refs across conditional blocks, keyed lists and child component instances.',
+    forbiddenDiagnostics: ['AVX_W47'],
+  },
+  {
     name: 'counter',
     summary: 'State, computed values, actions and bound boolean attributes.',
     developmentBuild: true,
