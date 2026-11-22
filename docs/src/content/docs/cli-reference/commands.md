@@ -247,6 +247,8 @@ npx avenx g guard auth
 
 Removes scaffolded component, page, bridge, or guard files and automatically cleans up their import statements and registrations inside `src/main.app.js`.
 
+Before deleting, `destroy` asks Atlas what still references the symbol (the same graph as `avenx impact`). References in the files being deleted and in `main.app.js` are ignored, because those are cleaned up. Any other remaining reference is printed, and the command exits 1 unless `--force` is passed.
+
 #### Subtypes
 
 - **Component (`component`, `c`)**: Deletes `src/components/<name>/` and cleans up `main.app.js`.
@@ -256,8 +258,8 @@ Removes scaffolded component, page, bridge, or guard files and automatically cle
 
 #### Options
 
-- `--dry-run` / `-d`: Previews files that would be removed without deleting anything.
-- `--force` / `-f`: Bypasses Git working tree status checks.
+- `--dry-run` / `-d`: Previews files that would be removed, and any remaining references that would break, without deleting anything.
+- `--force` / `-f`: Bypasses Git working tree status checks, and deletes even when remaining references would break.
 
 #### Usage Examples
 
