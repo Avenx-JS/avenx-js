@@ -956,6 +956,9 @@ async function runTest() {
     assert.strictEqual(inspectAliasOutput, inspectOutput, 'avenx i should produce identical output to avenx inspect');
     console.log('✅ Inspect command tests passed!');
 
+    execSync(`node ${BIN_PATH} destroy component unused-inspect-btn`, { cwd: TEST_DIR });
+    execSync(`node ${BIN_PATH} destroy bridge inspect-auth`, { cwd: TEST_DIR });
+
     // 7. Test watch command
     console.log('🧪 Testing avenx watch...');
     const watchProc = spawn(process.execPath, [BIN_PATH, 'watch'], {

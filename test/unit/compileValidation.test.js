@@ -275,9 +275,9 @@ function runTests() {
   assert.ok(warningsUndeclaredBind[0].includes('AVX_W03'));
   assert.ok(warningsUndeclaredBind[0].includes('missingField'));
 
-  const warningsKey = captureWarnings(() => {
+  const warningsShow = captureWarnings(() => {
     cp.extractTemplate(
-      '<div data-ax-key="undeclaredKey"></div>',
+      '<div data-ax-show="undeclaredKey"></div>',
       {},
       'MyComp',
       'my-component.js',
@@ -286,9 +286,9 @@ function runTests() {
       {},
     );
   });
-  assert.strictEqual(warningsKey.length, 1);
-  assert.ok(warningsKey[0].includes('AVX_W03'));
-  assert.ok(warningsKey[0].includes('undeclaredKey'));
+  assert.strictEqual(warningsShow.length, 1);
+  assert.ok(warningsShow[0].includes('AVX_W03'));
+  assert.ok(warningsShow[0].includes('undeclaredKey'));
 
   const warningsSameTemplate = captureWarnings(() => {
     cp.extractTemplate(
