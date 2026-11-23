@@ -92,7 +92,7 @@
     "bench:report": "node benches/run.js --json > bench-results/results.json",
     "docs": "jsdoc -c jsdoc.json",
     "lint": "eslint \"**/*.js\"",
-    "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\"",
+    "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\" \"bin/commands/serve/**/*.{html,css}\"",
     "generate:config-schema": "node scripts/generateConfigSchema.js",
     "prepack": "npm run generate:config-schema"
   },

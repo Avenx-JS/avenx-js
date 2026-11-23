@@ -174,4 +174,18 @@ export default [
       'jsdoc/require-returns-type': 'off',
     },
   },
+
+  {
+    files: ['bin/commands/serve/**/client.js'],
+    // These are classic browser scripts injected verbatim, not Node modules.
+    languageOptions: { sourceType: 'script', globals: { EventSource: 'readonly' } },
+    rules: { indent: ['error', 4, { SwitchCase: 1 }] },
+  },
+
+  {
+    files: ['bin/commands/serve/overlay/client.js'],
+    // Preserve this standalone ES5 client's exact emitted bytes during extraction.
+    // Syntax, undefined names and the other correctness rules still apply.
+    rules: { 'no-var': 'off', 'prefer-const': 'off', 'prefer-arrow-callback': 'off' },
+  },
 ];
