@@ -420,12 +420,12 @@ through hidden nodes.
 
 `--focus` uses the existing impact and why walks around one unambiguous symbol.
 `--depth` bounds each walk (default 3, with 0 selecting only the symbol), then
-the kind filter applies. Include `state` in `--kinds` when focusing on a state
-key. Ambiguous or unknown symbols and invalid kinds or formats fail with a
+the kind filter applies. `--depth` without `--focus` is rejected. Include
+`state` in `--kinds` when focusing on a state key. Ambiguous or unknown symbols and invalid kinds or formats fail with a
 nonzero exit status.
 
-Stdout contains only the diagram; diagnostics go to stderr. `--out` writes it to
-the given file instead, relative to the current directory. DOT output can be
+Stdout contains only the diagram; diagnostics go to stderr. `--out` (or `-o`)
+writes it to the given file instead, relative to the current directory. DOT output can be
 rendered with Graphviz, for example `dot -Tsvg application.dot -o application.svg`.
 `--json` remains the separate, unfiltered machine-readable Atlas output and
 cannot be combined with `--graph`.

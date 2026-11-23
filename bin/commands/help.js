@@ -66,7 +66,7 @@ ${bold(cyan('Options:'))}
   ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
-  ${green('--out, -o <file>')}          ${gray('Where "trace export" writes the generated regression test; atlas --graph accepts --out')}
+  ${green('--out, -o <file>')}          ${gray('Where "trace export" writes the generated regression test; also where "atlas --graph" writes the diagram')}
   ${green('--graph --format <type>')}   ${gray('Draw the Atlas as mermaid (default) or dot')}
   ${green('--kinds <list>')}            ${gray('Atlas graph node kinds; default: route,page,component,bridge')}
   ${green('--focus <symbol>')}          ${gray('Bound an Atlas graph around a symbol, with --depth <n>')}
