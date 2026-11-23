@@ -207,3 +207,4 @@ When introducing new template syntax or altering AST transformations:
 - `style/preprocessors.js`: optional package resolution, preprocessing and per-build warning deduplication; dependency caches survive reset.
 - `style/variables.js`: @def declaration substitution and unresolved-reference diagnostics.
 - `style/atRules.js`: nested rule traversal, at-rule wrappers and source-line propagation; selector rewriting remains in StyleProcessor.
+- `style/unitCache.js`: capture, slicing, conflict checks and replay of a unit's stylesheet contribution; reset remains with the owner of the collections.
