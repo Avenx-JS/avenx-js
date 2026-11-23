@@ -670,6 +670,44 @@ npx avenx help
 
 Analyzes the project's source files and reports component, page, bridge, and guard footprint metrics, including source file sizes, template sizes, scoped CSS payloads, and reactive state properties.
 
+#### Save and compare a built bundle
+
+Build first, then measure the JavaScript and CSS under the configured `distDir`,
+including code-split chunks. Source maps and unrelated assets are not measured.
+The command reads the current output without rebuilding it, so choose the same
+build mode when comparing revisions:
+
+```bash
+npx avenx build --force
+npx avenx stats --save
+# Change the application, then rebuild:
+npx avenx build --force
+npx avenx stats --compare --max-increase 5%
+```
+
+`--save [file]` and `--compare [file]` use `.avenx/size-baseline.json` when the
+path is omitted. Pass a different path to keep a baseline under version control.
+Paths are relative to the project root; `--save` creates missing parent
+directories. A missing build, unreadable baseline or invalid threshold exits 1.
+The two operations cannot be combined.
+
+The comparison lists raw, minified and gzipped bytes for each asset and their
+totals, including added and removed files. Minification and gzip settings are
+shared with `scripts/size-check.js`, so identical emitted assets match CI.
+Both use Avenx's built-in JavaScript minifier, keeping the installed CLI free of
+external dependencies. These measurements replace CI's former Terser-based
+figures; regenerate baselines when changing the measurement version.
+`--max-increase 5%` exits 1 if **any total** (raw, minified or gzipped) grows by
+more than 5%; equality passes. Growth from an empty baseline fails any finite
+percentage limit. `--json` emits the same byte counts, deltas and threshold
+result; a percentage with a zero baseline is `null` for newly added bytes.
+Without `--save` or `--compare`, the existing source footprint report is unchanged.
+
+A pre-push hook can run `npx avenx build --force && npx avenx stats --compare
+path/to/committed-baseline.json --max-increase 5%`. Save the baseline from the
+revision you want to compare against; measuring stale output gives a stale
+comparison.
+
 #### Command Syntax
 
 ```bash

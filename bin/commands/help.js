@@ -60,6 +60,9 @@ ${bold(cyan('Options:'))}
   ${green('--watch, -w')}               ${gray('Watch project component files for continuous template linting')}
   ${green('--strict, --strict-a11y')}   ${gray('Make "check" fail on accessibility warnings too')}
   ${green('--sarif')}                   ${gray('Emit SARIF 2.1.0 from "check" for code scanning annotations')}
+  ${green('--save [file]')}             ${gray('Save built asset sizes with "stats" (default: .avenx/size-baseline.json)')}
+  ${green('--compare [file]')}          ${gray('Compare built asset sizes against a saved baseline')}
+  ${green('--max-increase <n%>')}       ${gray('Fail "stats --compare" if total raw, minified or gzip growth exceeds n%')}
   ${green('--no-color')}                ${gray('Disable colored output (the NO_COLOR variable is honored too)')}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}

@@ -1,8 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import zlib from 'zlib';
-import { minify } from 'terser';
+import { measureAsset } from '../lib/compiler/sizeMetrics.js';
 
 // Helper to parse simple command line arguments
 function parseArgs() {
@@ -21,23 +20,6 @@ function parseArgs() {
     }
   }
   return args;
-}
-
-// Simple CSS minifier
-function minifyCss(css) {
-  return css
-    .replace(/\/\*[\s\S]*?\*\//g, '') // remove comments
-    .replace(/\s+/g, ' ') // collapse whitespace
-    .replace(/\s*([{}:;])\s*/g, '$1') // remove whitespace around punctuation
-    .trim();
-}
-
-// Calculate sizes
-function getMetrics(rawContent, minifiedContent) {
-  const raw = Buffer.byteLength(rawContent, 'utf8');
-  const minified = Buffer.byteLength(minifiedContent, 'utf8');
-  const gzipped = zlib.gzipSync(Buffer.from(minifiedContent, 'utf8')).length;
-  return { raw, minified, gzipped };
 }
 
 // Format sizes for display
@@ -108,27 +90,8 @@ async function run() {
       const cssRaw = fs.readFileSync(cssPath, 'utf8');
 
       console.log('Minifying assets...');
-      /* eslint-disable camelcase */
-      const jsMinifiedResult = await minify(jsRaw, {
-        compress: {
-          dead_code: true,
-          drop_debugger: true,
-          conditionals: true,
-          evaluate: true,
-          booleans: true,
-          unused: true,
-          if_return: true,
-          join_vars: true,
-        },
-        mangle: true,
-      });
-      /* eslint-enable camelcase */
-
-      const jsMinified = jsMinifiedResult.code || '';
-      const cssMinified = minifyCss(cssRaw);
-
-      const jsMetrics = getMetrics(jsRaw, jsMinified);
-      const cssMetrics = getMetrics(cssRaw, cssMinified);
+      const jsMetrics = await measureAsset(jsRaw, 'js');
+      const cssMetrics = await measureAsset(cssRaw, 'css');
 
       const metrics = {
         js: jsMetrics,
