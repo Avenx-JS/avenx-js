@@ -46,6 +46,30 @@ try {
     assert.strictEqual(errorThrown, true, 'Expected reportWarning to throw when severity is "error"');
     assert.strictEqual(loggedWarnings.length, 0, 'Logger should not log when elevated to error');
 
+    // Code > rule name > category > default, independent of key order.
+    assert.throws(() => reportWarning('AVX_W65', 'Missing alt', {
+      warnings: { accessibility: 'error' },
+    }), /Missing alt/);
+    loggedWarnings = [];
+    reportWarning('AVX_W65', 'Missing alt', {
+      warnings: { accessibility: 'error', 'img-alt': 'off' },
+    });
+    assert.strictEqual(loggedWarnings.length, 0);
+    reportWarning('AVX_W65', 'Missing alt', {
+      warnings: { AVX_W65: 'warn', 'img-alt': 'off', accessibility: 'error' },
+    });
+    assert.strictEqual(loggedWarnings.length, 1);
+    assert.throws(() => reportWarning('AVX_W65', 'Named rule', {
+      warnings: { 'img-alt': 'error' },
+    }), /Named rule/);
+    loggedWarnings = [];
+    reportWarning('AVX_W03', 'Other category', {
+      warnings: { accessibility: 'off' },
+    });
+    assert.strictEqual(loggedWarnings.length, 1, 'Unrelated categories retain their default');
+    reportWarning('AVX_W03', 'Unknown key', { warnings: { undefined: 'off' } });
+    assert.strictEqual(loggedWarnings.length, 2, 'Unknown keys cannot suppress warnings without a rule');
+
     // 4. ComponentParser template validation with severity overrides
     const styleProc = new StyleProcessor();
 

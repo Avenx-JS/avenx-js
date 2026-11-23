@@ -46,7 +46,7 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 | `voidTags`     | `string[]` | `[]`                   | Extra tag names the compiler treats as void (self-closing), in addition to the built-in HTML void tags (`img`, `br`, `input`, etc.). Each entry must be a non-empty string. |
 | `preprocessors` | `function` or `object` | `{}` | Synchronous template transform, or a map of transforms keyed by template language. Functions must be supplied from JavaScript, not JSON. See [Template preprocessors](#template-preprocessors-preprocessors). |
 | `templateGlobals` | `string[]` | `[]`                 | Identifiers a plugin publishes into every component's template scope through `app.mixin()`. Declaring them lets template validation accept `{{ t('home.title') }}` without weakening the check for anything else. See [Plugin-provided template globals](#plugin-provided-template-globals). |
-| `warnings`     | `object`   | `{}`                   | Map of compiler warning codes (`AVX_W01`, `AVX_W03`, etc.) to severity overrides (`"off"`, `"ignore"`, `"warn"`, or `"error"`). |
+| `warnings`     | `object`   | `{}`                   | Map of warning codes, categories, or named accessibility rules to severity overrides (`"off"`, `"ignore"`, `"warn"`, or `"error"`). |
 | `expressionCacheCapacity` | `number` | `1000` | Sets the maximum capacity of the compiled-expression cache, the cache of parsed expressions a build holds. Must be a positive integer. A larger capacity keeps more parsed expressions between builds, which can reduce recompilation at the cost of memory. |
 | `sourcesContent` | `boolean` | `true` | Includes original source code in generated source maps. Set to `false` to omit the original source content. |
 | `incremental`  | `boolean`  | `false`                | Lets `avenx serve`, `avenx watch` and `avenx check --watch` reuse the compilation of a file that has not changed, so a rebuild after one edit does not recompile the project. See [Incremental rebuilds](#incremental-rebuilds-incremental). |
@@ -733,9 +733,39 @@ In this example:
 
 ---
 
+### Warning categories and named rules
+
+The `warnings` map accepts diagnostic categories from `avenx explain`, as well
+as exact warning codes and the named accessibility rules:
+
+```json
+{
+  "warnings": {
+    "accessibility": "error",
+    "img-alt": "off",
+    "AVX_W68": "warn",
+    "styling": "off"
+  }
+}
+```
+
+An exact code wins over a rule name, which wins over its category; warnings
+without an override keep their default severity. The order of the keys does
+not matter. Category settings also cover future warning codes added to that
+category. Error codes cannot be demoted by this map. Unknown categories,
+rules and codes produce a warning, with a spelling suggestion when possible.
+
+Rule names are `img-alt`, `interactive-role`, `anchor-href`,
+`form-control-label`, `button-name`, `positive-tabindex`, `aria-unknown-role`,
+`aria-unknown-attribute`, `aria-invalid-value` and `aria-hidden-focusable`.
+
+`avenx check --strict-a11y` remains a command-line gate for accessibility
+warnings. Setting `warnings.accessibility` to `error` also promotes them in
+ordinary builds; individual code or rule exceptions still take precedence.
+
 ### Warning Codes Must Name a Real Warning
 
-Each key in the `warnings` map must be the canonical code of a warning the compiler can emit — an `AVX_W*` code from the diagnostic registry (`lib/core/runtime/AvenxError.js`), spelled exactly as documented, e.g. `AVX_W55`. Only the canonical spelling takes effect.
+A key selecting an exact warning must be the canonical code of a warning the compiler can emit — an `AVX_W*` code from the diagnostic registry (`lib/core/runtime/AvenxError.js`), spelled exactly as documented, e.g. `AVX_W55`. Only the canonical spelling takes effect.
 
 A key that names no warning does not stop the build, but it is reported when the configuration is loaded, with a suggestion when the key looks like a variant of a real code:
 
@@ -911,5 +941,3 @@ In CI pipelines (e.g. GitHub Actions, GitLab CI), override build output director
 1. **Do Not Commit Secrets in `avenx.config.json`**: Avoid hardcoding sensitive keys, API credentials, or private tokens in `avenx.config.json` or fallback values.
 2. **Use `.env` Files Responsibly**: Store environment secrets in `.env` files and ensure `.env` is included in your `.gitignore`.
 3. **Always Provide Default Fallbacks**: Use the `${VAR_NAME:-fallback}` syntax for non-critical options so local development works out of the box without requiring manual environment exports.
-
-
