@@ -8,7 +8,7 @@ import { spawnSync } from 'child_process';
 import { Window } from 'happy-dom';
 import AvenxCompiler from '../../lib/compiler.js';
 import { PAGE_CHUNK_RUNTIME_NAMES } from '../../lib/compiler/modules.js';
-import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
+import { PUBLIC_GLOBALS, ROUTER_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -224,7 +224,7 @@ const app = new AvenxApp({ target: '#app' });
     const added = Object.keys(window).filter((key) => !before.has(key));
     assert.deepStrictEqual(
       added.sort(),
-      [NAMESPACE_GLOBAL, ...PUBLIC_GLOBALS].sort(),
+      [NAMESPACE_GLOBAL, ...PUBLIC_GLOBALS, ...ROUTER_GLOBALS].sort(),
       'a split build installs the namespace and the declared globals, and nothing else',
     );
     await window.happyDOM.close();

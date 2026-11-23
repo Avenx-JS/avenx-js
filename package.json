@@ -28,6 +28,10 @@
       "types": "./lib/core/runtime/installVirtualList.d.ts",
       "default": "./lib/core/runtime/installVirtualList.js"
     },
+    "./runtime/router": {
+      "types": "./lib/core/runtime/installRouter.d.ts",
+      "default": "./lib/core/runtime/installRouter.js"
+    },
     "./core": {
       "types": "./lib/core/index.d.ts",
       "default": "./lib/core/index.js"
@@ -66,6 +70,7 @@
     "./lib/core/expression/interpreter.js",
     "./lib/core/reactive/proxyHandler.js",
     "./lib/core/renderer/installStringRenderer.js",
+    "./lib/core/runtime/installRouter.js",
     "./lib/core/runtime/installVirtualList.js"
   ],
   "scripts": {

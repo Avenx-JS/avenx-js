@@ -37,4 +37,5 @@
 if (!process.env.AVENX_TEST_NO_DEV_RUNTIME) {
   await import('../../lib/core/expression/interpreter.js');
   await import('../../lib/core/renderer/installStringRenderer.js');
+  await import('../../lib/core/runtime/installRouter.js');
 }
