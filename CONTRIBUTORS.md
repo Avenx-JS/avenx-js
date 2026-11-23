@@ -244,6 +244,7 @@ If you have questions or want to contribute, feel free to reach out.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Aschenbath"><img src="https://avatars.githubusercontent.com/u/184111764?v=4&size=100" width="100px" height="100px" alt="Nash Aschenbath"/><br /><sub><b>Nash Aschenbath</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Aschenbath" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Xnadir"><img src="https://avatars.githubusercontent.com/u/36660597?v=4&size=100" width="100px" height="100px" alt="Nadir Ali"/><br /><sub><b>Nadir Ali</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Xnadir" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/MaxonT"><img src="https://avatars.githubusercontent.com/u/173550318?v=4&size=100" width="100px" height="100px" alt="Ming "/><br /><sub><b>Ming </b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=MaxonT" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
