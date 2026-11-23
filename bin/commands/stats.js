@@ -7,6 +7,7 @@ import { buildModel } from './atlas.js';
 import { withWarningsSuppressed } from '../../lib/compiler/utils/warningReporter.js';
 import { bold, cyan, green, yellow, gray } from '../colors.js';
 import { runBundleStats } from './bundleStats.js';
+import { readCompositionStats, printCompositionStats } from './compositionStats.js';
 
 /**
  * Formats byte counts into human readable strings (e.g. 500 B, 1.25 KB, 2.10 MB).
@@ -319,6 +320,7 @@ export function runStats(cli, args = []) {
   }
   const isJson = args.includes('--json') || args.includes('-j');
   const statsData = analyzeStats(cli);
+  statsData.bundle = readCompositionStats(cli);
 
   if (isJson) {
     console.log(JSON.stringify(statsData, null, 2));
@@ -333,6 +335,7 @@ export function runStats(cli, args = []) {
 
   if (items.length === 0) {
     console.log(gray('No source files found in ') + cyan(`${srcRel}/`) + gray('.'));
+    printCompositionStats(statsData.bundle, formatBytes);
     return;
   }
 
@@ -389,4 +392,5 @@ export function runStats(cli, args = []) {
   );
   console.log(`  ${gray('Scoped CSS Payload:')}     ${formatBytes(summary.totalScopedCssBytes)}`);
   console.log(`  ${gray('State Properties:')}       ${summary.totalStateProps}\n`);
+  printCompositionStats(statsData.bundle, formatBytes);
 }
