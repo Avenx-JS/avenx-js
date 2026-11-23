@@ -68,6 +68,21 @@
           "default": "localhost",
           "description": "Development server bind address."
         },
+        "https": {
+          "type": "boolean",
+          "default": false,
+          "description": "Serve HTTPS using server.cert and server.key."
+        },
+        "cert": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Development TLS certificate path, relative to the project root or absolute."
+        },
+        "key": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Development TLS private-key path, relative to the project root or absolute."
+        },
         "liveReload": {
           "type": "boolean",
           "default": true,
