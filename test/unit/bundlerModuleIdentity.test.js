@@ -21,7 +21,7 @@ import { Resolver } from '../../lib/bundler/resolve.js';
 
 console.log('🧪 Testing bundler module identity across symlinks...');
 
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-identity-')));
+const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-identity-')));
 
 /**
  * Writes a file, creating parent directories.
@@ -44,7 +44,7 @@ try {
 
   // ...and the symlink an install creates for it.
   fs.mkdirSync(path.join(root, 'app/node_modules'), { recursive: true });
-  fs.symlinkSync(path.join(root, 'packages/widget'), path.join(root, 'app/node_modules/widget'), 'dir');
+  fs.symlinkSync(path.join(root, 'packages/widget'), path.join(root, 'app/node_modules/widget'), process.platform === 'win32' ? 'junction' : 'dir');
 
   const resolver = new Resolver({});
   const importer = path.join(root, 'app/src/main.js');

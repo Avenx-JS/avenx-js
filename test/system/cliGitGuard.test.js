@@ -31,7 +31,7 @@ const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
  * @returns {string} The directory path.
  */
 function makeTempDir() {
-  return fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-git-guard-'));
+  return fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-git-guard-'));
 }
 
 /**

@@ -177,6 +177,7 @@ export class AvenxCLI {
     const force = args.includes('--force') || args.includes('-f');
     const withTest = args.includes('--with-test');
     const noTest = args.includes('--no-test');
+    const noStyle = args.includes('--no-style');
 
     // `avenx build` is production by default; `--dev` opts out. `--prod` is
     // accepted so a script can state the intent it relies on. `serve` and
@@ -231,7 +232,8 @@ export class AvenxCLI {
         !arg.startsWith('-t=') &&
         arg !== '--with-test' &&
         arg !== '--csp-strict' &&
-        arg !== '--no-test',
+        arg !== '--no-test' &&
+        arg !== '--no-style',
     );
     const type = filteredArgs[0];
     const name = filteredArgs[1];
@@ -273,11 +275,11 @@ export class AvenxCLI {
         } else if (type === 'guard') {
           generateGuard(this, name, dryRun, force, templateName);
         } else if (type === 'page' || type === 'p') {
-          generatePage(this, name, dryRun, force, templateName);
+          generatePage(this, name, dryRun, force, templateName, noStyle);
         } else if (type === 'component' || type === 'c') {
-          generateComponent(this, name, dryRun, force, templateName, withTest, noTest);
+          generateComponent(this, name, dryRun, force, templateName, withTest, noTest, noStyle);
         } else {
-          generateComponent(this, type, dryRun, force, templateName, withTest, noTest);
+          generateComponent(this, type, dryRun, force, templateName, withTest, noTest, noStyle);
         }
         break;
       }
@@ -359,6 +361,19 @@ export class AvenxCLI {
         const hostIdx = args.findIndex(
           (a) => a === '--host' || a === '-h' || a.startsWith('--host=') || a.startsWith('-h='),
         );
+        const certIdx = args.findIndex((a) => a === '--cert' || a.startsWith('--cert='));
+        const keyIdx = args.findIndex((a) => a === '--key' || a.startsWith('--key='));
+        if (args.includes('--https')) this.config.server.https = true;
+        for (const [name, idx] of [['cert', certIdx], ['key', keyIdx]]) {
+          if (idx === -1) continue;
+          const value = args[idx].includes('=')
+            ? args[idx].slice(args[idx].indexOf('=') + 1)
+            : args[idx + 1];
+          if (!value || value.startsWith('--') || value.trim() === '') {
+            throw new Error(`--${name} requires a file path`);
+          }
+          this.config.server[name] = value;
+        }
         const open = args.includes('--open') || args.includes('-o');
 
         if (args.includes('--no-live-reload') || args.includes('--live-reload=false')) {
@@ -377,7 +392,7 @@ export class AvenxCLI {
         // flag — `serve --trace 8080`, `serve --open 8080` — silently fell back
         // to the default port.
         const flagValueIndexes = new Set();
-        for (const idx of [portIdx, hostIdx]) {
+        for (const idx of [portIdx, hostIdx, certIdx, keyIdx]) {
           if (idx !== -1 && !args[idx].includes('=')) {
             flagValueIndexes.add(idx + 1);
           }

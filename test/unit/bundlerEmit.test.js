@@ -24,7 +24,7 @@ import { emitBundle, EmitError, mutableExports } from '../../lib/bundler/emit.js
 
 console.log('🧪 Testing the bundler emitter...');
 
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-emit-')));
+const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-emit-')));
 
 /**
  * Writes a fixture module.

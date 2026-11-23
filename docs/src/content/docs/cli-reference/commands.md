@@ -153,7 +153,16 @@ logStatus('Checking bundle size', false);
 
 ### 1. `avenx init`
 
-Scaffolds a new Avenx-JS application workspace structure in the current working directory.
+Scaffolds a new Avenx-JS application workspace structure in the current working directory, or with a name, in a new directory of that name.
+
+```bash
+avenx init [name] [--layout …] [--style …] [-y]
+```
+
+- With no name, the project is scaffolded into the current directory.
+- With a name, `avenx init my-app` creates `./my-app`, scaffolds into it and prints `cd my-app` as the next step. The generated `package.json` takes the directory's name.
+- The name follows the rules of the other scaffold commands (a leading letter, then letters, digits, `-` and `_`), so `avenx init ../foo` and `avenx init "my app"` are refused.
+- An existing directory that is not empty is refused before anything is written, unless `--force` is passed.
 
 #### Interactive Project Wizard (`runWizard`)
 
@@ -195,6 +204,9 @@ When invoked in an interactive terminal, `avenx init` launches an interactive se
 # Interactive project scaffolding wizard
 npx avenx init
 
+# Create ./my-app and scaffold into it
+npx avenx init my-app
+
 # Non-interactive / CI scaffolding with default options
 npx avenx init -y
 
@@ -220,6 +232,7 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 - `--dry-run` / `-d`: Previews generated files without writing to disk.
 - `--force` / `-f`: Bypasses Git working tree status checks.
 - `--with-test`: Also writes a colocated unit test next to a generated component. `--no-test` skips it. Neither is the default.
+- `--no-style`: Writes a component or page without its stylesheet (`.component.css` or `.page.css`), for projects that style components another way. The generated template then has no `@css` references, so it builds without `AVX_W49`.
 - `--template <name>` / `-t <name>`: Generates from the override named `<name>` under `templatesDir` (for example `.avenxtemplates/component/<name>/component.js.template`) instead of the default template. See [Custom Templates](/cli-reference/custom-templates/).
 
 #### Usage Examples
@@ -467,6 +480,32 @@ Launches a local live-reloading development server with automatic file watching 
 
 Custom HTTP response headers (such as `Content-Security-Policy` or CORS headers) can be attached to every dev-server response via [`server.headers`](/getting-started/configuration#dev-server-response-headers-serverheaders) in `avenx.config.json`. These headers apply to `avenx serve` only and do not affect production builds.
  
+#### HTTPS for device testing
+
+`--https --cert <file> --key <file>` serves the app, inspector and live-reload
+channel over HTTPS. `--open` opens the same HTTPS address. Paths are resolved
+relative to the project root; absolute paths are also accepted. The flags
+override `server.https`, `server.cert` and `server.key` in `avenx.config.json`.
+
+For example, generate a development certificate using [mkcert](https://github.com/FiloSottile/mkcert),
+replacing `192.168.1.20` with your computer's LAN address:
+
+```sh
+mkcert -install
+mkcert -cert-file ../dev.pem -key-file ../dev-key.pem localhost 127.0.0.1 ::1 192.168.1.20
+avenx serve --host 0.0.0.0 --https --cert ../dev.pem --key ../dev-key.pem --open
+```
+
+On the device, trust mkcert's development CA and open `https://192.168.1.20:3000`.
+Do not share the CA's private key or commit development private keys. Prefer
+keeping certificate files outside your served project; the configured files and
+symlinks to them are also refused by the static-file server.
+
+Browsers treat `localhost` as a secure context, but a plain HTTP LAN address is
+not one. A trusted HTTPS origin enables device testing of camera/microphone,
+clipboard, service workers, geolocation and WebAuthn. `--https` without a pair
+fails with a mkcert command; Avenx does not generate or install certificates.
+
 #### Build error overlay
 
 When a rebuild fails while `avenx serve` is running, the compiler diagnostics are pushed to the browser over the same `/__avenx_live_reload__` SSE channel that drives live reload and rendered as an overlay on the page. The overlay shows the severity, the `AVX_*` code, the source file with line and column, the message, and the caret-annotated code frame — the same information the terminal prints, in the window the developer is already looking at.
@@ -1047,6 +1086,13 @@ npx avenx atlas --json    # the whole model
 `avenx build` writes the same model to `dist/<outputName>.atlas.json`, beside the bundle. It is never referenced by the bundle, so it costs a browser nothing.
 
 ---
+
+#### Diagrams
+
+`avenx atlas --graph` writes a Mermaid flowchart of routes, pages, components and bridges to stdout. Use `--format dot` for Graphviz, `--out architecture.dot` (or `-o`) to save it, or `--kinds state,action --focus cart.items --depth 2` to inspect a bounded part of the model. Singular and plural kind names are accepted. Possible relationships are dashed; every diagram reports unresolved relationships and analysis errors from the full model. `--graph` and `--json` are mutually exclusive.
+
+See the [Atlas guide](/core-concepts/atlas/) for examples.
+
 
 ### 17. `avenx impact`
 

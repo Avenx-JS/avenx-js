@@ -9,7 +9,7 @@ ${bold(cyan('Avenx-JS CLI'))}
 ${bold('Usage:')} ${green('avenx')} ${gray('<command> [type] [name]')}
 
 ${bold(cyan('Commands:'))}
-  ${green('init')}                      ${gray('Initialize a new Avenx project structure')}
+  ${green('init [name]')}               ${gray('Initialize a new Avenx project here, or in a new ./<name> directory')}
   ${green('generate component <name>')} ${gray('Generate a new component (alias: g)')}
   ${green('generate page <name>')}      ${gray('Generate a new page (alias: g p)')}
   ${green('generate bridge <name>')}    ${gray('Generate a new shared reactive bridge')}
@@ -51,6 +51,7 @@ ${bold(cyan('Options:'))}
   ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
+  ${green('--no-style')}                ${gray('Skip the stylesheet of a generated component or page')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
   ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only, with --list too)')}
   ${green('--list')}                    ${gray('explain: list every code with severity, category and whether warnings can configure it')}
@@ -63,11 +64,16 @@ ${bold(cyan('Options:'))}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
   ${green('--open, -o')}                ${gray('Open a browser when "serve" starts')}
+  ${green('--https')}                   ${gray('Serve HTTPS (requires a certificate and key)')}
+  ${green('--cert <file>, --key <file>')} ${gray('Development TLS certificate and private key')}
   ${green('--no-live-reload')}          ${gray('Disable live reload while serving')}
   ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
-  ${green('--out, -o <file>')}          ${gray('Output file for "trace export" or "check --sarif"')}
+  ${green('--out, -o <file>')}          ${gray('Output file for "trace export", "atlas --graph" or "check --sarif"')}
+  ${green('--graph --format <type>')}   ${gray('Draw the Atlas as mermaid (default) or dot')}
+  ${green('--kinds <list>')}            ${gray('Atlas graph node kinds; default: route,page,component,bridge')}
+  ${green('--focus <symbol>')}          ${gray('Bound an Atlas graph around a symbol, with --depth <n>')}
   ${green('--keep=<n>, --all')}         ${gray('How much "trace prune" removes')}
   ${green('--help')}                    ${gray('Show this help for any command, before it runs')}
   ${green('--version, -v')}             ${gray('Output the current version')}

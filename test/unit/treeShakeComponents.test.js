@@ -34,7 +34,7 @@ const roots = [];
  * @returns {{js: string, css: string, root: string}} The emitted artifacts.
  */
 function buildProject(files, options = {}) {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-shake-comp-')));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-shake-comp-')));
   roots.push(root);
   for (const [relative, contents] of Object.entries(files)) {
     const full = path.join(root, relative);

@@ -27,7 +27,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 
-const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-format-exit-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-format-exit-'));
 
 /**
  * Runs a CLI command in the scaffolded project.

@@ -1553,6 +1553,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "Xnadir",
+      "name": "Nadir Ali",
+      "avatar_url": "https://avatars.githubusercontent.com/u/36660597?v=4",
+      "profile": "https://github.com/Xnadir",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",

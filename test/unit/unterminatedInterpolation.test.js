@@ -20,7 +20,7 @@ import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
 
 console.log('Testing AVX_W54 (unterminated interpolation)...');
 
-const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-w54-'));
+const dir = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-w54-'));
 const filePath = path.join(dir, 'probe.component.js');
 
 /**

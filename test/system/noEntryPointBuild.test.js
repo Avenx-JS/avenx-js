@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const bin = fileURLToPath(new URL('../../bin/avenx.js', import.meta.url));
-const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-entry-build-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-entry-build-'));
 function cli(...args) {
   const result = spawnSync(process.execPath, [bin, ...args], {cwd: root, encoding: 'utf8'});
   return {status: result.status, output: result.stdout + result.stderr};

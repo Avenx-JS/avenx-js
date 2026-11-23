@@ -74,6 +74,17 @@ function shouldGenerateTest(cli, withTestFlag, noTestFlag) {
 }
 
 /**
+ * Removes the `@css` references from a scaffolded template written without a
+ * stylesheet: the `<@css name />` tags and the `@css name` attributes. Left in
+ * place they would name style blocks that no stylesheet declares (AVX_W49).
+ * @param {string} content - The rendered template.
+ * @returns {string} The template without style references.
+ */
+export function stripStyleReferences(content) {
+  return content.replace(/^[ \t]*<@css\s+[\w-]+\s*\/>[ \t]*\r?\n/gm, '').replace(/[ \t]+@css\s+[\w-]+/g, '');
+}
+
+/**
  * Automatically adds import and registration for a component in src/main.app.js.
  * @param {object} cli
  * @param {string} className
@@ -265,11 +276,13 @@ export function generateGuard(cli, name, dryRun = false, force = false, template
  * @param {boolean|object} [dryRun]
  * @param {boolean} [force]
  * @param {string|null} [templateName]
+ * @param {boolean} [noStyle] - Skip the stylesheet and the template's `@css` references.
  */
-export function generatePage(cli, name, dryRun = false, force = false, templateName = null) {
+export function generatePage(cli, name, dryRun = false, force = false, templateName = null, noStyle = false) {
   if (typeof dryRun === 'object' && dryRun !== null) {
     force = dryRun.force || false;
     templateName = dryRun.templateName || null;
+    noStyle = dryRun.noStyle || false;
     dryRun = dryRun.dryRun || false;
   }
 
@@ -283,6 +296,7 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
   const pageDir = path.join(cli.baseDir, cli.config.srcDir, 'pages');
   const jsPath = path.join(pageDir, `${lowerName}.page.js`);
   const cssPath = path.join(pageDir, `${lowerName}.page.css`);
+  const willGenerateStyle = !noStyle;
 
   if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Page', lowerName, [jsPath, cssPath])) {
     return;
@@ -295,21 +309,18 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
   if (dryRun) {
     console.log(cyan(`🧪 [Dry Run] Page '${capitalizedName}' would be created at:`));
     console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.js`);
-    console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.css`);
+    if (willGenerateStyle) {
+      console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.css`);
+    }
     console.log(cyan('🧪 [Dry Run] No files were written.'));
     return;
   }
 
   const jsTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.js.template', templateName);
 
-  const cssTemplate = readTemplate(
-    cli.baseDir,
-    cli.config,
-    cli.frameworkDir,
-    'page',
-    'page.css.template',
-    templateName,
-  );
+  const cssTemplate = willGenerateStyle
+    ? readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.css.template', templateName)
+    : null;
 
   const pageNames = {
     legacyName: capitalizedName,
@@ -317,13 +328,16 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
     fileName: lowerName,
   };
 
-  const jsContent = renderTemplate(jsTemplate, 'page/page.js.template', pageNames, { allowRuntimeBindings: true });
+  const renderedPage = renderTemplate(jsTemplate, 'page/page.js.template', pageNames, { allowRuntimeBindings: true });
+  const jsContent = willGenerateStyle ? renderedPage : stripStyleReferences(renderedPage);
 
-  const cssContent = renderTemplate(cssTemplate, 'page/page.css.template', pageNames);
+  const cssContent = willGenerateStyle ? renderTemplate(cssTemplate, 'page/page.css.template', pageNames) : null;
 
   fs.mkdirSync(pageDir, { recursive: true });
   fs.writeFileSync(jsPath, jsContent);
-  fs.writeFileSync(cssPath, cssContent);
+  if (willGenerateStyle) {
+    fs.writeFileSync(cssPath, cssContent);
+  }
 
   console.log(green(`✅ Page '${capitalizedName}' generated at ${cli.config.srcDir}/pages/${lowerName}.page.js`));
   reportPageWiring(cli, capitalizedName, lowerName);
@@ -381,6 +395,7 @@ function reportPageWiring(cli, className, lowerName) {
  * @param {string|null} [templateName]
  * @param {boolean} [withTest]
  * @param {boolean} [noTest]
+ * @param {boolean} [noStyle] - Skip the stylesheet and the template's `@css` references.
  */
 export function generateComponent(
   cli,
@@ -390,12 +405,14 @@ export function generateComponent(
   templateName = null,
   withTest = false,
   noTest = false,
+  noStyle = false,
 ) {
   if (typeof dryRun === 'object' && dryRun !== null) {
     force = dryRun.force || false;
     templateName = dryRun.templateName || null;
     withTest = dryRun.withTest || false;
     noTest = dryRun.noTest || false;
+    noStyle = dryRun.noStyle || false;
     dryRun = dryRun.dryRun || false;
   } else if (typeof force === 'boolean' && typeof templateName === 'boolean') {
     // Backward compatibility if called as (cli, name, dryRun, withTest, noTest)
@@ -413,6 +430,7 @@ export function generateComponent(
   const { capitalizedName, folderFileName: lowerName } = parseName(name);
   const compDir = path.join(cli.baseDir, cli.config.srcDir, 'components', lowerName);
   const willGenerateTest = shouldGenerateTest(cli, withTest, noTest);
+  const willGenerateStyle = !noStyle;
 
   const jsPath = path.join(compDir, `${lowerName}.component.js`);
   const cssPath = path.join(compDir, `${lowerName}.component.css`);
@@ -430,7 +448,9 @@ export function generateComponent(
   if (dryRun) {
     console.log(cyan(`🧪 [Dry Run] Component '${lowerName}' would be created at:`));
     console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.js`);
-    console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.css`);
+    if (willGenerateStyle) {
+      console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.css`);
+    }
     if (willGenerateTest) {
       console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.test.js`);
     }
@@ -450,14 +470,9 @@ export function generateComponent(
     templateName,
   );
 
-  const cssTemplate = readTemplate(
-    cli.baseDir,
-    cli.config,
-    cli.frameworkDir,
-    'component',
-    'component.css.template',
-    templateName,
-  );
+  const cssTemplate = willGenerateStyle
+    ? readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.css.template', templateName)
+    : null;
 
   const testTemplate = willGenerateTest
     ? readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'component', 'component.test.js.template', templateName)
@@ -470,11 +485,12 @@ export function generateComponent(
   };
 
   // Validate all templates before writing any generated files.
-  const jsContent = renderTemplate(jsTemplate, 'component/component.js.template', names, {
+  const renderedComponent = renderTemplate(jsTemplate, 'component/component.js.template', names, {
     allowRuntimeBindings: true,
   });
+  const jsContent = willGenerateStyle ? renderedComponent : stripStyleReferences(renderedComponent);
 
-  const cssContent = renderTemplate(cssTemplate, 'component/component.css.template', names);
+  const cssContent = willGenerateStyle ? renderTemplate(cssTemplate, 'component/component.css.template', names) : null;
 
   const testContent = willGenerateTest
     ? renderTemplate(testTemplate, 'component/component.test.js.template', names, { legacyTestName: true })
@@ -483,7 +499,9 @@ export function generateComponent(
   fs.mkdirSync(compDir, { recursive: true });
 
   fs.writeFileSync(jsPath, jsContent);
-  fs.writeFileSync(cssPath, cssContent);
+  if (willGenerateStyle) {
+    fs.writeFileSync(cssPath, cssContent);
+  }
 
   if (willGenerateTest) {
     fs.writeFileSync(testPath, testContent);

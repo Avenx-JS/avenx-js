@@ -46,7 +46,8 @@
     },
     "./tooling/*": {
       "default": "./lib/core/tooling/*.js"
-    }
+    },
+    "./schema/avenx.config.schema.json": "./schema/avenx.config.schema.json"
   },
   "bin": {
     "avenx": "bin/avenx.js"
@@ -56,7 +57,8 @@
     "lib/",
     "templates/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "schema/"
   ],
   "sideEffects": [
     "./lib/compiler/ComponentParser.js",
@@ -84,7 +86,9 @@
     "bench:report": "node benches/run.js --json > bench-results/results.json",
     "docs": "jsdoc -c jsdoc.json",
     "lint": "eslint \"**/*.js\"",
-    "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\""
+    "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\"",
+    "generate:config-schema": "node scripts/generateConfigSchema.js",
+    "prepack": "npm run generate:config-schema"
   },
   "keywords": [
     "reactive",
@@ -109,13 +113,15 @@
     "url": "https://github.com/avenx-js/avenx-js/issues"
   },
   "homepage": "https://avenx-js.com/",
+  "dependencies": {},
   "devDependencies": {
+    "@dagrejs/graphlib-dot": "^1.0.2",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.58.0",
     "acorn": "^8.15.0",
     "ajv": "^8.17.1",
     "ajv-draft-04": "^1.0.0",
     "ajv-formats": "^3.0.1",
+    "@playwright/test": "^1.58.0",
     "c8": "^9.1.0",
     "esbuild": "^0.28.1",
     "eslint": "^10.5.0",
@@ -126,6 +132,5 @@
     "prettier": "^3.8.4",
     "terser": "^5.48.0",
     "vitest": "^5.1.0"
-  },
-  "dependencies": {}
+  }
 }
