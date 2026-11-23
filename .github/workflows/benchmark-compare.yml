@@ -6,8 +6,9 @@ name: Benchmark Comparison
 # Thresholds, the gating set and the reasoning for both live in
 # benches/regression-gate.js.
 #
-# The weekly absolute numbers are still published by quality-results.yml; this
-# job answers a different question -- did this change make an update slower.
+# The weekly absolute numbers are recorded by the Developer Dashboard
+# (Avenx-JS/dev-dashboard, dev.avenx-js.com); this job answers a different
+# question -- did this change make an update slower.
 
 on:
   pull_request:

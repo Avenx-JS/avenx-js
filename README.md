@@ -636,6 +636,17 @@ is compiled entirely or not at all.
 
 ### Size and dependencies
 
+Runtime capabilities are linked on demand. Production applications without
+pages, guards, `initRouter`, `$route` or `$router` omit the router, navigation
+delegates and routing accessibility manager. Routing globals (`AvenxRouter` and
+`AvenxGuard`) are published only when routing is linked; explicit named imports
+remain supported. Development builds always install routing. The string renderer
+is linked when a template needs it, and `VirtualList` when a template uses it;
+the expression interpreter and trace recorder are development capabilities.
+
+External bundlers and dynamically selected router APIs can opt in explicitly:
+`import 'avenx-core/runtime/router';`.
+
 The published package has **no dependencies**: `npm install avenx-core@rc`
 installs Avenx and nothing else. That holds for the compiler as well as for the
 runtime — the compiler parses JavaScript with its own parser
@@ -644,13 +655,14 @@ runtime — the compiler parses JavaScript with its own parser
 ever reintroduced, by the manifest, by the lockfile, or by an import in a file
 that ships.
 
-A freshly scaffolded application, production build, measured with
-`avenx init -y && avenx build` (verified 2026-11-06):
+A freshly scaffolded application with one component, production build, measured
+with `avenx init -y`, `avenx generate component hello`, and `avenx build`
+(verified 2026-11-23):
 
 | Asset | Raw | Gzipped |
 | :--- | ---: | ---: |
-| `bundle.js` | 356.04 KB | 82.63 KB |
-| `bundle.css` | 0.7 KB | 0.3 KB |
+| `bundle.js` | 371.62 KB | 86.87 KB |
+| `bundle.css` | 0.69 KB | 0.31 KB |
 
 That number is honest rather than flattering, and worth understanding: Avenx's
 minifier strips comments and indentation and nothing else. It does not rename
@@ -658,7 +670,7 @@ identifiers or remove dead branches, because doing that safely needs a full
 ECMAScript parser and a minifier that guesses produces a bundle that is smaller
 and wrong. Line numbers therefore survive into production stack traces. Unused
 modules *are* tree-shaken out of the graph — the same scaffolded build reports
-`64 modules · 15 shaken out` — and comments and indentation are what gzip
+`64 modules · 23 shaken out` — and comments and indentation are what gzip
 compresses best, so the gap on the wire is much narrower than on disk.
 
 <div align="right"><a href="#avenxjs">↑ back to top</a></div>

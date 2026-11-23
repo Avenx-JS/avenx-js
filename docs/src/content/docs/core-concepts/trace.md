@@ -118,6 +118,40 @@ Build the project to get them.
 
 Useful flags: `--json` for the raw trace, `--roots=N` to cap a long session.
 
+### Comparing two recordings
+
+Record the same interaction before and after a change, then compare its causal
+chains:
+
+```bash
+npx avenx trace diff trace-4f2a latest
+npx avenx trace diff test/baseline.trace.json latest --json --fail-on-change
+```
+
+Each argument accepts a stored trace id, `latest`, or a path to an exported JSON
+recording. Steps align by input index using the same causal grouping as replay.
+Different event targets, input values, keys or navigation destinations are
+refused as different interactions.
+
+Within each step, `+`, `-`, `~` and `=` mark added, removed, changed and unchanged
+nodes. Siblings align by their kind and semantic identity (for example a write's
+property path); a changed causal parent is visible as a removal and addition.
+Repeated identical siblings align in recorded order. The summary includes total
+node counts and DOM patch counts before and after, making extra work visible.
+Unattributed nodes are compared in a separate group.
+
+Recording ids, sequence numbers, timestamps, instance uids, source locations and
+action source text do not count as behaviour changes. Application values,
+including properties named `id` or `timestamp`, still do. Redacted values can
+only establish presence; if either side withheld a value, the report withholds
+it on both sides. Redacted, truncated and best-effort recordings are labelled as
+partial comparisons and do not prove equivalence.
+
+The default exit status is zero even when differences are found.
+`--fail-on-change` returns status 1 for a change; unreadable recordings and
+different interactions always return status 1. `--json` exposes the same steps,
+node changes and summary counts as the text report.
+
 ---
 
 ## 4. Exporting a regression test

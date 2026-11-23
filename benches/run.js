@@ -18,8 +18,8 @@ const results = [];
  * Benchmarks that exited non-zero.
  *
  * A runner that reports success while a benchmark crashes is worse than no
- * runner: `quality-results.yml` publishes this output to a public results
- * repository every week, so a crash used to become a silently missing row
+ * runner: the Developer Dashboard (Avenx-JS/dev-dashboard) publishes this
+ * output every week, so a crash used to become a silently missing row
  * rather than a red build. Two had been broken for long enough to encode claims
  * about code that no longer existed.
  * @type {Array<{file: string, status: number, stderr: string}>}
