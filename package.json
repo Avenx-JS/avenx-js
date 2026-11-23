@@ -46,7 +46,8 @@
     },
     "./tooling/*": {
       "default": "./lib/core/tooling/*.js"
-    }
+    },
+    "./schema/avenx.config.schema.json": "./schema/avenx.config.schema.json"
   },
   "bin": {
     "avenx": "bin/avenx.js"
@@ -56,7 +57,8 @@
     "lib/",
     "templates/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "schema/"
   ],
   "sideEffects": [
     "./lib/compiler/ComponentParser.js",
@@ -84,7 +86,9 @@
     "bench:report": "node benches/run.js --json > bench-results/results.json",
     "docs": "jsdoc -c jsdoc.json",
     "lint": "eslint \"**/*.js\"",
-    "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\""
+    "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\"",
+    "generate:config-schema": "node scripts/generateConfigSchema.js",
+    "prepack": "npm run generate:config-schema"
   },
   "keywords": [
     "reactive",
@@ -123,6 +127,7 @@
     "jsdoc": "^4.0.2",
     "prettier": "^3.8.4",
     "terser": "^5.48.0",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "ajv": "^8.17.1"
   }
 }

@@ -21,6 +21,28 @@ Avenx-JS reads optional project settings from `avenx.config.json` in the project
 }
 ```
 
+## Editor validation
+
+`avenx init` adds a local JSON Schema reference. For an existing project with
+`avenx-core` installed, add this property to `avenx.config.json`:
+
+```json
+{
+  "$schema": "./node_modules/avenx-core/schema/avenx.config.schema.json"
+}
+```
+
+Editors that support JSON Schema can complete keys, explain options and flag
+unknown keys, wrong types and invalid enum values. The compiler ignores the
+reference. The schema is bundled with the installed version, so it works offline
+and stays aligned with that project's loader. Environment references such as
+`"${PORT}"` are supported where the loader converts them.
+
+Contributors regenerate it with `npm run generate:config-schema`; packaging does
+this automatically. The test suite checks its key set against `CONFIG_SCHEMA`
+and validates a real `avenx init` scaffold. SchemaStore registration is a separate
+publication step; this local reference works without it.
+
 ## Options
 
 | Option         | Type       | Default              | Rules                                                                 |

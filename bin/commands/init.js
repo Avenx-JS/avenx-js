@@ -78,6 +78,7 @@ export async function initProject(cli, args = []) {
     }
   }
 
+  userConfig.$schema ??= './node_modules/avenx-core/schema/avenx.config.schema.json';
   userConfig.style = {
     ...userConfig.style,
     preprocessor: stylePreprocessor,
