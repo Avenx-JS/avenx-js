@@ -20,14 +20,16 @@ const validate = new Ajv({ allErrors: true }).compile(schema);
 for (const config of [{}, { mode: 'development', style: { preprocessor: 'scss' } },
   { logging: { level: 'warn' }, warnings: { AVX_W03: 'error' }, rewind: { onConflict: 'force' } },
   { server: { port: '${PORT}' }, mode: '$MODE' },
-  { server: { headers: { 'X-Count': 2, 'Set-Cookie': ['a=1', 'b=2'] } } }]) {
+  { server: { headers: { 'X-Count': 2, 'Set-Cookie': ['a=1', 'b=2'] } } },
+  { server: { https: true, cert: 'certs/dev.pem', key: '/etc/dev-key.pem' } }]) {
   assert.ok(validate(config), JSON.stringify(validate.errors));
 }
 for (const config of [{ modes: 'development' }, { server: { ports: 3000 } },
   { mode: 'develpment' }, { style: { preprocessor: 'sas' } }, { logging: { level: 'noisy' } },
   { warnings: { AVX_W03: 'disabled' } }, { rewind: { onConflict: 'overwrite' } },
   { incremental: 'true' }, { expressionCacheCapacity: 0 },
-  { mode: 'development$SUFFIX' }, { server: { port: 'port ${PORT}' } }]) {
+  { mode: 'development$SUFFIX' }, { server: { port: 'port ${PORT}' } },
+  { server: { https: 'yes' } }, { server: { cert: '' } }, { server: { key: '   ' } }]) {
   assert.equal(validate(config), false, JSON.stringify(config));
 }
 
