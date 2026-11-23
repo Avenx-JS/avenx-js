@@ -9,6 +9,7 @@
 
 import { test as base, expect } from '@playwright/test';
 import fs from 'fs/promises';
+import { realpathSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import net from 'net';
@@ -125,7 +126,7 @@ async function waitForServer(child) {
  * @returns {Promise<void>}
  */
 async function terminate(child) {
-  if (child.exitCode !== null || child.signalCode !== null) {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) {
     return;
   }
 
@@ -135,29 +136,17 @@ async function terminate(child) {
     const done = () => {
       if (finished) return;
       finished = true;
+      clearTimeout(timer);
       resolve();
     };
 
     child.once('exit', done);
 
-    try {
-      child.kill('SIGTERM');
-    } catch {
-      done();
-      return;
-    }
-
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (finished) return;
-
-      try {
-        child.kill('SIGKILL');
-      } catch {
-        // The process may have exited between the checks.
-      }
-
-      done();
+      child.kill('SIGKILL');
     }, 3_000);
+    child.kill('SIGTERM');
   });
 }
 
@@ -166,9 +155,9 @@ async function terminate(child) {
  * @returns {Promise<string>} Scratch project directory.
  */
 async function createScratchProject() {
-  const scratchRoot = await fs.mkdtemp(
+  const scratchRoot = realpathSync.native(await fs.mkdtemp(
     path.join(os.tmpdir(), 'avenx-serve-e2e-'),
-  );
+  ));
 
   const projectDir = path.join(scratchRoot, 'components');
 
@@ -207,12 +196,13 @@ async function configureProject(projectDir, server = {}) {
  * Starts the real Avenx development server.
  * @param {string} projectDir - Project working directory.
  * @param {number} port - Requested port.
+ * @param {string[]} [args] - Additional serve flags.
  * @returns {Promise<{child: import('child_process').ChildProcess, port: number, output: () => string}>}
  */
-async function startServer(projectDir, port) {
+async function startServer(projectDir, port, args = []) {
   const child = spawn(
     process.execPath,
-    [avenxCli, 'serve', String(port)],
+    [avenxCli, 'serve', String(port), ...args],
     {
       cwd: projectDir,
       env: {
@@ -220,10 +210,17 @@ async function startServer(projectDir, port) {
         FORCE_COLOR: '0',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
     },
   );
 
-  const server = await waitForServer(child);
+  let server;
+  try {
+    server = await waitForServer(child);
+  } catch (error) {
+    await terminate(child);
+    throw error;
+  }
 
   return {
     child,
