@@ -1,5 +1,18 @@
 import { test, expect } from '../../support/fixtures.js';
 
+for (const first of ['visibility', 'interaction']) {
+  test(`combined triggers reveal on ${first} first`, async ({ page, app }) => {
+    await app.open('defer', { hash: '#/multiple' });
+    const placeholder = page.getByTestId('multi-placeholder');
+    await expect(placeholder).toHaveCount(1);
+    await expect(page.getByTestId('multi-content')).toHaveCount(0);
+    if (first === 'visibility') await placeholder.scrollIntoViewIfNeeded();
+    else await placeholder.dispatchEvent('click');
+    await expect(page.getByTestId('multi-content')).toHaveCount(1);
+    await expect(placeholder).toHaveCount(0);
+  });
+}
+
 /**
  * The <@defer> tag as an author writes it.
  *

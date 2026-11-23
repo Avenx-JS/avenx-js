@@ -221,6 +221,26 @@ effect on the next `avenx build`.
 3. **Strict JSDoc** – Public APIs must be fully annotated with JSDoc to satisfy `eslint-plugin-jsdoc`.
 4. **Atlas Never Guesses** – A relationship the analyser cannot follow is recorded as an `unresolved` entry with its reason and location. It is never dropped silently and never assumed. Any diagnostic that makes an absence claim must first check that record.
 
+## Style processor collaborators
+
+`StyleProcessor` retains its public methods, stylesheet state, scoping and emission. Focused helpers under `lib/compiler/style/` receive the data and callbacks they need.
+
+- `style/sourceMap.js`: source registration, generated-line metadata, VLQ encoding and inline maps; map order and offsets are preserved.
+- `style/preprocessors.js`: optional package resolution, preprocessing and per-build warning deduplication; dependency caches survive reset.
+- `style/variables.js`: @def declaration substitution and unresolved-reference diagnostics.
+- `style/atRules.js`: nested rule traversal, at-rule wrappers and source-line propagation; selector rewriting remains in StyleProcessor.
+- `style/unitCache.js`: capture, slicing, conflict checks and replay of a unit's stylesheet contribution; reset remains with the owner of the collections.
+
+## Development server modules
+
+`bin/commands/serve.js` assembles the server and retains listening, logging and CLI behavior. Focused modules under `bin/commands/serve/` own its collaborators.
+
+- `inspector/`: HTML, CSS and a classic browser client, read once at startup; rendering keeps script-safe JSON escaping and the original response bytes. The client is covered by the existing JS lint/format globs, with browser-script parser settings; HTML/CSS are included in the format command.
+- `overlay/`: build diagnostic selection and paths, plus the independent browser error panel. Its client remains usable without the application bundle and is linted as a classic script.
+- `static.js`: path containment, denied paths, same-origin checks, private TLS file refusal, MIME types and file responses. HTML transformation is passed explicitly from server assembly; the path-security tests import this module directly.
+- `watcher.js`: source, template, asset and root snapshots, rebuild scheduling and watcher cleanup. It broadcasts through `liveReload.js` and keeps the existing rebuild/status order.
+- `liveReload.js` and `liveReload/client.js`: SSE framing, connection/replay/disconnection and broadcasts, plus the classic browser reload/CSS-swap client. Disconnects always update the current client list. The server and watcher share this module without depending on each other.
+
 ## Component collaborators
 
 `AvenxComponent` retains the public instance surface, lifecycle, render orchestration and scope construction. Modules under `lib/core/runtime/component/` receive explicit data and callbacks; they do not receive the component as an opaque context.

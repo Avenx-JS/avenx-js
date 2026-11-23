@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avenx Inspection Dashboard</title>
+    <style>
+{{AVENX_CSS}}    </style>
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <header class="app-header">
+            <div class="brand">
+                <h1 class="title">Avenx Inspector</h1>
+            </div>
+            <div class="status-indicator">
+                <span class="badge" id="statusBadge" role="status" aria-live="polite" aria-atomic="true">Connecting...</span>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <!-- Sidebar for Config Info -->
+            <aside class="sidebar">
+                <section class="card config-card" role="region" aria-labelledby="config-heading">
+                    <h2 id="config-heading">Dev Server Config</h2>
+                    <div class="config-item"><strong>Port:</strong> <span id="confPort">-</span></div>
+                    <div class="config-item"><strong>Host:</strong> <span id="confHost">-</span></div>
+                    <div class="config-item"><strong>Src Dir:</strong> <span id="confSrc">-</span></div>
+                    <div class="config-item"><strong>Dist Dir:</strong> <span id="confDist">-</span></div>
+                </section>
+            </aside>
+
+            <!-- Dashboard Grid Content -->
+            <section class="dashboard-grid">
+                <!-- Routing Section -->
+                <section class="card grid-card routing-card" role="region" aria-labelledby="routing-heading">
+                    <h2 id="routing-heading">Active Routing Table</h2>
+                    <div id="routingList" class="info-list" aria-live="off"></div>
+                    <hr />
+                    <h3>Current Route</h3>
+                    <div id="currentRouteInfo" class="route-info">-</div>
+                </section>
+
+                <!-- Components Section -->
+                <section class="card grid-card components-card" role="region" aria-labelledby="components-heading">
+                    <h2 id="components-heading">Registered Components</h2>
+                    <div id="componentsList" class="info-list" aria-live="off"></div>
+                    <hr />
+                    <h3>Selected Component</h3>
+                    <div id="selectedComponentInfo" class="route-info">Click a component in the tree to inspect its props and state.</div>
+                </section>
+
+                <!-- Update Timeline Section -->
+                <section class="card grid-card timeline-card" role="region" aria-labelledby="timeline-heading">
+                    <h2 id="timeline-heading">Update Timeline</h2>
+                    <div id="timelineList" class="info-list" aria-live="off"></div>
+                    <hr />
+                    <h3>Timeline Snapshot Details</h3>
+                    <div id="timelineDetail" class="route-info">Click a timeline event above to inspect its historical state snapshot.</div>
+                </section>
+
+                <!-- Bridges Section -->
+                <section class="card grid-card bridges-card" role="region" aria-labelledby="bridges-heading">
+                    <h2 id="bridges-heading">Active Bridges</h2>
+                    <div id="bridgesList" class="info-list" aria-live="off"></div>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        window.__avenx_config = {{AVENX_CONFIG}};
+{{AVENX_CLIENT}}    </script>
+</body>
+</html>

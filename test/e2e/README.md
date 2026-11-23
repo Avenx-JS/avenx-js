@@ -160,7 +160,7 @@ product running in a browser.
 
 ## Current coverage
 
-272 tests across 34 spec files. Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
+Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
@@ -178,6 +178,7 @@ product running in a browser.
 | `routing/` | 22 | Navigation, guards and guard regression tests |
 | `security/` | 15 | Dynamic attribute names and `srcdoc` |
 | `serve/` | 17 | Development server |
+| `trace/` | 4 | Browser click causation, export/replay and deliberate divergence, bridge redaction, the ingest size limit, and the no-trace boundary |
 | `smoke/` | 22 | Application boot |
 | `styling/` | 12 | Attribute content and scoped CSS |
 | `transitions/` | 4 | List-row enter and leave classes, rapid toggling |
@@ -191,8 +192,39 @@ while every test in this suite stayed green. A component that renders nothing
 raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
-Not yet covered, in rough priority order: live reload and
-trace capture under `avenx serve --trace`.
+The trace specs reuse the real dev-server fixture with `--trace`. They click a
+compiled component in the browser, save through `avenxTrace.save()`, read the
+server's stored recording and run the unmodified CLI-exported test under the
+documented Happy DOM setup. Changing the action then makes that exported test
+fail with its diverging state. A separate browser interaction checks configured
+bridge redaction; HTTP cases check the 32 MiB limit and the absence of a writable
+endpoint without the flag. Each scratch project, trace and package link is
+removed after its server exits.
+
+### Official plugin CLI builds
+
+`test/system/officialPluginCli.test.js` builds an isolated project for each
+official plugin through `bin/avenx.js build`, using the documented package
+imports. It executes the emitted bundles in fresh Happy DOM windows and checks:
+
+- i18n translations, number formatting and reactive locale changes;
+- a persisted bridge's rendered value, storage write and hydration on a fresh mount;
+- chart SVG geometry and updates from a compiled page;
+- equivalent initial rendering and updates from full CLI and Vite builds of the
+  same source, with `@avenx/vite` loaded through a Vite configuration.
+
+The runtime-plugin cases also require their implementation to appear in the
+bundle. The Vite case checks the compiled render program in Vite's output;
+the Vite plugin itself runs at build time. Package import or export resolution
+failures therefore fail the build before rendering is checked.
+
+Run this coverage with `node test/run-tests.js officialPluginCli.test.js`,
+`npm run test:system` or `npm test`. It runs on the pull-request system-test path.
+These are system tests with a DOM implementation, not browser E2E tests: they do
+not check chart layout, browser storage policies or browser-specific rendering.
+The CLI assertions run on every supported Node version. Full Vite parity runs
+on Node 20.19+ or 22.12+ (and newer major versions), as required by the plugin's
+Vite 7/8 peer dependency; the Node 18 job explicitly reports that case as skipped.
 
 The Rewind specs hold actual browser requests until their optimistic DOM
 assertions complete, then let the fixture server respond. No timer determines

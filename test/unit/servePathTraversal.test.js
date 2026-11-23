@@ -4,7 +4,7 @@ import os from 'os';
 import net from 'net';
 import path from 'path';
 import http from 'http';
-import { resolveRequestPath, isDeniedProjectPath } from '../../bin/commands/serve.js';
+import { resolveRequestPath, isDeniedProjectPath } from '../../bin/commands/serve/static.js';
 
 /**
  * Regression coverage for the development server joining the raw request target
