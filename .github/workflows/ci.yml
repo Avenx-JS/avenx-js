@@ -43,6 +43,44 @@ jobs:
         if: matrix.node-version != 18
         run: npm run lint
 
+  # The CLI and the dev server are the path- and spawn-sensitive parts of the
+  # project: `avenx format` runs Prettier through process.execPath because
+  # Windows will not spawn a .cmd without a shell, `serve --open` picks a
+  # per-platform opener, and every scaffold, build and diagnostic joins and
+  # prints paths. The system tier drives bin/avenx.js end to end, so it is the
+  # tier a platform difference shows up in; the unit tier is cheap beside it.
+  #
+  # One Node version: platform differences do not interact with the Node
+  # version, and the Linux job above already covers 18/20/22. E2E stays on
+  # Linux, because Playwright's browsers are the same across hosts and the
+  # fan-out is the expensive part.
+  platforms:
+    name: Unit + system (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run system tests
+        run: npm run test:system
+
   e2e:
     name: E2E (Chromium)
     runs-on: ubuntu-latest

@@ -225,8 +225,11 @@ export function traceExport(cli, id, args = []) {
     outPath = inline ? inline.slice('--out='.length) : null;
   }
   if (!outPath) {
-    outPath = path.join('test', `${suggestName(trace)}.test.js`);
+    outPath = `test/${suggestName(trace)}.test.js`;
   }
+  // Paths are reported with forward slashes on every platform, as the build's
+  // diagnostics are; `path.resolve` below accepts either separator.
+  const display = (file) => path.relative(cli.baseDir, file).split(path.sep).join('/');
 
   const absoluteOut = path.resolve(cli.baseDir, outPath);
   const outDir = path.dirname(absoluteOut);
@@ -285,7 +288,7 @@ export function traceExport(cli, id, args = []) {
   });
 
   if (args.includes('--dry-run') || args.includes('-d')) {
-    console.log(gray(`Would write ${outPath} and ${path.relative(cli.baseDir, traceOutPath)}:\n`));
+    console.log(gray(`Would write ${outPath} and ${display(traceOutPath)}:\n`));
     console.log(source);
     return;
   }
@@ -296,7 +299,7 @@ export function traceExport(cli, id, args = []) {
 
   console.log('');
   console.log(green(`✔ ${outPath}`));
-  console.log(green(`✔ ${path.relative(cli.baseDir, traceOutPath)}`));
+  console.log(green(`✔ ${display(traceOutPath)}`));
   console.log('');
 
   const inputs = (trace.nodes || []).filter(

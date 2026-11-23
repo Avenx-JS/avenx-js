@@ -111,7 +111,7 @@ try {
     const root = project("import { where } from './utils/where.js';\nconsole.log(where);", {
       'src/utils/where.js': 'export const where = `at ${import.meta.url}`;\n',
     });
-    assertRefused(root, [`${path.join('src', 'utils', 'where.js')}:1`]);
+    assertRefused(root, ['src/utils/where.js:1']);
     console.log('  ✅ import.meta in an imported module, inside a substitution, names that module');
   }
 
@@ -119,7 +119,7 @@ try {
     const root = project("import { where } from './utils/split.js';\nconsole.log(where);", {
       'src/utils/split.js': '// first\n\nexport const where = import\n  .meta.url;\n',
     });
-    assertRefused(root, [`${path.join('src', 'utils', 'split.js')}:3`, 'export const where = import .meta.url;']);
+    assertRefused(root, ['src/utils/split.js:3', 'export const where = import .meta.url;']);
     console.log('  ✅ An expression split across lines is quoted whole, at the line it starts on');
   }
 

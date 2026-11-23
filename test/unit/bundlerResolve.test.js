@@ -15,7 +15,7 @@ import { Resolver, ResolveError, isRuntimeSpecifier, AVENX_PACKAGE_ROOT } from '
 
 console.log('🧪 Testing bundler module resolution...');
 
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-resolve-')));
+const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-resolve-')));
 
 /**
  * Writes a file, creating parent directories.

@@ -196,7 +196,14 @@ try {
   console.log('✅ avenx serve --trace tests passed.');
 } finally {
   if (running && running.child) {
+    // Wait for the server to be gone before deleting its working directory.
+    // Windows refuses to remove a directory a live process still holds
+    // (EPERM), and a kill signal returns before the process has exited.
+    const exited = running.child.exitCode !== null
+      ? Promise.resolve()
+      : new Promise((resolve) => running.child.once('exit', resolve));
     running.child.kill('SIGKILL');
+    await exited;
   }
-  fs.rmSync(workDir, { recursive: true, force: true });
+  fs.rmSync(workDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

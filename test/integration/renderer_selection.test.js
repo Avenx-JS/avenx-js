@@ -26,7 +26,7 @@ import AvenxCompiler from '../../lib/compiler.js';
  * @returns {{compiled: string, fallbacks: object[], program: object|null}} The result.
  */
 function compileOne(template) {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-select-')));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-select-')));
   try {
     const dir = path.join(root, 'src', 'components', 'probe');
     fs.mkdirSync(dir, { recursive: true });

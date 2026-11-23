@@ -238,14 +238,38 @@ export function applyCustomHeaders(res, headers = {}) {
 }
 
 /**
- * Opens the browser to the specified URL.
- * @param {string} url
+ * The command that opens a URL in the default browser, per platform.
+ *
+ * None of them goes through a shell. `start`, the obvious Windows choice, is a
+ * cmd.exe builtin and needs `shell: true` -- and then Node concatenates the
+ * arguments into a cmd command line unescaped, so an `&` in the configured
+ * host would start a second command. `explorer.exe` is a real executable that
+ * opens a URL with the registered handler, so it is spawned directly.
+ * @param {string} platform - A `process.platform` value.
+ * @returns {string} The executable to spawn with the URL as its argument.
  */
-export function openBrowser(url) {
-  const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-  // Pass the URL as an argument rather than interpolating it into a shell
-  // command, so characters in the configured host cannot reach the shell.
-  spawn(start, [url], { shell: process.platform === 'win32', stdio: 'ignore', detached: true }).unref();
+export function browserOpener(platform) {
+  if (platform === 'darwin') return 'open';
+  if (platform === 'win32') return 'explorer.exe';
+  return 'xdg-open';
+}
+
+/**
+ * Opens the browser to the specified URL.
+ * @param {string} url - The URL to open.
+ * @param {object} [options] - Seams for tests.
+ * @param {string} [options.platform] - Overrides `process.platform`.
+ * @param {Function} [options.spawnImpl] - Overrides `child_process.spawn`.
+ * @returns {void}
+ */
+export function openBrowser(url, { platform = process.platform, spawnImpl = spawn } = {}) {
+  // The URL is an argument, never part of a command string, so nothing in the
+  // configured host can reach a shell on any platform.
+  const child = spawnImpl(browserOpener(platform), [url], { shell: false, stdio: 'ignore', detached: true });
+  // A missing opener (no xdg-open on a headless box) must not crash the server
+  // the developer asked for; the URL is printed either way.
+  child.on?.('error', () => {});
+  child.unref();
 }
 
 /**

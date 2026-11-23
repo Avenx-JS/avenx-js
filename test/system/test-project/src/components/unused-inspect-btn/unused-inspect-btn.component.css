@@ -1,0 +1,35 @@
+<@global>
+    @def primary #6366f1;
+    @def dark #1e1b4b;
+    @def white #ffffff;
+</@global>
+
+<@css>
+    container {
+        padding: 2rem;
+        border: 2px solid @dark;
+        border-radius: 1rem;
+        text-align: center;
+        background: @white;
+    }
+
+    title {
+        color: @dark;
+        margin-top: 0;
+    }
+
+    text {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    button {
+        background: @primary;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        margin: 0.5rem;
+    }
+</@css>

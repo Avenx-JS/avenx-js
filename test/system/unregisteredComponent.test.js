@@ -28,7 +28,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 
-const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-unregistered-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-unregistered-'));
 
 /**
  * Runs the CLI in the fixture project.

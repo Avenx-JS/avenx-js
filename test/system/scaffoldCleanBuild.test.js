@@ -26,8 +26,8 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 
-const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-scaffold-'));
-const routingRoot = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-routing-scaffold-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-scaffold-'));
+const routingRoot = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-routing-scaffold-'));
 
 /**
  * Runs the CLI in the scaffolded project.
