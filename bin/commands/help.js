@@ -21,7 +21,7 @@ ${bold(cyan('Commands:'))}
   ${green('build (b)')}                 ${gray('Build for production: minified runtime, optimized output')}
   ${green('clean')}                     ${gray('Clear build output directory')}
   ${green('check (lint)')}              ${gray('Validate templates without building')}
-  ${green('doctor')}                    ${gray('Diagnose environment, config, and project health (--json for machine-readable output)')}
+  ${green('doctor')}                    ${gray('Diagnose project health; --fix repairs scaffold files, --dry-run previews, --json reports')}
   ${green('env')}                       ${gray('Print and validate active environment variables')}
   ${green('explain <CODE|--list>')}     ${gray('Explain a compiler/runtime error or warning code, or list them all')}
   ${green('inspect (i)')}               ${gray('Inspect project route and component hierarchy')}

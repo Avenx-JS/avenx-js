@@ -337,7 +337,15 @@ export class AvenxCLI {
         checkProject(this, args);
         break;
       case 'doctor':
-        runDoctor(this, args.includes('--json') || args.includes('-j'));
+        if (
+          args.some((arg) => !['--json', '-j', '--fix', '--dry-run', '-d'].includes(arg)) ||
+          (dryRun && !args.includes('--fix'))
+        ) {
+          console.error('Usage: avenx doctor [--json] [--fix [--dry-run]]');
+          process.exitCode = 1;
+          break;
+        }
+        runDoctor(this, args.includes('--json') || args.includes('-j'), { fix: args.includes('--fix'), dryRun });
         break;
       case 'env':
         runEnv(this, args);
