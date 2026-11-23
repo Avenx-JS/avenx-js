@@ -6,14 +6,21 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
 
-console.log('🧪 Testing that every exports subpath declares its types...');
+console.log('🧪 Testing that exported modules declare their types and JSON assets exist...');
 
 for (const [subpath, target] of Object.entries(pkg.exports)) {
   // ./tooling/* is a wildcard, not a single file
   if (subpath.includes('*')) continue;
 
+  // Editor schemas are data files, not JavaScript module entry points.
+  if (subpath.endsWith('.json')) {
+    assert.equal(typeof target, 'string', `${subpath} must resolve to a JSON file`);
+    JSON.parse(fs.readFileSync(path.join(rootDir, target), 'utf8'));
+    continue;
+  }
+
   assert.ok(target.types, `${subpath} needs a "types" condition in package.json`);
   assert.ok(fs.existsSync(path.join(rootDir, target.types)), `${target.types} does not exist`);
 }
 
-console.log('  ✅ Every exports subpath has a declaration file');
+console.log('  ✅ Exported modules have declaration files and JSON assets are valid');
