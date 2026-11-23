@@ -143,9 +143,9 @@ These branches describe the waiting state before the trigger, not a separate asy
 
 ## Multiple Triggers
 
-Combining multiple triggers is not currently supported.
-
-For example, the following syntax cannot be used at this time:
+Separate subscription triggers with semicolons. The block reveals on the first
+trigger to fire and immediately cancels every remaining subscription. This
+works on both the compiled and string rendering paths:
 
 ```html
 <@defer when="visible; interaction">
@@ -153,7 +153,16 @@ For example, the following syntax cannot be used at this time:
 </@defer>
 ```
 
-Currently, only one trigger can be specified for a `<@defer>` block. Support for combining multiple triggers is planned for a future update.
+Combine `idle`, `visible`, `hover`, `click`, `interaction`, `timer(n)` and
+`n ms`, with non-negative integer millisecond delays. For example,
+`when="visible; interaction; timer(4000)"` reveals on visibility, interaction,
+or after four seconds, whichever happens first.
+
+A reactive condition such as `when="rows.length"` remains a single-trigger
+form. Mixing it into a list, leaving an empty entry, or repeating a trigger is
+a compile-time `AVX_C34` error. Names are case-insensitive, and `timer(100)` and
+`100 ms` count as the same trigger. Existing single-trigger expressions and
+duration spellings continue to work.
 
 ## Cleanup and Lifecycle
 
@@ -166,7 +175,9 @@ Depending on the trigger used, these include:
 - Canceling idle callbacks with `cancelIdleCallback()`, when available.
 - Disconnecting `IntersectionObserver` instances with `disconnect()`.
 
-When the trigger is fired and the deferred content is loaded, the associated trigger cleanup function is executed.
+When any trigger fires, every subscription for that block is released. Unmounting
+before a trigger fires also releases them all; callbacks already queued by the
+host cannot render into a disposed block.
 
 > [!NOTE]
 > Unmounting a component releases its pending `<@defer>` triggers on both rendering paths: compiled blocks dispose their trigger subscriptions, and the string-renderer fallback calls `DeferManager.destroy()`. Observers, timers, idle callbacks and listeners are cancelled, and a trigger that has not fired never renders into the detached component.

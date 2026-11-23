@@ -25,8 +25,8 @@ const BIN = path.join(rootDir, 'bin', 'avenx.js');
 /**
  * Creates a project whose one component carries two expressions that do not
  * compile and that no earlier build-time check rejects: an action body that is
- * not valid JavaScript, and a `<@defer>` combining two triggers, which
- * defer.md documents as unsupported. (Interpolations and computed values with
+ * not valid JavaScript, and a `<@defer>` with an incomplete condition
+ * expression. (Interpolations and computed values with
  * unsupported syntax already fail every build with AVX_R32.)
  * @returns {string} The project root.
  */
@@ -41,7 +41,7 @@ function makeProject() {
       '</action>',
       '<div>',
       '  <button @click="save()">save</button>',
-      '  <@defer when="visible; interaction"><p>{{ count }}</p></@defer>',
+      '  <@defer when="count +"><p>{{ count }}</p></@defer>',
       '</div>',
       '',
     ].join('\n'),
@@ -77,7 +77,7 @@ try {
   assert.match(refused.output, /AVX_C27/, refused.output);
   assert.match(refused.output, /2 expression\(s\) cannot be compiled/, refused.output);
   assert.match(refused.output, /if \(count > \) \{ return; \}/, 'the message names the action body');
-  assert.match(refused.output, /visible; interaction/, 'the message names the defer trigger');
+  assert.match(refused.output, /count \+/, 'the message names the defer condition');
   assert.match(refused.output, /<List>/, 'the message names the component');
   assert.match(refused.output, /list\.component\.js:3 /, 'the message names the file and line of the action body');
   assert.match(refused.output, /list\.component\.js:7 /, 'the message names the file and line of the trigger');
