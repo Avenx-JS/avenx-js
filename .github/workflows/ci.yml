@@ -39,6 +39,10 @@ jobs:
       - name: Run plugin tests
         run: npm run test:plugins
 
+      - name: Build documentation examples
+        if: matrix.node-version == 22
+        run: npm run test:docs
+
       - name: Run lint
         if: matrix.node-version != 18
         run: npm run lint
