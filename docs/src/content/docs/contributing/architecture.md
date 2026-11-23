@@ -240,3 +240,14 @@ effect on the next `avenx build`.
 - `static.js`: path containment, denied paths, same-origin checks, private TLS file refusal, MIME types and file responses. HTML transformation is passed explicitly from server assembly; the path-security tests import this module directly.
 - `watcher.js`: source, template, asset and root snapshots, rebuild scheduling and watcher cleanup. It broadcasts through `liveReload.js` and keeps the existing rebuild/status order.
 - `liveReload.js` and `liveReload/client.js`: SSE framing, connection/replay/disconnection and broadcasts, plus the classic browser reload/CSS-swap client. Disconnects always update the current client list. The server and watcher share this module without depending on each other.
+
+## Component collaborators
+
+`AvenxComponent` retains the public instance surface, lifecycle, render orchestration and scope construction. Modules under `lib/core/runtime/component/` receive explicit data and callbacks; they do not receive the component as an opaque context.
+
+- `slots.js` owns outlet discovery, fallback preservation, grouping, projection and scoped slot DOM operations. It receives host elements and groups, plus evaluation/render/patch callbacks. Parent scope construction stays on the component.
+- `refs.js` owns the lazy reference cache and dirty flag. `collect(hostElement)` excludes nested component interiors; `invalidate()` defers the next DOM query, and `clear()` releases references on teardown. The public `$refs` getter remains on the component.
+- `updateRelevance.js` contains pure dependency analysis over explicit template/computed/render collections and a property-path resolver. The component supplies a snapshot and retains debug logging. Direct tests cover static/dynamic templates, graph cycles, nested keys, rendered computed values and unconditional updates.
+- `formValidation.js` validates fields against the supplied reactive state, visits the host and its declared fields, and synchronizes literal select values. The component retains the public validation method and the timing of validation during rendering.
+- `provideInject.js` walks ancestor hosts and resolves provided keys from explicit state and callbacks. Option calls, array-backed scope reads, function binding and injection registration remain owned by the component; no provider is passed as a general context object.
+- `errorReporting.js` selects suspense/error/deadlock boundaries and preserves hook propagation and diagnostics. It consumes boundary descriptors and explicit rendering/reporting callbacks. Public hooks still receive the original failing instance through component-owned closures; private scope construction, lifecycle and rendering stay on the component.
