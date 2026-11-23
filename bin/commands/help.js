@@ -51,6 +51,7 @@ ${bold(cyan('Options:'))}
   ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
   ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
+  ${green('--no-style')}                ${gray('Skip the stylesheet of a generated component or page')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
   ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only, with --list too)')}
   ${green('--list')}                    ${gray('explain: list every code with severity, category and whether warnings can configure it')}

@@ -716,6 +716,7 @@ compresses best, so the gap on the wire is much narrower than on disk.
 | `--dry-run`, `-d` | `generate`, `destroy` | Preview without writing or deleting anything. |
 | `--force`, `-f` | `generate` | Overwrite existing files. |
 | `--with-test` / `--no-test` | `generate component` | Generate or skip a colocated unit test. |
+| `--no-style` | `generate component`, `generate page` | Skip the stylesheet and the template's `@css` references. |
 | `--template`, `-t <name>` | `generate` | Use a custom scaffold template. |
 | `--json`, `-j` | `check`, `atlas`, `impact`, `why` | Machine-readable output. |
 | `--depth=<n>` | `impact`, `why` | How many hops to follow (default `12`). |
