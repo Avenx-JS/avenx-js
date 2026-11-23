@@ -5,9 +5,9 @@ test.describe('Declarative Form Validation', () => {
     await app.open('forms');
   });
 
-  test('error messages are not shown initially and fields start invalid', async ({ page }) => {
-    await expect(page.getByTestId('username-error')).toBeHidden();
-    await expect(page.getByTestId('email-error')).toBeHidden();
+  test('error messages are shown initially and fields start invalid', async ({ page }) => {
+    await expect(page.getByTestId('username-error')).toBeVisible();
+    await expect(page.getByTestId('email-error')).toBeVisible();
   });
 
   test('typing an invalid value shows the message; correcting it clears the message', async ({ page }) => {

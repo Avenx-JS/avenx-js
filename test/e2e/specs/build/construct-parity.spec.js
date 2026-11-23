@@ -544,9 +544,6 @@ const CONSTRUCTS = {
   // could not have found them, and the content assertions did.
   'dynamic-attribute-update': {
     hash: '#/string-path',
-    knownGap:
-      'Updating the value of a dynamic attribute name removes the attribute instead of setting it: after ' +
-      'attrValue changes from "warm" to "cool", data-tone is gone, in either build.',
     async steps({ page, section }) {
       await expect(section.getByTestId('dynamic-attr')).toHaveAttribute('data-tone', 'warm');
       await page.getByTestId('change').click();
@@ -566,9 +563,6 @@ const CONSTRUCTS = {
   },
   'textarea-on-string-path': {
     hash: '#/string-path',
-    knownGap:
-      'A bound <textarea> in a template that falls back renders empty: its initial value is written as a value ' +
-      'attribute, which a textarea ignores, in either build. The compiled path sets the property.',
     async steps({ section }) {
       await expect(section.getByTestId('note')).toHaveValue('typed before mount', { timeout: 1_000 });
     },
