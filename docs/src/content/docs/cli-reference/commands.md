@@ -21,8 +21,8 @@ The following flags can be passed globally to `avenx` commands:
 | :--- | :--- | :--- | :--- |
 | `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `generate`, `destroy` |
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`. | `init`, `generate`, `destroy`, `build` |
-| `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
-| `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
+| `--dev` | | Selects development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch`, `stats` |
+| `--prod` | | Selects production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch`, `stats` |
 | `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
 | `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
@@ -695,6 +695,40 @@ npx avenx help
 
 Analyzes the project's source files and reports component, page, bridge, and guard footprint metrics, including source file sizes, template sizes, scoped CSS payloads, and reactive state properties.
 
+#### Runtime bundle composition
+
+The default report also describes the last build's main JavaScript bundle:
+per-module UTF-8 bytes and percentage of the bundle, directory roll-ups,
+linked runtime capabilities, and the number of modules shaken out. Module
+sizes include their emitted wrappers after any configured minification.
+Shared prelude, hoisted bindings, footer and the source-map trailer appear as
+**Bundle overhead**, so both sets of rows add up to the exact emitted file.
+Gzip is measured once for the whole bundle; compressed module sizes are not
+additive.
+
+```bash
+npx avenx build --prod
+npx avenx stats --prod
+npx avenx build --dev
+npx avenx stats --dev --json
+```
+
+The mode follows the resolved configuration and `--dev` / `--prod`, and is
+printed beside the artifact path. Build writes `<outputName>.stats.json`
+beside the bundle; it is not downloaded by the browser. Stats reads that file
+and verifies the bundle's size and SHA-256. Missing, invalid or mismatched
+metadata produces a clear instruction to build in the requested mode, while
+the source report remains available. Rebuild after source changes: this
+section describes the **last build**, not unbuilt edits.
+
+`--json` adds a `bundle` object to `summary` and `items`. When `available` is
+true it contains `file`, `mode`, `bytes`, `gzipBytes`, `modules`, `directories`,
+`overhead`, `capabilities`, and graph/emitted/shaken module counts. Each size
+row has `bytes` and `share` (a percentage). When unavailable it contains the
+requested `file` and `mode`, plus `reason` and `message` explaining how to
+build. The composition covers the main JavaScript artifact; use `--save` or
+`--compare` below to measure all assets, including code-split page chunks.
+
 #### Save and compare a built bundle
 
 Build first, then measure the JavaScript and CSS under the configured `distDir`,
@@ -726,7 +760,7 @@ figures; regenerate baselines when changing the measurement version.
 more than 5%; equality passes. Growth from an empty baseline fails any finite
 percentage limit. `--json` emits the same byte counts, deltas and threshold
 result; a percentage with a zero baseline is `null` for newly added bytes.
-Without `--save` or `--compare`, the existing source footprint report is unchanged.
+Without `--save` or `--compare`, source footprint and runtime composition are reported together.
 
 A pre-push hook can run `npx avenx build --force && npx avenx stats --compare
 path/to/committed-baseline.json --max-increase 5%`. Save the baseline from the
@@ -744,7 +778,9 @@ npx avenx s [options]
 
 | Flag / Option | Alias | Description |
 | --- | --- | --- |
-| `--json` | `-j` | Outputs structured JSON containing `summary` and `items` data for CI/CD, automated reporting, and analysis. |
+| `--json` | `-j` | Outputs structured JSON containing `summary`, `items`, and `bundle`. |
+| `--dev` | | Requests composition from a development build. |
+| `--prod` | | Requests composition from a production build. |
 
 #### What It Analyzes
 
