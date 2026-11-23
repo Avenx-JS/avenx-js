@@ -220,6 +220,7 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 - `--dry-run` / `-d`: Previews generated files without writing to disk.
 - `--force` / `-f`: Bypasses Git working tree status checks.
 - `--with-test`: Also writes a colocated unit test next to a generated component. `--no-test` skips it. Neither is the default.
+- `--no-style`: Writes a component or page without its stylesheet (`.component.css` or `.page.css`), for projects that style components another way. The generated template then has no `@css` references, so it builds without `AVX_W49`.
 - `--template <name>` / `-t <name>`: Generates from the override named `<name>` under `templatesDir` (for example `.avenxtemplates/component/<name>/component.js.template`) instead of the default template. See [Custom Templates](/cli-reference/custom-templates/).
 
 #### Usage Examples

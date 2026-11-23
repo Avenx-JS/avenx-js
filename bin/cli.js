@@ -177,6 +177,7 @@ export class AvenxCLI {
     const force = args.includes('--force') || args.includes('-f');
     const withTest = args.includes('--with-test');
     const noTest = args.includes('--no-test');
+    const noStyle = args.includes('--no-style');
 
     // `avenx build` is production by default; `--dev` opts out. `--prod` is
     // accepted so a script can state the intent it relies on. `serve` and
@@ -231,7 +232,8 @@ export class AvenxCLI {
         !arg.startsWith('-t=') &&
         arg !== '--with-test' &&
         arg !== '--csp-strict' &&
-        arg !== '--no-test',
+        arg !== '--no-test' &&
+        arg !== '--no-style',
     );
     const type = filteredArgs[0];
     const name = filteredArgs[1];
@@ -273,11 +275,11 @@ export class AvenxCLI {
         } else if (type === 'guard') {
           generateGuard(this, name, dryRun, force, templateName);
         } else if (type === 'page' || type === 'p') {
-          generatePage(this, name, dryRun, force, templateName);
+          generatePage(this, name, dryRun, force, templateName, noStyle);
         } else if (type === 'component' || type === 'c') {
-          generateComponent(this, name, dryRun, force, templateName, withTest, noTest);
+          generateComponent(this, name, dryRun, force, templateName, withTest, noTest, noStyle);
         } else {
-          generateComponent(this, type, dryRun, force, templateName, withTest, noTest);
+          generateComponent(this, type, dryRun, force, templateName, withTest, noTest, noStyle);
         }
         break;
       }
