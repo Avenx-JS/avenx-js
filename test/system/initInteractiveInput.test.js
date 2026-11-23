@@ -18,7 +18,7 @@ const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
  * @returns {string} Temporary project directory.
  */
 function makeTempDir() {
-  return fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-init-interactive-'));
+  return fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-init-interactive-'));
 }
 
 /**

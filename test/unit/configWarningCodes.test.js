@@ -101,6 +101,19 @@ try {
     assert.ok(warnings[0].includes('"AVX_W99"'), warnings[0]);
   }
 
+  // Categories and named accessibility rules are accepted without warnings.
+  {
+    const { config, warnings } = loadWith({ warnings: { accessibility: 'error', 'img-alt': 'off', AVX_W68: 'warn' } });
+    assert.deepStrictEqual(warnings, []);
+    assert.strictEqual(config.warnings.accessibility, 'error');
+    assert.strictEqual(config.warnings['img-alt'], 'off');
+    const typo = loadWith({ warnings: { accessiblity: 'error' } });
+    assert.strictEqual(typo.warnings.length, 1);
+    assert.ok(typo.warnings[0].includes('Did you mean "accessibility"?'));
+    const ruleTypo = loadWith({ warnings: { 'img-al': 'off' } });
+    assert.ok(ruleTypo.warnings[0].includes('Did you mean "img-alt"?'));
+  }
+
   // 10. Severity validation is unchanged: an invalid severity still throws.
   {
     assert.throws(() => loadWith({ warnings: { AVX_W55: 'disabled' } }), /Invalid severity "disabled" for warning "AVX_W55"/);

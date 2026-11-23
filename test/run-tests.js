@@ -189,7 +189,10 @@ function requiresSerialExecution(file) {
  */
 async function runTestFile(file, options = {}) {
   const { inheritStdio = false, timeoutMs = TEST_TIMEOUT_MS } = options;
-  const relativePath = path.relative(path.join(__dirname, '..'), file);
+  // Reported with forward slashes on every platform, so a run reads the same
+  // in a Windows log as in a Linux one. The runner accepts the path back as an
+  // argument either way.
+  const relativePath = path.relative(path.join(__dirname, '..'), file).split(path.sep).join('/');
 
   if (inheritStdio) {
     console.log(`\n🏃 Running: ${relativePath}`);

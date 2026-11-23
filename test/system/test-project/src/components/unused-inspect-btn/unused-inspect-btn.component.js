@@ -1,0 +1,18 @@
+<state count="0" />
+
+<action name="reset">
+    count = 0;
+</action>
+
+<action name="notify">
+    $emit('notify', { count });
+</action>
+
+<div>
+    <@css container />
+    <h1 @css title>UnusedInspectBtn Component</h1>
+    <p @css text>Current count: {{ count }}</p>
+    <button @css button @click="count++">Increment</button>
+    <button @css button @click="reset()">Reset</button>
+    <button @css button @click="notify()">Notify Parent</button>
+</div>

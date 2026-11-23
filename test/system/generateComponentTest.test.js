@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
 const binPath = path.join(repoRoot, 'bin/avenx.js');
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-component-test-')));
+const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-component-test-')));
 
 function runAvenx(args) {
   const result = spawnSync(process.execPath, [binPath, ...args], {
@@ -49,7 +49,9 @@ try {
       fs.symlinkSync(target, linkPath, 'junction');
     }
   }
-  const [, config] = header.match(/vitest\.config\.js includes:\n([\s\S]*?)\n \* 3\. Run:/);
+  // `\r?\n`: the template is checked out with CRLF on Windows, and the
+  // generated file keeps the template's line endings.
+  const [, config] = header.match(/vitest\.config\.js includes:\r?\n([\s\S]*?)\r?\n \* 3\. Run:/);
   fs.writeFileSync(path.join(root, 'vitest.config.js'), config.replace(/^ \*\s{6}/gm, ''));
 
   assert.match(header, /npx vitest run/, 'the header should name the Vitest run command');

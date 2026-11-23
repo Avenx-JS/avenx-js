@@ -24,7 +24,7 @@ const REPO_ROOT = path.join(__dirname, '../..');
 const BIN_PATH = path.join(REPO_ROOT, 'bin/avenx.js');
 const EXAMPLE_DIR = path.join(REPO_ROOT, 'plugins/avenx-persistence/example');
 
-const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-persistence-example-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-persistence-example-'));
 
 try {
   console.log('🧪 Testing the @avenx/persistence example build...');

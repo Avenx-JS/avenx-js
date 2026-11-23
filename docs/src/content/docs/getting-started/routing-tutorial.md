@@ -12,13 +12,12 @@ Client-side routing is essential for Single Page Applications (SPAs). In this st
 Before starting, make sure you have an Avenx-JS project initialized using the CLI:
 
 ```bash
-mkdir my-router-app
+npx avenx init my-router-app
 cd my-router-app
-npx avenx init
 ```
 
-`avenx init` scaffolds into the current directory, so create and enter the
-directory first.
+`avenx init my-router-app` creates the directory and scaffolds into it. Without
+a name, `avenx init` scaffolds into the current directory.
 
 ---
 

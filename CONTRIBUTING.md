@@ -106,6 +106,35 @@ A quick start for working on the codebase:
 
 Unit and integration tests belong in their matching `test/unit` and `test/integration` directories. Use E2E tests when the behavior needs a real compiled Avenx app running in a browser; see the E2E guide for the distinction.
 
+### Writing tests that pass on every platform
+
+Avenx supports Linux, macOS and Windows, and CI runs the unit and system tiers
+on all three. Each of these rules comes from a test that passed on Linux and
+failed on Windows:
+
+- **Canonicalise temp directories with `fs.realpathSync.native`**, not
+  `fs.realpathSync`. The bundler keys modules by native real path. On Windows
+  only the native call expands 8.3 short names such as `RUNNER~1` (the CI
+  runner's temp directory), so the JavaScript version gives a different
+  path for the same file.
+- **Link directories with `process.platform === 'win32' ? 'junction' : 'dir'`.**
+  A Windows directory symlink needs administrator rights or Developer Mode; a
+  junction does not.
+- **Assert paths in output with forward slashes**, and print them that way.
+  The build's diagnostics and the CLI report `src/main.app.js`, not
+  `src\main.app.js`. Build an expected path from a string, not `path.join`.
+- **Pass a module to `--import` (or any loader flag) as
+  `pathToFileURL(file).href`.** On Windows a bare `C:\...` reads as a URL
+  with the scheme `c:` and is refused.
+- **Use `fileURLToPath`, never `new URL(...).pathname`**, to turn a module URL
+  into a path. On Windows the pathname is `/C:/...`.
+- **Accept `\r\n` when a regex reads a checked-out file.** Git checks the
+  repository out with CRLF on Windows, and generated files keep the template's
+  line endings.
+- **Wait for a spawned process's `exit` before deleting its directory.** A kill
+  signal returns before the process is gone, and Windows refuses to remove a
+  directory a live process holds.
+
 ### Compiler changes and regression tests
 
 Changes under `lib/compiler/` (or to `lib/compiler.js`) should include a corresponding test file in the same pull request. For compiler changes, the Compiler Test Coverage workflow runs the tests with coverage instrumentation and posts or updates a PR comment, like the bundle size report, showing the test result, overall compiler line and branch coverage, diff size, changed-line coverage, and any changed uncovered lines or branches. The comment includes a non-blocking warning when compiler source changes without a changed `*.test.*` or `*.spec.*` file. This report is based on the PR version of the code; changed executable lines not covered by its tests are identified as uncovered. For fork PRs where GitHub does not grant the workflow a write token, the report is available in the CI job summary instead.

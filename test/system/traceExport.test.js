@@ -18,6 +18,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
 
+// `--import` takes a module specifier, not a path. A bare `C:\...` is read as a
+// URL with the scheme `c:` and refused on Windows, so it is passed as a file URL.
+const HAPPY_DOM_HOOK = pathToFileURL(path.join(repoRoot, 'test/helpers/register-happy-dom.js')).href;
+
 console.log('🧪 Testing trace export produces a runnable regression test...');
 
 const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-trace-export-'));
@@ -91,7 +95,7 @@ console.log('DETERMINISM:' + trace.determinism.status);
 
   const recordRun = spawnSync(
     process.execPath,
-    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), recordScript],
+    ['--import', HAPPY_DOM_HOOK, recordScript],
     { encoding: 'utf8', cwd: repoRoot },
   );
   assert.strictEqual(recordRun.status, 0, `recording failed:\n${recordRun.stderr}`);
@@ -134,7 +138,7 @@ console.log('DETERMINISM:' + trace.determinism.status);
 
   const passRun = spawnSync(
     process.execPath,
-    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), runnablePath],
+    ['--import', HAPPY_DOM_HOOK, runnablePath],
     { encoding: 'utf8', cwd: repoRoot },
   );
   assert.strictEqual(
@@ -163,7 +167,7 @@ console.log('DETERMINISM:' + trace.determinism.status);
 
   const failRun = spawnSync(
     process.execPath,
-    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), runnablePath],
+    ['--import', HAPPY_DOM_HOOK, runnablePath],
     { encoding: 'utf8', cwd: repoRoot },
   );
   assert.notStrictEqual(failRun.status, 0, 'the generated test must fail once the behaviour changes');
@@ -196,7 +200,7 @@ console.log('DETERMINISM:' + trace.determinism.status);
   );
   const redactedRecordRun = spawnSync(
     process.execPath,
-    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), recordScript, 'redacted'],
+    ['--import', HAPPY_DOM_HOOK, recordScript, 'redacted'],
     { encoding: 'utf8', cwd: repoRoot },
   );
   assert.strictEqual(redactedRecordRun.status, 0, `redacted recording failed:\n${redactedRecordRun.stderr}`);
@@ -219,7 +223,7 @@ console.log('DETERMINISM:' + trace.determinism.status);
 
   const redactedRunnable = spawnSync(
     process.execPath,
-    ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), runnablePath],
+    ['--import', HAPPY_DOM_HOOK, runnablePath],
     { encoding: 'utf8', cwd: repoRoot },
   );
   assert.strictEqual(

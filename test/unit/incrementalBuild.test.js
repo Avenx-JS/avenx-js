@@ -46,7 +46,7 @@ const roots = [];
  * @returns {string} The project root.
  */
 function createProject() {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-incremental-')));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-incremental-')));
   roots.push(root);
   fs.cpSync(FIXTURE, root, { recursive: true });
 

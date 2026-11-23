@@ -53,7 +53,7 @@ function avenx(args, cwd) {
  * @returns {string} The project root.
  */
 function scaffoldFallbackProject(construct) {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-fallback-')));
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-fallback-')));
   avenx(['init'], dir);
 
   const componentDir = path.join(dir, 'src', 'components', 'probe');
@@ -92,7 +92,7 @@ function scaffoldLinkedProject(construct) {
   fs.mkdirSync(modules, { recursive: true });
   const link = path.join(modules, 'avenx-core');
   fs.rmSync(link, { recursive: true, force: true });
-  fs.symlinkSync(repoRoot, link, 'dir');
+  fs.symlinkSync(repoRoot, link, process.platform === 'win32' ? 'junction' : 'dir');
   return dir;
 }
 
@@ -185,17 +185,17 @@ try {
   // A symlink chain, which is what a pnpm store produces: the application links
   // to a store entry that itself links to the package. Canonicalisation has to
   // follow the whole chain, not one hop.
-  const chainRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-chain-')));
+  const chainRoot = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-chain-')));
   projects.push(chainRoot);
   const store = path.join(chainRoot, 'store');
   fs.mkdirSync(store, { recursive: true });
-  fs.symlinkSync(repoRoot, path.join(store, 'avenx-core'), 'dir');
+  fs.symlinkSync(repoRoot, path.join(store, 'avenx-core'), process.platform === 'win32' ? 'junction' : 'dir');
 
   const chained = scaffoldFallbackProject(REFUSED.suspense);
   projects.push(chained);
   fs.mkdirSync(path.join(chained, 'node_modules'), { recursive: true });
   fs.rmSync(path.join(chained, 'node_modules', 'avenx-core'), { recursive: true, force: true });
-  fs.symlinkSync(path.join(store, 'avenx-core'), path.join(chained, 'node_modules', 'avenx-core'), 'dir');
+  fs.symlinkSync(path.join(store, 'avenx-core'), path.join(chained, 'node_modules', 'avenx-core'), process.platform === 'win32' ? 'junction' : 'dir');
 
   const chainBuild = avenx(['build'], chained);
   assert.strictEqual(
@@ -214,7 +214,7 @@ try {
   // The other half of the contract: a build where nothing fell back must not
   // carry the renderer at all. A fix for the above must not be "include it
   // always".
-  const clean = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-nofallback-')));
+  const clean = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-nofallback-')));
   projects.push(clean);
   avenx(['init'], clean);
   const compiled = path.join(clean, 'src', 'components', 'plain');
