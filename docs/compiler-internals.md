@@ -206,3 +206,4 @@ When introducing new template syntax or altering AST transformations:
 - `style/sourceMap.js`: source registration, generated-line metadata, VLQ encoding and inline maps; map order and offsets are preserved.
 - `style/preprocessors.js`: optional package resolution, preprocessing and per-build warning deduplication; dependency caches survive reset.
 - `style/variables.js`: @def declaration substitution and unresolved-reference diagnostics.
+- `style/atRules.js`: nested rule traversal, at-rule wrappers and source-line propagation; selector rewriting remains in StyleProcessor.
