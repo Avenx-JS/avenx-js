@@ -26,7 +26,8 @@ for (const config of [{}, { mode: 'development', style: { preprocessor: 'scss' }
 for (const config of [{ modes: 'development' }, { server: { ports: 3000 } },
   { mode: 'develpment' }, { style: { preprocessor: 'sas' } }, { logging: { level: 'noisy' } },
   { warnings: { AVX_W03: 'disabled' } }, { rewind: { onConflict: 'overwrite' } },
-  { incremental: 'true' }, { expressionCacheCapacity: 0 }]) {
+  { incremental: 'true' }, { expressionCacheCapacity: 0 },
+  { mode: 'development$SUFFIX' }, { server: { port: 'port ${PORT}' } }]) {
   assert.equal(validate(config), false, JSON.stringify(config));
 }
 
