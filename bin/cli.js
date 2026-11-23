@@ -346,7 +346,7 @@ export class AvenxCLI {
         break;
       case 'stats':
       case 's':
-        runStats(this, args);
+        await runStats(this, args);
         break;
       case 'serve': {
         // Recording is opt-in and development-only. It is read here rather

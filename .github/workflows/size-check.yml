@@ -30,9 +30,6 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Install Terser for build script
-        run: npm install -g terser
-
       - name: Install dependencies (PR)
         run: npm ci
 

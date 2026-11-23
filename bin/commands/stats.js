@@ -6,6 +6,7 @@ import { AtlasNodeKind } from '../../lib/compiler/atlas/AppModel.js';
 import { buildModel } from './atlas.js';
 import { withWarningsSuppressed } from '../../lib/compiler/utils/warningReporter.js';
 import { bold, cyan, green, yellow, gray } from '../colors.js';
+import { runBundleStats } from './bundleStats.js';
 
 /**
  * Formats byte counts into human readable strings (e.g. 500 B, 1.25 KB, 2.10 MB).
@@ -313,6 +314,9 @@ export function analyzeStats(cli) {
  * @param {string[]} [args] - Command arguments.
  */
 export function runStats(cli, args = []) {
+  if (args.some((arg) => /^(--save|--compare|--max-increase)(=|$)/.test(arg))) {
+    return runBundleStats(cli, args);
+  }
   const isJson = args.includes('--json') || args.includes('-j');
   const statsData = analyzeStats(cli);
 
