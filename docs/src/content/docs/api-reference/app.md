@@ -7,7 +7,7 @@ The core coordinator class for your application. It holds mappings of components
 
 ## Constructor
 
-```javascript
+```javascript avenx-build
 const app = new AvenxApp({ target: '#app' });
 ```
 
@@ -24,7 +24,7 @@ const app = new AvenxApp({ target: '#app' });
 
 Pass a global `errorHandler` function in the `AvenxApp` configuration to capture uncaught runtime exceptions, lifecycle failures, and unhandled template errors across all components:
 
-```javascript
+```javascript avenx-build
 const app = new AvenxApp({
   target: '#app',
   errorHandler(error, instance, info) {
@@ -49,7 +49,7 @@ const app = new AvenxApp({
 
 Pass a global `warnHandler` function in the `AvenxApp` configuration (or `logging.warnHandler`) to intercept framework warning codes (e.g. `AVX_W01` to `AVX_W32`):
 
-```javascript
+```javascript avenx-build
 const app = new AvenxApp({
   target: '#app',
   warnHandler(message, instance) {
@@ -70,7 +70,7 @@ Set `enableProfiling` to `true` in the `AvenxApp` constructor to record
 `[Avenx] <Component> - <Phase>` name, so they can be inspected in the browser's
 Performance panel.
 
-```javascript
+```javascript avenx-build
 const app = new AvenxApp({
   target: '#app',
   enableProfiling: true,
@@ -88,7 +88,7 @@ methods are unavailable.
 
 Pass a `logging` object to configure the shared `logger` instance that `AvenxApp`, components, and your own application code use. This is separate from the `logging` option in `avenx.config.json`, which only affects the CLI's build-time output — see [Logging Options](/getting-started/configuration/#logging-options).
 
-```javascript
+```javascript avenx-build
 const app = new AvenxApp({
   target: '#app',
   logging: {
@@ -110,7 +110,7 @@ If adding another inactive page would exceed `keepAliveLimit`, the least recentl
 
 The default value is `5`.
 
-```javascript
+```javascript avenx-build
 const app = new AvenxApp({
   target: '#app',
   keepAliveLimit: 3,

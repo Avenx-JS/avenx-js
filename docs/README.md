@@ -29,6 +29,38 @@ All commands below are run from inside `docs/`:
 
 Run `npm run build` before opening a pull request — it catches broken internal links and invalid frontmatter that the dev server won't always flag.
 
+## Compile application examples
+
+From the repository root, run `npm run test:docs`. CI runs this on every pull
+request, including changes to `docs/`, `lib/` and `bin/`, so compiler changes also
+check the examples that teach that compiler.
+
+Mark every new self-contained application entry example with `avenx-build`:
+
+````markdown
+```javascript avenx-build
+import { AvenxApp } from 'avenx-core/runtime';
+const app = new AvenxApp({ target: '#app' });
+app.initRouter({ '/': 'Home' });
+```
+````
+
+The harness writes the block verbatim to `src/main.app.js` in a temporary copy of
+`test/fixtures/docs/basic`, then runs the working-tree `avenx build`. That fixture
+supplies `#app`, a Home page and a Profile page. It does not add imports or repair
+the snippet. For different supporting files, add a named fixture directory and
+use `avenx-build=your-fixture` in the fence's info string. Each block gets a fresh
+copy, which is removed even when the build fails.
+
+Failures name the Markdown file and first code line. The final report lists the
+number of covered and unmarked blocks; fragments, shell commands and examples
+requiring an external service remain visibly unmarked. Unknown fixtures, marked
+non-JavaScript blocks and unterminated marked fences fail instead of being skipped.
+
+This first tier checks application wiring through the CLI compiler. A passing
+build does not assert browser behavior or execute a standalone runtime example;
+use the existing system and E2E suites for those contracts.
+
 ## Where Content Lives
 
 Pages live under `docs/src/content/docs/`, organized into sections that mirror the sidebar:
