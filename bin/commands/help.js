@@ -62,6 +62,8 @@ ${bold(cyan('Options:'))}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
   ${green('--open, -o')}                ${gray('Open a browser when "serve" starts')}
+  ${green('--https')}                   ${gray('Serve HTTPS (requires a certificate and key)')}
+  ${green('--cert <file>, --key <file>')} ${gray('Development TLS certificate and private key')}
   ${green('--no-live-reload')}          ${gray('Disable live reload while serving')}
   ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}

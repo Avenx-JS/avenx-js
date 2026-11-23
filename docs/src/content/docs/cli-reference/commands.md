@@ -442,6 +442,32 @@ Launches a local live-reloading development server with automatic file watching 
 
 Custom HTTP response headers (such as `Content-Security-Policy` or CORS headers) can be attached to every dev-server response via [`server.headers`](/getting-started/configuration#dev-server-response-headers-serverheaders) in `avenx.config.json`. These headers apply to `avenx serve` only and do not affect production builds.
  
+#### HTTPS for device testing
+
+`--https --cert <file> --key <file>` serves the app, inspector and live-reload
+channel over HTTPS. `--open` opens the same HTTPS address. Paths are resolved
+relative to the project root; absolute paths are also accepted. The flags
+override `server.https`, `server.cert` and `server.key` in `avenx.config.json`.
+
+For example, generate a development certificate using [mkcert](https://github.com/FiloSottile/mkcert),
+replacing `192.168.1.20` with your computer's LAN address:
+
+```sh
+mkcert -install
+mkcert -cert-file ../dev.pem -key-file ../dev-key.pem localhost 127.0.0.1 ::1 192.168.1.20
+avenx serve --host 0.0.0.0 --https --cert ../dev.pem --key ../dev-key.pem --open
+```
+
+On the device, trust mkcert's development CA and open `https://192.168.1.20:3000`.
+Do not share the CA's private key or commit development private keys. Prefer
+keeping certificate files outside your served project; the configured files and
+symlinks to them are also refused by the static-file server.
+
+Browsers treat `localhost` as a secure context, but a plain HTTP LAN address is
+not one. A trusted HTTPS origin enables device testing of camera/microphone,
+clipboard, service workers, geolocation and WebAuthn. `--https` without a pair
+fails with a mkcert command; Avenx does not generate or install certificates.
+
 #### Build error overlay
 
 When a rebuild fails while `avenx serve` is running, the compiler diagnostics are pushed to the browser over the same `/__avenx_live_reload__` SSE channel that drives live reload and rendered as an overlay on the page. The overlay shows the severity, the `AVX_*` code, the source file with line and column, the message, and the caret-annotated code frame — the same information the terminal prints, in the window the developer is already looking at.

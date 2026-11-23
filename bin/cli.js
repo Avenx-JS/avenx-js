@@ -359,6 +359,19 @@ export class AvenxCLI {
         const hostIdx = args.findIndex(
           (a) => a === '--host' || a === '-h' || a.startsWith('--host=') || a.startsWith('-h='),
         );
+        const certIdx = args.findIndex((a) => a === '--cert' || a.startsWith('--cert='));
+        const keyIdx = args.findIndex((a) => a === '--key' || a.startsWith('--key='));
+        if (args.includes('--https')) this.config.server.https = true;
+        for (const [name, idx] of [['cert', certIdx], ['key', keyIdx]]) {
+          if (idx === -1) continue;
+          const value = args[idx].includes('=')
+            ? args[idx].slice(args[idx].indexOf('=') + 1)
+            : args[idx + 1];
+          if (!value || value.startsWith('--') || value.trim() === '') {
+            throw new Error(`--${name} requires a file path`);
+          }
+          this.config.server[name] = value;
+        }
         const open = args.includes('--open') || args.includes('-o');
 
         if (args.includes('--no-live-reload') || args.includes('--live-reload=false')) {
@@ -377,7 +390,7 @@ export class AvenxCLI {
         // flag — `serve --trace 8080`, `serve --open 8080` — silently fell back
         // to the default port.
         const flagValueIndexes = new Set();
-        for (const idx of [portIdx, hostIdx]) {
+        for (const idx of [portIdx, hostIdx, certIdx, keyIdx]) {
           if (idx !== -1 && !args[idx].includes('=')) {
             flagValueIndexes.add(idx + 1);
           }
