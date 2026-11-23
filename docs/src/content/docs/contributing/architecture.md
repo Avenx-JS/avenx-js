@@ -226,3 +226,4 @@ effect on the next `avenx build`.
 `bin/commands/serve.js` assembles the server and retains listening, logging and CLI behavior. Focused modules under `bin/commands/serve/` own its collaborators.
 
 - `inspector/`: HTML, CSS and a classic browser client, read once at startup; rendering keeps script-safe JSON escaping and the original response bytes. The client is covered by the existing JS lint/format globs, with browser-script parser settings; HTML/CSS are included in the format command.
+- `overlay/`: build diagnostic selection and paths, plus the independent browser error panel. Its client remains usable without the application bundle and is linted as a classic script.

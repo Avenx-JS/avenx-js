@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { getInspectorHtml } from '../../bin/commands/serve.js';
+import { getInspectorHtml, getErrorOverlayScript } from '../../bin/commands/serve.js';
 
 // Captured from the original template strings. Preserve the full response,
 // including whitespace, script escaping and marker-like configuration values.
@@ -17,3 +17,5 @@ for (const [index, config] of configs.entries()) {
   assert.equal(createHash('sha256').update(html).digest('hex'), expected[index]);
 }
 console.log('Inspector responses remain byte-identical after asset extraction');
+
+assert.equal(createHash('sha256').update(getErrorOverlayScript()).digest('hex'), '48ea2ac1d4931cde610e8433029759c09175ed7bcdead080547e1d0785489c91');

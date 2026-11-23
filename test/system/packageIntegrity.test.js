@@ -231,6 +231,8 @@ try {
     'lib/core/index.js',
     'lib/core/index.d.ts',
     'bin/avenx.js',
+    'bin/commands/serve/overlay/index.js',
+    'bin/commands/serve/overlay/client.js',
     'bin/commands/serve/inspector/index.js',
     'bin/commands/serve/inspector/client.js',
     'bin/commands/serve/inspector/dashboard.html',
