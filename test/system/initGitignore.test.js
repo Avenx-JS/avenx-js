@@ -20,7 +20,7 @@ const REPO_ROOT = path.join(__dirname, '../..');
  * @returns {string} Temporary project directory.
  */
 function makeTempDir() {
-  return fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'avenx-init-gitignore-'));
+  return fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'avenx-init-gitignore-'));
 }
 
 /**

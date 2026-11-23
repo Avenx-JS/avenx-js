@@ -24,7 +24,7 @@ import { bundle } from '../../lib/bundler/index.js';
 
 console.log('🧪 Testing bundler tree shaking...');
 
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-shake-')));
+const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-shake-')));
 
 /**
  * Writes a fixture module.

@@ -830,6 +830,9 @@ migration.
 - **In progress:** a production-readiness cycle ahead of a release candidate.
   The unreleased section of the changelog records what it has found and fixed.
 - **Node:** 18 or newer. CI runs the suite on 18, 20 and 22.
+- **Platforms:** Linux, macOS and Windows. CI runs every tier on Linux, and
+  the unit and system tiers (which drive the `avenx` CLI end to end) on
+  Windows and macOS as well.
 
 The repository's own verification, as it stands on the default branch
 `main` (counts verified 2026-11-06):
