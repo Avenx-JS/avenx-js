@@ -280,17 +280,19 @@ export function openBrowser(url, { platform = process.platform, spawnImpl = spaw
  * @returns {string} The initial HTML template string.
  */
 export function getInitialHtml(cli) {
+  const dist = (cli.config.distDir || 'dist').replace(/\\/g, '/');
+  const name = cli.config.outputName || 'bundle';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Avenx App</title>
-    <link rel="stylesheet" href="${cli.config.distDir}/bundle.css">
+    <link rel="stylesheet" href="${dist}/${name}.css">
 </head>
 <body>
     <div id="app"></div>
-    <script src="${cli.config.distDir}/bundle.js"></script>
+    <script src="${dist}/${name}.js"></script>
 </body>
 </html>`;
 }

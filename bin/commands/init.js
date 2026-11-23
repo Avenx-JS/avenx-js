@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { readTemplate, validateComponentName } from '../utils.js';
+import { validateComponentName } from '../utils.js';
 import loadConfig from '../../lib/config.js';
 import { runWizard } from '../wizard.js';
-import { getInitialHtml } from './serve.js';
+import { readScaffoldFile } from './scaffoldFiles.js';
 import { bold, cyan, green, red, gray } from '../colors.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -150,7 +150,7 @@ export async function initProject(cli, args = []) {
   // Create initial .vscode files
   const jsConfigPath = path.join(cli.baseDir, '.vscode/jsconfig.json');
   if (!fs.existsSync(jsConfigPath)) {
-    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'jsconfig.json.template');
+    const template = readScaffoldFile(cli, '.vscode/jsconfig.json');
     fs.writeFileSync(jsConfigPath, template);
     console.log('  Created: .vscode/jsconfig.json');
   }
@@ -160,14 +160,14 @@ export async function initProject(cli, args = []) {
   // with completion and hover documentation. Referenced by settings.json.
   const htmlDataPath = path.join(cli.baseDir, '.vscode/avenx.html-data.json');
   if (!fs.existsSync(htmlDataPath)) {
-    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'avenx.html-data.json.template');
+    const template = readScaffoldFile(cli, '.vscode/avenx.html-data.json');
     fs.writeFileSync(htmlDataPath, template);
     console.log('  Created: .vscode/avenx.html-data.json');
   }
 
   const settingsPath = path.join(cli.baseDir, '.vscode/settings.json');
   if (!fs.existsSync(settingsPath)) {
-    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'vscode', 'settings.json.template');
+    const template = readScaffoldFile(cli, '.vscode/settings.json');
     fs.writeFileSync(settingsPath, template);
     console.log('  Created: .vscode/settings.json');
   }
@@ -175,7 +175,7 @@ export async function initProject(cli, args = []) {
   // Create initial index.html
   const indexHtmlPath = path.join(cli.baseDir, 'index.html');
   if (!fs.existsSync(indexHtmlPath)) {
-    fs.writeFileSync(indexHtmlPath, getInitialHtml(cli));
+    fs.writeFileSync(indexHtmlPath, readScaffoldFile(cli, 'index.html'));
     console.log('  Created: index.html');
   }
 
@@ -360,14 +360,14 @@ export async function initProject(cli, args = []) {
   const gitignorePath = path.join(cli.baseDir, '.gitignore');
 
   if (!fs.existsSync(gitignorePath)) {
-    fs.writeFileSync(gitignorePath, `node_modules/\n${cli.config.distDir}/\n.DS_Store\n.env\n.env.*\n!.env.example\n`);
+    fs.writeFileSync(gitignorePath, readScaffoldFile(cli, '.gitignore'));
     console.log('  Created: .gitignore');
   }
   // Create initial .prettierrc
   const prettierPath = path.join(cli.baseDir, '.prettierrc');
 
   if (!fs.existsSync(prettierPath)) {
-    const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'init', '.prettierrc');
+    const template = readScaffoldFile(cli, '.prettierrc');
 
     fs.writeFileSync(prettierPath, template);
 

@@ -620,7 +620,7 @@ The `avenx doctor` command performs comprehensive diagnostic health checks on yo
 3. **Project Structure**:
    - Validates existence of the source directory (`src/` or custom `srcDir`) and build output directory (`dist/` or custom `distDir`).
    - Checks for recommended subdirectories: `src/components/`, `src/pages/`, and `src/global/`.
-   - Verifies presence of `.vscode/jsconfig.json` (editor path aliases) and root `index.html`.
+   - Checks the editor files (`.vscode/jsconfig.json`, `.vscode/avenx.html-data.json`, `.vscode/settings.json`), `.prettierrc`, `.gitignore` scaffold entries and root `index.html`.
 4. **Git Repository Status**:
    - Checks Git status and warns if the working tree has uncommitted local changes.
 
@@ -637,12 +637,37 @@ npx avenx doctor
 
 # Emit machine-readable output for CI tooling
 npx avenx doctor --json
+
+# Preview mechanical repairs without creating files or directories
+npx avenx doctor --fix --dry-run
+
+# Apply repairs and report their outcomes as JSON
+npx avenx doctor --fix --json
 ```
 
 `--json` (alias `-j`) writes a single JSON document to stdout with `root`, a `checks` array
 (each with `area`, `status`, `message` and an optional `hint`), and the `pass`, `warn` and `fail`
 counts. Section headings and the human summary are suppressed in this mode. Exit codes keep
 their usual meaning: `0` when there are no failures, `1` when a check fails.
+
+`--fix` creates missing companion files from the same templates as `init`, including local
+template overrides, and appends missing `.gitignore` entries. Existing editor and formatter
+files that differ from their templates are reported and preserved. It does not create source
+files, change the configuration, install packages or initialize Git.
+
+For `index.html`, it edits only the `src` / stylesheet `href` values that match known scaffold
+bundle paths. Quotes, query strings, fragments, surrounding markup and comments are retained.
+An unknown old bundle name or several possible entry points require a manual edit; doctor
+reports the expected script and stylesheet paths instead of guessing. Missing `index.html`
+uses the configured `distDir` and `outputName`. Repairs never follow symbolic links.
+
+With `--fix`, an unresolved bundle reference, a refused/failed write, missing Git repository
+or a critical diagnostic exits `1`; custom files, optional directories, an unbuilt project
+and uncommitted changes remain informational warnings. A successful dry run exits `0` and
+leaves every file unchanged. The JSON document additionally contains `dryRun` and `repairs`,
+whose entries give `path`, `action` (`create`, `append`, `update`) and `status` (`planned`,
+`applied`, `failed`), plus an `error` on failure. A repeated successful repair has no pending
+entries. `--dry-run` requires `--fix`.
 
 ---
 
