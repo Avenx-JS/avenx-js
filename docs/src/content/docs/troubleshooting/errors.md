@@ -4602,6 +4602,17 @@ The "{3}" conflict policy refuses to overwrite a value the transaction did not w
 
 See the [Avenx Rewind guide](/core-concepts/rewind) for the full model.
 
+### AVX_C34 — INVALID_DEFER_TRIGGERS
+
+A `<@defer when="...">` list contains an expression, an empty entry or a repeated
+subscription. Use unique subscription triggers separated by semicolons:
+`idle`, `visible`, `hover`, `click`, `interaction`, `timer(n)` or `n ms`.
+Equivalent duration spellings such as `timer(100)` and `100 ms` are duplicates.
+
+Keep a reactive condition as the only value, for example `when="rows.length"`.
+The diagnostic includes the block's complete `when` value and the offending
+entry. See [Multiple Triggers](/core-concepts/defer/#multiple-triggers).
+
 ### AVX_R39 — ROUTER_UNAVAILABLE
 
 The router capability was not linked, but the application called `initRouter()`

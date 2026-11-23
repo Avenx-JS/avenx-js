@@ -12,4 +12,5 @@ app.initRouter({
   '#/component': 'ComponentDefer',
   '#/stateful': 'StatefulDefer',
   '#/visible': 'Visible',
+  '#/multiple': 'Multiple',
 });
