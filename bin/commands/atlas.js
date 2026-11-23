@@ -10,6 +10,7 @@ import {
   walk,
 } from '../../lib/compiler/atlas/query.js';
 import { bold, cyan, gray, green, yellow } from '../colors.js';
+import { runAtlasGraph } from './atlasGraph.js';
 
 /**
  * Builds the application model, keeping compiler chatter out of query output.
@@ -162,6 +163,11 @@ function printUnresolved(entries) {
  */
 export function runAtlas(cli, args = []) {
   const model = buildModel(cli);
+
+  if (args.includes('--graph')) {
+    runAtlasGraph(model, args);
+    return;
+  }
 
   if (wantsJson(args)) {
     console.log(JSON.stringify(buildAtlas(model), null, 2));

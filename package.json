@@ -111,6 +111,7 @@
   "homepage": "https://avenx-js.com/",
   "dependencies": {},
   "devDependencies": {
+    "@dagrejs/graphlib-dot": "^1.0.2",
     "@eslint/js": "^10.0.1",
     "acorn": "^8.15.0",
     "@playwright/test": "^1.58.0",

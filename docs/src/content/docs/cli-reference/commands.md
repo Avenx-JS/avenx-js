@@ -1036,6 +1036,13 @@ npx avenx atlas --json    # the whole model
 
 ---
 
+#### Diagrams
+
+`avenx atlas --graph` writes a Mermaid flowchart of routes, pages, components and bridges to stdout. Use `--format dot` for Graphviz, `--out architecture.dot` (or `-o`) to save it, or `--kinds state,action --focus cart.items --depth 2` to inspect a bounded part of the model. Singular and plural kind names are accepted. Possible relationships are dashed; every diagram reports unresolved relationships and analysis errors from the full model. `--graph` and `--json` are mutually exclusive.
+
+See the [Atlas guide](/core-concepts/atlas/) for examples.
+
+
 ### 17. `avenx impact`
 
 What can be affected if a symbol changes. Follows relationships *into* it â€” every computed, action, template binding, handler, component, page and route that depends on it, transitively.
