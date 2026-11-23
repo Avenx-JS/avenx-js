@@ -220,3 +220,9 @@ effect on the next `avenx build`.
 2. **Stable Diagnostic Codes** – Errors must be registered through `AvenxErrorCodes` / `AvenxError` rather than throwing untracked raw `new Error`.
 3. **Strict JSDoc** – Public APIs must be fully annotated with JSDoc to satisfy `eslint-plugin-jsdoc`.
 4. **Atlas Never Guesses** – A relationship the analyser cannot follow is recorded as an `unresolved` entry with its reason and location. It is never dropped silently and never assumed. Any diagnostic that makes an absence claim must first check that record.
+
+## Style processor collaborators
+
+`StyleProcessor` retains its public methods, stylesheet state, scoping and emission. Focused helpers under `lib/compiler/style/` receive the data and callbacks they need.
+
+- `style/sourceMap.js`: source registration, generated-line metadata, VLQ encoding and inline maps; map order and offsets are preserved.
