@@ -198,3 +198,13 @@ When introducing new template syntax or altering AST transformations:
 - [ ] If the construct also needs a markup rewrite for the string renderer, add it as a module under `lib/compiler/parser/directives/` exporting a pure function, then register it in `parser/directives/index.js` at the position its semantics require. Do not reorder existing passes in the same change.
 - [ ] Put any new template diagnostic in `lib/compiler/parser/validate.js`, not in `ComponentParser.js`.
 - [ ] Add unit tests in `test/compiler/` verifying round-tripping and error reporting.
+
+## Style processor collaborators
+
+`StyleProcessor` retains its public methods, stylesheet state, scoping and emission. Focused helpers under `lib/compiler/style/` receive the data and callbacks they need.
+
+- `style/sourceMap.js`: source registration, generated-line metadata, VLQ encoding and inline maps; map order and offsets are preserved.
+- `style/preprocessors.js`: optional package resolution, preprocessing and per-build warning deduplication; dependency caches survive reset.
+- `style/variables.js`: @def declaration substitution and unresolved-reference diagnostics.
+- `style/atRules.js`: nested rule traversal, at-rule wrappers and source-line propagation; selector rewriting remains in StyleProcessor.
+- `style/unitCache.js`: capture, slicing, conflict checks and replay of a unit's stylesheet contribution; reset remains with the owner of the collections.
