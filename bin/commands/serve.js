@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import http from 'http';
+import https from 'https';
+import { createSecureContext } from 'tls';
 import { spawn } from 'child_process';
 import { runBuildPass } from './build.js';
 import { reportRebuildFailure } from '../fatal.js';
@@ -1835,13 +1837,16 @@ export function bindAddressFor(host) {
  * @param {object} requestListener - The handler both listeners share.
  * @param {string} host - The configured host.
  * @param {number} port - The port the primary listener bound.
+ * @param {object|null} [tlsOptions] - The primary listener's certificate and key.
  * @returns {object|null} The secondary server, or null when one was not added.
  */
-export function listenLoopbackAlias(requestListener, host, port) {
+export function listenLoopbackAlias(requestListener, host, port, tlsOptions = null) {
   if (host !== 'localhost') {
     return null;
   }
-  const alias = http.createServer(requestListener);
+  const alias = tlsOptions
+    ? https.createServer(tlsOptions, requestListener)
+    : http.createServer(requestListener);
   alias.on('error', () => {
     // No IPv6 loopback, or it is already taken: the IPv4 listener stands alone.
   });
@@ -1860,7 +1865,7 @@ export function listenWithPortFallback(server, requestedPort, host, onListening)
   let port = Number(requestedPort);
   const address = bindAddressFor(host);
 
-  server.once('listening', () => onListening(port));
+  server.once('listening', () => onListening(port === 0 ? server.address().port : port));
   server.on('error', (err) => {
     if (err.code !== 'EADDRINUSE' || port >= 65535) {
       throw err;
@@ -1876,13 +1881,41 @@ export function listenWithPortFallback(server, requestedPort, host, onListening)
 }
 
 /**
+ * Reads and validates the development certificate before any build or watcher starts.
+ * @param {object} cli - The project and merged server configuration.
+ * @returns {{options: object, files: Set<string>}|null} TLS options and private file paths.
+ */
+function loadServerTls(cli) {
+  const server = cli.config.server;
+  if (!server.https) return null;
+  if (!server.cert || !server.key) {
+    throw new Error(
+      'HTTPS requires --cert and --key (or server.cert and server.key). ' +
+      'Create a trusted development pair with: mkcert -install && ' +
+      'mkcert -cert-file dev.pem -key-file dev-key.pem localhost 127.0.0.1 ::1 <device-IP>',
+    );
+  }
+  try {
+    const certPath = fs.realpathSync(path.resolve(cli.baseDir, server.cert));
+    const keyPath = fs.realpathSync(path.resolve(cli.baseDir, server.key));
+    const options = { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath) };
+    createSecureContext(options);
+    return { options, files: new Set([certPath, keyPath]) };
+  } catch (error) {
+    throw new Error(`Cannot load HTTPS certificate/key: ${error.message}`, { cause: error });
+  }
+}
+
+/**
  * Starts a local development server and watches for changes.
  * @param {object} cli
  * @param {number|string} port
  * @param {string} [host]
  * @param {boolean} [open]
+ * @returns {object} The primary HTTP or HTTPS server.
  */
 export function serveProject(cli, port, host = 'localhost', open = false) {
+  const tls = loadServerTls(cli);
   // The first build is recorded like any rebuild, so a warning from it is
   // already waiting when the first browser connects. A failure here is still
   // fatal: there is no previous output to fall back on.
@@ -1992,6 +2025,20 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
       res.writeHead(403);
       res.end('Forbidden');
       return;
+    }
+
+    // A configured private key may live under the project root. It and aliases
+    // to it must never be served as static assets.
+    if (tls) {
+      try {
+        if (tls.files.has(fs.realpathSync(filePath))) {
+          res.writeHead(403);
+          res.end('Forbidden');
+          return;
+        }
+      } catch {
+        // Missing/unreadable files keep the normal file-response handling below.
+      }
     }
 
     const extname = String(path.extname(filePath)).toLowerCase();
@@ -2156,13 +2203,16 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
     });
   };
 
-  const server = http.createServer(requestListener);
+  const server = tls
+    ? https.createServer(tls.options, requestListener)
+    : http.createServer(requestListener);
 
   listenWithPortFallback(server, port, host, (activePort) => {
     // `localhost` names both loopback families. The primary listener holds the
     // IPv4 one; this adds the IPv6 one so neither address is refused.
-    cli._loopbackAlias = listenLoopbackAlias(requestListener, host, activePort);
-    const url = `http://${host}:${activePort}`;
+    cli._loopbackAlias = listenLoopbackAlias(requestListener, host, activePort, tls?.options);
+    const urlHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
+    const url = `${tls ? 'https' : 'http'}://${urlHost}:${activePort}`;
     console.log(`\n${green(`🚀 Dev-Server running at ${url}`)}`);
     if (cli.config.server.liveReload) {
       console.log(cyan(`👀 Watching for changes in ${cli.config.srcDir}/...\n`));
@@ -2176,4 +2226,5 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
       openBrowser(url);
     }
   });
+  return server;
 }

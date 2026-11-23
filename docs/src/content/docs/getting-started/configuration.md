@@ -55,6 +55,9 @@ publication step; this local reference works without it.
 | `alias`        | `object`   | `{}`                  | Maps import path prefixes to target paths. See [Path aliases](#path-aliases-alias). |
 | `server.port`  | `number`   | `3000`                | Valid TCP port from `0` to `65535`.                                    |
 | `server.host`  | `string`   | `"localhost"`         | Non-empty host name or address for the local dev server.              |
+| `server.https` | `boolean` | `false` | Serve HTTPS using the supplied development certificate and key. See [HTTPS for device testing](/cli-reference/commands/#https-for-device-testing). |
+| `server.cert` | `string` | unset | Non-empty certificate file path, relative to the project root or absolute. Required when serving HTTPS. |
+| `server.key` | `string` | unset | Non-empty private-key file path, relative to the project root or absolute. Required when serving HTTPS. |
 | `server.liveReload` | `boolean` | `true`              | Enables file watching, automatic browser reloads, and inspection script injection. |
 | `server.errorOverlay` | `boolean` | `true`            | Shows build diagnostics as an overlay in the browser while `avenx serve` runs. Requires `server.liveReload`. Applies to the dev server only. See [Build error overlay](#build-error-overlay-servererroroverlay). |
 | `server.headers` | `object` | `{}`                  | Custom HTTP response headers added to every dev-server response. Applies to `avenx serve` only. See [Dev-server response headers](#dev-server-response-headers-serverheaders). |
@@ -74,7 +77,7 @@ publication step; this local reference works without it.
 | `incremental`  | `boolean`  | `false`                | Lets `avenx serve`, `avenx watch` and `avenx check --watch` reuse the compilation of a file that has not changed, so a rebuild after one edit does not recompile the project. See [Incremental rebuilds](#incremental-rebuilds-incremental). |
 | `csp.strict`   | `boolean`  | `false`                | Refuses to emit anything that would need `script-src 'unsafe-eval'`, in a development build as well as a production one. See [CSP-strict builds](#csp-strict-builds-cspstrict). |
 
-Path options must be relative paths. Absolute paths are rejected during configuration loading.
+Source, output and template directory options must be relative paths. The TLS certificate and key also accept absolute paths.
 
 ## Template preprocessors (`preprocessors`)
 
