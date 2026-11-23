@@ -1,3 +1,4 @@
+import { broadcastLiveReload } from './liveReload.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { runBuildPass } from '../build.js';
@@ -26,7 +27,7 @@ const isWatchedRootFile = (filename) => ROOT_RELOAD_FILES.has(filename) || isRoo
  * Watches the src directory for changes and triggers a rebuild.
  * @param {object} cli
  */
-export function watchProject(cli, formatSseMessage) {
+export function watchProject(cli) {
   let timeout;
   let pendingChange = null;
   const baseDir = path.resolve(cli.baseDir);
@@ -82,12 +83,7 @@ export function watchProject(cli, formatSseMessage) {
   let assetSnapshot = snapshotDirectories(assetDirs);
   let rootSnapshot = snapshotRootFiles();
 
-  const sendEvent = (event) => {
-    if (cli.liveReloadClients) {
-      const frame = formatSseMessage(event);
-      cli.liveReloadClients.forEach((client) => client.write(frame));
-    }
-  };
+  const sendEvent = (event) => broadcastLiveReload(cli, event);
 
   // The overlay is driven by the last pass, and a client that connects later
   // -- a manual refresh while the build is broken -- is told about it then.

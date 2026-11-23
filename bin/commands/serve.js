@@ -1,7 +1,10 @@
-import { watchProject as watchSourceProject } from './serve/watcher.js';
+import { connectLiveReload, getLiveReloadScript } from './serve/liveReload.js';
+export { formatSseMessage } from './serve/liveReload.js';
+import { watchProject } from './serve/watcher.js';
+export { watchProject } from './serve/watcher.js';
 import { getBundleHashes, isSameOriginRequest, serveStaticFile } from './serve/static.js';
 export { getBundleHashes, isSameOriginRequest, resolveRequestPath, isDeniedProjectPath } from './serve/static.js';
-import { isErrorOverlayEnabled, buildStatusFromPass, overlayMessageFor, getErrorOverlayScript } from './serve/overlay/index.js';
+import { isErrorOverlayEnabled, buildStatusFromPass, getErrorOverlayScript } from './serve/overlay/index.js';
 export { isErrorOverlayEnabled, buildStatusFromPass, overlayMessageFor, getErrorOverlayScript, relativeDiagnosticPath } from './serve/overlay/index.js';
 import { getInspectorHtml } from './serve/inspector/index.js';
 export { getInspectorHtml, escapeInlineJson } from './serve/inspector/index.js';
@@ -168,21 +171,6 @@ export function getInitialHtml(cli) {
 
 
 /**
- * Serialises one live-reload message as an SSE frame.
- *
- * Objects are sent as JSON. `JSON.stringify` escapes every newline inside the
- * payload, so a code frame -- which is nothing but newlines -- cannot break
- * out of the single `data:` line an SSE frame allows.
- * @param {object|string} payload - The message to send.
- * @returns {string} The complete SSE frame, terminator included.
- */
-export function formatSseMessage(payload) {
-  const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  return `data: ${data}\n\n`;
-}
-
-
-/**
  * The address a configured host should actually bind.
  *
  * `localhost` is a name, and Node resolves it to a single family. On a machine
@@ -280,72 +268,7 @@ function loadServerTls(cli) {
 /** Adds the development clients to one HTML response. */
 function injectDevelopmentHtml(cli, content) {
   let responseContent;
-  const script = `
-<script>
-    if ('EventSource' in window) {
-        const source = new EventSource('/__avenx_live_reload__');
-        let pendingStylesheet = null;
-        let stylesheetSwapToken = 0;
-        const swapStylesheet = () => {
-            const current = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-                .find((link) => new URL(link.href, document.baseURI).pathname.endsWith('/bundle.css'));
-            if (!current) return;
-
-            if (pendingStylesheet && pendingStylesheet.parentNode) {
-                pendingStylesheet.parentNode.removeChild(pendingStylesheet);
-            }
-
-            const replacement = document.createElement('link');
-            replacement.rel = 'stylesheet';
-            const url = new URL(current.href, document.baseURI);
-            url.searchParams.set('t', String(Date.now()));
-            replacement.href = url.href;
-            const token = ++stylesheetSwapToken;
-            pendingStylesheet = replacement;
-            replacement.onload = () => {
-                if (token !== stylesheetSwapToken) return;
-                if (current.parentNode) current.parentNode.removeChild(current);
-                pendingStylesheet = null;
-            };
-            replacement.onerror = () => {
-                if (replacement.parentNode) replacement.parentNode.removeChild(replacement);
-                if (token === stylesheetSwapToken) pendingStylesheet = null;
-            };
-            current.parentNode.insertBefore(replacement, current.nextSibling);
-        };
-        // Messages are JSON objects carrying a type, and a bare string is
-        // still understood so an older payload shape cannot break reloading.
-        const parseMessage = (data) => {
-            if (typeof data !== 'string') return { type: '' };
-            if (data.charAt(0) !== '{') return { type: data };
-            try {
-                const parsed = JSON.parse(data);
-                return parsed && typeof parsed === 'object' ? parsed : { type: '' };
-            } catch {
-                return { type: data };
-            }
-        };
-        source.onmessage = (e) => {
-            const message = parseMessage(e.data);
-            const diagnostics = Array.isArray(message.diagnostics) ? message.diagnostics : [];
-
-            if (message.type === 'error' || message.type === 'ok') {
-                // Absent when the overlay is switched off; the reload
-                // behaviour below is unaffected either way.
-                if (window.__avenxDevOverlay) {
-                    window.__avenxDevOverlay.render(diagnostics);
-                }
-                return;
-            }
-            if (message.type === 'reload') {
-                window.location.reload();
-            } else if (message.type === 'css') {
-                swapStylesheet();
-            }
-        };
-    }
-</script>
-`;
+  const script = getLiveReloadScript();
   const traceScript = cli.traceEnabled
     ? `
 <script>
@@ -423,31 +346,7 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
     attachRequestLogger(req, res);
     applyCustomHeaders(res, cli.config.server.headers);
     if (cli.config.server.liveReload && req.url === '/__avenx_live_reload__') {
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-      res.write(formatSseMessage({ type: 'connected' }));
-
-      // A page loaded or refreshed while the build is broken has no way of
-      // knowing that, so a failed pass is replayed to every client that
-      // connects. Without this, the one reflex a developer has when the page
-      // looks wrong -- reload it -- is what hides the explanation. Warnings
-      // are not replayed: they would then sit on the page from the moment it
-      // loads, every load, which is what makes an overlay get switched off.
-      if (isErrorOverlayEnabled(cli) && cli.buildStatus && !cli.buildStatus.ok) {
-        const pending = overlayMessageFor(cli.buildStatus);
-        if (pending) {
-          res.write(formatSseMessage(pending));
-        }
-      }
-
-      cli.liveReloadClients.push(res);
-
-      req.on('close', () => {
-        cli.liveReloadClients = cli.liveReloadClients.filter((client) => client !== res);
-      });
+      connectLiveReload(cli, req, res);
       return;
     }
     // Trace ingest. Only mounted for `avenx serve --trace`, so a dev server
@@ -536,9 +435,4 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
     }
   });
   return server;
-}
-
-/** Watches the project using the existing SSE framing contract. */
-export function watchProject(cli) {
-  return watchSourceProject(cli, formatSseMessage);
 }

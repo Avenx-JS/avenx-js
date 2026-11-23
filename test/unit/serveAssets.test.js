@@ -1,3 +1,4 @@
+import { getLiveReloadScript } from '../../bin/commands/serve/liveReload.js';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { getInspectorHtml, getErrorOverlayScript } from '../../bin/commands/serve.js';
@@ -19,3 +20,5 @@ for (const [index, config] of configs.entries()) {
 console.log('Inspector responses remain byte-identical after asset extraction');
 
 assert.equal(createHash('sha256').update(getErrorOverlayScript()).digest('hex'), '48ea2ac1d4931cde610e8433029759c09175ed7bcdead080547e1d0785489c91');
+
+assert.equal(createHash('sha256').update(getLiveReloadScript()).digest('hex'), '4f45e38002283a6f54c53b37661be0177dbd116d5a7938c889ffcc27b3f4ba0b');

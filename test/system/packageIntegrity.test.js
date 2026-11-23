@@ -231,6 +231,8 @@ try {
     'lib/core/index.js',
     'lib/core/index.d.ts',
     'bin/avenx.js',
+    'bin/commands/serve/liveReload.js',
+    'bin/commands/serve/liveReload/client.js',
     'bin/commands/serve/watcher.js',
     'bin/commands/serve/static.js',
     'bin/commands/serve/overlay/index.js',
