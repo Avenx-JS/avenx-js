@@ -227,3 +227,4 @@ effect on the next `avenx build`.
 
 - `slots.js` owns outlet discovery, fallback preservation, grouping, projection and scoped slot DOM operations. It receives host elements and groups, plus evaluation/render/patch callbacks. Parent scope construction stays on the component.
 - `refs.js` owns the lazy reference cache and dirty flag. `collect(hostElement)` excludes nested component interiors; `invalidate()` defers the next DOM query, and `clear()` releases references on teardown. The public `$refs` getter remains on the component.
+- `updateRelevance.js` contains pure dependency analysis over explicit template/computed/render collections and a property-path resolver. The component supplies a snapshot and retains debug logging. Direct tests cover static/dynamic templates, graph cycles, nested keys, rendered computed values and unconditional updates.
