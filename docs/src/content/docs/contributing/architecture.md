@@ -220,3 +220,9 @@ effect on the next `avenx build`.
 2. **Stable Diagnostic Codes** – Errors must be registered through `AvenxErrorCodes` / `AvenxError` rather than throwing untracked raw `new Error`.
 3. **Strict JSDoc** – Public APIs must be fully annotated with JSDoc to satisfy `eslint-plugin-jsdoc`.
 4. **Atlas Never Guesses** – A relationship the analyser cannot follow is recorded as an `unresolved` entry with its reason and location. It is never dropped silently and never assumed. Any diagnostic that makes an absence claim must first check that record.
+
+## Component collaborators
+
+`AvenxComponent` retains the public instance surface, lifecycle, render orchestration and scope construction. Modules under `lib/core/runtime/component/` receive explicit data and callbacks; they do not receive the component as an opaque context.
+
+- `slots.js` owns outlet discovery, fallback preservation, grouping, projection and scoped slot DOM operations. It receives host elements and groups, plus evaluation/render/patch callbacks. Parent scope construction stays on the component.
