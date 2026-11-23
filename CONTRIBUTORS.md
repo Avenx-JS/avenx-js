@@ -20,6 +20,10 @@ If you have questions or want to contribute, feel free to reach out.
 
 ## 🌟 Contributors
 
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-171-blue.svg?style=flat)](#-contributors)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
