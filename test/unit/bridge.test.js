@@ -664,6 +664,47 @@ function testSetupFailure() {
   console.log('  ✅ setup() failures are attributed and non-fatal.');
 }
 
+/**
+ * A binding that first reads a bridge whose setup() throws still tracks the
+ * state it read, so it updates once the state changes (issue #1798).
+ */
+function testSetupFailureKeepsBindingsTracked() {
+  console.log('🧪 Testing bindings on a bridge whose setup() failed...');
+
+  const cart = bridge({
+    state: { items: [] },
+    setup() { throw new Error('persist() requires a "key" option'); },
+    add(item) { this.items.push(item); },
+  });
+  defineBridgeName('cart', cart);
+
+  let errors = 0;
+  let rendered = null;
+  const watcher = new AvenxWatcher(
+    () => {
+      try {
+        rendered = cart.items.length;
+      } catch (error) {
+        errors++;
+        assert.strictEqual(error.code, AvenxErrorCodes.BRIDGE_SETUP_FAILED, 'the first read reports the setup failure');
+      }
+    },
+    null,
+    { isEffect: true },
+  );
+
+  assert.strictEqual(errors, 1, 'the first read reports the setup failure once');
+  assert.strictEqual(rendered, null, 'the first render did not produce a value');
+
+  cart.add(1);
+
+  assert.strictEqual(errors, 1, 'later reads no longer throw');
+  assert.strictEqual(rendered, 1, 'the binding re-ran and sees the new state');
+
+  watcher.teardown();
+  console.log('  ✅ A failed setup() does not leave bindings stranded.');
+}
+
 // ---------------------------------------------------------------------------
 // Scope ownership
 // ---------------------------------------------------------------------------
@@ -993,6 +1034,7 @@ async function run() {
   testDispose();
   testDisposeKeepsConsumersLive();
   testSetupFailure();
+  testSetupFailureKeepsBindingsTracked();
   testScopeOwnedSubscriptions();
   testScopeEdgeCases();
   await testAsyncActions();
