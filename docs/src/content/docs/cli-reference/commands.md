@@ -403,8 +403,8 @@ The command detects issues such as:
 
 Validation issues are reported as warnings.
 
-**Exit codes.** `avenx check` exits `0` only when it finds nothing at all. Any
-diagnostic exits `1`, including a warning — which is deliberately stricter than
+**Exit codes.** `avenx check` exits `1` for errors and non-accessibility warnings,
+and `0` otherwise. Accessibility warnings also fail with `--strict`. This is stricter than
 `avenx build`, where a warning still produces a bundle and exits `0`. Use
 `check` to gate a pull request and `build` to ship; a project that wants the two
 to agree can escalate the codes it cares about with `warnings` in
@@ -418,6 +418,31 @@ Pass `--watch` (or `-w`) to keep checking as files under `srcDir` change.
 
 Pass `--strict` (alias `--strict-a11y`) to fail the check on accessibility
 warnings too.
+
+#### SARIF for pull request annotations
+
+`avenx check --sarif` writes a SARIF 2.1.0 log to stdout. Use
+`avenx check --sarif --out avenx.sarif` to write a file instead (`-o` and
+`--out=avenx.sarif` also work). Relative output paths and diagnostic file URIs
+are resolved from the project root. The parent output directory must exist.
+Rules use the diagnostic catalogue's descriptions and help links; findings
+include line and column when the compiler has them. No position is invented
+for a diagnostic without source coordinates.
+
+The exit code follows the same rules as ordinary `check`, including `--strict`.
+SARIF is a single-pass format and cannot be combined with `--watch` or `--json`.
+After checkout and dependency installation, a GitHub Actions job with
+`security-events: write` permission can upload the report even when check fails:
+
+```yaml
+- name: Check templates
+  run: npx avenx check --sarif --out avenx.sarif
+- name: Upload Avenx diagnostics
+  if: always()
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: avenx.sarif
+```
 
 This command is useful for checking templates in development and Continuous Integration (CI/CD) pipelines without generating build output.
 Watch modes also react to source and project-template changes while they run.

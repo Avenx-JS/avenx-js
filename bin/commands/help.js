@@ -58,6 +58,7 @@ ${bold(cyan('Options:'))}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
   ${green('--watch, -w')}               ${gray('Watch project component files for continuous template linting')}
   ${green('--strict, --strict-a11y')}   ${gray('Make "check" fail on accessibility warnings too')}
+  ${green('--sarif')}                   ${gray('Emit SARIF 2.1.0 from "check" for code scanning annotations')}
   ${green('--no-color')}                ${gray('Disable colored output (the NO_COLOR variable is honored too)')}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
@@ -66,7 +67,7 @@ ${bold(cyan('Options:'))}
   ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
-  ${green('--out, -o <file>')}          ${gray('Where "trace export" writes the generated regression test')}
+  ${green('--out, -o <file>')}          ${gray('Output file for "trace export" or "check --sarif"')}
   ${green('--keep=<n>, --all')}         ${gray('How much "trace prune" removes')}
   ${green('--help')}                    ${gray('Show this help for any command, before it runs')}
   ${green('--version, -v')}             ${gray('Output the current version')}

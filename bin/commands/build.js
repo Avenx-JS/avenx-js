@@ -9,6 +9,7 @@ import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
 import { A11Y_WARNING_CODES } from '../../lib/compiler/rules/accessibility.js';
 import { watchDirectories } from '../utils.js';
+import { toSarif } from '../../lib/compiler/diagnostics/sarif.js';
 import {
   DiagnosticChannel,
   createDiagnosticRecord,
@@ -159,7 +160,7 @@ function getTimestamp() {
  * @returns {{ valid: boolean, errorCount: number, warningCount: number, diagnostics: any[] }}
  */
 export function runCheckPass(cli, args = [], options = {}) {
-  const isJson = args.includes('--json') || args.includes('-j');
+  const isJson = args.includes('--json') || args.includes('-j') || args.includes('--sarif');
   const diagnostics = options.diagnostics || [];
 
   try {
@@ -222,6 +223,17 @@ export function runCheckPass(cli, args = [], options = {}) {
 export function checkProject(cli, args = []) {
   const isJson = args.includes('--json') || args.includes('-j');
   const isWatch = args.includes('--watch') || args.includes('-w');
+  const isSarif = args.includes('--sarif');
+  const outputIndex = args.findIndex((arg) => arg === '--out' || arg === '-o' || arg.startsWith('--out='));
+  let output;
+  if (isSarif && (isJson || isWatch)) {
+    throw new Error('--sarif cannot be combined with --json or --watch');
+  }
+  if (outputIndex !== -1) {
+    if (!isSarif) throw new Error('check --out requires --sarif');
+    output = args[outputIndex].startsWith('--out=') ? args[outputIndex].slice(6) : args[outputIndex + 1];
+    if (!output || output.startsWith('-')) throw new Error('--out requires a file path');
+  }
 
   if (isWatch) {
     const srcDir = (cli && cli.config && cli.config.srcDir) || 'src';
@@ -297,8 +309,14 @@ export function checkProject(cli, args = []) {
   // Single-pass mode
   const report = runCheckPass(cli, args);
 
-  if (isJson) {
-    console.log(JSON.stringify(report, null, 2));
+  if (isJson || isSarif) {
+    const serialized = JSON.stringify(isSarif ? toSarif(report, cli?.baseDir) : report, null, 2);
+    if (output) {
+      fs.writeFileSync(path.resolve(cli?.baseDir || process.cwd(), output), serialized + '\n');
+    } else {
+      // A synchronous write keeps large piped reports complete before process.exit.
+      fs.writeFileSync(1, serialized + '\n');
+    }
 
     process.exitCode = report.valid ? 0 : 1;
     if (!cli || !cli._noExit) {
