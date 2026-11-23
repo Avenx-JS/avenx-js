@@ -249,7 +249,8 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
    * The router this component's application initialised, if any.
    *
    * Use it to navigate from inside an action: `this.$router.navigate('#/home')`.
-   * Null when the application never called `initRouter`.
+   * Null when routing is installed but the application never called `initRouter`.
+   * Throws AVX_R39 when no router capability is linked and no active router exists.
    */
   readonly $router: AvenxRouter | null;
 
@@ -935,6 +936,7 @@ export class AvenxApp {
    * @param routes Map of URL hashes.
    * @param options Router options.
    */
+  /** Requires the router capability; external bundlers should import 'avenx-core/runtime/router'. */
   initRouter(routes: Record<string, string | AvenxRouteDefinition>, options?: AvenxRouterOptions): AvenxRouter;
 
   /**

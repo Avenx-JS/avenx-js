@@ -3,6 +3,7 @@ import path from 'path';
 import { bold, cyan, gray, green, yellow, red } from '../colors.js';
 import { listTraces, loadTrace, pruneTraces, DEFAULT_KEEP } from '../../lib/core/trace/store.js';
 import { formatTrace, summarizeTrace } from '../../lib/core/trace/format.js';
+import { diffTraces, formatTraceDiff } from '../../lib/core/trace/diff.js';
 import { generateTest, suggestName } from '../../lib/core/trace/exportTest.js';
 import { findContractViolations, formatViolation } from '../../lib/core/trace/contracts.js';
 import { Determinism, TraceNodeType } from '../../lib/core/trace/schema.js';
@@ -94,9 +95,7 @@ export function traceList(cli, args = []) {
   }
 
   console.log('');
-  console.log(
-    bold(`${pad('TRACE ID', 16)}${pad('AGE', 8)}${pad('EVENTS', 9)}${pad('COMPONENTS', 13)}STATUS`),
-  );
+  console.log(bold(`${pad('TRACE ID', 16)}${pad('AGE', 8)}${pad('EVENTS', 9)}${pad('COMPONENTS', 13)}STATUS`));
 
   for (const entry of entries) {
     if (entry.broken || !entry.trace) {
@@ -104,8 +103,7 @@ export function traceList(cli, args = []) {
       continue;
     }
     const summary = summarizeTrace(entry.trace);
-    const status =
-      summary.status === Determinism.DETERMINISTIC ? green('deterministic') : yellow('best-effort');
+    const status = summary.status === Determinism.DETERMINISTIC ? green('deterministic') : yellow('best-effort');
     console.log(
       `${pad(summary.id, 16)}${pad(age(entry.mtime), 8)}${pad(summary.events, 9)}${pad(summary.components, 13)}${status}`,
     );
@@ -156,6 +154,51 @@ export function traceView(cli, id, args = []) {
   console.log('');
   console.log(formatTrace(found.trace, maxRoots ? { maxRoots } : {}));
   console.log('');
+}
+
+/**
+ * Loads an id/latest recording or an explicitly named exported JSON file.
+ * @param {object} cli - The CLI instance.
+ * @param {string} reference - Trace id or file path.
+ * @returns {object|null} The recording, when found.
+ */
+function loadComparisonTrace(cli, reference) {
+  if (/\.json$/i.test(reference) || reference.includes('/') || reference.includes('\\')) {
+    return JSON.parse(fs.readFileSync(path.resolve(cli.baseDir, reference), 'utf8'));
+  }
+  return loadTrace(cli.baseDir, reference)?.trace || null;
+}
+
+/**
+ * Compares two recordings of the same interaction.
+ * @param {object} cli - The CLI instance.
+ * @param {string[]} references - The two ids or exported file paths.
+ * @param {string[]} args - Command flags.
+ */
+export function traceDiff(cli, references, args = []) {
+  if (references.length !== 2) {
+    console.error(
+      'Usage: avenx trace diff <a|latest|file.trace.json> <b|latest|file.trace.json> [--json] [--fail-on-change]',
+    );
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    const traces = references.map((reference) => loadComparisonTrace(cli, reference));
+    const missing = traces.findIndex((trace) => !trace);
+    if (missing >= 0) {
+      console.error(`No trace called "${references[missing]}". Run \`avenx trace list\` to see what is stored.`);
+      process.exitCode = 1;
+      return;
+    }
+    const comparison = diffTraces(traces[0], traces[1]);
+    if (args.includes('--json')) console.log(JSON.stringify(comparison, null, 2));
+    else console.log(formatTraceDiff(comparison));
+    if (!comparison.comparable || (comparison.changed && args.includes('--fail-on-change'))) process.exitCode = 1;
+  } catch (error) {
+    console.error(red(error.message));
+    process.exitCode = 1;
+  }
 }
 
 /**
@@ -317,9 +360,7 @@ export function traceExport(cli, id, args = []) {
   }
 
   if (!deterministic) {
-    console.log(
-      yellow('\n⚠ This trace was recorded as best-effort, so replay may not reproduce it.'),
-    );
+    console.log(yellow('\n⚠ This trace was recorded as best-effort, so replay may not reproduce it.'));
     for (const reason of (trace.determinism && trace.determinism.reasons) || []) {
       console.log(yellow(`    - ${reason.reason}${reason.detail ? `: ${reason.detail}` : ''}`));
     }
@@ -328,9 +369,7 @@ export function traceExport(cli, id, args = []) {
   }
 
   if (trace.redacted) {
-    console.log(
-      yellow(`\n⚠ Values at ${(trace.redactions || []).join(', ')} were withheld when recording.`),
-    );
+    console.log(yellow(`\n⚠ Values at ${(trace.redactions || []).join(', ')} were withheld when recording.`));
     console.log(gray('  No assertion in the generated test can check them.'));
   }
 
@@ -366,11 +405,7 @@ export function tracePrune(cli, args = []) {
   }
 
   if (args.includes('--dry-run') || args.includes('-d')) {
-    const doomed = explicitId
-      ? before.filter((entry) => entry.id === explicitId)
-      : all
-        ? before
-        : before.slice(keep);
+    const doomed = explicitId ? before.filter((entry) => entry.id === explicitId) : all ? before : before.slice(keep);
     if (doomed.length === 0) {
       console.log(`Nothing to prune. ${before.length} trace${before.length === 1 ? '' : 's'} stored.`);
       return;
@@ -415,6 +450,9 @@ export function runTrace(cli, args = []) {
     case 'export':
       traceExport(cli, positional[0], rest);
       break;
+    case 'diff':
+      traceDiff(cli, positional, rest);
+      break;
     case 'prune':
     case 'clean':
       tracePrune(cli, rest);
@@ -428,6 +466,7 @@ export function runTrace(cli, args = []) {
       console.log('Usage:');
       console.log(`  ${cyan('avenx trace list')}                    Show recorded traces`);
       console.log(`  ${cyan('avenx trace view <id|latest>')}        Print a trace as a causal tree`);
+      console.log(`  ${cyan('avenx trace diff <a> <b>')}            Compare recordings of the same interaction`);
       console.log(`  ${cyan('avenx trace export <id|latest>')}      Write a regression test for a trace`);
       console.log(`  ${cyan('avenx trace prune [--all|--keep=N]')}  Remove stored traces`);
       process.exitCode = 1;

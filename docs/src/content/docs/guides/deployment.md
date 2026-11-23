@@ -57,6 +57,27 @@ stylesheet in a `<link>` tag in `index.html`.
 
 ### Tree shaking
 
+The compiler also links optional runtime capabilities. A production application
+without pages, guards or routing references (`initRouter`, `$route`, `$router`,
+`AvenxRouter`, `AvenxGuard`) leaves out the router, both navigation delegates,
+route matching and routing accessibility support. Detection follows application
+imports and compiled templates. References in generated expression strings are
+treated conservatively; a dynamically constructed API name needs an explicit
+`import 'avenx-core/runtime/router';`. The same import is required when using
+`app.initRouter()` through an external bundler, which does not run Avenx's
+capability discovery. A missing installation raises `AVX_R39`.
+
+Development builds (`avenx serve` and `avenx build --dev`) always install routing,
+so adding a route during development works immediately. `AvenxRouter` and
+`AvenxGuard` are available as legacy globals only in builds that link routing;
+their named exports from `avenx-core/runtime` are unchanged.
+
+The string renderer is linked when a template cannot compile to a render
+program, or a registered class component requires it. `VirtualList` is linked
+when a template references its tag. The expression interpreter and trace
+recorder are development capabilities; CSP-strict builds omit the interpreter
+in development too.
+
 A module reaches the bundle when something imports it. A plain `import` always
 executes its target, as the language requires; a re-export is followed only for
 the names something asked for, which is what lets `avenx-core/runtime` — a

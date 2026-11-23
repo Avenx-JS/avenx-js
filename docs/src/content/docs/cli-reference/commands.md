@@ -24,7 +24,7 @@ The following flags can be passed globally to `avenx` commands:
 | `--dev` | | Builds in development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch` |
 | `--prod` | | Builds in production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch` |
 | `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
-| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view` |
+| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--help` | | Prints the command and option summary and exits before the command runs. | Global |
@@ -946,6 +946,31 @@ Options:
 - `--roots=<n>`: Show only the first `n` causal roots, for a long session.
 
 Source locations come from `dist/bundle.trace.json`, which the compiler writes beside the bundle. Build the project to get them.
+
+#### `avenx trace diff <a> <b>`
+
+Compare two recordings of the same interaction, grouped by recorded input and
+causal parent. Both arguments accept a trace id, `latest`, or an exported JSON
+file path.
+
+```bash
+npx avenx trace diff trace-4f2a latest
+npx avenx trace diff test/baseline.trace.json latest --json --fail-on-change
+```
+
+The text and JSON reports contain added, removed and changed nodes for each
+step, plus total node and DOM patch counts. Recording metadata is ignored.
+Different interactions are refused. Withheld values establish presence only;
+redacted, best-effort or truncated traces produce a partial comparison.
+
+| Flag | Meaning |
+| --- | --- |
+| `--json` | Emit the structured comparison, including `comparable`, `changed`, `partial`, `steps`, `orphans` and `summary`. |
+| `--fail-on-change` | Return status 1 when changes are found. Without it, a successful comparison returns 0. |
+
+Unreadable recordings or different inputs always return status 1. See
+[Comparing two recordings](/core-concepts/trace/#comparing-two-recordings) for
+alignment and redaction semantics.
 
 #### `avenx trace export <id|latest>`
 

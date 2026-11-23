@@ -26,12 +26,13 @@ ${bold(cyan('Commands:'))}
   ${green('explain <CODE|--list>')}     ${gray('Explain a compiler/runtime error or warning code, or list them all')}
   ${green('inspect (i)')}               ${gray('Inspect project route and component hierarchy')}
   ${green('stats (s)')}                 ${gray('Display component & bundle footprint metrics')}
-  ${green('atlas')}                     ${gray('Show the compiler\'s semantic map of the application')}
+  ${green('atlas')}                     ${gray("Show the compiler's semantic map of the application")}
   ${green('impact <symbol>')}           ${gray('What can be affected if this changes')}
   ${green('why <symbol>')}              ${gray('Where this value comes from')}
   ${green('trace list (ls)')}           ${gray('List recorded causal traces (default for bare "avenx trace")')}
   ${green('trace view (show) <id|latest>')} ${gray('Print a trace as a causal tree: event to DOM patch')}
   ${green('trace export <id|latest>')}  ${gray('Turn a recorded trace into a regression test')}
+  ${green('trace diff <a> <b>')}        ${gray('Compare trace ids, latest, or exported .trace.json files')}
   ${green('trace prune (clean)')}       ${gray('Remove stored traces')}
   ${green('serve [port]')}              ${gray('Start dev server with hot-reload (default: 3000)')}
   ${green('watch (w)')}                 ${gray('Watch for file changes and rebuild automatically')}
@@ -45,7 +46,7 @@ ${bold(cyan('Options:'))}
   ${green('--interactive, -i')}         ${gray('Run the "init" wizard even when stdin or stdout is not a TTY')}
   ${green('--dev')}                     ${gray('Build for development: readable runtime, inline CSS source maps')}
   ${green('--prod')}                    ${gray('Build for production (the default for "build")')}
-  ${green('--csp-strict')}              ${gray('Refuse any output needing \'unsafe-eval\', in development builds too')}
+  ${green('--csp-strict')}              ${gray("Refuse any output needing 'unsafe-eval', in development builds too")}
   ${green('--code-splitting, --split')} ${gray('Emit each page as its own chunk in <distDir>/pages/ ("build" only)')}
   ${green('--dry-run, -d')}             ${gray('Preview actions without writing or deleting any files')}
   ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
@@ -73,6 +74,7 @@ ${bold(cyan('Options:'))}
   ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
+  ${green('--fail-on-change')}          ${gray('Exit with status 1 when "trace diff" finds a change')}
   ${green('--out, -o <file>')}          ${gray('Output file for "trace export", "atlas --graph" or "check --sarif"')}
   ${green('--graph --format <type>')}   ${gray('Draw the Atlas as mermaid (default) or dot')}
   ${green('--kinds <list>')}            ${gray('Atlas graph node kinds; default: route,page,component,bridge')}

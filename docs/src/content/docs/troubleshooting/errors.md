@@ -4613,6 +4613,24 @@ Keep a reactive condition as the only value, for example `when="rows.length"`.
 The diagnostic includes the block's complete `when` value and the offending
 entry. See [Multiple Triggers](/core-concepts/defer/#multiple-triggers).
 
+### AVX_R39 — ROUTER_UNAVAILABLE
+
+The router capability was not linked, but the application called `initRouter()`
+or accessed a component's `$router` / `$route` without an active router.
+
+`avenx build` detects routing in pages, guards and application modules and links
+it automatically. Development builds always install it. With an external
+bundler, or an API name constructed dynamically, import the installer before
+using routing:
+
+```js
+import 'avenx-core/runtime/router';
+import { AvenxApp } from 'avenx-core/runtime';
+```
+
+Installing the capability makes `app.initRouter()` available; the application
+still needs to initialize its route table before navigating.
+
 ### AVX_R38 — PAGE_MOUNT_POINT_OWNER_UNMOUNTED
 
 **Warning Message**
