@@ -153,7 +153,16 @@ logStatus('Checking bundle size', false);
 
 ### 1. `avenx init`
 
-Scaffolds a new Avenx-JS application workspace structure in the current working directory.
+Scaffolds a new Avenx-JS application workspace structure in the current working directory, or with a name, in a new directory of that name.
+
+```bash
+avenx init [name] [--layout …] [--style …] [-y]
+```
+
+- With no name, the project is scaffolded into the current directory.
+- With a name, `avenx init my-app` creates `./my-app`, scaffolds into it and prints `cd my-app` as the next step. The generated `package.json` takes the directory's name.
+- The name follows the rules of the other scaffold commands (a leading letter, then letters, digits, `-` and `_`), so `avenx init ../foo` and `avenx init "my app"` are refused.
+- An existing directory that is not empty is refused before anything is written, unless `--force` is passed.
 
 #### Interactive Project Wizard (`runWizard`)
 
@@ -194,6 +203,9 @@ When invoked in an interactive terminal, `avenx init` launches an interactive se
 ```bash
 # Interactive project scaffolding wizard
 npx avenx init
+
+# Create ./my-app and scaffold into it
+npx avenx init my-app
 
 # Non-interactive / CI scaffolding with default options
 npx avenx init -y

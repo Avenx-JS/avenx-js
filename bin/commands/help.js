@@ -9,7 +9,7 @@ ${bold(cyan('Avenx-JS CLI'))}
 ${bold('Usage:')} ${green('avenx')} ${gray('<command> [type] [name]')}
 
 ${bold(cyan('Commands:'))}
-  ${green('init')}                      ${gray('Initialize a new Avenx project structure')}
+  ${green('init [name]')}               ${gray('Initialize a new Avenx project here, or in a new ./<name> directory')}
   ${green('generate component <name>')} ${gray('Generate a new component (alias: g)')}
   ${green('generate page <name>')}      ${gray('Generate a new page (alias: g p)')}
   ${green('generate bridge <name>')}    ${gray('Generate a new shared reactive bridge')}

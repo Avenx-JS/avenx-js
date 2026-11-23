@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { readTemplate } from '../utils.js';
+import { readTemplate, validateComponentName } from '../utils.js';
+import loadConfig from '../../lib/config.js';
 import { runWizard } from '../wizard.js';
 import { getInitialHtml } from './serve.js';
 import { bold, cyan, green, red, gray } from '../colors.js';
@@ -11,25 +12,20 @@ const __dirname = path.dirname(__filename);
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), 'utf8'));
 
 /**
- * Stops `avenx init` from silently ignoring an argument it does not use.
+ * Reads the optional project name from the arguments of `avenx init`.
  *
- * `init` scaffolds into the current working directory, as the CLI reference
- * states. It also accepted and discarded any other word on the command line, so
- * `avenx init my-app` -- which the routing tutorial documented, and which is
- * what every other scaffolder in the ecosystem means -- scattered a project
- * across whatever directory the user happened to be in and exited 0. The next
- * documented step, `cd my-app`, then failed with no explanation of why.
- *
- * Refusing is the honest answer: creating the directory instead would be a new
- * behaviour, and guessing which the user meant after the files are already
- * written is worse than not starting.
+ * `avenx init` scaffolds into the current directory; `avenx init my-app`
+ * creates `./my-app` and scaffolds into it, as other scaffolders do. Any
+ * further word is refused rather than discarded: `init` used to accept and
+ * ignore extra words, which scattered a project across the current directory
+ * and exited 0.
  * @param {string[]} args - The arguments passed after `init`.
- * @returns {void}
- * @throws {never} Exits the process with code 1 when an argument is unexpected.
+ * @returns {string|null} The project name, or null to use the current directory.
+ * @throws {never} Exits the process with code 1 when more than one name is given.
  */
-function rejectUnexpectedArguments(args) {
+function projectNameFrom(args) {
   const flagsWithValues = ['--layout', '--style'];
-  const unexpected = [];
+  const names = [];
 
   for (let i = 0; i < (args || []).length; i++) {
     const arg = args[i];
@@ -39,17 +35,48 @@ function rejectUnexpectedArguments(args) {
         i++;
       }
     } else {
-      unexpected.push(arg);
+      names.push(arg);
     }
   }
 
-  if (unexpected.length === 0) return;
+  if (names.length > 1) {
+    console.error(red(`avenx init takes at most one project name (got "${names.join('", "')}").`));
+    process.exit(1);
+  }
 
-  const name = unexpected[0];
-  console.error(red(`avenx init does not take a project name (got "${name}").`));
-  console.error(gray('It scaffolds into the current directory. To create a new one:'));
-  console.error(gray(`  mkdir ${name} && cd ${name} && npx avenx init`));
-  process.exit(1);
+  return names[0] || null;
+}
+
+/**
+ * Checks the directory `avenx init <name>` will create before anything is
+ * written: the name must follow the rules of the other scaffold commands, and
+ * an existing directory must be empty unless `--force` is given.
+ * @param {string} name - The project name.
+ * @param {boolean} force - Whether `--force` was given.
+ * @returns {string} The absolute path of the project directory.
+ * @throws {never} Exits the process with code 1 when the name or the target is refused.
+ */
+function projectDirectoryFor(name, force) {
+  const result = validateComponentName(name);
+  if (!result.valid) {
+    console.error(red(`❌ Error: Invalid project name "${name}".`));
+    console.error(gray(`   ${result.reason}`));
+    process.exit(1);
+  }
+
+  const target = path.resolve(process.cwd(), name);
+  if (fs.existsSync(target)) {
+    if (!fs.statSync(target).isDirectory()) {
+      console.error(red(`❌ Error: "${name}" already exists and is not a directory.`));
+      process.exit(1);
+    }
+    if (!force && fs.readdirSync(target).length > 0) {
+      console.error(red(`❌ Error: "${name}" already exists and is not empty.`));
+      console.error(gray('   Pass --force to scaffold into it anyway.'));
+      process.exit(1);
+    }
+  }
+  return target;
 }
 
 /**
@@ -58,9 +85,20 @@ function rejectUnexpectedArguments(args) {
  * @param {string[]} [args] - CLI arguments.
  */
 export async function initProject(cli, args = []) {
-  rejectUnexpectedArguments(args);
+  const projectName = projectNameFrom(args);
+  const projectDir = projectName
+    ? projectDirectoryFor(projectName, args.includes('--force') || args.includes('-f'))
+    : null;
 
   const { stylePreprocessor, layoutTemplate, isInteractive } = await runWizard(args);
+
+  if (projectDir) {
+    // Everything below writes under cli.baseDir, and the package.json name is
+    // taken from its last segment, so it matches the directory.
+    fs.mkdirSync(projectDir, { recursive: true });
+    cli.baseDir = projectDir;
+    cli.config = loadConfig(projectDir);
+  }
 
   console.log(
     bold(cyan(`🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`)),
@@ -339,6 +377,9 @@ export async function initProject(cli, args = []) {
   // followed by another "Created:" line, which reads as work continuing after
   // the command claimed to be finished.
   console.log(green('✅ Project initialized successfully!'));
+  if (projectName) {
+    console.log(gray(`   Next: cd ${projectName}`));
+  }
   if (isInteractive) {
     process.stdin.pause();
   }
