@@ -160,7 +160,7 @@ product running in a browser.
 
 ## Current coverage
 
-272 tests across 34 spec files. Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
+Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
@@ -178,6 +178,7 @@ product running in a browser.
 | `routing/` | 22 | Navigation, guards and guard regression tests |
 | `security/` | 15 | Dynamic attribute names and `srcdoc` |
 | `serve/` | 17 | Development server |
+| `trace/` | 4 | Browser click causation, export/replay and deliberate divergence, bridge redaction, the ingest size limit, and the no-trace boundary |
 | `smoke/` | 22 | Application boot |
 | `styling/` | 12 | Attribute content and scoped CSS |
 | `transitions/` | 4 | List-row enter and leave classes, rapid toggling |
@@ -191,8 +192,14 @@ while every test in this suite stayed green. A component that renders nothing
 raises no `pageerror`, so the only assertion that can see it is one that looks
 for content.
 
-Not yet covered, in rough priority order: live reload and
-trace capture under `avenx serve --trace`.
+The trace specs reuse the real dev-server fixture with `--trace`. They click a
+compiled component in the browser, save through `avenxTrace.save()`, read the
+server's stored recording and run the unmodified CLI-exported test under the
+documented Happy DOM setup. Changing the action then makes that exported test
+fail with its diverging state. A separate browser interaction checks configured
+bridge redaction; HTTP cases check the 32 MiB limit and the absence of a writable
+endpoint without the flag. Each scratch project, trace and package link is
+removed after its server exits.
 
 The Rewind specs hold actual browser requests until their optimistic DOM
 assertions complete, then let the fixture server respond. No timer determines
