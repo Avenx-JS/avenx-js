@@ -110,8 +110,9 @@ console.log('DETERMINISM:' + trace.determinism.status);
   assert.ok(generated.includes('avenx trace export trace-export'), 'the header says where it came from');
   assert.ok(generated.includes('case 0:') && generated.includes('case 1:'), 'one branch per recorded input');
   assert.ok(generated.includes('assert.strictEqual'), 'assertions were generated');
-  assert.ok(generated.includes('textContent.trim(), "1"'), 'the first click asserts the recorded DOM text');
-  assert.ok(generated.includes('textContent.trim(), "2"'), 'the second click asserts its own value');
+  assert.ok(generated.includes('Replay verifies the recorded text operation for span.value'),
+    'the generated test explains that replay verifies text operations');
+  assert.ok(!generated.includes('.textContent'), 'binding values are not asserted against whole element text');
   assert.ok(generated.includes('result.verified'), 'a deterministic trace asserts verification');
   assert.ok(!generated.includes('allowBestEffort'), 'a deterministic trace does not opt out of verification');
 
