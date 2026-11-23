@@ -220,3 +220,9 @@ effect on the next `avenx build`.
 2. **Stable Diagnostic Codes** – Errors must be registered through `AvenxErrorCodes` / `AvenxError` rather than throwing untracked raw `new Error`.
 3. **Strict JSDoc** – Public APIs must be fully annotated with JSDoc to satisfy `eslint-plugin-jsdoc`.
 4. **Atlas Never Guesses** – A relationship the analyser cannot follow is recorded as an `unresolved` entry with its reason and location. It is never dropped silently and never assumed. Any diagnostic that makes an absence claim must first check that record.
+
+## Development server modules
+
+`bin/commands/serve.js` assembles the server and retains listening, logging and CLI behavior. Focused modules under `bin/commands/serve/` own its collaborators.
+
+- `inspector/`: HTML, CSS and a classic browser client, read once at startup; rendering keeps script-safe JSON escaping and the original response bytes. The client is covered by the existing JS lint/format globs, with browser-script parser settings; HTML/CSS are included in the format command.

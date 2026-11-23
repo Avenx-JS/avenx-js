@@ -174,4 +174,11 @@ export default [
       'jsdoc/require-returns-type': 'off',
     },
   },
+
+  {
+    files: ['bin/commands/serve/**/client.js'],
+    // These are classic browser scripts injected verbatim, not Node modules.
+    languageOptions: { sourceType: 'script', globals: { EventSource: 'readonly' } },
+    rules: { indent: ['error', 4, { SwitchCase: 1 }] },
+  },
 ];
