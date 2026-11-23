@@ -384,3 +384,48 @@ Known and deliberate:
 
 `avenx inspect` and `avenx stats` read the same model, so the hierarchy they
 print and the answers a query gives always agree.
+
+
+## Drawing the application graph
+
+Export a diagram from the same retained model used by `impact` and `why`:
+
+```sh
+avenx atlas --graph
+avenx atlas --graph --format dot --out application.dot
+avenx atlas --graph --kinds state,computed,action,binding --focus cart.items --depth 2
+```
+
+Mermaid is the default. Paste its output inside a `mermaid` Markdown code block
+to render it on GitHub. For example, a small architectural graph looks like:
+
+```mermaid
+flowchart LR
+  n0["route: /checkout"] -->|"routes-to"| n1["page: Checkout"]
+  n1 -->|"renders"| n2["component: CartSummary"]
+  n2 -.->|"imports"| n3["bridge: cart"]
+```
+
+Every edge names its relationship, and relationship kinds have distinct colors.
+Dashed edges are **possible**, while solid edges are **certain**. The diagram
+also states how many unresolved relationships and analysis errors exist in the
+full model; a partial model is not proof that an absent relationship does not
+exist.
+
+By default the graph includes `route`, `page`, `component` and `bridge` nodes.
+`--kinds` accepts a comma-separated list of Atlas node kinds, including their
+plural spellings (`routes,pages,components,bridges`). Only edges whose endpoints
+both survive the filter are shown; the exporter does not invent shortcut edges
+through hidden nodes.
+
+`--focus` uses the existing impact and why walks around one unambiguous symbol.
+`--depth` bounds each walk (default 3, with 0 selecting only the symbol), then
+the kind filter applies. Include `state` in `--kinds` when focusing on a state
+key. Ambiguous or unknown symbols and invalid kinds or formats fail with a
+nonzero exit status.
+
+Stdout contains only the diagram; diagnostics go to stderr. `--out` writes it to
+the given file instead, relative to the current directory. DOT output can be
+rendered with Graphviz, for example `dot -Tsvg application.dot -o application.svg`.
+`--json` remains the separate, unfiltered machine-readable Atlas output and
+cannot be combined with `--graph`.
