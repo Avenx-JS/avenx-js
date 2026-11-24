@@ -2,7 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import loadConfig, { getClosestKey } from '../lib/config.js';
 import { loadEnv } from '../lib/env.js';
-import { checkGitStatus, validateComponentName } from './utils.js';
+import { checkGitStatus, fail, validateComponentName } from './utils.js';
 import { createSeverityFormatter, cyan, gray, red } from './colors.js';
 import { initProject } from './commands/init.js';
 import { generateComponent, generatePage, generateBridge, generateGuard } from './commands/generate.js';
@@ -270,16 +270,22 @@ export class AvenxCLI {
           break;
         }
 
-        if (type === 'bridge') {
-          generateBridge(this, name, dryRun, force, templateName);
-        } else if (type === 'guard') {
-          generateGuard(this, name, dryRun, force, templateName);
-        } else if (type === 'page' || type === 'p') {
-          generatePage(this, name, dryRun, force, templateName, noStyle);
-        } else if (type === 'component' || type === 'c') {
-          generateComponent(this, name, dryRun, force, templateName, withTest, noTest, noStyle);
-        } else {
-          generateComponent(this, type, dryRun, force, templateName, withTest, noTest, noStyle);
+        try {
+          if (type === 'bridge') {
+            generateBridge(this, name, dryRun, force, templateName);
+          } else if (type === 'guard') {
+            generateGuard(this, name, dryRun, force, templateName);
+          } else if (type === 'page' || type === 'p') {
+            generatePage(this, name, dryRun, force, templateName, noStyle);
+          } else if (type === 'component' || type === 'c') {
+            generateComponent(this, name, dryRun, force, templateName, withTest, noTest, noStyle);
+          } else {
+            generateComponent(this, type, dryRun, force, templateName, withTest, noTest, noStyle);
+          }
+        } catch (err) {
+          // A named template that does not exist is a user error: report it and exit 1, nothing was written.
+          if (err?.code !== 'AVENX_TEMPLATE_NOT_FOUND') throw err;
+          fail(err.message);
         }
         break;
       }
