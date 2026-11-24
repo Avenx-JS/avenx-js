@@ -276,28 +276,36 @@ function listNamedTemplates(baseDir, dirs, subfolder, filename) {
  * @param {string[]} dirs
  * @param {string} subfolder
  * @param {string} templateName
+ * @param {string} frameworkDir
  * @returns {boolean}
  */
-function namedTemplateExists(baseDir, dirs, subfolder, templateName) {
+function namedTemplateExists(baseDir, dirs, subfolder, templateName, frameworkDir) {
+  const files = fs.readdirSync(path.join(frameworkDir, 'templates', subfolder))
+    .filter((filename) => filename.endsWith('.template'));
   for (const dir of dirs) {
-    for (const folder of [path.join(baseDir, dir, subfolder), path.join(baseDir, dir)]) {
-      let entries;
-      try {
-        entries = fs.readdirSync(folder, { withFileTypes: true });
-      } catch {
-        continue;
-      }
-
-      for (const entry of entries) {
-        const segments = entry.name.split('.');
-        if (entry.name === templateName || segments.includes(templateName)) {
-          return true;
-        }
+    for (const filename of files) {
+      const candidates = namedTemplatePaths(baseDir, dir, subfolder, filename, templateName);
+      if (candidates.some((candidate) => fs.statSync(candidate, { throwIfNoEntry: false })?.isFile())) {
+        return true;
       }
     }
   }
 
   return false;
+}
+
+function namedTemplatePaths(baseDir, dir, subfolder, filename, templateName) {
+  const ext = path.extname(filename);
+  const basename = filename.replace(/\.template$/, '');
+  return [
+    path.join(baseDir, dir, subfolder, templateName, filename),
+    path.join(baseDir, dir, subfolder, `${templateName}.${filename}`),
+    path.join(baseDir, dir, subfolder, `${basename}.${templateName}.template`),
+    path.join(baseDir, dir, templateName, filename),
+    path.join(baseDir, dir, `${templateName}.${filename}`),
+    path.join(baseDir, dir, `${templateName}.${subfolder}${ext}.template`),
+    path.join(baseDir, dir, `${templateName}${ext}.template`),
+  ];
 }
 
 /**
@@ -318,28 +326,17 @@ export function readTemplate(baseDir, config, frameworkDir, subfolder, filename,
   );
 
   if (templateName) {
-    const ext = path.extname(filename);
-    const basename = filename.replace(/\.template$/, '');
-
     for (const dir of dirs) {
-      const candidatePaths = [
-        path.join(baseDir, dir, subfolder, templateName, filename),
-        path.join(baseDir, dir, subfolder, `${templateName}.${filename}`),
-        path.join(baseDir, dir, subfolder, `${basename}.${templateName}.template`),
-        path.join(baseDir, dir, templateName, filename),
-        path.join(baseDir, dir, `${templateName}.${filename}`),
-        path.join(baseDir, dir, `${templateName}.${subfolder}${ext}.template`),
-        path.join(baseDir, dir, `${templateName}${ext}.template`),
-      ];
+      const candidatePaths = namedTemplatePaths(baseDir, dir, subfolder, filename, templateName);
 
       for (const candidatePath of candidatePaths) {
-        if (fs.existsSync(candidatePath)) {
+        if (fs.statSync(candidatePath, { throwIfNoEntry: false })?.isFile()) {
           return fs.readFileSync(candidatePath, 'utf-8');
         }
       }
     }
 
-    if (!namedTemplateExists(baseDir, dirs, subfolder, templateName)) {
+    if (!namedTemplateExists(baseDir, dirs, subfolder, templateName, frameworkDir)) {
       const available = listNamedTemplates(baseDir, dirs, subfolder, filename);
       const closest = getClosestKey(templateName, available);
       const searched = dirs.flatMap((dir) => [`${dir}/${subfolder}/`, `${dir}/`]).join(' and ');
