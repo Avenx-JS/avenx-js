@@ -171,7 +171,7 @@ try {
         `${name} page should attach its container style with @css`,
       );
       assert.ok(
-        /\npageContainer\s*\{/.test(stylesheet),
+        /\n\s*pageContainer\s*\{/.test(stylesheet),
         `${name} page stylesheet should declare a named pageContainer block`,
       );
       assert.ok(

@@ -70,6 +70,26 @@ function resolveDoctorRoot(cli) {
 }
 
 /**
+ * Whether a project file still matches its scaffold. JSON files are compared by
+ * value, so the indentation they were written or reformatted with does not
+ * count as a change.
+ * @param {string} name - The scaffold file name.
+ * @param {string} content - The project's copy.
+ * @param {string} expected - The scaffold text.
+ * @returns {boolean} True when they match.
+ */
+function sameScaffoldContent(name, content, expected) {
+  if (name.endsWith('.json')) {
+    try {
+      return JSON.stringify(JSON.parse(content)) === JSON.stringify(JSON.parse(expected));
+    } catch {
+      // Not valid JSON: fall back to the text comparison.
+    }
+  }
+  return content.replace(/\r\n/g, '\n') === expected.replace(/\r\n/g, '\n');
+}
+
+/**
  * Runs environment and project health diagnostics.
  * @param {object} cli
  * @param {boolean} [asJson] - emit a single machine-readable JSON document instead of the human report
@@ -282,7 +302,7 @@ export function runDoctor(cli, asJson = false, { fix = false, dryRun = false } =
             repaired ? undefined : 'Run `avenx doctor --fix` to append the missing entries.',
           );
         } else record('pass', '.gitignore scaffold entries present');
-      } else if (content.replace(/\r\n/g, '\n') !== expected.replace(/\r\n/g, '\n')) {
+      } else if (!sameScaffoldContent(name, content, expected)) {
         record(
           'warn',
           `${name} differs from the scaffold; existing content preserved`,
