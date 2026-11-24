@@ -367,7 +367,8 @@ export function readTemplate(baseDir, config, frameworkDir, subfolder, filename,
   }
 
   const globalPath = path.join(frameworkDir, 'templates', subfolder, filename);
-  return fs.readFileSync(globalPath, 'utf-8');
+  // Built-in output follows the scaffold's LF formatting even in CRLF checkouts.
+  return fs.readFileSync(globalPath, 'utf-8').replace(/\r\n/g, '\n');
 }
 
 /**
