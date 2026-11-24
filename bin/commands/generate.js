@@ -179,16 +179,6 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
     console.warn(yellow(`⚠️ Force enabled: overwriting existing Bridge '${lowerName}'.`));
   }
 
-  if (dryRun) {
-    console.log(
-      cyan(
-        `🧪 [Dry Run] Bridge '${bridgeName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`,
-      ),
-    );
-    console.log(cyan('🧪 [Dry Run] No files were written.'));
-    return;
-  }
-
   const template = readTemplate(
     cli.baseDir,
     cli.config,
@@ -203,6 +193,16 @@ export function generateBridge(cli, name, dryRun = false, force = false, templat
     pascalName: parseName(name).capitalizedName,
     fileName: lowerName,
   });
+
+  if (dryRun) {
+    console.log(
+      cyan(
+        `🧪 [Dry Run] Bridge '${bridgeName}' would be created at ${cli.config.srcDir}/global/${lowerName}.bridge.js`,
+      ),
+    );
+    console.log(cyan('🧪 [Dry Run] No files were written.'));
+    return;
+  }
 
   fs.mkdirSync(globalDir, { recursive: true });
   fs.writeFileSync(bridgePath, content);
@@ -247,6 +247,14 @@ export function generateGuard(cli, name, dryRun = false, force = false, template
     console.warn(yellow(`⚠️ Force enabled: overwriting existing Guard '${lowerName}'.`));
   }
 
+  const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'guard', 'guard.js.template', templateName);
+
+  const content = renderTemplate(template, 'guard/guard.js.template', {
+    legacyName: capitalizedName,
+    pascalName: capitalizedName,
+    fileName: lowerName,
+  });
+
   if (dryRun) {
     console.log(
       cyan(
@@ -256,14 +264,6 @@ export function generateGuard(cli, name, dryRun = false, force = false, template
     console.log(cyan('🧪 [Dry Run] No files were written.'));
     return;
   }
-
-  const template = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'guard', 'guard.js.template', templateName);
-
-  const content = renderTemplate(template, 'guard/guard.js.template', {
-    legacyName: capitalizedName,
-    pascalName: capitalizedName,
-    fileName: lowerName,
-  });
 
   fs.mkdirSync(guardDir, { recursive: true });
   fs.writeFileSync(guardPath, content);
@@ -309,16 +309,6 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
     console.warn(yellow(`⚠️ Force enabled: overwriting existing Page '${lowerName}'.`));
   }
 
-  if (dryRun) {
-    console.log(cyan(`🧪 [Dry Run] Page '${capitalizedName}' would be created at:`));
-    console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.js`);
-    if (willGenerateStyle) {
-      console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.css`);
-    }
-    console.log(cyan('🧪 [Dry Run] No files were written.'));
-    return;
-  }
-
   const jsTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.js.template', templateName);
 
   const cssTemplate = willGenerateStyle
@@ -335,6 +325,16 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
   const jsContent = willGenerateStyle ? renderedPage : stripStyleReferences(renderedPage);
 
   const cssContent = willGenerateStyle ? renderTemplate(cssTemplate, 'page/page.css.template', pageNames) : null;
+
+  if (dryRun) {
+    console.log(cyan(`🧪 [Dry Run] Page '${capitalizedName}' would be created at:`));
+    console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.js`);
+    if (willGenerateStyle) {
+      console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.css`);
+    }
+    console.log(cyan('🧪 [Dry Run] No files were written.'));
+    return;
+  }
 
   fs.mkdirSync(pageDir, { recursive: true });
   fs.writeFileSync(jsPath, jsContent);
@@ -448,22 +448,6 @@ export function generateComponent(
     console.warn(yellow(`⚠️ Force enabled: overwriting existing Component '${lowerName}'.`));
   }
 
-  if (dryRun) {
-    console.log(cyan(`🧪 [Dry Run] Component '${lowerName}' would be created at:`));
-    console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.js`);
-    if (willGenerateStyle) {
-      console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.css`);
-    }
-    if (willGenerateTest) {
-      console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.test.js`);
-    }
-    console.log(cyan(`🧪 [Dry Run] ${cli.config.srcDir}/main.app.js would be updated with:`));
-    console.log(`  import ${capitalizedName} from './components/${lowerName}/${lowerName}.component.js';`);
-    console.log(`  app.register('${capitalizedName}', ${capitalizedName});`);
-    console.log(cyan('🧪 [Dry Run] No files were written.'));
-    return;
-  }
-
   const jsTemplate = readTemplate(
     cli.baseDir,
     cli.config,
@@ -498,6 +482,22 @@ export function generateComponent(
   const testContent = willGenerateTest
     ? renderTemplate(testTemplate, 'component/component.test.js.template', names, { legacyTestName: true })
     : null;
+
+  if (dryRun) {
+    console.log(cyan(`🧪 [Dry Run] Component '${lowerName}' would be created at:`));
+    console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.js`);
+    if (willGenerateStyle) {
+      console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.css`);
+    }
+    if (willGenerateTest) {
+      console.log(`  ${cli.config.srcDir}/components/${lowerName}/${lowerName}.component.test.js`);
+    }
+    console.log(cyan(`🧪 [Dry Run] ${cli.config.srcDir}/main.app.js would be updated with:`));
+    console.log(`  import ${capitalizedName} from './components/${lowerName}/${lowerName}.component.js';`);
+    console.log(`  app.register('${capitalizedName}', ${capitalizedName});`);
+    console.log(cyan('🧪 [Dry Run] No files were written.'));
+    return;
+  }
 
   fs.mkdirSync(compDir, { recursive: true });
 
