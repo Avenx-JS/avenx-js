@@ -160,7 +160,7 @@ product running in a browser.
 
 ## Current coverage
 
-Every test is expected to pass except the five pinned gaps listed under "Known gaps" below, which are expected to fail.
+Every test is expected to pass except the pinned gaps listed under "Known gaps" below, which are expected to fail.
 
 | Area | Tests | Covers |
 | :--- | ---: | :--- |
@@ -338,17 +338,17 @@ covering a rendering path should carry something equivalent.
 
 ## Known gaps this suite documents
 
-Five gaps are pinned under `test.fail()`, all in
-`build/construct-parity.spec.js`. All five fail identically in both builds,
-and all but the last work on a compiled page:
+The remaining gaps are pinned under `test.fail()` in
+`build/construct-parity.spec.js`. They fail identically in both builds:
 
 | Pinned gap | Construct |
 | :--- | :--- |
-| `data-ax-style` applies nothing in a template that falls back to the string renderer. It is a render-program op the string renderer does not implement, so the attribute is interpolated to `"[object Object]"` | `style-on-string-path` |
-| A bound `<textarea>` renders empty on the string path: its initial value is written as a `value` attribute, which a textarea ignores | `textarea-on-string-path` |
 | The `<template slot="...">` wrapper is unwrapped only on the compiled path. On the string path the `<template>` itself is projected, so its content stays inert and invisible | `template-slot-on-string-path` |
-| Updating the value of a dynamic attribute name (`:[name]="value"`) removes the attribute instead of setting the new value | `dynamic-attribute-update` |
 | `<transition>` around a `data-ax-show` element applies no transition classes; the element appears and disappears immediately. `templates.md` and `transitions.md` both document the pairing, and `specs/transitions/` drives only list rows | `transition-on-show` |
+
+Inline styles, initial textarea values, and dynamic attribute updates on the string
+path are asserted normally. The style check also updates unrelated state before
+changing the style value, so a patch cannot silently discard an unchanged binding.
 
 One framework limitation is recorded here rather than pinned, because pinning
 it would mean asserting behaviour that is wrong:

@@ -552,11 +552,10 @@ const CONSTRUCTS = {
   },
   'style-on-string-path': {
     hash: '#/string-path',
-    knownGap:
-      'data-ax-style is a render-program op the string renderer does not implement: in a template that falls back ' +
-      '(AVX_W47) the attribute is interpolated to "[object Object]" and no style is applied, in either build.',
     async steps({ page, section }) {
       await expect(section.getByTestId('styled')).toHaveCSS('color', 'rgb(255, 0, 0)', { timeout: 1_000 });
+      await page.getByTestId('rename').click();
+      await expect(section.getByTestId('styled')).toHaveCSS('color', 'rgb(255, 0, 0)');
       await page.getByTestId('change').click();
       await expect(section.getByTestId('styled')).toHaveCSS('color', 'rgb(0, 0, 255)', { timeout: 1_000 });
     },
