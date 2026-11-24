@@ -240,7 +240,7 @@ export class AvenxCLI {
 
     switch (command) {
       case 'init':
-        if (!force) {
+        if (!force && !dryRun) {
           const proceed = await checkGitStatus(this.baseDir);
           if (!proceed) {
             // Declining is a refusal to run, not a successful no-op. Exiting 0
@@ -250,8 +250,7 @@ export class AvenxCLI {
             process.exit(1);
           }
         }
-        await initProject(this, args);
-        process.exit(0);
+        await initProject(this, args, dryRun);
         break;
       case 'generate':
       case 'g': {

@@ -6,6 +6,7 @@ import loadConfig from '../../lib/config.js';
 import { runWizard } from '../wizard.js';
 import { readScaffoldFile } from './scaffoldFiles.js';
 import { bold, cyan, green, red, gray } from '../colors.js';
+import { failProcess } from '../fatal.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,24 +84,49 @@ function projectDirectoryFor(name, force) {
  * Initializes a new Avenx project structure.
  * @param {object} cli - AvenxCLI instance.
  * @param {string[]} [args] - CLI arguments.
+ * @param {boolean} [dryRun] - Preview the scaffold without writing files.
  */
-export async function initProject(cli, args = []) {
+export async function initProject(cli, args = [], dryRun = false) {
+  const writeFile = (target, content) => {
+    if (!dryRun) fs.writeFileSync(target, content);
+  };
+  const makeDirectory = (target) => (dryRun ? !fs.existsSync(target) : fs.mkdirSync(target, { recursive: true }));
+  const report = (message) =>
+    console.log(
+      dryRun
+        ? `🧪 [Dry Run] ${message.trim().replace('Created:', 'Would create:').replace('Updated:', 'Would update:')}`
+        : message,
+    );
+
   const projectName = projectNameFrom(args);
   const projectDir = projectName
     ? projectDirectoryFor(projectName, args.includes('--force') || args.includes('-f'))
     : null;
+
+  if (
+    !dryRun &&
+    !args.includes('--force') &&
+    !args.includes('-f') &&
+    fs.existsSync(path.join(projectDir || cli.baseDir, 'avenx.config.json'))
+  ) {
+    console.error(
+      red('avenx.config.json already exists. Use --force to reinitialize it, or avenx init <name> for a new project.'),
+    );
+    failProcess();
+    return;
+  }
 
   const { stylePreprocessor, layoutTemplate, isInteractive } = await runWizard(args);
 
   if (projectDir) {
     // Everything below writes under cli.baseDir, and the package.json name is
     // taken from its last segment, so it matches the directory.
-    fs.mkdirSync(projectDir, { recursive: true });
+    if (makeDirectory(projectDir) && dryRun) report(`Created: ${projectName}/`);
     cli.baseDir = projectDir;
     cli.config = loadConfig(projectDir);
   }
 
-  console.log(
+  report(
     bold(cyan(`🚀 Initializing new Avenx-JS project (Style: ${stylePreprocessor}, Layout: ${layoutTemplate})...`)),
   );
 
@@ -122,11 +148,12 @@ export async function initProject(cli, args = []) {
     preprocessor: stylePreprocessor,
   };
 
-  fs.writeFileSync(configPath, JSON.stringify(userConfig, null, 2) + '\n');
-  if (!fs.existsSync(configPath)) {
-    console.log('  Created: avenx.config.json');
+  const configExisted = fs.existsSync(configPath);
+  writeFile(configPath, JSON.stringify(userConfig, null, 2) + '\n');
+  if (!configExisted) {
+    report('  Created: avenx.config.json');
   } else {
-    console.log('  Updated: avenx.config.json');
+    report('  Updated: avenx.config.json');
   }
   cli.config = { ...cli.config, ...userConfig };
 
@@ -141,9 +168,9 @@ export async function initProject(cli, args = []) {
 
   dirs.forEach((dir) => {
     const fullPath = path.join(cli.baseDir, dir);
-    const created = fs.mkdirSync(fullPath, { recursive: true });
+    const created = makeDirectory(fullPath);
     if (created) {
-      console.log(`  Created: ${dir}`);
+      report(`  Created: ${dir}`);
     }
   });
 
@@ -151,8 +178,8 @@ export async function initProject(cli, args = []) {
   const jsConfigPath = path.join(cli.baseDir, '.vscode/jsconfig.json');
   if (!fs.existsSync(jsConfigPath)) {
     const template = readScaffoldFile(cli, '.vscode/jsconfig.json');
-    fs.writeFileSync(jsConfigPath, template);
-    console.log('  Created: .vscode/jsconfig.json');
+    writeFile(jsConfigPath, template);
+    report('  Created: .vscode/jsconfig.json');
   }
 
   // Teaches the editor's HTML mode about Avenx's own tags, which is what turns
@@ -161,29 +188,29 @@ export async function initProject(cli, args = []) {
   const htmlDataPath = path.join(cli.baseDir, '.vscode/avenx.html-data.json');
   if (!fs.existsSync(htmlDataPath)) {
     const template = readScaffoldFile(cli, '.vscode/avenx.html-data.json');
-    fs.writeFileSync(htmlDataPath, template);
-    console.log('  Created: .vscode/avenx.html-data.json');
+    writeFile(htmlDataPath, template);
+    report('  Created: .vscode/avenx.html-data.json');
   }
 
   const settingsPath = path.join(cli.baseDir, '.vscode/settings.json');
   if (!fs.existsSync(settingsPath)) {
     const template = readScaffoldFile(cli, '.vscode/settings.json');
-    fs.writeFileSync(settingsPath, template);
-    console.log('  Created: .vscode/settings.json');
+    writeFile(settingsPath, template);
+    report('  Created: .vscode/settings.json');
   }
 
   // Create initial index.html
   const indexHtmlPath = path.join(cli.baseDir, 'index.html');
   if (!fs.existsSync(indexHtmlPath)) {
-    fs.writeFileSync(indexHtmlPath, readScaffoldFile(cli, 'index.html'));
-    console.log('  Created: index.html');
+    writeFile(indexHtmlPath, readScaffoldFile(cli, 'index.html'));
+    report('  Created: index.html');
   }
 
   // Create initial main.app.js
   const mainAppPath = path.join(cli.baseDir, cli.config.srcDir, 'main.app.js');
   if (!fs.existsSync(mainAppPath)) {
     if (layoutTemplate === 'routing') {
-      fs.writeFileSync(
+      writeFile(
         mainAppPath,
         "import { AvenxApp } from 'avenx-core/runtime';\n" +
           "import Navbar from './components/navbar/navbar.component.js';\n\n" +
@@ -195,12 +222,12 @@ export async function initProject(cli, args = []) {
           '});\n',
       );
     } else {
-      fs.writeFileSync(
+      writeFile(
         mainAppPath,
         "import { AvenxApp } from 'avenx-core/runtime';\n\nconst app = new AvenxApp({ target: '#app' });\n",
       );
     }
-    console.log(`  Created: ${cli.config.srcDir}/main.app.js`);
+    report(`  Created: ${cli.config.srcDir}/main.app.js`);
   }
 
   if (layoutTemplate === 'routing') {
@@ -211,14 +238,14 @@ export async function initProject(cli, args = []) {
 
     const navbarDir = path.join(cli.baseDir, cli.config.srcDir, 'components', 'navbar');
     if (!fs.existsSync(navbarDir)) {
-      fs.mkdirSync(navbarDir, { recursive: true });
+      makeDirectory(navbarDir);
     }
     const navbarJsPath = path.join(navbarDir, 'navbar.component.js');
     const navbarCssPath = path.join(navbarDir, 'navbar.component.css');
 
     // Write Home page
     if (!fs.existsSync(homePageJsPath)) {
-      fs.writeFileSync(
+      writeFile(
         homePageJsPath,
         '<state title="Home" />\n\n' +
           '<Navbar />\n\n' +
@@ -228,10 +255,10 @@ export async function initProject(cli, args = []) {
           '    <p>This layout template demonstrates hash-based routing using AvenxRouter.</p>\n' +
           '</div>\n',
       );
-      console.log(`  Created: ${cli.config.srcDir}/pages/home.page.js`);
+      report(`  Created: ${cli.config.srcDir}/pages/home.page.js`);
     }
     if (!fs.existsSync(homePageCssPath)) {
-      fs.writeFileSync(
+      writeFile(
         homePageCssPath,
         '<@css>\n' +
           'pageContainer {\n' +
@@ -242,12 +269,12 @@ export async function initProject(cli, args = []) {
           '}\n' +
           '</@css>\n',
       );
-      console.log(`  Created: ${cli.config.srcDir}/pages/home.page.css`);
+      report(`  Created: ${cli.config.srcDir}/pages/home.page.css`);
     }
 
     // Write About page
     if (!fs.existsSync(aboutPageJsPath)) {
-      fs.writeFileSync(
+      writeFile(
         aboutPageJsPath,
         '<state title="About" />\n\n' +
           '<Navbar />\n\n' +
@@ -256,10 +283,10 @@ export async function initProject(cli, args = []) {
           '    <p>Welcome to the about page.</p>\n' +
           '</div>\n',
       );
-      console.log(`  Created: ${cli.config.srcDir}/pages/about.page.js`);
+      report(`  Created: ${cli.config.srcDir}/pages/about.page.js`);
     }
     if (!fs.existsSync(aboutPageCssPath)) {
-      fs.writeFileSync(
+      writeFile(
         aboutPageCssPath,
         '<@css>\n' +
           'pageContainer {\n' +
@@ -270,12 +297,12 @@ export async function initProject(cli, args = []) {
           '}\n' +
           '</@css>\n',
       );
-      console.log(`  Created: ${cli.config.srcDir}/pages/about.page.css`);
+      report(`  Created: ${cli.config.srcDir}/pages/about.page.css`);
     }
 
     // Write Navbar component
     if (!fs.existsSync(navbarJsPath)) {
-      fs.writeFileSync(
+      writeFile(
         navbarJsPath,
         '<state activeRoute="" />\n\n' +
           '<action name="onMount">\n' +
@@ -287,10 +314,10 @@ export async function initProject(cli, args = []) {
           "    <a @css link href=\"#/about\" aria-current=\"{{ activeRoute === '#/about' ? 'page' : '' }}\">About</a>\n" +
           '</nav>\n',
       );
-      console.log(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.js`);
+      report(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.js`);
     }
     if (!fs.existsSync(navbarCssPath)) {
-      fs.writeFileSync(
+      writeFile(
         navbarCssPath,
         '<@global>\n' +
           '    @def primary #6366f1;\n' +
@@ -316,7 +343,7 @@ export async function initProject(cli, args = []) {
           '    }\n' +
           '</@css>\n',
       );
-      console.log(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.css`);
+      report(`  Created: ${cli.config.srcDir}/components/navbar/navbar.component.css`);
     }
   }
 
@@ -341,15 +368,15 @@ export async function initProject(cli, args = []) {
         'avenx-core': `^${packageJson.version}`,
       },
     };
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageContent, null, 2) + '\n');
-    console.log('   Created: package.json');
+    writeFile(packageJsonPath, JSON.stringify(packageContent, null, 2) + '\n');
+    report('   Created: package.json');
   } else {
     try {
       const existingPkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       if (existingPkg.type !== 'module') {
         existingPkg.type = 'module';
-        fs.writeFileSync(packageJsonPath, JSON.stringify(existingPkg, null, 2) + '\n');
-        console.log('   Updated: package.json (set type: module)');
+        writeFile(packageJsonPath, JSON.stringify(existingPkg, null, 2) + '\n');
+        report('   Updated: package.json (set type: module)');
       }
     } catch {
       // If parsing fails, leave the file as is
@@ -360,8 +387,8 @@ export async function initProject(cli, args = []) {
   const gitignorePath = path.join(cli.baseDir, '.gitignore');
 
   if (!fs.existsSync(gitignorePath)) {
-    fs.writeFileSync(gitignorePath, readScaffoldFile(cli, '.gitignore'));
-    console.log('  Created: .gitignore');
+    writeFile(gitignorePath, readScaffoldFile(cli, '.gitignore'));
+    report('  Created: .gitignore');
   }
   // Create initial .prettierrc
   const prettierPath = path.join(cli.baseDir, '.prettierrc');
@@ -369,17 +396,21 @@ export async function initProject(cli, args = []) {
   if (!fs.existsSync(prettierPath)) {
     const template = readScaffoldFile(cli, '.prettierrc');
 
-    fs.writeFileSync(prettierPath, template);
+    writeFile(prettierPath, template);
 
-    console.log('  Created: .prettierrc');
+    report('  Created: .prettierrc');
   }
 
   // Last, so the success line is the last thing printed. It used to be
   // followed by another "Created:" line, which reads as work continuing after
   // the command claimed to be finished.
-  console.log(green('✅ Project initialized successfully!'));
-  if (projectName) {
-    console.log(gray(`   Next: cd ${projectName}`));
+  if (dryRun) {
+    console.log('🧪 [Dry Run] No files were written.');
+  } else {
+    console.log(green('✅ Project initialized successfully!'));
+  }
+  if (projectName && !dryRun) {
+    report(gray(`   Next: cd ${projectName}`));
   }
   if (isInteractive) {
     process.stdin.pause();
