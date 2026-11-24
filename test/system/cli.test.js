@@ -110,11 +110,11 @@ async function runTest() {
     assert.match(init1Output, /Created: \.vscode\/jsconfig\.json/, 'first init run should log file creation');
     assert.match(init1Output, /Created: package\.json/, 'first init run should log package.json creation');
 
-    // Run the init command again in the test directory
-    const init2Output = execSync(`node ${BIN_PATH} init`, { cwd: TEST_DIR, encoding: 'utf8' });
-
-    // Assert that the second run does not log any directory or file creation lines
-    assert.ok(!init2Output.includes('Created:'), 'second init run should not log any creation messages');
+    // An existing project requires an explicit overwrite request.
+    const init2Result = runCli(['init']);
+    assert.strictEqual(init2Result.status, 1, 'second init run should refuse to overwrite configuration');
+    assert.match(init2Result.stderr, /avenx\.config\.json already exists.*--force/);
+    assert.ok(!init2Result.stdout.includes('Created:'), 'second init run should not create files');
 
     // Assertions
     const expectedPaths = [

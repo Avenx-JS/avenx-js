@@ -21,7 +21,7 @@ If you have questions or want to contribute, feel free to reach out.
 ## 🌟 Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-171-blue.svg?style=flat)](#-contributors)
+[![All Contributors](https://img.shields.io/badge/all_contributors-173-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -249,6 +249,8 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Aschenbath"><img src="https://avatars.githubusercontent.com/u/184111764?v=4&size=100" width="100px" height="100px" alt="Nash Aschenbath"/><br /><sub><b>Nash Aschenbath</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Aschenbath" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Xnadir"><img src="https://avatars.githubusercontent.com/u/36660597?v=4&size=100" width="100px" height="100px" alt="Nadir Ali"/><br /><sub><b>Nadir Ali</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Xnadir" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/MaxonT"><img src="https://avatars.githubusercontent.com/u/173550318?v=4&size=100" width="100px" height="100px" alt="Ming "/><br /><sub><b>Ming </b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=MaxonT" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/fbirds5230"><img src="https://avatars.githubusercontent.com/u/76405906?v=4&size=100" width="100px" height="100px" alt="fbirds5230"/><br /><sub><b>fbirds5230</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=fbirds5230" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://amanaulakh.lol/"><img src="https://avatars.githubusercontent.com/u/211279635?v=4&size=100" width="100px" height="100px" alt="Aman Aulakh"/><br /><sub><b>Aman Aulakh</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=nextammy" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>

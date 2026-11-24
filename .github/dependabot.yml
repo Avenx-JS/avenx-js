@@ -30,3 +30,17 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+
+  # Update workflow actions monthly too. Group minor/patch releases while
+  # leaving majors separate so breaking workflow changes get their own review.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: chore
+      include: scope

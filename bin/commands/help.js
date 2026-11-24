@@ -14,12 +14,13 @@ ${bold(cyan('Commands:'))}
   ${green('generate page <name>')}      ${gray('Generate a new page (alias: g p)')}
   ${green('generate bridge <name>')}    ${gray('Generate a new shared reactive bridge')}
   ${green('generate guard <name>')}     ${gray('Generate a new route guard')}
+  ${green('generate test <name>')}      ${gray('Add a colocated test to an existing component')}
   ${green('destroy component <name>')}  ${gray('Delete a component and its registrations (alias: d)')}
   ${green('destroy page <name>')}       ${gray('Delete a page (alias: d p)')}
   ${green('destroy bridge <name>')}     ${gray('Delete a shared reactive bridge')}
   ${green('destroy guard <name>')}      ${gray('Delete a route guard')}
   ${green('build (b)')}                 ${gray('Build for production: minified runtime, optimized output')}
-  ${green('clean')}                     ${gray('Clear build output directory')}
+  ${green('clean')}                     ${gray('Clear build output directory (--dry-run previews without deleting)')}
   ${green('check (lint)')}              ${gray('Validate templates without building')}
   ${green('doctor')}                    ${gray('Diagnose project health; --fix repairs scaffold files, --dry-run previews, --json reports')}
   ${green('env')}                       ${gray('Print and validate active environment variables')}
@@ -54,7 +55,7 @@ ${bold(cyan('Options:'))}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--no-style')}                ${gray('Skip the stylesheet of a generated component or page')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
-  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, atlas, impact, why, explain, inspect and env (explain: --json only, with --list too)')}
+  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, stats, atlas, impact, why, explain, inspect, env, trace list, trace view and trace diff (explain: --json only, with --list too; trace: list, view and diff only)')}
   ${green('--list')}                    ${gray('explain: list every code with severity, category and whether warnings can configure it')}
   ${green('--category <name>')}         ${gray('explain --list: keep only one category (compiler, runtime, styling, routing, accessibility, environment)')}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
@@ -65,6 +66,7 @@ ${bold(cyan('Options:'))}
   ${green('--compare [file]')}          ${gray('Compare built asset sizes against a saved baseline')}
   ${green('--max-increase <n%>')}       ${gray('Fail "stats --compare" if total raw, minified or gzip growth exceeds n%')}
   ${green('--no-color')}                ${gray('Disable colored output (the NO_COLOR variable is honored too)')}
+  ${green('--quiet, -q')}               ${gray('Suppress build/check progress while keeping warnings and errors')}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
   ${green('--open, -o')}                ${gray('Open a browser when "serve" starts')}

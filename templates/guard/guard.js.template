@@ -4,25 +4,24 @@ import { AvenxGuard } from 'avenx-core/runtime';
  * {{ name }} handles route protection and authentication checks.
  */
 export default class {{ name }} extends AvenxGuard {
-    /**
-     * Determines whether the route can be activated.
-     * Inspects user authentication state and redirects unauthorized users to the login page.
-     *
-     * @param {Object} to - The target route object (contains hash, page, params).
-     * @param {Object} from - The current route object (contains hash, page, params).
-     * @returns {boolean|string|Object|Promise<boolean|string|Object>}
-     */
-    canActivate(to, from) {
-        // Inspect user authentication state (e.g., checking token from localStorage, session, or auth state)
-        const isAuthenticated = Boolean(localStorage.getItem('authToken'));
+  /**
+   * Determines whether the route can be activated.
+   * Inspects user authentication state and redirects unauthorized users to the login page.
+   *
+   * @param {Object} to - The target route object (contains hash, page, params).
+   * @param {Object} from - The current route object (contains hash, page, params).
+   * @returns {boolean|string|Object|Promise<boolean|string|Object>}
+   */
+  canActivate(to, from) {
+    // Inspect user authentication state (e.g., checking token from localStorage, session, or auth state)
+    const isAuthenticated = Boolean(localStorage.getItem('authToken'));
 
-        if (!isAuthenticated) {
-            // Redirect unauthorized users to the login page
-            return '#/login';
-        }
-
-        // Return true to allow navigation to protected route
-        return true;
+    if (!isAuthenticated) {
+      // Redirect unauthorized users to the login page
+      return '#/login';
     }
-}
 
+    // Return true to allow navigation to protected route
+    return true;
+  }
+}

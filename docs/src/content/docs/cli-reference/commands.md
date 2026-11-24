@@ -19,12 +19,13 @@ The following flags can be passed globally to `avenx` commands:
 
 | Option | Alias | Description | Supported Commands |
 | :--- | :--- | :--- | :--- |
-| `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `generate`, `destroy` |
+| `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `init`, `generate`, `destroy` |
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`. | `init`, `generate`, `destroy`, `build` |
 | `--dev` | | Selects development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch`, `stats` |
 | `--prod` | | Selects production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch`, `stats` |
+| `--quiet` | `-q` | Suppresses progress, success summaries, asset sizes and CSP reports while keeping warnings and errors. Overrides `logging.level` for this invocation without changing the config file; `logging.silent` retains its meaning. JSON and SARIF output remain available. | `build`, `check` |
 | `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
-| `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` |
+| `--json` | `-j` | Machine-readable output. | `check`, `doctor`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
 | `--no-color` | | Disables colored terminal output. | Global |
 | `--help` | | Prints the command and option summary and exits before the command runs. | Global |
@@ -161,10 +162,13 @@ avenx init [name] [--layout …] [--style …] [-y]
 
 - With no name, the project is scaffolded into the current directory.
 - With a name, `avenx init my-app` creates `./my-app`, scaffolds into it and prints `cd my-app` as the next step. The generated `package.json` takes the directory's name.
+- If `avenx.config.json` already exists, initialization is refused before writing any files. Use `--force` to explicitly reinitialize the project, or `avenx init <name>` to create a new one. `--yes` only accepts wizard defaults; it does not authorize overwriting configuration. A `--dry-run` preview is still available without `--force`.
 - The name follows the rules of the other scaffold commands (a leading letter, then letters, digits, `-` and `_`), so `avenx init ../foo` and `avenx init "my app"` are refused.
 - An existing directory that is not empty is refused before anything is written, unless `--force` is passed.
 
 #### Interactive Project Wizard (`runWizard`)
+
+`--dry-run` (or `-d`) previews the directories and files without creating them, including the named project directory. Existing configuration and package files stay unchanged, and the output is labelled `[Dry Run]`.
 
 When invoked in an interactive terminal, `avenx init` launches an interactive setup wizard prompting for project preferences:
 
@@ -226,12 +230,14 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 - **Page (`page`, `p`)**: Creates `src/pages/<name>.page.js` and `.css` for client-side routing.
 - **Bridge (`bridge`)**: Creates a shared reactive state module at `src/global/<name>.bridge.js` built with the `bridge()` factory.
 - **Guard (`guard`)**: Creates a navigation guard class at `src/guards/<name>.guard.js` extending `AvenxGuard`.
+- **Test (`test`)**: Adds `src/components/<name>/<name>.component.test.js` to an existing component, using the same template as `--with-test`. The component, stylesheet and registrations are left intact. An existing test is protected unless `--force` is given.
 
 #### Options
 
 - `--dry-run` / `-d`: Previews generated files without writing to disk.
 - `--force` / `-f`: Bypasses Git working tree status checks.
 - `--with-test`: Also writes a colocated unit test next to a generated component. `--no-test` skips it and takes precedence if both flags are present. Tests are disabled by default.
+  Use `avenx generate test <name>` to add that test later; it also accepts `--dry-run` and `--template`. The built-in test exercises the default component scaffold; adapt its assertions to your component's behavior.
 - `--no-style`: Writes a component or page without its stylesheet (`.component.css` or `.page.css`), for projects that style components another way. The generated template then has no `@css` references, so it builds without `AVX_W49`.
 
 Project defaults can be set with `scaffold.test`, `scaffold.style`, and `scaffold.template` in `avenx.config.json`. Explicit flags override configuration; see [Scaffold defaults](/getting-started/configuration/#scaffold-defaults-scaffold).
@@ -254,6 +260,9 @@ npx avenx g bridge shopping-cart
 
 # Generate route guard
 npx avenx g guard auth
+
+# Add a test to an existing component
+npx avenx generate test counter
 ```
 
 ---
@@ -473,7 +482,9 @@ Launches a local live-reloading development server with automatic file watching 
 #### Options & Flags
 
 - `--port <number>`, `-p <number>` (or positional argument `avenx serve 8080`): Sets the development server TCP port (default: `3000`).
-- `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`).
+- `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`). With an address that binds every
+  interface (`0.0.0.0` or `::`), the startup message lists a `Local` URL and a `Network` URL for each external IPv4
+  address: the addresses another device on the same network can open.
 - `--no-live-reload` / `--live-reload=false`: Disables file watching, live reload SSE client script injection, and automatic browser refreshes.
 - `--no-error-overlay` / `--error-overlay=false`: Keeps live reload, but stops build diagnostics from being shown as a browser overlay. See [Build error overlay](#build-error-overlay).
 - `--trace`: Records a causal trace of the running application. Off by default. See [`avenx trace`](#14-avenx-trace) and the [Avenx Trace guide](/core-concepts/trace/).
@@ -490,7 +501,7 @@ relative to the project root; absolute paths are also accepted. The flags
 override `server.https`, `server.cert` and `server.key` in `avenx.config.json`.
 
 For example, generate a development certificate using [mkcert](https://github.com/FiloSottile/mkcert),
-replacing `192.168.1.20` with your computer's LAN address:
+replacing `192.168.1.20` with your computer's LAN address (the `Network` line `avenx serve --host 0.0.0.0` prints):
 
 ```sh
 mkcert -install
@@ -680,6 +691,10 @@ Deletes the target build distribution directory (typically `dist/` or configured
 ```bash
 npx avenx clean
 ```
+
+Use `npx avenx clean --dry-run` (or `-d`) to preview the directory that would be
+removed without changing any files. The preview exits successfully even when
+the build output directory does not exist.
 
 ---
 

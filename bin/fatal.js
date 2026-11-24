@@ -15,6 +15,26 @@ export function failProcess(code = 1) {
 }
 
 /**
+ * A mistake in how a command was called, such as a flag value it does not
+ * accept or a file it cannot read. It is reported as one line, plus an
+ * optional next step, without the failure headline and stack trace that would
+ * make a typo look like a defect in Avenx.
+ */
+export class UsageError extends Error {
+  /**
+   * @param {string} message - What was wrong, naming the flag and the accepted values.
+   * @param {object} [options]
+   * @param {string} [options.hint] - A next step, printed under the message.
+   * @param {unknown} [options.cause] - The underlying error, if any.
+   */
+  constructor(message, { hint, cause } = {}) {
+    super(message, cause === undefined ? undefined : { cause });
+    this.name = 'UsageError';
+    this.hint = hint;
+  }
+}
+
+/**
  * Reports a fatal error and marks the process as failed.
  *
  * Errors carrying an Avenx code (AVX_C03, AVX_W03 and friends) are diagnosed
@@ -22,12 +42,21 @@ export function failProcess(code = 1) {
  * often carries a code frame, so it is printed on its own. A stack trace there
  * would only point at the line of the compiler that raised it.
  *
+ * A {@link UsageError} is printed on one line with its hint and no headline.
+ *
  * Anything else is a bug rather than a diagnosis, so the stack is printed —
  * that is the only useful information such an error carries.
  * @param {Error|any} error - The failure.
  * @param {string} [action] - What was being attempted, for the headline.
  */
 export function reportFatal(error, action = 'Build') {
+  if (error instanceof UsageError) {
+    console.error(red(`❌ ${error.message}`));
+    if (error.hint) console.error(`\n${error.hint}`);
+    failProcess(1);
+    return;
+  }
+
   console.error('');
   console.error(bold(red(`✖ ${action} failed`)));
   console.error('');

@@ -6,6 +6,7 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import {
   bindAddressFor,
+  serverUrlsFor,
   listenWithPortFallback,
   formatStatusCode,
   formatRequestLog,
@@ -107,6 +108,46 @@ function runTests() {
   assert.strictEqual(bindAddressFor('0.0.0.0'), '0.0.0.0', 'an explicit address is bound as asked');
   assert.strictEqual(bindAddressFor('::1'), '::1');
   assert.strictEqual(bindAddressFor('example.internal'), 'example.internal');
+
+  // The announced URLs: a wildcard bind is not an address another device can
+  // open, so it is announced as localhost plus the external IPv4 addresses.
+  const interfaces = {
+    lo: [
+      { address: '127.0.0.1', family: 'IPv4', internal: true },
+      { address: '::1', family: 'IPv6', internal: true },
+    ],
+    eth0: [
+      { address: '192.168.1.24', family: 'IPv4', internal: false },
+      { address: 'fe80::1', family: 'IPv6', internal: false },
+    ],
+    wlan0: [{ address: '10.0.0.7', family: 4, internal: false }],
+  };
+  assert.deepStrictEqual(serverUrlsFor('localhost', 4323, false, interfaces), {
+    local: 'http://localhost:4323',
+    network: null,
+  });
+  assert.deepStrictEqual(serverUrlsFor('127.0.0.1', 4323, false, interfaces).network, null);
+  assert.deepStrictEqual(serverUrlsFor('::1', 4323, false, interfaces), { local: 'http://[::1]:4323', network: null });
+  for (const wildcard of ['0.0.0.0', '::', '[::]']) {
+    assert.deepStrictEqual(serverUrlsFor(wildcard, 4323, false, interfaces), {
+      local: 'http://localhost:4323',
+      network: ['http://192.168.1.24:4323', 'http://10.0.0.7:4323'],
+    });
+  }
+  assert.deepStrictEqual(serverUrlsFor('0.0.0.0', 4323, true, interfaces), {
+    local: 'https://localhost:4323',
+    network: ['https://192.168.1.24:4323', 'https://10.0.0.7:4323'],
+  });
+  // No external interface: nothing reachable to print, and never 0.0.0.0.
+  assert.deepStrictEqual(serverUrlsFor('0.0.0.0', 4323, false, { lo: interfaces.lo }), {
+    local: 'http://localhost:4323',
+    network: [],
+  });
+  // A specific interface is reachable as given; localhost is not bound.
+  assert.deepStrictEqual(serverUrlsFor('192.168.1.24', 4323, false, interfaces), {
+    local: null,
+    network: ['http://192.168.1.24:4323'],
+  });
   assert.strictEqual(warnings.length, 1);
   assert.ok(warnings[0].includes('Port 3000 is already in use'));
   assert.ok(warnings[0].includes('Trying 3001'));

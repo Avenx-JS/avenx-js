@@ -3,6 +3,7 @@ import path from 'path';
 import readline from 'node:readline';
 import { execSync } from 'child_process';
 import { red, yellow, gray } from './colors.js';
+import { getClosestKey } from '../lib/config.js';
 
 /**
  * Helper to parse input names into PascalCase and kebab-case.
@@ -234,7 +235,75 @@ export async function promptQuestion(query, defaultValue, validator = null, sess
 }
 
 /**
+ * Lists the template names available for a file kind, for an error message.
+ * @param {string} baseDir
+ * @param {string[]} dirs
+ * @param {string} subfolder
+ * @param {string} filename
+ * @returns {string[]} Sorted, de-duplicated template names.
+ */
+function listNamedTemplates(baseDir, dirs, subfolder, filename) {
+  const names = new Set();
+  const suffix = `.${filename}`;
+
+  for (const dir of dirs) {
+    for (const folder of [path.join(baseDir, dir, subfolder), path.join(baseDir, dir)]) {
+      let entries;
+      try {
+        entries = fs.readdirSync(folder, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+
+      for (const entry of entries) {
+        if (entry.isFile() && entry.name.endsWith(suffix) && entry.name.length > suffix.length) {
+          names.add(entry.name.slice(0, -suffix.length));
+        } else if (entry.isDirectory() && fs.existsSync(path.join(folder, entry.name, filename))) {
+          names.add(entry.name);
+        }
+      }
+    }
+  }
+
+  return [...names].sort();
+}
+
+/**
+ * Reports whether a named template provides any file for a file kind. A template that
+ * overrides only some files of a kind (e.g. JS but not CSS) is still a known template;
+ * the missing files fall back to the built-in scaffold.
+ * @param {string} baseDir
+ * @param {string[]} dirs
+ * @param {string} subfolder
+ * @param {string} templateName
+ * @returns {boolean}
+ */
+function namedTemplateExists(baseDir, dirs, subfolder, templateName) {
+  for (const dir of dirs) {
+    for (const folder of [path.join(baseDir, dir, subfolder), path.join(baseDir, dir)]) {
+      let entries;
+      try {
+        entries = fs.readdirSync(folder, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+
+      for (const entry of entries) {
+        const segments = entry.name.split('.');
+        if (entry.name === templateName || segments.includes(templateName)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Reads a template, checking custom template overrides in templatesDir and templates/ folder first.
+ * An explicitly named template that matches no file of the kind throws an error with code
+ * `AVENX_TEMPLATE_NOT_FOUND` instead of silently falling back to the built-in scaffold.
  * @param {string} baseDir
  * @param {object} config
  * @param {string} frameworkDir
@@ -268,6 +337,20 @@ export function readTemplate(baseDir, config, frameworkDir, subfolder, filename,
           return fs.readFileSync(candidatePath, 'utf-8');
         }
       }
+    }
+
+    if (!namedTemplateExists(baseDir, dirs, subfolder, templateName)) {
+      const available = listNamedTemplates(baseDir, dirs, subfolder, filename);
+      const closest = getClosestKey(templateName, available);
+      const searched = dirs.flatMap((dir) => [`${dir}/${subfolder}/`, `${dir}/`]).join(' and ');
+      const hint = closest ? ` Did you mean "${closest}"?` : '';
+      const list = available.length ? ` Available: ${available.join(', ')}.` : ' No custom templates were found.';
+
+      const error = new Error(
+        `No scaffold template named "${templateName}" for a ${subfolder}. Looked in ${searched}.${hint}${list}`,
+      );
+      error.code = 'AVENX_TEMPLATE_NOT_FOUND';
+      throw error;
     }
   }
 

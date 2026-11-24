@@ -1571,6 +1571,24 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "fbirds5230",
+      "name": "fbirds5230",
+      "avatar_url": "https://avatars.githubusercontent.com/u/76405906?v=4",
+      "profile": "https://github.com/fbirds5230",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "nextammy",
+      "name": "Aman Aulakh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/211279635?v=4",
+      "profile": "https://amanaulakh.lol/",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",

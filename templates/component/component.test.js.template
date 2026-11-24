@@ -27,7 +27,7 @@ import {{PascalCaseName}} from './{{name}}.component.js';
 describe('{{PascalCaseName}} Component', () => {
   it('renders successfully with default state', async () => {
     const { find } = await mountTestComponent({{PascalCaseName}}, {
-      props: { name: '{{PascalCaseName}}' }
+      props: { name: '{{PascalCaseName}}' },
     });
 
     const title = find('h1');
@@ -39,7 +39,7 @@ describe('{{PascalCaseName}} Component', () => {
 
   it('increments count on click', async () => {
     const { find, findAll } = await mountTestComponent({{PascalCaseName}}, {
-      props: { name: '{{PascalCaseName}}' }
+      props: { name: '{{PascalCaseName}}' },
     });
 
     const buttons = findAll('button');
