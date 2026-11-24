@@ -569,11 +569,10 @@ const CONSTRUCTS = {
   },
   'template-slot-on-string-path': {
     hash: '#/string-path',
-    knownGap:
-      'The <template slot="..."> wrapper is unwrapped only on the compiled path. In a template that falls back the ' +
-      '<template> itself is projected, so its content stays inert and nothing is shown, in either build.',
-    async steps({ section }) {
+    async steps({ page, section }) {
       await expect(section.getByTestId('wrapped-first')).toBeVisible({ timeout: 1_000 });
+      await page.getByTestId('rename').click();
+      await expect(section.getByTestId('wrapped-first')).toBeVisible();
     },
   },
 };
