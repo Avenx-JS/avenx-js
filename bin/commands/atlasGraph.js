@@ -65,27 +65,73 @@ function validateGraphOptions(model, { format, kinds, depth, focus }) {
 }
 
 /**
+ * Read the rendering options shared by Atlas and its queries.
+ * @param {string[]} args - CLI arguments.
+ * @returns {object} Shared format and node-kind options.
+ */
+function renderingOptions(args) {
+  if (args.includes('--json') || args.includes('-j')) throw new UsageError('Choose --graph or --json, not both.');
+  return {
+    format: option(args, 'format'),
+    kinds: option(args, 'kinds')
+      ?.split(',')
+      .map((kind) => kind.trim()),
+  };
+}
+
+/**
+ * Write a rendered diagram using the shared output option.
+ * @param {string} graph - The diagram.
+ * @param {string[]} args - CLI arguments.
+ * @returns {void}
+ */
+function writeGraph(graph, args) {
+  const output = option(args, 'out', '-o');
+  if (output) fs.writeFileSync(path.resolve(output), graph, 'utf8');
+  else process.stdout.write(graph);
+}
+
+/**
  * Write an Atlas diagram to stdout or a requested file.
  * @param {AppModel} model - The retained application model.
  * @param {string[]} args - CLI arguments.
  * @returns {void}
  */
 export function runAtlasGraph(model, args) {
-  if (args.includes('--json') || args.includes('-j')) throw new UsageError('Choose --graph or --json, not both.');
-  const kinds = option(args, 'kinds');
+  const options = renderingOptions(args);
   const depth = option(args, 'depth');
   const focus = option(args, 'focus');
   if (depth !== undefined && focus === undefined) throw new UsageError('--depth only applies together with --focus.');
-  const format = option(args, 'format');
-  const kindList = kinds?.split(',').map((kind) => kind.trim());
-  validateGraphOptions(model, { format, kinds: kindList, depth, focus });
+  validateGraphOptions(model, { ...options, depth, focus });
   const graph = renderAtlasGraph(model, {
-    format,
-    kinds: kindList,
+    ...options,
     focus,
     depth: depth === undefined ? undefined : Number(depth),
   });
-  const output = option(args, 'out', '-o');
-  if (output) fs.writeFileSync(path.resolve(output), graph, 'utf8');
-  else process.stdout.write(graph);
+  writeGraph(graph, args);
+}
+
+/**
+ * Draw exactly the traversal used by an impact/why answer.
+ * @param {AppModel} model - The full model, retained for labels and completeness reporting.
+ * @param {string[]} args - CLI arguments.
+ * @param {object} result - The existing query walk and its depth-limit status.
+ * @param {'in'|'out'} direction - Which way the query follows dependencies.
+ * @returns {void}
+ */
+export function runQueryGraph(model, args, result, direction) {
+  const options = renderingOptions(args);
+  const depth = option(args, 'depth');
+  if (option(args, 'focus') !== undefined) throw new UsageError('impact and why already focus on the queried symbol.');
+  validateGraphOptions(model, { ...options, depth });
+  writeGraph(
+    renderAtlasGraph(model, {
+      ...options,
+      kinds: options.kinds ?? Object.values(AtlasNodeKind),
+      traversal: result.root,
+      direction,
+      truncated: result.truncated,
+    }),
+    args,
+  );
 }

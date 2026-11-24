@@ -77,9 +77,9 @@ ${bold(cyan('Options:'))}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
   ${green('--fail-on-change')}          ${gray('Exit with status 1 when "trace diff" finds a change')}
-  ${green('--out, -o <file>')}          ${gray('Output file for "trace export", "atlas --graph" or "check --sarif"')}
-  ${green('--graph --format <type>')}   ${gray('Draw the Atlas as mermaid (default) or dot')}
-  ${green('--kinds <list>')}            ${gray('Atlas graph node kinds; default: route,page,component,bridge')}
+  ${green('--out, -o <file>')}          ${gray('Output file for "trace export", Atlas/query graphs or "check --sarif"')}
+  ${green('--graph --format <type>')}   ${gray('Draw atlas, impact or why as mermaid (default) or dot')}
+  ${green('--kinds <list>')}            ${gray('Graph node kinds; atlas defaults to architecture, impact/why to all kinds')}
   ${green('--focus <symbol>')}          ${gray('Bound an Atlas graph around a symbol, with --depth <n>')}
   ${green('--keep=<n>, --all')}         ${gray('How much "trace prune" removes')}
   ${green('--help')}                    ${gray('Show this help for any command, before it runs')}
