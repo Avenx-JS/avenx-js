@@ -3133,6 +3133,47 @@ Declaring the property in `<state>` so it is reactive:
 <div>{{ count }} (Total: {{ total }})</div>
 ```
 
+### AVX_W58 — COMPILER_UNRESOLVED_DEF_REFERENCE
+
+**Warning Message**
+
+```text
+[AVX_W58] Unresolved @def variable "{0}" in stylesheet "{1}".
+```
+
+**Cause:** An `@def` variable reference in a stylesheet could not be resolved and was left as literal text in the emitted CSS. This typically happens when:
+- A typo occurred when referencing an `@def` variable name (e.g. `@brnad` instead of `@brand`).
+- The `@def` variable was not declared in the component stylesheet or in a global scope (`<@global>`).
+- A self-referential or circular `@def` declaration could not be resolved during compilation.
+
+**Resolution:**
+1. Check the spelling of the `@def` variable reference in the stylesheet.
+2. Ensure the corresponding `@def` variable is declared inside a `<@global>` block or local component stylesheet.
+3. Fix any circular or self-referential `@def` variable declarations.
+4. If intentional, silence with `"warnings": { "AVX_W58": "off" }` in `avenx.config.json`.
+
+**Incorrect**
+
+```css
+/* src/components/button/button.component.css */
+@def primary #0af;
+
+.button {
+  background: @primry; /* ❌ Typo in variable name; emits AVX_W58 */
+}
+```
+
+**Correct**
+
+```css
+/* src/components/button/button.component.css */
+@def primary #0af;
+
+.button {
+  background: @primary; /* ✅ Resolved @def variable */
+}
+```
+
 ### AVX_W59 — COMPILER_DUPLICATE_ROUTE_PATTERN
 
 **Warning Message**
@@ -3307,6 +3348,42 @@ export function multiply(a, b) {
 <div>
   <p>Result: {{ a + b }}</p>
 </div>
+```
+
+### AVX_W64 — ATLAS_COMPUTED_CIRCULAR_DEPENDENCY
+
+**Warning Message**
+
+```text
+[AVX_W64] Circular dependency in computed "{0}": {1} ({2}).
+```
+
+**Cause:** A computed property reads itself directly or through a cycle of other computeds. A computed that depends on itself evaluates to `NaN` at runtime and is reported then as `AVX_R04`. Atlas detects this dependency cycle at compile time. Common causes include:
+- A `<computed>` expression names its own declaration on the right-hand side (self-loop).
+- Two or more computeds form a mutual cycle (e.g. `a` reads `b`, and `b` reads `a`).
+
+**Resolution:**
+1. Rewrite the computed expression so it does not reference its own key.
+2. Break mutual cycles by deriving one computed from `state` or from an upstream, non-circular computed property.
+3. Run `avenx why <owner>.<computed>` to inspect the dependency edges Atlas recorded.
+4. Silence it for a project with `"warnings": { "AVX_W64": "off" }` in `avenx.config.json`.
+
+**Incorrect**
+
+```html
+<!-- src/pages/home.page.js -->
+<state count="1" />
+<!-- ❌ Self-referential: selfref reads itself -->
+<computed name="selfref" value="selfref + 1" />
+```
+
+**Correct**
+
+```html
+<!-- src/pages/home.page.js -->
+<state count="1" />
+<!-- ✅ Derives unidirectionally from state.count -->
+<computed name="nextCount" value="count + 1" />
 ```
 
 ### AVX_W65 — COMPILER_A11Y_IMAGE_ALT
@@ -3942,7 +4019,7 @@ function safeMount(componentName, selector) {
 safeMount('Header', '#header');
 ```
 
-### AVX_R04 / AVX_E01 — COMPUTED_CIRCULAR_DEPENDENCY
+### AVX_R04 — COMPUTED_CIRCULAR_DEPENDENCY
 
 **Error Message**
 
@@ -3950,7 +4027,7 @@ safeMount('Header', '#header');
 [AVX_R04] Circular dependency detected in computed property "{0}".
 ```
 
-**Cause:** This error is thrown at runtime when a computed property evaluation creates a circular dependency chain. In Avenx-JS, computed properties automatically track their reactive dependencies during getter execution. If Computed Property A reads Computed Property B, and Computed Property B directly or indirectly references Computed Property A (or if a computed getter references its own name), the framework detects an infinite recursion loop, halts evaluation, and throws **AVX_R04** (also referenced as **AVX_E01**).
+**Cause:** This error is thrown at runtime when a computed property evaluation creates a circular dependency chain. In Avenx-JS, computed properties automatically track their reactive dependencies during getter execution. If Computed Property A reads Computed Property B, and Computed Property B directly or indirectly references Computed Property A (or if a computed getter references its own name), the framework detects an infinite recursion loop, halts evaluation, and throws **AVX_R04**.
 
 This typically happens for a few common reasons:
 
