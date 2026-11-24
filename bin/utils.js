@@ -357,17 +357,17 @@ export function readTemplate(baseDir, config, frameworkDir, subfolder, filename,
   for (const dir of dirs) {
     const localStructuredPath = path.join(baseDir, dir, subfolder, filename);
     if (fs.existsSync(localStructuredPath)) {
-      return fs.readFileSync(localStructuredPath, 'utf-8');
+      return fs.readFileSync(localStructuredPath, 'utf-8').replace(/\r\n/g, '\n');
     }
 
     const localFlatPath = path.join(baseDir, dir, filename);
     if (fs.existsSync(localFlatPath)) {
-      return fs.readFileSync(localFlatPath, 'utf-8');
+      return fs.readFileSync(localFlatPath, 'utf-8').replace(/\r\n/g, '\n');
     }
   }
 
   const globalPath = path.join(frameworkDir, 'templates', subfolder, filename);
-  return fs.readFileSync(globalPath, 'utf-8');
+  return fs.readFileSync(globalPath, 'utf-8').replace(/\r\n/g, '\n');
 }
 
 /**
@@ -395,7 +395,7 @@ export function abortIfGeneratedPathExists(baseDir, type, name, targetPaths) {
 
   fail(
     `${type} '${name}' already exists at ${path.relative(baseDir, existingPath)}. ` +
-      'Remove the existing file or choose a different name.',
+    'Remove the existing file or choose a different name.',
   );
   return true;
 }

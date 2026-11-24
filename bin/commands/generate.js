@@ -51,8 +51,8 @@ function renderTemplate(template, templateFile, names, options = {}) {
 
     throw new Error(
       `Unknown generator placeholder "${match}" in "${templateFile}".` +
-        didYouMean +
-        ` Supported placeholders: ${supported.map((value) => `{{${value}}}`).join(', ')}.`,
+      didYouMean +
+      ` Supported placeholders: ${supported.map((value) => `{{${value}}}`).join(', ')}.`,
     );
   });
 }
@@ -94,7 +94,7 @@ export function registerInMainApp(cli, className, folderName) {
   const mainPath = path.join(cli.baseDir, cli.config.srcDir, 'main.app.js');
   if (!fs.existsSync(mainPath)) return;
 
-  const content = fs.readFileSync(mainPath, 'utf-8');
+  const content = fs.readFileSync(mainPath, 'utf-8').replace(/\r\n/g, '\n');
   const importStatement = `import ${className} from './components/${folderName}/${folderName}.component.js';`;
   const registerStatement = `app.register('${className}', ${className});`;
 
