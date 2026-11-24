@@ -5,7 +5,7 @@ import { loadEnv } from '../lib/env.js';
 import { checkGitStatus, fail, validateComponentName } from './utils.js';
 import { createSeverityFormatter, cyan, gray, red } from './colors.js';
 import { initProject } from './commands/init.js';
-import { generateComponent, generatePage, generateBridge, generateGuard } from './commands/generate.js';
+import { generateComponent, generatePage, generateBridge, generateGuard, generateTest } from './commands/generate.js';
 import { destroyComponent, destroyPage, destroyBridge, destroyGuard } from './commands/destroy.js';
 import { buildProject, cleanProject, checkProject } from './commands/build.js';
 import { runFormat } from './commands/format.js';
@@ -24,6 +24,7 @@ import { runAtlas, runQuery } from './commands/atlas.js';
  * @type {string[]}
  */
 const SCAFFOLD_TYPES = ['component', 'c', 'page', 'p', 'bridge', 'guard'];
+const GENERATE_TYPES = [...SCAFFOLD_TYPES, 'test'];
 
 /**
  * Refuses a scaffold command whose type is not one this CLI knows.
@@ -40,13 +41,15 @@ const SCAFFOLD_TYPES = ['component', 'c', 'page', 'p', 'bridge', 'guard'];
  * @returns {boolean} True when the command should not proceed.
  */
 function refuseUnknownScaffoldType(command, type, name) {
-  if (!name || SCAFFOLD_TYPES.includes(type)) return false;
+  const isDestroy = command === 'd' || command === 'destroy';
+  const types = isDestroy ? SCAFFOLD_TYPES : GENERATE_TYPES;
+  if (!name || types.includes(type)) return false;
 
-  const verb = command === 'd' || command === 'destroy' ? 'remove' : 'scaffold';
-  const closest = getClosestKey(type, SCAFFOLD_TYPES);
+  const verb = isDestroy ? 'remove' : 'scaffold';
+  const closest = getClosestKey(type, types);
 
   console.error(red(`❌ Error: Unknown type "${type}".`));
-  console.error(gray('   Expected one of: component, page, bridge, guard.'));
+  console.error(gray(`   Expected one of: component, page, bridge, guard${isDestroy ? '' : ', test'}.`));
   if (closest) {
     console.error(gray(`   Did you mean "avenx ${command} ${closest} ${name}"?`));
   }
@@ -264,13 +267,15 @@ export class AvenxCLI {
           break;
         }
 
-        const targetName = SCAFFOLD_TYPES.includes(type) ? name : type;
+        const targetName = GENERATE_TYPES.includes(type) ? name : type;
         if (refuseInvalidScaffoldName('g', targetName)) {
           break;
         }
 
         try {
-          if (type === 'bridge') {
+          if (type === 'test') {
+            generateTest(this, name, dryRun, force, templateName);
+          } else if (type === 'bridge') {
             generateBridge(this, name, dryRun, force, templateName);
           } else if (type === 'guard') {
             generateGuard(this, name, dryRun, force, templateName);
