@@ -805,6 +805,53 @@ async function testValidation() {
 }
 
 /**
+ * Clearing wins over saves queued before it, until the state changes again.
+ */
+async function testClearWithPendingChanges() {
+  let sequence = 0;
+  for (const [all, serialize] of [
+    [false, JSON.stringify],
+    [true, JSON.stringify],
+    [false, (envelope) => JSON.stringify({ ...envelope, sequence: ++sequence })],
+  ]) {
+    reset();
+    const storage = memoryStorage();
+    const app = createApp();
+    app.use(avenxPersistence);
+    const counter = counterBridge({ key: 'cleared', storage, serialize });
+    const other = counterBridge({ key: 'other', storage, serialize });
+    counter.increment();
+    other.increment();
+
+    if (all) app.$persistence.clear();
+    else app.$persistence.clear('cleared');
+    assert.strictEqual(storage.getItem('avenx:cleared'), null);
+    assert.strictEqual(counter.count, 1, 'clearing storage leaves live state unchanged');
+    await nextTick();
+    assert.strictEqual(storage.getItem('avenx:cleared'), null, 'an older queued save must not undo clear');
+    if (all) {
+      assert.strictEqual(storage.getItem('avenx:other'), null, 'clear() applies to every queued bridge');
+    } else {
+      assert.strictEqual(JSON.parse(storage.getItem('avenx:other')).state.count, 1, 'other bridges still save');
+    }
+
+    app.$persistence.flush();
+    assert.strictEqual(storage.getItem('avenx:cleared'), null, 'flushing unchanged state does not undo clear');
+    counter.increment();
+    await nextTick();
+    assert.strictEqual(JSON.parse(storage.getItem('avenx:cleared')).state.count, 2, 'a later change is persisted');
+
+    app.$persistence.clear();
+    counter.$dispose();
+    other.$dispose();
+    assert.strictEqual(storage.getItem('avenx:cleared'), null, 'teardown does not restore cleared data');
+    assert.strictEqual(storage.getItem('avenx:other'), null);
+    assert.strictEqual(counter.count, 0, 'the next initialization sees the declared default');
+    counter.$dispose();
+  }
+}
+
+/**
  * Runs the suite.
  */
 async function runTests() {
@@ -824,6 +871,7 @@ async function runTests() {
   await testReactivityIntegration();
   await testCleanup();
   await testPersistenceHandle();
+  await testClearWithPendingChanges();
   await testValidation();
 
   console.log('\n🎉 ALL AVENX PERSISTENCE PLUGIN TESTS PASSED SUCCESSFULLY!\n');

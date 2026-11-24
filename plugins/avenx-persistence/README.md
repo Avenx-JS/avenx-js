@@ -311,6 +311,8 @@ window.addEventListener('pagehide', () => app.$persistence.flush());
 
 `clear()` is what you call on sign-out. It decides what the next reload finds; it does not change what the application is currently showing. Reset the state itself through the bridge's own actions, as usual.
 
+Clearing also cancels the effect of saves already queued for that state. A later `flush()` or bridge disposal leaves the entry cleared; persistence resumes when a persisted state value changes again.
+
 A bridge registers itself the first time it is used, so all three see only the bridges the application has actually touched. A persisted bridge nothing has read yet has nothing stored to clear either, so the two line up — but it is why `keys()` can be shorter than the number of `persist()` calls in the source.
 
 ---

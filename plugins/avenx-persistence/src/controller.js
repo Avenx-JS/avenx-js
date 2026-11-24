@@ -62,6 +62,8 @@ export class PersistenceController {
   #stopWatcher = null;
   /** @type {string|null} */
   #lastWritten = null;
+  /** @type {boolean} Ignore saves after clear until the next observed mutation. */
+  #cleared = false;
   /**
    * True while the tracking effect is being created. The first run exists to
    * register dependencies, not to report a change, so it must not write.
@@ -126,6 +128,7 @@ export class PersistenceController {
     // Forgetting it means the next save is decided by comparing against the
     // store, not against a value from before the state was reset.
     this.#lastWritten = null;
+    this.#cleared = false;
   }
 
   /**
@@ -203,6 +206,7 @@ export class PersistenceController {
           // is tracked too. The read is the subscription.
           const tracked = this.keys.map((key) => this.owner[key]);
           if (!this.#priming) {
+            this.#cleared = false;
             queueJob(this.#saveJob);
           }
           return tracked;
@@ -233,10 +237,12 @@ export class PersistenceController {
    * data is not a reason for the application to stop.
    */
   save() {
-    if (!this.#stopWatcher) {
+    if (!this.#stopWatcher || this.#cleared) {
       // Not watching: either persistence has not started, or the bridge was
       // disposed. Writing here would store the definition's defaults over data
       // the next page load still wants.
+      // A successful clear also wins over queued saves, flush, and teardown
+      // until the synchronous change watcher observes another mutation.
       return;
     }
     const config = this.#resolve();
@@ -401,7 +407,9 @@ export class PersistenceController {
       config.storage.removeItem(config.storageKey);
     } catch (error) {
       report(this.#context(), 'write', 'storage rejected the removal; persisted data may remain', error);
+      return;
     }
     this.#lastWritten = null;
+    this.#cleared = true;
   }
 }
