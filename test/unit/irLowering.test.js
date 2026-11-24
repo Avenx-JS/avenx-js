@@ -172,7 +172,7 @@ function testComponentsAndSlots() {
   // produces it: a number stays a number, and anything else is quoted so it
   // does not resolve as an identifier.
   assert.strictEqual(byName.flat, '1');
-  assert.strictEqual(byName.kind, "'wide'");
+  assert.strictEqual(byName.kind, '"wide"');
 
   // A slot stays a real element: transclusion is the component mounter's, and
   // giving the outlet a second owner in the program would hide the content the

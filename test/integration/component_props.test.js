@@ -551,7 +551,7 @@ global.Node = {
       'Should translate custom tag to div with data-avenx-comp',
     );
     assert.ok(compiledTemplate.includes('data-props-user="currentUser"'), 'Should translate dynamic expression props');
-    assert.ok(compiledTemplate.includes('data-props-title="\'User Profile\'"'), 'Should translate static string props');
+    assert.ok(compiledTemplate.includes('data-props-title="&quot;User Profile&quot;"'), 'Should translate static string props');
     assert.ok(compiledTemplate.includes('data-props-age="25"'), 'Should translate numeric props');
     assert.ok(compiledTemplate.includes('data-props-active="true"'), 'Should translate boolean props');
 

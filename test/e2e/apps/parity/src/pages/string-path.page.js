@@ -56,6 +56,14 @@
     <Component :is="{{ currentView }}" owner="{{ owner }}" />
   </section>
 
+  <section data-construct="quoted-component-attributes">
+    <Component :is='currentView === "ProfileCard" ? "ProfileCard" : "SettingsCard"' :owner='owner + " & team"' />
+  </section>
+
+  <section data-construct="literal-component-props-on-string-path">
+    <FrameCard title="H:\notes\report.txt" />
+  </section>
+
   <!-- Known gaps. -->
 
   <section data-construct="dynamic-attribute-update">

@@ -340,6 +340,13 @@ const CONSTRUCTS = {
       await expect(section.getByTestId('badge-label')).toHaveText('badge: Annual');
     },
   },
+  'literal-component-props': {
+    hash: '#/components',
+    async steps({ section }) {
+      await expect(section.getByTestId('frame-title')).toHaveText(String.raw`H:\notes\report.txt`);
+      await expect(section.getByTestId('badge-label')).toHaveText(String.raw`badge: H:\notes\report.txt`);
+    },
+  },
   slots: {
     hash: '#/components',
     async steps({ page, section }) {
@@ -534,6 +541,25 @@ const CONSTRUCTS = {
       await expect(section.getByTestId('profile-card')).toHaveCount(0);
       await page.getByTestId('rename').click();
       await expect(section.getByTestId('settings-card')).toHaveText('Settings for Grace');
+    },
+  },
+
+  'quoted-component-attributes': {
+    hash: '#/string-path',
+    async steps({ page, section }) {
+      await expect(section.getByTestId('profile-card')).toHaveText('Profile for Ada & team');
+      await page.getByTestId('show-settings').click();
+      await expect(section.getByTestId('settings-card')).toHaveText('Settings for Ada & team');
+      await expect(section.getByTestId('profile-card')).toHaveCount(0);
+      await page.getByTestId('rename').click();
+      await expect(section.getByTestId('settings-card')).toHaveText('Settings for Grace & team');
+    },
+  },
+  'literal-component-props-on-string-path': {
+    hash: '#/string-path',
+    async steps({ section }) {
+      await expect(section.getByTestId('frame-title')).toHaveText(String.raw`H:\notes\report.txt`);
+      await expect(section.getByTestId('badge-label')).toHaveText(String.raw`badge: H:\notes\report.txt`);
     },
   },
 

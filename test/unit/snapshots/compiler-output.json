@@ -586,7 +586,7 @@
     },
     "expressions": [
       "pageTitle",
-      "'wide'",
+      "\"wide\"",
       "user",
       "user.name",
       "footer"

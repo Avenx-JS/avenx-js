@@ -157,7 +157,7 @@ try {
   // Test 4: Non-self-closing tag with attributes
   assert.strictEqual(
     cp.processComponentTags('<MyComponent title="Test" active=\'true\'></MyComponent>'),
-    '<div data-avenx-comp="MyComponent" data-props-title="\'Test\'" data-props-active="true"></div>',
+    '<div data-avenx-comp="MyComponent" data-props-title="&quot;Test&quot;" data-props-active="true"></div>',
   );
   // Test 5: Tag with spaces in closing tag
   assert.strictEqual(

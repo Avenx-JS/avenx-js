@@ -274,11 +274,11 @@ collector; `test/unit/expressionCollectorCoverage.test.js` pins the fix.
 | Text and attributes | `#/` | compiled | interpolation, raw interpolation, boolean attribute coercion, `data-ax-show`, `-class` (string and object), `-style`, `-html` (sanitised), SVG |
 | Control flow | `#/control` | compiled | `<@if>` / `<@elseif>` / `<@else>`; keyed `<@for>` over an array, object, `Map`, `Set` and numeric range, each with `<@empty>` |
 | Forms | `#/forms` | compiled | `data-ax-bind` on text, textarea, number, range, date, select, multiple select, boolean checkbox, checkbox group and radio |
-| Components | `#/components` | compiled | static nesting to a grandchild, props, default / named / fallback slots, the `<template slot>` wrapper |
+| Components | `#/components` | compiled | static nesting to a grandchild, props including literal backslashes, default / named / fallback slots, the `<template slot>` wrapper |
 | Async | `#/async` | both | `<@defer>` on `idle`, `timer(ms)`, `interaction`, an expression and `visible`; `<resource>`, `<@suspense>`, `<@deadlock>` (in `<AsyncPanel>`); `<@errorBoundary>` (in `<ErrorPanel>`) |
 | Motion | `#/motion` | string | `<transition>` on a keyed list row, `<VirtualList>` |
 | Routing | `#/shell/outlet` | string | a layout's router view (`data-ax-router-view`) |
-| String renderer | `#/string-path` | string | dynamic attribute names, `data-ax-ref`, `data-ax-validate`, scoped slots, `<Component :is>`, and the string renderer's pinned gaps |
+| String renderer | `#/string-path` | string | dynamic attribute names, `data-ax-ref`, `data-ax-validate`, scoped slots, `<Component :is>` including quoted selectors and props, literal prop backslashes, and the string renderer's pinned gaps |
 
 Each construct is placed on a page that compiles to a render program wherever
 it can be. The constructs the IR refuses (`AVX_W47`) are grouped on pages that

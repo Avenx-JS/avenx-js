@@ -27,7 +27,7 @@ function testCompilerDynamicComponent() {
   );
   assert.strictEqual(
     template3,
-    '<div data-avenx-comp-dynamic="state.currentView" data-props-title="\'Hello\'" @click="handleClick"></div>',
+    '<div data-avenx-comp-dynamic="state.currentView" data-props-title="&quot;Hello&quot;" @click="handleClick"></div>',
   );
 
   // 4. Non-self-closing tag

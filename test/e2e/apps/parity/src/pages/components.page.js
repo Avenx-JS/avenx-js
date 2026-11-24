@@ -15,6 +15,10 @@
     <FrameCard title="{{ title }}" />
   </section>
 
+  <section data-construct="literal-component-props">
+    <FrameCard title="H:\notes\report.txt" />
+  </section>
+
   <section data-construct="slots">
     <FrameCard title="slotted">
       <p data-testid="projected-body">projected into the default slot</p>
