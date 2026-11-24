@@ -95,6 +95,7 @@
     "lint": "eslint \"**/*.js\"",
     "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\" \"bin/commands/serve/**/*.{html,css}\"",
     "generate:config-schema": "node scripts/generateConfigSchema.js",
+    "check:config-schema": "node scripts/generateConfigSchema.js --check",
     "prepack": "npm run generate:config-schema"
   },
   "keywords": [

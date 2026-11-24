@@ -39,6 +39,10 @@ jobs:
       - name: Run plugin tests
         run: npm run test:plugins
 
+      - name: Check configuration schema
+        if: matrix.node-version == 22
+        run: npm run check:config-schema
+
       - name: Build documentation examples
         if: matrix.node-version == 22
         run: npm run test:docs
