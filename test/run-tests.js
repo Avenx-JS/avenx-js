@@ -127,9 +127,11 @@ function resolveTestFiles(filterPath) {
     }
   }
 
-  // Substring match across all discovered test files
+  // Match paths within the test tree, independently of the checkout location.
   const allFiles = findTestFiles(__dirname, false);
-  return allFiles.filter((f) => f.includes(filterPath));
+  const relativeFilter = path.isAbsolute(filterPath) ? path.relative(__dirname, filterPath) : filterPath;
+  const normalizedFilter = relativeFilter.replace(/\\/g, '/');
+  return allFiles.filter((f) => path.relative(__dirname, f).split(path.sep).join('/').includes(normalizedFilter));
 }
 
 /**
