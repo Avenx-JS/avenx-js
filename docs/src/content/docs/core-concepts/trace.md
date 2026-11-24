@@ -65,8 +65,9 @@ await avenxTrace.save();
 `window.avenxTrace` also exposes `id`, `size`, `deterministic`, `snapshot()`
 and `stop()`.
 
-Traces land in `.avenx/traces/` as one JSON file each. Add that directory to
-your `.gitignore` unless you mean to commit them.
+Traces land in `.avenx/traces/` as one JSON file each. The `.gitignore` that
+`avenx init` writes ignores that directory. In an older project,
+`avenx doctor --fix` adds the missing entry.
 
 ---
 

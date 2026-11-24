@@ -21,7 +21,7 @@ export function readScaffoldFile(cli, name) {
   if (name === 'index.html') return getInitialHtml(cli);
   if (name === '.gitignore') {
     const dist = (cli.config.distDir || 'dist').replace(/\\/g, '/').replace(/\/$/, '');
-    return `node_modules/\n${dist}/\n.DS_Store\n.env\n.env.*\n!.env.example\n`;
+    return `node_modules/\n${dist}/\n.DS_Store\n.env\n.env.*\n!.env.example\n.avenx/traces/\n`;
   }
   const framework = cli.frameworkDir || fileURLToPath(new URL('../../', import.meta.url));
   const folder = name === '.prettierrc' ? 'init' : 'vscode';
