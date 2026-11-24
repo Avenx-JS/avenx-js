@@ -67,10 +67,25 @@ console.log('🧪 Testing avenx init .gitignore scaffolding and .env exclusion..
     // .env.example must not be ignored (git check-ignore exits with 1 when not ignored)
     const checkExample = spawnSync('git', ['check-ignore', '.env.example'], { cwd: dir, encoding: 'utf8' });
     assert.notStrictEqual(checkExample.status, 0, '.env.example must remain trackable');
+
+    // `avenx serve --trace` recordings are ignored; the size baseline next to
+    // them stays trackable so `avenx stats --compare` can use a committed one.
+    const checkTrace = spawnSync('git', ['check-ignore', '.avenx/traces/recording.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+    });
+    assert.strictEqual(checkTrace.status, 0, '.avenx/traces/ should be ignored by git');
+    const checkBaseline = spawnSync('git', ['check-ignore', '.avenx/size-baseline.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+    });
+    assert.notStrictEqual(checkBaseline.status, 0, '.avenx/size-baseline.json must remain trackable');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
-  console.log('  ✅ scaffolded .gitignore ignores .env and variants while keeping .env.example trackable');
+  console.log(
+    '  ✅ scaffolded .gitignore ignores .env, its variants and trace recordings while keeping .env.example trackable',
+  );
 }
 
 // 2. An existing .gitignore is left alone
