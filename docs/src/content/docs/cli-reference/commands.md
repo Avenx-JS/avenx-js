@@ -1238,6 +1238,8 @@ npx avenx impact <symbol> [options]
 npx avenx impact cart.items
 npx avenx impact cart.items --json
 npx avenx impact cart.items --depth=4
+npx avenx impact cart.items --graph
+npx avenx impact cart.items --graph --format dot --out impact.dot
 ```
 
 #### Options & Flags
@@ -1246,6 +1248,12 @@ npx avenx impact cart.items --depth=4
 | :--- | :--- |
 | `--json`, `-j` | Outputs the target, everything reached, and the unresolved entries bearing on the answer, as structured JSON. |
 | `--depth=<n>` | How many hops to follow. Defaults to 12. |
+| `--graph` | Draws the same traversal as Mermaid, highlighting the queried symbol. Mutually exclusive with `--json`. |
+| `--format mermaid\|dot` | Chooses the diagram language; Mermaid is the default. |
+| `--out <file>`, `-o <file>` | Writes the diagram to a file with no stdout output. |
+| `--kinds <list>` | Filters diagram nodes by kind, accepting the same singular/plural names as `atlas --graph`. All kinds are included by default. |
+
+Diagram arrows follow the query away from its highlighted root: toward dependents for `impact`, or toward dependencies for `why`. Edge labels, colors and dashed possible relationships use the Atlas renderer. The graph contains only the edges selected by the text traversal, honors its depth limit, and reports unresolved relationships and analysis errors from the full model. A kind filter can omit the root if it excludes its kind.
 
 #### Naming a Symbol
 
@@ -1287,7 +1295,11 @@ npx avenx why cart.total
 npx avenx why CartSummary.total --json
 ```
 
-It takes the same `--json` and `--depth` options, resolves symbols the same way, and uses the same exit codes as `avenx impact`.
+It takes the same `--json`, `--depth` and graph options, resolves symbols the same way, and uses the same exit codes as `avenx impact`.
+
+```bash
+npx avenx why cart.total --graph --format dot --out why.dot
+```
 
 ---
 

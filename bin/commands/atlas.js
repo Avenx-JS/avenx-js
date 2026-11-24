@@ -10,7 +10,7 @@ import {
   walk,
 } from '../../lib/compiler/atlas/query.js';
 import { bold, cyan, gray, green, yellow } from '../colors.js';
-import { runAtlasGraph } from './atlasGraph.js';
+import { runAtlasGraph, runQueryGraph } from './atlasGraph.js';
 
 /**
  * Builds the application model, keeping compiler chatter out of query output.
@@ -70,8 +70,11 @@ function numericFlag(args, name, fallback) {
  */
 function positional(args) {
   const skip = new Set();
+  const values = args.includes('--graph')
+    ? ['--depth', '-d', '--format', '--kinds', '--out', '-o', '--focus']
+    : ['--depth', '-d'];
   args.forEach((arg, index) => {
-    if ((arg === '--depth' || arg === '-d') && args[index + 1]) skip.add(index + 1);
+    if (values.includes(arg) && args[index + 1]) skip.add(index + 1);
   });
   const found = args.find((arg, index) => !arg.startsWith('-') && !skip.has(index));
   return found || null;
@@ -325,6 +328,11 @@ export function runQuery(cli, args, direction) {
   const result = walk(model, target.id, { direction, depth: numericFlag(args, 'depth', 12) });
   const reached = flatten(result.root);
   const unresolved = relevantUnresolved(model, reached, target.id);
+
+  if (args.includes('--graph')) {
+    runQueryGraph(model, args, result, direction);
+    return;
+  }
 
   if (wantsJson(args)) {
     console.log(
