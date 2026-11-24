@@ -77,6 +77,7 @@ export class Catalog {
    */
   merge(resource, report) {
     let added = 0;
+    const ancestors = new WeakSet();
 
     /**
      * Walks one node of the resource tree.
@@ -84,6 +85,14 @@ export class Catalog {
      * @param {string} prefix - The dotted path to this node.
      */
     const walk = (node, prefix) => {
+      if (ancestors.has(node)) {
+        report('malformed', `translation "${prefix}" contains a cycle and was ignored`, {
+          key: prefix,
+          locale: this.locale,
+        });
+        return;
+      }
+      ancestors.add(node);
       for (const key of Object.keys(node)) {
         const path = prefix === '' ? key : `${prefix}.${key}`;
         const value = node[key];
@@ -108,6 +117,7 @@ export class Catalog {
           locale: this.locale,
         });
       }
+      ancestors.delete(node);
     };
 
     walk(resource, '');

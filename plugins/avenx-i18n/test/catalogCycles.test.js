@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { Catalog } from '../src/catalog.js';
+
+const resource = { greeting: 'Hello' };
+resource.self = resource;
+resource.nested = { value: 'Nested', parent: resource };
+const shared = { title: 'Shared' };
+resource.left = shared;
+resource.right = shared;
+const errors = [];
+const catalog = new Catalog('en');
+assert.equal(catalog.merge(resource, (phase, message, context) => errors.push({ phase, message, ...context })), 4);
+assert.equal(catalog.get('greeting'), 'Hello');
+assert.equal(catalog.get('nested.value'), 'Nested');
+assert.equal(catalog.get('left.title'), 'Shared');
+assert.equal(catalog.get('right.title'), 'Shared');
+assert.deepEqual(errors.map(({ key }) => key), ['self', 'nested.parent']);
+assert.ok(errors.every(({ phase, message, locale }) => phase === 'malformed' && /cycle/.test(message) && locale === 'en'));
+assert.equal(catalog.merge({ later: 'Still usable' }, () => {}), 1);
+assert.equal(catalog.get('later'), 'Still usable');
+console.log('Cyclic branches are diagnosed; valid messages and shared branches remain usable.');
