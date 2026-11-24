@@ -126,13 +126,16 @@ export function registerInMainApp(cli, className, folderName) {
   }
 
   const hasMount = lines.some((line) => line.includes('app.mount('));
+  // Drop the trailing blank lines first, so the file keeps one blank line
+  // before the new statement and ends with a single newline.
+  while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
   if (!hasMount) {
-    lines.push(`\napp.mount('${className}');`);
+    lines.push('', `app.mount('${className}');`);
   } else {
     lines.push(`// app.mount('${className}'); // Uncomment to mount this component`);
   }
 
-  fs.writeFileSync(mainPath, lines.join('\n'));
+  fs.writeFileSync(mainPath, `${lines.join('\n')}\n`);
   console.log(green(`✅ Component '${className}' registered in ${cli.config.srcDir}/main.app.js`));
 }
 

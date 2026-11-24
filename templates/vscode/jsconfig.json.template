@@ -1,21 +1,13 @@
 {
-    "compilerOptions": {
-        "checkJs": true,
-        "allowJs": true,
-        "moduleResolution": "bundler",
-        "module": "ESNext",
-        "target": "ESNext",
-        "strict": false,
-        "noEmit": true
-    },
-    "include": [
-        "../src/**/*.js",
-        "../*.js"
-    ],
-    "exclude": [
-        "../node_modules",
-        "../dist",
-        "../src/**/*.component.js",
-        "../src/**/*.page.js"
-    ]
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "target": "ESNext",
+    "strict": false,
+    "noEmit": true
+  },
+  "include": ["../src/**/*.js", "../*.js"],
+  "exclude": ["../node_modules", "../dist", "../src/**/*.component.js", "../src/**/*.page.js"]
 }
