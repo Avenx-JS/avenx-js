@@ -52,6 +52,9 @@ publication step; this local reference works without it.
 | `distDir`      | `string`   | `"dist"`              | Non-empty relative path where compiled output is written.             |
 | `outputName`   | `string`   | `"bundle"`         | Base name used for generated JavaScript and CSS bundles. The compiler generates <outputName>.js and <outputName>.css. Must be a non-empty filename without an extension.|
 | `templatesDir` | `string`   | `".avenxtemplates"`  | Non-empty relative path for local generator template overrides.       |
+| `scaffold.test` | `boolean` | `false` | Generate a colocated component test by default; `--no-test` skips it. |
+| `scaffold.style` | `boolean` | `true` | Generate component and page stylesheets by default; `--no-style` skips them. |
+| `scaffold.template` | `string` or `null` | `null` | Default custom template name; an explicit `--template` takes precedence. |
 | `alias`        | `object`   | `{}`                  | Maps import path prefixes to target paths. See [Path aliases](#path-aliases-alias). |
 | `server.port`  | `number`   | `3000`                | Valid TCP port from `0` to `65535`.                                    |
 | `server.host`  | `string`   | `"localhost"`         | Non-empty host name or address for the local dev server.              |
@@ -78,6 +81,24 @@ publication step; this local reference works without it.
 | `csp.strict`   | `boolean`  | `false`                | Refuses to emit anything that would need `script-src 'unsafe-eval'`, in a development build as well as a production one. See [CSP-strict builds](#csp-strict-builds-cspstrict). |
 
 Source, output and template directory options must be relative paths. The TLS certificate and key also accept absolute paths.
+
+## Scaffold defaults (`scaffold`)
+
+Set the team's generator defaults in `avenx.config.json`:
+
+```json
+{
+  "scaffold": {
+    "test": true,
+    "style": false,
+    "template": "house"
+  }
+}
+```
+
+`avenx generate component Card` now uses the `house` template, writes a colocated test, and omits the stylesheet and its `@css` references. Pages also respect `style`; components, pages, bridges and guards respect `template`. Template lookup still uses `templatesDir`.
+
+Flags override these defaults: `--no-test` skips a configured test, `--with-test` enables it, `--no-style` skips a configured stylesheet, and `--template other` selects another template. If both test flags are supplied, `--no-test` wins. Omitting the group keeps the existing defaults.
 
 ## Template preprocessors (`preprocessors`)
 

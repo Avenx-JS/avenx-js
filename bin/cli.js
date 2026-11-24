@@ -178,9 +178,9 @@ export class AvenxCLI {
 
     const dryRun = args.includes('--dry-run') || args.includes('-d');
     const force = args.includes('--force') || args.includes('-f');
-    const withTest = args.includes('--with-test');
+    const withTest = args.includes('--with-test') || (this.config.scaffold?.test ?? false);
     const noTest = args.includes('--no-test');
-    const noStyle = args.includes('--no-style');
+    const noStyle = args.includes('--no-style') || this.config.scaffold?.style === false;
 
     if (['build', 'b', 'check', 'lint'].includes(command) && (args.includes('--quiet') || args.includes('-q'))) {
       // Keep warnings visible: the error threshold would hide them as well.
@@ -210,7 +210,7 @@ export class AvenxCLI {
       this.config.mode = 'development';
     }
 
-    let templateName = null;
+    let templateName = this.config.scaffold?.template ?? null;
     const templateIndex = args.findIndex((arg) => arg === '--template' || arg === '-t');
     if (templateIndex !== -1 && templateIndex + 1 < args.length) {
       templateName = args[templateIndex + 1];

@@ -27,6 +27,30 @@
       "default": ".avenxtemplates",
       "description": "Relative directory for scaffold overrides."
     },
+    "scaffold": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test": {
+          "type": "boolean",
+          "default": false,
+          "description": "Generate colocated component tests unless --no-test is supplied."
+        },
+        "style": {
+          "type": "boolean",
+          "default": true,
+          "description": "Generate component and page stylesheets unless --no-style is supplied."
+        },
+        "template": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Default custom scaffold template; --template takes precedence."
+        }
+      }
+    },
     "mode": {
       "anyOf": [
         {
