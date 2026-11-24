@@ -346,8 +346,10 @@ export function runDoctor(cli, asJson = false, { fix = false, dryRun = false } =
       record('pass', 'Working tree is clean');
     }
   } catch {
+    // --fix never creates a repository or installs Git, so the result does not
+    // depend on it: a warning in both modes.
     record(
-      fix ? 'fail' : 'warn',
+      'warn',
       'Not a git repository (or git is unavailable)',
       'Initialize it with `git init` if wanted, or install Git; doctor does not make that decision.',
     );
