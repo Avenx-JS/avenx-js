@@ -17,19 +17,19 @@ npx avenx <command> [type] [name] [options]
 
 The following flags can be passed globally to `avenx` commands:
 
-| Option | Alias | Description | Supported Commands |
-| :--- | :--- | :--- | :--- |
-| `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `init`, `generate`, `destroy` |
-| `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`. | `init`, `generate`, `destroy`, `build` |
-| `--dev` | | Selects development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch`, `stats` |
-| `--prod` | | Selects production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch`, `stats` |
-| `--quiet` | `-q` | Suppresses progress, success summaries, asset sizes and CSP reports while keeping warnings and errors. Overrides `logging.level` for this invocation without changing the config file; `logging.silent` retains its meaning. JSON and SARIF output remain available. | `build`, `check` |
-| `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
-| `--json` | `-j` | Machine-readable output. | `check`, `doctor`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` |
-| `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |
-| `--no-color` | | Disables colored terminal output. | Global |
-| `--help` | | Prints the command and option summary and exits before the command runs. | Global |
-| `--version` | `-v` | Displays the installed version of the Avenx-JS CLI package. | Global |
+| Option         | Alias | Description                                                                                                                                                                                                                                                          | Supported Commands                                                                                                                        |
+| :------------- | :---- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`    | `-d`  | Previews file creation, modification, or deletion actions without modifying disk.                                                                                                                                                                                    | `init`, `generate`, `destroy`                                                                                                             |
+| `--force`      | `-f`  | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`.                                                 | `init`, `generate`, `destroy`, `build`                                                                                                    |
+| `--dev`        |       | Selects development mode: readable runtime, inline CSS source maps.                                                                                                                                                                                                  | `build`, `serve`, `watch`, `stats`                                                                                                        |
+| `--prod`       |       | Selects production mode: minified runtime. The default for `build`.                                                                                                                                                                                                  | `build`, `serve`, `watch`, `stats`                                                                                                        |
+| `--quiet`      | `-q`  | Suppresses progress, success summaries, asset sizes and CSP reports while keeping warnings and errors. Overrides `logging.level` for this invocation without changing the config file; `logging.silent` retains its meaning. JSON and SARIF output remain available. | `build`, `check`                                                                                                                          |
+| `--csp-strict` |       | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`.                                                                                                                                  | `build`, `serve`, `watch`                                                                                                                 |
+| `--json`       | `-j`  | Machine-readable output.                                                                                                                                                                                                                                             | `check`, `doctor`, `stats`, `atlas`, `atlas diff`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` |
+| `--depth=<n>`  |       | How many hops a graph query follows. Defaults to 12.                                                                                                                                                                                                                 | `impact`, `why`                                                                                                                           |
+| `--no-color`   |       | Disables colored terminal output.                                                                                                                                                                                                                                    | Global                                                                                                                                    |
+| `--help`       |       | Prints the command and option summary and exits before the command runs.                                                                                                                                                                                             | Global                                                                                                                                    |
+| `--version`    | `-v`  | Displays the installed version of the Avenx-JS CLI package.                                                                                                                                                                                                          | Global                                                                                                                                    |
 
 ## Terminal Formatting & CI Environment
 
@@ -50,12 +50,12 @@ By default, the CLI automatically detects whether the active output stream can r
 
 You can customize or override automatic terminal color detection in automated CI/CD pipelines (such as GitHub Actions, GitLab CI, CircleCI, Jenkins), scripts, and log collectors:
 
-| Variable / Flag | Behavior & Purpose | Examples |
-| :--- | :--- | :--- |
-| `NO_COLOR` | Disables all ANSI styling according to the [no-color.org](https://no-color.org) standard when set to any non-empty string. | `NO_COLOR=1 avenx build` |
-| `FORCE_COLOR` | Forces ANSI color codes on non-TTY streams and CI runners (unless explicitly set to `'0'` or `'false'`). Useful for preserving color output in GitHub Actions log viewers. | `FORCE_COLOR=1 avenx build`<br />`FORCE_COLOR=0 avenx build` (disables) |
-| `TERM=dumb` | Disables ANSI escape codes for basic or restricted terminal emulators. | `TERM=dumb avenx serve` |
-| `--no-color`<br />`--no-colors` | CLI argument to disable colored output for a single invocation. | `npx avenx build --no-color` |
+| Variable / Flag                 | Behavior & Purpose                                                                                                                                                         | Examples                                                                |
+| :------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------- |
+| `NO_COLOR`                      | Disables all ANSI styling according to the [no-color.org](https://no-color.org) standard when set to any non-empty string.                                                 | `NO_COLOR=1 avenx build`                                                |
+| `FORCE_COLOR`                   | Forces ANSI color codes on non-TTY streams and CI runners (unless explicitly set to `'0'` or `'false'`). Useful for preserving color output in GitHub Actions log viewers. | `FORCE_COLOR=1 avenx build`<br />`FORCE_COLOR=0 avenx build` (disables) |
+| `TERM=dumb`                     | Disables ANSI escape codes for basic or restricted terminal emulators.                                                                                                     | `TERM=dumb avenx serve`                                                 |
+| `--no-color`<br />`--no-colors` | CLI argument to disable colored output for a single invocation.                                                                                                            | `npx avenx build --no-color`                                            |
 
 #### GitHub Actions Workflow Example
 
@@ -103,18 +103,18 @@ import {
   blue,
   cyan,
   gray,
-  createSeverityFormatter
+  createSeverityFormatter,
 } from './bin/colors.js';
 ```
 
 #### API Methods
 
-| Method | Return Type | Description |
-| :--- | :--- | :--- |
-| `detectColorSupport()` | `boolean` | Re-evaluates CLI flags (`--no-color`), environment variables (`NO_COLOR`, `FORCE_COLOR`, `TERM`), and `stdout.isTTY` to determine color capability. |
-| `isColorEnabled()` | `boolean` | Returns whether ANSI color styling is currently active in the process. |
-| `setColorEnabled(value?)` | `boolean` | Manually enables (`true`) or disables (`false`) ANSI escape code generation. Calling without arguments re-runs automatic detection. |
-| `createSeverityFormatter()` | `function` | Creates a logging formatter for `AvenxLogger` that tints warnings in yellow and errors in red while preserving plain text and objects. |
+| Method                      | Return Type | Description                                                                                                                                         |
+| :-------------------------- | :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `detectColorSupport()`      | `boolean`   | Re-evaluates CLI flags (`--no-color`), environment variables (`NO_COLOR`, `FORCE_COLOR`, `TERM`), and `stdout.isTTY` to determine color capability. |
+| `isColorEnabled()`          | `boolean`   | Returns whether ANSI color styling is currently active in the process.                                                                              |
+| `setColorEnabled(value?)`   | `boolean`   | Manually enables (`true`) or disables (`false`) ANSI escape code generation. Calling without arguments re-runs automatic detection.                 |
+| `createSeverityFormatter()` | `function`  | Creates a logging formatter for `AvenxLogger` that tints warnings in yellow and errors in red while preserving plain text and objects.              |
 
 #### ANSI Styling Helpers
 
@@ -177,7 +177,7 @@ When invoked in an interactive terminal, `avenx init` launches an interactive se
    - `2. Sass (SCSS)`
    - `3. Less`
    - `4. PostCSS`
-   *(Writes chosen preprocessor to `avenx.config.json` under `"style": { "preprocessor": "..." }`).*
+     _(Writes chosen preprocessor to `avenx.config.json` under `"style": { "preprocessor": "..." }`)._
 
 2. **Layout Template Choice:**
    - `1. Blank (Minimal setup)` (Default)
@@ -190,13 +190,13 @@ When invoked in an interactive terminal, `avenx init` launches an interactive se
 
 #### Options & Flags
 
-| Flag / Option | Alias | Description |
-| :--- | :--- | :--- |
-| `--layout <name>` | | Specifies the starter project template layout (`blank` or `routing`). Default is `blank`. |
-| `--style <preprocessor>` | | Configures the CSS preprocessor in `avenx.config.json` (`none`, `sass`, `less`, or `postcss`). Default is `none`. |
-| `-y`, `--yes` | | Bypasses interactive wizard prompts in TTY terminals and uses default choices (`none` preprocessor, `blank` layout). Recommended for CI/CD and automated scaffolding scripts. |
-| `-i`, `--interactive` | | Forces interactive wizard prompts to run, even in non-TTY or piped terminal environments. |
-| `-f`, `--force` | | Overwrites existing files or bypasses uncommitted Git working tree status checks. |
+| Flag / Option            | Alias | Description                                                                                                                                                                   |
+| :----------------------- | :---- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--layout <name>`        |       | Specifies the starter project template layout (`blank` or `routing`). Default is `blank`.                                                                                     |
+| `--style <preprocessor>` |       | Configures the CSS preprocessor in `avenx.config.json` (`none`, `sass`, `less`, or `postcss`). Default is `none`.                                                             |
+| `-y`, `--yes`            |       | Bypasses interactive wizard prompts in TTY terminals and uses default choices (`none` preprocessor, `blank` layout). Recommended for CI/CD and automated scaffolding scripts. |
+| `-i`, `--interactive`    |       | Forces interactive wizard prompts to run, even in non-TTY or piped terminal environments.                                                                                     |
+| `-f`, `--force`          |       | Overwrites existing files or bypasses uncommitted Git working tree status checks.                                                                                             |
 
 #### Environment Variables
 
@@ -241,6 +241,7 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 - `--no-style`: Writes a component or page without its stylesheet (`.component.css` or `.page.css`), for projects that style components another way. The generated template then has no `@css` references, so it builds without `AVX_W49`.
 
 Project defaults can be set with `scaffold.test`, `scaffold.style`, and `scaffold.template` in `avenx.config.json`. Explicit flags override configuration; see [Scaffold defaults](/getting-started/configuration/#scaffold-defaults-scaffold).
+
 - `--template <name>` / `-t <name>`: Generates from the override named `<name>` under `templatesDir` (for example `.avenxtemplates/component/<name>/component.js.template`) instead of the default template. See [Custom Templates](/cli-reference/custom-templates/).
 
 #### Usage Examples
@@ -475,6 +476,7 @@ Watch modes also react to source and project-template changes while they run.
 npx avenx check
 
 ```
+
 ### 7. `avenx serve`
 
 Launches a local live-reloading development server with automatic file watching and an embedded **Inspection Dashboard**.
@@ -492,7 +494,7 @@ Launches a local live-reloading development server with automatic file watching 
 - `--open`, `-o`: Opens the default browser once the development server is listening. Off by default; closing the browser does not stop the server.
 
 Custom HTTP response headers (such as `Content-Security-Policy` or CORS headers) can be attached to every dev-server response via [`server.headers`](/getting-started/configuration#dev-server-response-headers-serverheaders) in `avenx.config.json`. These headers apply to `avenx serve` only and do not affect production builds.
- 
+
 #### HTTPS for device testing
 
 `--https --cert <file> --key <file>` serves the app, inspector and live-reload
@@ -554,13 +556,11 @@ npx avenx serve --open
 
 ---
 
-
 ```bash
 npx avenx check
 ```
 
 For editor-integrated real-time linting and ESLint rule enforcement (PascalCase tag naming), see the [ESLint Template Validation Guide](/guides/eslint).
-
 
 ---
 
@@ -617,6 +617,7 @@ Runs environment, project configuration, directory structure, and Git working tr
 #### Command Purpose & When to Run
 
 The `avenx doctor` command performs comprehensive diagnostic health checks on your local development environment and project setup. Run this command when:
+
 - Setting up or troubleshooting a newly scaffolded project workspace.
 - Verifying environment compatibility and configuration in Continuous Integration (CI/CD) pipelines.
 - Debugging unexpected build, styling, or routing issues.
@@ -705,8 +706,8 @@ Prints the CLI usage manual and command reference to the console.
 ```bash
 npx avenx help
 ```
----
 
+---
 
 ### 12. `avenx stats` (alias: `s`)
 
@@ -793,11 +794,11 @@ npx avenx s [options]
 
 #### Options
 
-| Flag / Option | Alias | Description |
-| --- | --- | --- |
-| `--json` | `-j` | Outputs structured JSON containing `summary`, `items`, and `bundle`. |
-| `--dev` | | Requests composition from a development build. |
-| `--prod` | | Requests composition from a production build. |
+| Flag / Option | Alias | Description                                                          |
+| ------------- | ----- | -------------------------------------------------------------------- |
+| `--json`      | `-j`  | Outputs structured JSON containing `summary`, `items`, and `bundle`. |
+| `--dev`       |       | Requests composition from a development build.                       |
+| `--prod`      |       | Requests composition from a production build.                        |
 
 #### What It Analyzes
 
@@ -815,15 +816,15 @@ For components and pages, `avenx stats` also analyzes template and scoped CSS pa
 
 Without `--json`, the command displays a table containing the following columns:
 
-| Column | Description |
-| --- | --- |
-| **Name** | PascalCase component or class name. |
-| **Type** | Source type: `Component`, `Page`, `Bridge`, `Guard`, or `other`. |
-| **File Size** | Size of the source file on disk. |
-| **Raw Tpl** | Size of the uncompiled template markup. |
-| **Comp Tpl** | Size of the compiled/minified template. |
-| **CSS Size** | Size of the scoped component CSS. |
-| **State** | Number of reactive state properties declared in `<state />`. |
+| Column        | Description                                                      |
+| ------------- | ---------------------------------------------------------------- |
+| **Name**      | PascalCase component or class name.                              |
+| **Type**      | Source type: `Component`, `Page`, `Bridge`, `Guard`, or `other`. |
+| **File Size** | Size of the source file on disk.                                 |
+| **Raw Tpl**   | Size of the uncompiled template markup.                          |
+| **Comp Tpl**  | Size of the compiled/minified template.                          |
+| **CSS Size**  | Size of the scoped component CSS.                                |
+| **State**     | Number of reactive state properties declared in `<state />`.     |
 
 Template and scoped CSS metrics apply to components and pages where those resources are available.
 
@@ -866,6 +867,7 @@ The command accepts **no flags or aliases** and does not support structured/mach
 #### How It Resolves Configuration
 
 The command scans the project root directory and reads configuration files through the following mechanism:
+
 1. It loads local environment variables from the `.env` file using the `loadEnv()` helper against the resolved project root (does not overwrite existing environment variables in `process.env`).
 2. It separately parses the project's `.env` file using `parseEnv()` to identify local keys.
 3. It compares keys in `.env` with keys in `process.env` to classify each variable as public or private/system.
@@ -875,50 +877,58 @@ The command scans the project root directory and reads configuration files throu
 The command organizes variables and file statuses into three distinct groups:
 
 ##### 1. Source Files
+
 Reports the path and parsing status of the project's `.env` file:
-* **Successful read**: Displays the absolute path of the `.env` file prefixed with a green checkmark (`âœ”`).
-* **Missing file**: Prints a warning prefixed with a yellow warning symbol (`âš  No .env file found (only process env AVX_PUBLIC_* shown)`).
-* **Unparseable/Invalid file**: Displays an error prefixed with a yellow cross (`âœ– Failed to read <absolute-path-to-.env>: <error-message>`) and sets a non-zero exit code (`1`).
+
+- **Successful read**: Displays the absolute path of the `.env` file prefixed with a green checkmark (`âœ”`).
+- **Missing file**: Prints a warning prefixed with a yellow warning symbol (`âš  No .env file found (only process env AVX_PUBLIC_* shown)`).
+- **Unparseable/Invalid file**: Displays an error prefixed with a yellow cross (`âœ– Failed to read <absolute-path-to-.env>: <error-message>`) and sets a non-zero exit code (`1`).
 
 ##### 2. Public Variables
+
 Lists variables prefixed with `AVX_PUBLIC_`.
-* **Source**: Collected from all keys in `process.env` (system environment) and keys in the project's `.env` file. Sorted alphabetically.
-* **Display**: Values are displayed in full and unmasked.
-* **Notes**:
-  * `inlined` (gray): Indicates the variable contains a non-empty string and will be stringified and inlined into build outputs.
-  * `empty` (yellow): Indicates the variable is empty (`""`).
+
+- **Source**: Collected from all keys in `process.env` (system environment) and keys in the project's `.env` file. Sorted alphabetically.
+- **Display**: Values are displayed in full and unmasked.
+- **Notes**:
+  - `inlined` (gray): Indicates the variable contains a non-empty string and will be stringified and inlined into build outputs.
+  - `empty` (yellow): Indicates the variable is empty (`""`).
 
 ##### 3. System Variables
+
 Lists private or non-public variables.
-* **Source**: Collected **only** from the project's local `.env` file (keys not starting with `AVX_PUBLIC_`). Shell environment variables present in `process.env` but absent from `.env` are excluded from this list. Sorted alphabetically.
-* **Display**: Values are masked for security.
+
+- **Source**: Collected **only** from the project's local `.env` file (keys not starting with `AVX_PUBLIC_`). Shell environment variables present in `process.env` but absent from `.env` are excluded from this list. Sorted alphabetically.
+- **Display**: Values are masked for security.
 
 #### Security Boundary & Best Practices
 
 Avenx enforces a strict build-time security boundary for environment variables:
-* Only variables prefixed with `AVX_PUBLIC_` are exposed to client-side compiled outputs. The compiler replaces occurrences of `process.env.AVX_PUBLIC_<KEY>` in code with their stringified value.
-* Any other variables (e.g. database credentials, server API keys) placed in the `.env` file are kept private. They are **not** replaced in code or bundled into compiled assets.
-* Developers should run `avenx env` to verify that no sensitive credentials have been accidentally prefixed with `AVX_PUBLIC_`.
+
+- Only variables prefixed with `AVX_PUBLIC_` are exposed to client-side compiled outputs. The compiler replaces occurrences of `process.env.AVX_PUBLIC_<KEY>` in code with their stringified value.
+- Any other variables (e.g. database credentials, server API keys) placed in the `.env` file are kept private. They are **not** replaced in code or bundled into compiled assets.
+- Developers should run `avenx env` to verify that no sensitive credentials have been accidentally prefixed with `AVX_PUBLIC_`.
 
 #### Secret Masking Rules
 
 For private system variables, Avenx masks the values using a deterministic `maskSecret()` rule:
-* **Short Values (4 characters or fewer, including empty values)**: The value is completely replaced with asterisks (`*`), with a minimum of 4 asterisks (e.g., an empty value or `key` is displayed as `****`).
-* **Long Values (more than 4 characters)**: The first 4 characters are preserved in plaintext, and the remaining characters are replaced by asterisks up to a maximum of 8. The total output length will be `4 + Math.min(8, value.length - 4)`, resulting in a maximum total output length of 12 characters.
 
-| Original Value | Masked Output | Description |
-| :--- | :--- | :--- |
-| `""` (empty) | `****` | Length 0, replaced by 4 asterisks. |
-| `key` | `****` | Length 3, replaced by 4 asterisks. |
-| `pass` | `****` | Length 4, replaced by 4 asterisks. |
-| `hello` | `hell*` | Length 5. First 4 characters preserved (`hell`), remaining 1 masked (`*`). |
-| `secret` | `secr**` | Length 6. First 4 characters preserved (`secr`), remaining 2 masked (`**`). |
+- **Short Values (4 characters or fewer, including empty values)**: The value is completely replaced with asterisks (`*`), with a minimum of 4 asterisks (e.g., an empty value or `key` is displayed as `****`).
+- **Long Values (more than 4 characters)**: The first 4 characters are preserved in plaintext, and the remaining characters are replaced by asterisks up to a maximum of 8. The total output length will be `4 + Math.min(8, value.length - 4)`, resulting in a maximum total output length of 12 characters.
+
+| Original Value          | Masked Output  | Description                                                                                    |
+| :---------------------- | :------------- | :--------------------------------------------------------------------------------------------- |
+| `""` (empty)            | `****`         | Length 0, replaced by 4 asterisks.                                                             |
+| `key`                   | `****`         | Length 3, replaced by 4 asterisks.                                                             |
+| `pass`                  | `****`         | Length 4, replaced by 4 asterisks.                                                             |
+| `hello`                 | `hell*`        | Length 5. First 4 characters preserved (`hell`), remaining 1 masked (`*`).                     |
+| `secret`                | `secr**`       | Length 6. First 4 characters preserved (`secr`), remaining 2 masked (`**`).                    |
 | `my_very_long_password` | `my_v********` | Length 21. First 4 characters preserved (`my_v`), remaining 17 masked (capped at 8 asterisks). |
 
 #### Exit Codes
 
-* **`0`**: Normal execution (even if `.env` is missing).
-* **`1`**: A `.env` file exists but failed to parse (e.g. contains syntax errors). If a parsing error occurs, the command sets `process.exitCode = 1` and continues executing to display any available environment details. This behavior is useful in CI pipelines to automatically fail builds if a configuration file is malformed.
+- **`0`**: Normal execution (even if `.env` is missing).
+- **`1`**: A `.env` file exists but failed to parse (e.g. contains syntax errors). If a parsing error occurs, the command sets `process.exitCode = 1` and continues executing to display any available environment details. This behavior is useful in CI pipelines to automatically fail builds if a configuration file is malformed.
 
 #### Sample Output
 
@@ -1016,10 +1026,10 @@ step, plus total node and DOM patch counts. Recording metadata is ignored.
 Different interactions are refused. Withheld values establish presence only;
 redacted, best-effort or truncated traces produce a partial comparison.
 
-| Flag | Meaning |
-| --- | --- |
-| `--json` | Emit the structured comparison, including `comparable`, `changed`, `partial`, `steps`, `orphans` and `summary`. |
-| `--fail-on-change` | Return status 1 when changes are found. Without it, a successful comparison returns 0. |
+| Flag               | Meaning                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `--json`           | Emit the structured comparison, including `comparable`, `changed`, `partial`, `steps`, `orphans` and `summary`. |
+| `--fail-on-change` | Return status 1 when changes are found. Without it, a successful comparison returns 0.                          |
 
 Unreadable recordings or different inputs always return status 1. See
 [Comparing two recordings](/core-concepts/trace/#comparing-two-recordings) for
@@ -1056,8 +1066,8 @@ npx avenx trace prune --all        # remove everything
 
 #### Exit Codes
 
-* **`0`**: The command completed.
-* **`1`**: The named trace does not exist, a trace file could not be read, an output file already exists without `--force`, or an option value was invalid.
+- **`0`**: The command completed.
+- **`1`**: The named trace does not exist, a trace file could not be read, an output file already exists without `--force`, or an option value was invalid.
 
 ---
 
@@ -1086,11 +1096,11 @@ All three resolve to the same diagnostic. Normalization uppercases the input and
 
 #### Options & Flags
 
-| Flag / Option | Description |
-| :--- | :--- |
-| `--json` | Outputs the full diagnostic metadata as structured JSON. Ideal for IDE plugins, editor tooling, and CI/CD pipelines that consume diagnostics programmatically. |
-| `--list` | Lists every catalogued code, grouped by category, with its default severity and whether a `warnings` entry in `avenx.config.json` can configure it. Takes an optional filter: `error`, `warning`, or a code letter (`C`, `R`, `W`). |
-| `--category <name>` | With `--list`, keeps only one category (`compiler`, `runtime`, `styling`, `routing`, `accessibility`, `environment`). |
+| Flag / Option       | Description                                                                                                                                                                                                                         |
+| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--json`            | Outputs the full diagnostic metadata as structured JSON. Ideal for IDE plugins, editor tooling, and CI/CD pipelines that consume diagnostics programmatically.                                                                      |
+| `--list`            | Lists every catalogued code, grouped by category, with its default severity and whether a `warnings` entry in `avenx.config.json` can configure it. Takes an optional filter: `error`, `warning`, or a code letter (`C`, `R`, `W`). |
+| `--category <name>` | With `--list`, keeps only one category (`compiler`, `runtime`, `styling`, `routing`, `accessibility`, `environment`).                                                                                                               |
 
 #### Listing the Catalogue
 
@@ -1174,12 +1184,8 @@ Documentation:
   "severity": "error",
   "category": "runtime",
   "summary": "A circular reactive update loop exceeded the maximum update depth limit.",
-  "causes": [
-    "An action or effect synchronously mutates state that triggers itself continuously."
-  ],
-  "remedies": [
-    "Break recursive mutations or add termination conditions to reactive watchers."
-  ],
+  "causes": ["An action or effect synchronously mutates state that triggers itself continuously."],
+  "remedies": ["Break recursive mutations or add termination conditions to reactive watchers."],
   "docsUrl": "https://avenx-js.com/troubleshooting/errors#avx-r18-reactive-deadlock-detected"
 }
 ```
@@ -1214,13 +1220,19 @@ See the [Avenx Atlas guide](/core-concepts/atlas/) for the model itself, its con
 ```bash
 npx avenx atlas
 npx avenx atlas --json    # the whole model
+npx avenx atlas diff <baseline.atlas.json> [--json] [--fail-on-change]
 ```
 
 #### Options & Flags
 
-| Flag / Option | Description |
-| :--- | :--- |
-| `--json`, `-j` | Outputs the complete model â€” nodes, edges, unresolved entries and summary â€” as structured JSON. |
+| Flag / Option      | Description                                                                                                                            |
+| :----------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| `--json`, `-j`     | Outputs the complete model — nodes, edges, unresolved entries and summary — as structured JSON (or differences when used with `diff`). |
+| `--fail-on-change` | When used with `diff`, exits with status 1 if any differences are detected against the baseline (defaults to 0).                       |
+
+#### Baseline Comparison (`diff`)
+
+`avenx atlas diff <baseline.atlas.json>` compares the current application model against an Atlas baseline artifact. It categorizes changes into `Nodes`, `Edges`, `Routes`, and `Unresolved`. It exits 0 by default, or 1 with `--fail-on-change` when any differences exist. A missing file, invalid JSON, or mismatched `atlasVersion` fails with a diagnostic.
 
 #### Generated Artifact
 
@@ -1234,10 +1246,9 @@ npx avenx atlas --json    # the whole model
 
 See the [Atlas guide](/core-concepts/atlas/) for examples.
 
-
 ### 17. `avenx impact`
 
-What can be affected if a symbol changes. Follows relationships *into* it â€” every computed, action, template binding, handler, component, page and route that depends on it, transitively.
+What can be affected if a symbol changes. Follows relationships _into_ it â€” every computed, action, template binding, handler, component, page and route that depends on it, transitively.
 
 #### Command Syntax
 
@@ -1255,14 +1266,14 @@ npx avenx impact cart.items --graph --format dot --out impact.dot
 
 #### Options & Flags
 
-| Flag / Option | Description |
-| :--- | :--- |
-| `--json`, `-j` | Outputs the target, everything reached, and the unresolved entries bearing on the answer, as structured JSON. |
-| `--depth=<n>` | How many hops to follow. Defaults to 12. |
-| `--graph` | Draws the same traversal as Mermaid, highlighting the queried symbol. Mutually exclusive with `--json`. |
-| `--format mermaid\|dot` | Chooses the diagram language; Mermaid is the default. |
-| `--out <file>`, `-o <file>` | Writes the diagram to a file with no stdout output. |
-| `--kinds <list>` | Filters diagram nodes by kind, accepting the same singular/plural names as `atlas --graph`. All kinds are included by default. |
+| Flag / Option               | Description                                                                                                                    |
+| :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| `--json`, `-j`              | Outputs the target, everything reached, and the unresolved entries bearing on the answer, as structured JSON.                  |
+| `--depth=<n>`               | How many hops to follow. Defaults to 12.                                                                                       |
+| `--graph`                   | Draws the same traversal as Mermaid, highlighting the queried symbol. Mutually exclusive with `--json`.                        |
+| `--format mermaid\|dot`     | Chooses the diagram language; Mermaid is the default.                                                                          |
+| `--out <file>`, `-o <file>` | Writes the diagram to a file with no stdout output.                                                                            |
+| `--kinds <list>`            | Filters diagram nodes by kind, accepting the same singular/plural names as `atlas --graph`. All kinds are included by default. |
 
 Diagram arrows follow the query away from its highlighted root: toward dependents for `impact`, or toward dependencies for `why`. Edge labels, colors and dashed possible relationships use the Atlas renderer. The graph contains only the edges selected by the text traversal, honors its depth limit, and reports unresolved relationships and analysis errors from the full model. A kind filter can omit the root if it excludes its kind.
 
@@ -1286,14 +1297,14 @@ Every answer ends with the number of unresolved relationships bearing on it, **i
 
 #### Exit Codes
 
-* **`0`**: The query was answered.
-* **`1`**: The symbol was not found, or was ambiguous, or none was given.
+- **`0`**: The query was answered.
+- **`1`**: The symbol was not found, or was ambiguous, or none was given.
 
 ---
 
 ### 18. `avenx why`
 
-Where a value comes from â€” the same traversal as [`avenx impact`](#17-avenx-impact) in the opposite direction, following relationships *out of* a symbol to everything it is derived from.
+Where a value comes from â€” the same traversal as [`avenx impact`](#17-avenx-impact) in the opposite direction, following relationships _out of_ a symbol to everything it is derived from.
 
 #### Command Syntax
 

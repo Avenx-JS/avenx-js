@@ -82,7 +82,7 @@ Every relationship in this project resolved.
 
 ## 3. `avenx impact`
 
-The question this exists to answer: *what breaks if I change this?*
+The question this exists to answer: _what breaks if I change this?_
 
 ```bash
 npx avenx impact cart.items
@@ -125,7 +125,7 @@ The last line is part of the answer, not decoration. See
 
 ## 4. `avenx why`
 
-The inverse question: *where does this value come from?*
+The inverse question: _where does this value come from?_
 
 ```bash
 npx avenx why cart.total
@@ -149,22 +149,22 @@ implementation, so the two answers cannot contradict each other.
 
 Both accept, in order of precision:
 
-| You type | It means |
-| :--- | :--- |
-| `state:bridge:cart.items` | that exact node |
-| `cart.items` | the member `items` of the owner `cart` |
-| `CartItem` | the component itself |
-| `qty` | a member named `qty`, if only one exists |
-| `/checkout` | a route |
+| You type                  | It means                                 |
+| :------------------------ | :--------------------------------------- |
+| `state:bridge:cart.items` | that exact node                          |
+| `cart.items`              | the member `items` of the owner `cart`   |
+| `CartItem`                | the component itself                     |
+| `qty`                     | a member named `qty`, if only one exists |
+| `/checkout`               | a route                                  |
 
 An ambiguous name lists its candidates rather than picking one.
 
 ### Options
 
-| Option | Meaning |
-| :--- | :--- |
-| `--json`, `-j` | Machine-readable output. |
-| `--depth=<n>` | How many hops to follow. Defaults to 12. |
+| Option         | Meaning                                  |
+| :------------- | :--------------------------------------- |
+| `--json`, `-j` | Machine-readable output.                 |
+| `--depth=<n>`  | How many hops to follow. Defaults to 12. |
 
 ---
 
@@ -181,7 +181,7 @@ main source is a local bound from application state:
 
 ```js
 const item = this.items.find((entry) => entry.id === id);
-item.qty = item.qty + n;   // writes cart.items — but which element is unknown
+item.qty = item.qty + n; // writes cart.items — but which element is unknown
 ```
 
 Atlas records the write, marks it `possible`, and keeps the path (`[].qty`).
@@ -189,16 +189,16 @@ Atlas records the write, marks it `possible`, and keeps the path (`[].qty`).
 **`unresolved`** — analysis could not follow something, and says so rather than
 producing silence. Each entry carries a reason, the expression, and a location:
 
-| Reason | What it means |
-| :--- | :--- |
-| `dynamic-member` | A member reached through a computed key: `items[key]`. |
-| `unknown-identifier` | A root identifier that matched no declaration in scope. |
-| `unknown-bridge-member` | A bridge accessed through a member it does not declare. |
-| `shadowed-identifier` | A local binding shadows a declaration of the same name, so that body was not followed. |
-| `spread` | A spread whose contents cannot be enumerated. |
-| `slot-scope` | A scoped-slot variable, whose value comes from whichever parent fills the slot. |
-| `dynamic-component` | A template tag naming no known component. |
-| `dynamic-route` | A route target that is not a literal page name. |
+| Reason                  | What it means                                                                          |
+| :---------------------- | :------------------------------------------------------------------------------------- |
+| `dynamic-member`        | A member reached through a computed key: `items[key]`.                                 |
+| `unknown-identifier`    | A root identifier that matched no declaration in scope.                                |
+| `unknown-bridge-member` | A bridge accessed through a member it does not declare.                                |
+| `shadowed-identifier`   | A local binding shadows a declaration of the same name, so that body was not followed. |
+| `spread`                | A spread whose contents cannot be enumerated.                                          |
+| `slot-scope`            | A scoped-slot variable, whose value comes from whichever parent fills the slot.        |
+| `dynamic-component`     | A template tag naming no known component.                                              |
+| `dynamic-route`         | A route target that is not a literal page name.                                        |
 
 Every `impact` and `why` answer prints how many unresolved entries bear on it,
 **including when the count is zero**. Zero is information; silence is not.
@@ -272,15 +272,15 @@ unchanged.
   "atlasVersion": 1,
   "generatedAt": "2026-08-30T00:00:00.000Z",
   "srcDir": "src",
-  "summary": { "nodes": 43, "edges": 74, "unresolved": 0, "counts": { } },
+  "summary": { "nodes": 43, "edges": 74, "unresolved": 0, "counts": {} },
   "nodes": [
     {
       "id": "state:bridge:cart.items",
       "kind": "state",
       "name": "items",
       "owner": "bridge:cart",
-      "loc": { "file": "src/bridges/cart.bridge.js", "line": 5 }
-    }
+      "loc": { "file": "src/bridges/cart.bridge.js", "line": 5 },
+    },
   ],
   "edges": [
     {
@@ -289,10 +289,10 @@ unchanged.
       "kind": "reads",
       "confidence": "certain",
       "loc": { "file": "src/bridges/cart.bridge.js", "line": 10 },
-      "path": "reduce"
-    }
+      "path": "reduce",
+    },
   ],
-  "unresolved": []
+  "unresolved": [],
 }
 ```
 
@@ -373,18 +373,57 @@ Known and deliberate:
 
 ## 11. Command reference
 
-| Command | Description |
-| :--- | :--- |
-| `avenx atlas` | Print an overview of the application model. |
-| `avenx atlas --json` | Print the whole model. |
-| `avenx impact <symbol>` | What can be affected if this changes. |
-| `avenx why <symbol>` | Where this value comes from. |
+| Command                       | Description                                                        |
+| :---------------------------- | :----------------------------------------------------------------- |
+| `avenx atlas`                 | Print an overview of the application model.                        |
+| `avenx atlas --json`          | Print the whole model.                                             |
+| `avenx atlas diff <baseline>` | Compare the current application model against a baseline artifact. |
+| `avenx impact <symbol>`       | What can be affected if this changes.                              |
+| `avenx why <symbol>`          | Where this value comes from.                                       |
 
-`impact` and `why` take `--json` and `--depth=<n>`.
+`impact` and `why` take `--json` and `--depth=<n>`. `atlas diff` takes `--json` and `--fail-on-change`.
 
 `avenx inspect` and `avenx stats` read the same model, so the hierarchy they
 print and the answers a query gives always agree.
 
+### Comparing against a baseline (`avenx atlas diff`)
+
+The application model is emitted beside the bundle (`dist/bundle.atlas.json`, `atlasVersion: 1`). Comparing two of those artifacts reveals semantic changes between branches or against a committed baseline:
+
+```bash
+npx avenx atlas diff .atlas-baseline.json
+npx avenx atlas diff .atlas-baseline.json --json
+npx avenx atlas diff .atlas-baseline.json --fail-on-change
+```
+
+```text
+Nodes
+  + state:component:CartSummary.discount src/components/cart-summary/cart-summary.component.js:2
+  - action:component:CartSummary.applyCoupon (was src/.../cart-summary.component.js:11)
+Edges
+  + binding:component:CartSummary@18:6 reads state:component:CartSummary.discount certain
+  - binding:component:CartSummary@21:6 reads state:component:CartSummary.total certain
+Routes
+  ~ '/cart' now guarded by AuthGuard
+Unresolved
+  + unknown-identifier $coupon in action:component:CartSummary.applyCoupon
+
+6 differences (2 nodes, 2 edges, 1 route, 1 unresolved)
+```
+
+Differences are grouped into four categories:
+
+- **Nodes**: Added, removed, or modified semantic entities (components, pages, bridges, state, computed, actions, bindings, handlers, guards). Node IDs are stable, so location changes are reported as modifications (`~`).
+- **Edges**: Added, removed, or modified relationships. An edge is identified by `from + to + kind`; a change of confidence on an otherwise identical edge is reported as a modification.
+- **Routes**: Added or removed routes, route target changes, and route guard additions or removals (`~ '/cart' now guarded by AuthGuard`).
+- **Unresolved**: Unresolved relationships added, removed, or relocated.
+
+**Options:**
+
+- `--fail-on-change`: Exits with code `1` when any differences exist, making it suitable for CI baseline gates (defaults to exit code `0`).
+- `--json`: Emits the differences as structured JSON for tooling and CI integrations.
+
+Two builds of an unchanged project report no differences, regardless of `generatedAt` timestamps or node ordering. A baseline with a mismatched `atlasVersion`, a missing file, or unparseable JSON fails with a diagnostic rather than a stack trace.
 
 ## Drawing the application graph
 
