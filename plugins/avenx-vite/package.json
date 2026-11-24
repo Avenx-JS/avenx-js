@@ -43,7 +43,7 @@
     "avenx-core": "^1.0.0-rc.1"
   },
   "devDependencies": {
-    "vite": "^8.1.4"
+    "vite": "^8.3.8"
   },
   "types": "./src/index.d.ts",
   "publishConfig": {
