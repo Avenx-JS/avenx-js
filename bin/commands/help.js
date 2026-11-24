@@ -65,6 +65,7 @@ ${bold(cyan('Options:'))}
   ${green('--compare [file]')}          ${gray('Compare built asset sizes against a saved baseline')}
   ${green('--max-increase <n%>')}       ${gray('Fail "stats --compare" if total raw, minified or gzip growth exceeds n%')}
   ${green('--no-color')}                ${gray('Disable colored output (the NO_COLOR variable is honored too)')}
+  ${green('--quiet, -q')}               ${gray('Suppress build/check progress while keeping warnings and errors')}
   ${green('--port, -p <port>')}         ${gray('Port for "serve" (else a bare port arg, then PORT, config server.port, 3000)')}
   ${green('--host, -h <host>')}         ${gray('Host for "serve" to bind (default: localhost)')}
   ${green('--open, -o')}                ${gray('Open a browser when "serve" starts')}

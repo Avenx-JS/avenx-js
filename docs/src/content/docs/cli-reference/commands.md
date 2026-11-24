@@ -23,6 +23,7 @@ The following flags can be passed globally to `avenx` commands:
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`. | `init`, `generate`, `destroy`, `build` |
 | `--dev` | | Selects development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch`, `stats` |
 | `--prod` | | Selects production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch`, `stats` |
+| `--quiet` | `-q` | Suppresses progress, success summaries, asset sizes and CSP reports while keeping warnings and errors. Overrides `logging.level` for this invocation without changing the config file; `logging.silent` retains its meaning. JSON and SARIF output remain available. | `build`, `check` |
 | `--csp-strict` | | Refuses to emit anything needing `script-src 'unsafe-eval'`, in a development build too. Equivalent to `"csp": { "strict": true }`. | `build`, `serve`, `watch` |
 | `--json` | `-j` | Machine-readable output. | `check`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` |
 | `--depth=<n>` | | How many hops a graph query follows. Defaults to 12. | `impact`, `why` |

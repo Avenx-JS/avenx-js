@@ -179,6 +179,11 @@ export class AvenxCLI {
     const noTest = args.includes('--no-test');
     const noStyle = args.includes('--no-style');
 
+    if (['build', 'b', 'check', 'lint'].includes(command) && (args.includes('--quiet') || args.includes('-q'))) {
+      // Keep warnings visible: the error threshold would hide them as well.
+      this.config.logging = { ...this.config.logging, level: 'warn' };
+    }
+
     // `avenx build` is production by default; `--dev` opts out. `--prod` is
     // accepted so a script can state the intent it relies on. `serve` and
     // `watch` are development unless the flag says otherwise.
@@ -221,6 +226,8 @@ export class AvenxCLI {
         arg !== '-f' &&
         arg !== '--no-color' &&
         arg !== '--no-colors' &&
+        arg !== '--quiet' &&
+        arg !== '-q' &&
         arg !== '--dev' &&
         arg !== '--development' &&
         arg !== '--prod' &&
