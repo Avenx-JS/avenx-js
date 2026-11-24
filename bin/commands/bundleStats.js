@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { measureAsset } from '../../lib/compiler/sizeMetrics.js';
+import { UsageError } from '../fatal.js';
 
 const METRICS = ['raw', 'minified', 'gzipped'];
 const EMPTY = { raw: 0, minified: 0, gzipped: 0 };
@@ -73,10 +74,10 @@ export async function runBundleStats(cli, args) {
   const save = option(args, '--save');
   const compare = option(args, '--compare');
   const threshold = option(args, '--max-increase');
-  if (save !== undefined && compare !== undefined) throw new Error('Use --save or --compare, not both.');
-  if (threshold !== undefined && compare === undefined) throw new Error('--max-increase requires --compare.');
+  if (save !== undefined && compare !== undefined) throw new UsageError('Use --save or --compare, not both.');
+  if (threshold !== undefined && compare === undefined) throw new UsageError('--max-increase requires --compare.');
   if (threshold !== undefined && (typeof threshold !== 'string' || !/^\d+(?:\.\d+)?%$/.test(threshold) || !Number.isFinite(parseFloat(threshold)))) {
-    throw new Error('--max-increase must be a non-negative percentage, for example 5%.');
+    throw new UsageError(`--max-increase must be a non-negative percentage, for example 5%, not "${threshold}".`);
   }
   const root = cli.baseDir || process.cwd();
   const baselinePath = path.resolve(root, (compare ?? save) === true ? DEFAULT_BASELINE : (compare ?? save));
