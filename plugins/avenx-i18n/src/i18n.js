@@ -365,7 +365,7 @@ export function createI18n(options = {}) {
       return Promise.resolve(store.locale);
     }
     const request = ++localeRequest;
-    if (canonical === store.locale) {
+    if (canonical === store.locale && (catalogs.has(canonical) || !loaders.has(canonical))) {
       return Promise.resolve(canonical);
     }
 

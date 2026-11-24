@@ -39,4 +39,15 @@ assert.equal(await second, 'de');
 french.resolve({ greeting: 'Bonjour' });
 assert.equal(await first, 'de');
 assert.equal(i18n.t('greeting'), 'Hallo');
+
+let loads = 0;
+const initial = createI18n({
+  locale: 'fr',
+  loaders: { fr: () => { loads++; return { greeting: 'Bonjour' }; } },
+});
+assert.equal(await initial.locale.set('fr'), 'fr');
+assert.equal(initial.t('greeting'), 'Bonjour');
+assert.equal(loads, 1, 'the initial active locale is loaded when selected');
+await initial.locale.set('fr');
+assert.equal(loads, 1, 'already-loaded active locales do not load again');
 console.log('The most recent locale selection wins, including selection of the current locale.');
