@@ -15,6 +15,8 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 | **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                    | Checks compiler changes have tests | PR comment report                                                                                                                    |
 | **Benchmark Comparison**        | [`benchmark-compare.yml`](benchmark-compare.yml) | Pull Request to `main` (measures only on render/reactive/compiler changes) | Gates benchmark regressions vs base | PR comment report                                                                                                                   |
 | **GitHub Pages Docs**           | [`static.yml`](static.yml)                       | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                         |
+| **E2E (All Browsers)**          | [`e2e-nightly.yml`](e2e-nightly.yml)             | Schedule (`0 3 * * *`), `workflow_dispatch`                               | Runs E2E tests on three browsers   | Per-browser Playwright report on failure                                                                                             |
+| **Compiler Snapshots**          | [`snapshot.yml`](snapshot.yml)                   | Schedule (`0 3 * * 1`), `workflow_dispatch`                               | Checks compiler output snapshots   | Job pass/fail on a snapshot diff                                                                                                     |
 
 API reference, test coverage and benchmark history are no longer published from this repository. [`Avenx-JS/dev-dashboard`](https://github.com/Avenx-JS/dev-dashboard) checks it out read-only, runs `npm run docs`, `npm run test:coverage` and `benches/run.js --json`, and publishes the results at [dev.avenx-js.com](https://dev.avenx-js.com).
 
@@ -31,13 +33,17 @@ API reference, test coverage and benchmark history are no longer published from 
   - **Node.js 20**
   - **Node.js 22**
   - **Configuration**: Uses `fail-fast: false` to ensure test results across all versions complete even if one fails.
-- **Steps**:
+- **Jobs**: `test` on Linux across the Node.js matrix; `platforms` on Windows and macOS (Node.js 22, `npm run test:unit` and `npm run test:system`, where path- and spawn-sensitive bugs show up); `e2e` on Linux with Chromium only (Node.js 22).
+- **Steps in the `test` job**:
   1. Checks out code.
   2. Configures Node.js (`actions/setup-node@v4`) with `cache: npm` enabled.
   3. Installs dependencies (`npm ci`).
   4. Runs complete test suite (`npm test`).
   5. Checks the compiler snapshots (`npm run test:snapshots`, executed on Node 22 only, since the output does not depend on the Node version).
-  6. Executes ESLint (`npm run lint`, executed on Node 20 & 22; skipped on Node 18 as ESLint 10 requires Node >= 20).
+  6. Runs the official plugin suites (`npm run test:plugins`).
+  7. Builds the documentation examples (`npm run test:docs`) and checks the diagnostic documentation (`npm run test:diagnostic-docs`), both on Node 22 only.
+  8. Executes ESLint (`npm run lint`, executed on Node 20 & 22; skipped on Node 18 as ESLint 10 requires Node >= 20).
+- **Browser coverage on pull requests**: The `e2e` job runs `npm run test:e2e` on Chromium only. Firefox and WebKit run nightly in [`e2e-nightly.yml`](e2e-nightly.yml) (section 8); failed runs upload the Playwright report as an artifact.
 
 ### 2. NPM Package Release (`npm-publish.yml`)
 
@@ -113,3 +119,19 @@ The timing counterpart of the Bundle Size Monitor. The [Developer Dashboard](htt
 - **Override**: A maintainer adds the `benchmark-regression-accepted` label and re-runs the job. Labels are read live from the API, since a re-run replays the original event payload, which predates the label. The report still shows the regression and says it was accepted. The job deliberately does not trigger on `labeled`. A run skipped for an unrelated label would replace a failing check with a passing one.
 - **Fork PRs**: The read-only token cannot comment, so the report is in the job summary. The gate still applies.
 - **Cost**: About one minute per suite run on a typical runner, so roughly 10–12 minutes with 5 rounds per side, spent only on pull requests that change what the benchmarks measure.
+
+### 8. E2E (All Browsers) (`e2e-nightly.yml`)
+
+- **Triggers**: Scheduled cron `0 3 * * *` (nightly at 03:00 UTC), or manually via `workflow_dispatch` from the Actions tab.
+- **Browser matrix**: `chromium`, `firefox` and `webkit` on `ubuntu-latest`, Node.js 22, with `fail-fast: false` so a failure in one engine does not cancel the others. Each job installs its own browser (`npx playwright install --with-deps <browser>`) and runs `npx playwright test --project=<browser>` with `E2E_ALL_BROWSERS=1`; the global setup compiles every fixture app with the real CLI before the tests run. See the [E2E test guide](../../test/e2e/README.md).
+- **Why only Chromium gates a pull request**: Chromium catches framework regressions first, and a three-engine fan-out on every push costs more than it returns for a pre-v1 project. Genuine engine differences are still worth finding, so Firefox and WebKit run once a day here instead — the same decision is recorded in the workflow header and in [`ci.yml`](ci.yml)'s E2E job.
+- **Output**: One green or red job per browser. On failure, the Playwright HTML report is uploaded as the `playwright-report-<browser>` artifact, retained for 7 days.
+- **Run it locally**: Install a browser once (`npx playwright install chromium`) and run `npm run test:e2e` for the Chromium-only default. To reproduce a nightly engine locally, install it (`npx playwright install firefox`) and select it with `E2E_ALL_BROWSERS=1 npx playwright test --project=firefox` (or `webkit`). Use `workflow_dispatch` to run all three on a runner before merging.
+
+### 9. Compiler Snapshots (`snapshot.yml`)
+
+- **Triggers**: Scheduled cron `0 3 * * 1` (Mondays at 03:00 UTC), or manually via `workflow_dispatch` from the Actions tab. Pull requests already run the same check in [`ci.yml`](ci.yml) on Node.js 22, so this weekly run is a backstop for drift on `main`.
+- **Steps**: On Node.js 22, installs dependencies (`npm ci`) and runs `npm run test:snapshots`. The script regenerates the template IR, lowered render program and generated source for every fixture in `test/fixtures/compiler-snapshots/templates/` and compares them with `test/unit/snapshots/compiler-output.json`.
+- **What a failure means**: The compiler output for a fixture changed and the stored snapshots no longer match. Review the diff first: an unintended change is a regression to fix; an intentional change must be accepted deliberately.
+- **Output**: A passing or failing job, with no report artifact. The assertion message points to the update command when the check fails.
+- **Run it locally**: `npm run test:snapshots` checks without writing anything. `npm run test:snapshots:update` rewrites the stored snapshots — review the resulting diff before committing them, and commit the regenerated file alongside the compiler change (see [CONTRIBUTING.md](../../CONTRIBUTING.md#local-development-workflow)).
