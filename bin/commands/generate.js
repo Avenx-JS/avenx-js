@@ -513,3 +513,59 @@ export function generateComponent(
   console.log(green(`✅ Component '${lowerName}' generated at ${cli.config.srcDir}/components/${lowerName}/`));
   registerInMainApp(cli, capitalizedName, lowerName);
 }
+
+/**
+ * Generates only the colocated test for an existing component.
+ * @param {object} cli - The CLI instance.
+ * @param {string} name - The component name, resolved as in generate/destroy component.
+ * @param {boolean} [dryRun] - Preview the test without writing it.
+ * @param {boolean} [force] - Replace an existing test.
+ * @param {string|null} [templateName] - A named component test template override.
+ * @returns {void}
+ */
+export function generateTest(cli, name, dryRun = false, force = false, templateName = null) {
+  if (!name) {
+    fail('Please provide a component name (e.g., avenx generate test Card)');
+    return;
+  }
+
+  const { capitalizedName, folderFileName: lowerName } = parseName(name);
+  const compDir = path.join(cli.baseDir, cli.config.srcDir, 'components', lowerName);
+  const jsPath = path.join(compDir, `${lowerName}.component.js`);
+  const testPath = path.join(compDir, `${lowerName}.component.test.js`);
+  const relativePath = path.relative(cli.baseDir, testPath).replace(/\\/g, '/');
+
+  if (!fs.existsSync(jsPath) || !fs.statSync(jsPath).isFile()) {
+    fail(`Component '${lowerName}' was not found at ${path.relative(cli.baseDir, jsPath).replace(/\\/g, '/')}.`);
+    return;
+  }
+  if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Test', lowerName, [testPath])) {
+    return;
+  }
+
+  const template = readTemplate(
+    cli.baseDir,
+    cli.config,
+    cli.frameworkDir,
+    'component',
+    'component.test.js.template',
+    templateName,
+  );
+  const content = renderTemplate(
+    template,
+    'component/component.test.js.template',
+    { legacyName: capitalizedName, pascalName: capitalizedName, fileName: lowerName },
+    { legacyTestName: true },
+  );
+
+  if (dryRun) {
+    console.log(cyan(`🧪 [Dry Run] Test for '${capitalizedName}' would be created at ${relativePath}`));
+    console.log(cyan('🧪 [Dry Run] No files were written.'));
+    return;
+  }
+  if (force && fs.existsSync(testPath)) {
+    console.warn(yellow(`⚠️ Force enabled: overwriting existing Test '${lowerName}'.`));
+  }
+  fs.writeFileSync(testPath, content);
+  console.log(green(`✅ Test for '${capitalizedName}' generated at ${relativePath}`));
+}

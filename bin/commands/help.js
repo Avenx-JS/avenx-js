@@ -14,6 +14,7 @@ ${bold(cyan('Commands:'))}
   ${green('generate page <name>')}      ${gray('Generate a new page (alias: g p)')}
   ${green('generate bridge <name>')}    ${gray('Generate a new shared reactive bridge')}
   ${green('generate guard <name>')}     ${gray('Generate a new route guard')}
+  ${green('generate test <name>')}      ${gray('Add a colocated test to an existing component')}
   ${green('destroy component <name>')}  ${gray('Delete a component and its registrations (alias: d)')}
   ${green('destroy page <name>')}       ${gray('Delete a page (alias: d p)')}
   ${green('destroy bridge <name>')}     ${gray('Delete a shared reactive bridge')}
