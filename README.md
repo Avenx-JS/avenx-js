@@ -730,7 +730,7 @@ compresses best, so the gap on the wire is much narrower than on disk.
 | `--with-test` / `--no-test` | `generate component` | Generate or skip a colocated unit test. |
 | `--no-style` | `generate component`, `generate page` | Skip the stylesheet and the template's `@css` references. |
 | `--template`, `-t <name>` | `generate` | Use a custom scaffold template. |
-| `--json`, `-j` | `check`, `atlas`, `impact`, `why` | Machine-readable output. |
+| `--json`, `-j` | `check`, `doctor`, `stats`, `atlas`, `impact`, `why`, `explain`, `inspect`, `env`, `trace list`, `trace view`, `trace diff` | Machine-readable output. |
 | `--depth=<n>` | `impact`, `why` | How many hops to follow (default `12`). |
 | `--watch`, `-w` | `check` | Continuous template linting. |
 | `--port`, `-p <port>` | `serve` | Port to listen on. Also honours `PORT`. |
