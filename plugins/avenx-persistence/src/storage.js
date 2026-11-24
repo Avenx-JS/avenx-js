@@ -12,7 +12,7 @@
 import { warnOnce } from './diagnostics.js';
 
 /**
- * Key written and removed to find out whether a Web Storage area actually
+ * Key prefix used to find out whether a Web Storage area actually
  * accepts writes. Some browsers expose `localStorage` and then throw on the
  * first `setItem` — private browsing modes historically did exactly that.
  * @type {string}
@@ -92,8 +92,15 @@ function webStorage(area) {
   }
 
   try {
-    storage.setItem(PROBE_KEY, '1');
-    storage.removeItem(PROBE_KEY);
+    // The probe must not overwrite or remove an entry an application already
+    // owns, even when its value is an empty string.
+    let probeKey = PROBE_KEY;
+    let suffix = 0;
+    while (storage.getItem(probeKey) != null) {
+      probeKey = `${PROBE_KEY}:${++suffix}`;
+    }
+    storage.setItem(probeKey, '1');
+    storage.removeItem(probeKey);
   } catch {
     warnOnce(`${area} rejected a write (private browsing or a full quota); falling back to in-memory storage`);
     return memoryStorage();

@@ -19,7 +19,7 @@
     "build": "node scripts/build.js",
     "prepare": "npm run build",
     "pretest": "node ../../scripts/link-plugin-core.js && node scripts/build.js",
-    "test": "node test/persistence.test.js && node test/persistenceResilience.test.js && node test/persistenceGlobalBuild.test.js"
+    "test": "node test/persistence.test.js && node test/persistenceResilience.test.js && node test/persistenceGlobalBuild.test.js && node test/storageProbe.test.js"
   },
   "keywords": [
     "avenx",
