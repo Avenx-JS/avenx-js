@@ -444,8 +444,8 @@ export class AvenxCLI {
             ? args[hostIdx].includes('=')
               ? args[hostIdx].split('=').slice(1).join('=')
               : args[hostIdx + 1]
-            : null;
-        const host = rawHostVal ? rawHostVal.trim().replace(/\/+$/g, '') : 'localhost';
+            : (this.config.server?.host ?? null);
+        const host = rawHostVal ? String(rawHostVal).trim().replace(/\/+$/g, '') : 'localhost';
 
         this.serveProject(port, host, open);
         break;
