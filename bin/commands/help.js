@@ -28,6 +28,7 @@ ${bold(cyan('Commands:'))}
   ${green('inspect (i)')}               ${gray('Inspect project route and component hierarchy')}
   ${green('stats (s)')}                 ${gray('Display component & bundle footprint metrics')}
   ${green('atlas')}                     ${gray("Show the compiler's semantic map of the application")}
+  ${green('atlas diff <baseline>')}     ${gray('Compare the application model against a baseline artifact')}
   ${green('impact <symbol>')}           ${gray('What can be affected if this changes')}
   ${green('why <symbol>')}              ${gray('Where this value comes from')}
   ${green('trace list (ls)')}           ${gray('List recorded causal traces (default for bare "avenx trace")')}
@@ -55,7 +56,7 @@ ${bold(cyan('Options:'))}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--no-style')}                ${gray('Skip the stylesheet of a generated component or page')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}
-  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, stats, atlas, impact, why, explain, inspect, env, trace list, trace view and trace diff (explain: --json only, with --list too; trace: list, view and diff only)')}
+  ${green('--json, -j')}                ${gray('Machine-readable output for check, doctor, stats, atlas, atlas diff, impact, why, explain, inspect, env, trace list, trace view and trace diff (explain: --json only, with --list too; trace: list, view and diff only)')}
   ${green('--list')}                    ${gray('explain: list every code with severity, category and whether warnings can configure it')}
   ${green('--category <name>')}         ${gray('explain --list: keep only one category (compiler, runtime, styling, routing, accessibility, environment)')}
   ${green('--depth=<n>')}               ${gray('How many hops "impact" and "why" follow (default: 12)')}
@@ -76,7 +77,7 @@ ${bold(cyan('Options:'))}
   ${green('--no-error-overlay')}        ${gray('Do not show build diagnostics as a browser overlay while serving')}
   ${green('--trace')}                   ${gray('Record a causal trace while serving (dev only, off by default)')}
   ${green('--roots=<n>')}               ${gray('Show only the first n causal roots in "trace view"')}
-  ${green('--fail-on-change')}          ${gray('Exit with status 1 when "trace diff" finds a change')}
+  ${green('--fail-on-change')}          ${gray('Exit with status 1 when "trace diff" or "atlas diff" finds a change')}
   ${green('--out, -o <file>')}          ${gray('Output file for "trace export", Atlas/query graphs or "check --sarif"')}
   ${green('--graph --format <type>')}   ${gray('Draw atlas, impact or why as mermaid (default) or dot')}
   ${green('--kinds <list>')}            ${gray('Graph node kinds; atlas defaults to architecture, impact/why to all kinds')}

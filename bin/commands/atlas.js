@@ -1,5 +1,8 @@
+import fs from 'fs';
+import path from 'path';
 import AvenxCompiler from '../../lib/compiler.js';
-import { AtlasNodeKind } from '../../lib/compiler/atlas/AppModel.js';
+import { ATLAS_VERSION, AtlasNodeKind } from '../../lib/compiler/atlas/AppModel.js';
+import { diffAtlas, formatAtlasDiff } from '../../lib/compiler/atlas/diff.js';
 import { buildAtlas } from '../../lib/compiler/atlas/emit.js';
 import {
   displayName,
@@ -9,7 +12,7 @@ import {
   resolveSymbol,
   walk,
 } from '../../lib/compiler/atlas/query.js';
-import { bold, cyan, gray, green, yellow } from '../colors.js';
+import { bold, cyan, gray, green, red, yellow } from '../colors.js';
 import { runAtlasGraph, runQueryGraph } from './atlasGraph.js';
 
 /**
@@ -165,6 +168,11 @@ function printUnresolved(entries) {
  * @returns {void}
  */
 export function runAtlas(cli, args = []) {
+  if (args[0] === 'diff' || (args.includes('diff') && !args.includes('--graph'))) {
+    runAtlasDiff(cli, args);
+    return;
+  }
+
   const model = buildModel(cli);
 
   if (args.includes('--graph')) {
@@ -376,4 +384,77 @@ export function runQuery(cli, args, direction) {
   printUnresolved(unresolved);
 }
 
-export default { runAtlas, runQuery };
+/**
+ * Executes `avenx atlas diff <baseline.atlas.json>` — compares the application model against a baseline.
+ * @param {object} cli - The AvenxCLI instance.
+ * @param {string[]} args - CLI arguments.
+ * @returns {void}
+ */
+export function runAtlasDiff(cli, args = []) {
+  const positionals = args.filter((arg) => !arg.startsWith('-') && arg !== 'diff');
+  const baselinePath = positionals[0];
+
+  if (!baselinePath) {
+    console.error('Usage: avenx atlas diff <baseline.atlas.json> [--json] [--fail-on-change]');
+    process.exitCode = 1;
+    return;
+  }
+
+  const resolvedPath = path.resolve(cli?.baseDir || process.cwd(), baselinePath);
+  if (!fs.existsSync(resolvedPath)) {
+    console.error(red(`❌ Baseline file not found: ${baselinePath}`));
+    process.exitCode = 1;
+    return;
+  }
+
+  let text;
+  try {
+    text = fs.readFileSync(resolvedPath, 'utf8');
+  } catch (error) {
+    console.error(red(`❌ Could not read baseline file: ${error.message}`));
+    process.exitCode = 1;
+    return;
+  }
+
+  let baseline;
+  try {
+    baseline = JSON.parse(text);
+  } catch {
+    console.error(red(`❌ Failed to parse baseline: "${baselinePath}" is not valid JSON.`));
+    process.exitCode = 1;
+    return;
+  }
+
+  if (!baseline || typeof baseline !== 'object' || !Array.isArray(baseline.nodes)) {
+    console.error(red(`❌ "${baselinePath}" is not an Avenx Atlas document.`));
+    process.exitCode = 1;
+    return;
+  }
+
+  if (typeof baseline.atlasVersion !== 'number' || baseline.atlasVersion !== ATLAS_VERSION) {
+    console.error(
+      red(
+        `❌ Baseline atlasVersion (${baseline.atlasVersion}) does not match current version (${ATLAS_VERSION}). Please regenerate the baseline artifact.`,
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const model = buildModel(cli);
+  const current = buildAtlas(model);
+
+  const diff = diffAtlas(baseline, current, { baselinePath });
+
+  if (wantsJson(args)) {
+    console.log(JSON.stringify(diff, null, 2));
+  } else {
+    console.log(formatAtlasDiff(diff, { colors: { bold, green, red, yellow, gray, cyan } }));
+  }
+
+  if (diff.differences > 0 && args.includes('--fail-on-change')) {
+    process.exitCode = 1;
+  }
+}
+
+export default { runAtlas, runQuery, runAtlasDiff };

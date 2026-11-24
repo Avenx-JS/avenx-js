@@ -320,6 +320,23 @@ try {
     assert.ok(text.includes('dynamic-member'));
   }
 
+  // ── avenx atlas diff ──────────────────────────────────────────────────────
+  {
+    const golden = path.join(repoRoot, 'test/fixtures/atlas-app.golden.json');
+    const result = avenx(['atlas', 'diff', golden]);
+    assert.strictEqual(result.status, 0, `avenx atlas diff failed:\n${result.stderr}`);
+    assert.ok(result.stdout.includes('No differences.'));
+
+    const json = avenxJson(['atlas', 'diff', golden, '--json']);
+    assert.strictEqual(json.differences, 0);
+    assert.strictEqual(json.summary.total, 0);
+
+    const missing = avenx(['atlas', 'diff', 'non-existent.json']);
+    assert.strictEqual(missing.status, 1);
+    assert.ok(missing.stderr.includes('❌ Baseline file not found: non-existent.json'));
+    assert.ok(!missing.stderr.includes('at '));
+  }
+
   console.log('✅ avenx atlas CLI tests passed.');
 } catch (err) {
   console.error('❌ avenx atlas CLI test failed:', err);
