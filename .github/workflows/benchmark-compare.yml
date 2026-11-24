@@ -71,7 +71,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.changed-files.outputs.relevant == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
