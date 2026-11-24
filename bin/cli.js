@@ -330,7 +330,7 @@ export class AvenxCLI {
         });
         break;
       case 'clean':
-        cleanProject(this);
+        cleanProject(this, dryRun);
         break;
       case 'check':
       case 'lint':

@@ -114,15 +114,23 @@ export function runBuildPass(cli, options = {}) {
 /**
  * Cleans the project by deleting the build output directory.
  * @param {object} cli - AvenxCLI instance containing config and baseDir.
+ * @param {boolean} [dryRun] - Preview deletion without changing files. Defaults to false.
  */
-export function cleanProject(cli) {
+export function cleanProject(cli, dryRun = false) {
   const distDir = path.join(cli.baseDir, cli.config.distDir);
   if (fs.existsSync(distDir)) {
-    console.log(cyan(`🧹 Cleaning build output directory: ${cli.config.distDir}...`));
-    fs.rmSync(distDir, { recursive: true, force: true });
-    console.log(green('✅ Clean complete.'));
+    if (dryRun) {
+      console.log(gray(`[DRY-RUN] Would delete: ${cli.config.distDir}`));
+    } else {
+      console.log(cyan(`🧹 Cleaning build output directory: ${cli.config.distDir}...`));
+      fs.rmSync(distDir, { recursive: true, force: true });
+      console.log(green('✅ Clean complete.'));
+    }
   } else {
     console.log(cyan(`🧹 Build output directory ${cli.config.distDir} does not exist. Nothing to clean.`));
+  }
+  if (dryRun) {
+    console.log(cyan('🧪 [Dry Run] No files were deleted or modified.'));
   }
 }
 

@@ -679,6 +679,10 @@ Deletes the target build distribution directory (typically `dist/` or configured
 npx avenx clean
 ```
 
+Use `npx avenx clean --dry-run` (or `-d`) to preview the directory that would be
+removed without changing any files. The preview exits successfully even when
+the build output directory does not exist.
+
 ---
 
 ### 11. `avenx help`
