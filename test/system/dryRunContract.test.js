@@ -50,9 +50,9 @@ const cases = [
     prepare: (root) => fs.writeFileSync(path.join(root, 'format-me.js'), 'const  answer=42;\n'),
   },
   {
-    name: 'doctor --fix', args: ['doctor', '--fix'], status: 1,
-    // The deliberately untracked fixture still fails the Git health check in
-    // both modes; scaffold repair must still preview and apply correctly.
+    name: 'doctor --fix', args: ['doctor', '--fix'],
+    // A missing Git repository is only a warning in both modes; scaffold
+    // repair must still preview and apply correctly.
     prepare: (root) => fs.unlinkSync(path.join(root, '.gitignore')),
   },
   { name: 'clean', args: ['clean'], skip: '#1894: clean currently deletes output even with --dry-run' },

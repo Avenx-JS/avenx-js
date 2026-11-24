@@ -144,14 +144,13 @@ project((cwd) => {
 project((cwd) => {
   fs.rmSync(path.join(cwd, '.git'), { recursive: true, force: true });
   const result = run(cwd, ['doctor', '--fix', '--json']);
-  assert.equal(result.status, 1);
+  assert.equal(result.status, 0, 'a missing Git repository is only a warning');
   assert.ok(!fs.existsSync(path.join(cwd, '.git')), 'doctor must not initialize Git');
-  assert.match(
-    JSON.parse(result.stdout)
-      .checks.map((check) => check.hint || '')
-      .join('\n'),
-    /git init/,
-  );
+  const report = JSON.parse(result.stdout);
+  const gitCheck = report.checks.find((check) => check.area === 'Git');
+  assert.equal(gitCheck.status, 'warn');
+  assert.equal(report.fail, 0);
+  assert.match(gitCheck.hint, /git init/);
 });
 
 project((cwd) => {
