@@ -542,6 +542,8 @@ Two things change in behaviour. State becomes read-only outside the bridge, so a
 
 ## API reference
 
+Top-level state keys share the bridge's member namespace. `on`, `emit`, `$dispose`, and `$name` are reserved for the bridge API and cannot be declared in `state`. Those names remain valid inside nested application data, such as `state: { record: { on: true } }`.
+
 | Member | Description |
 | :--- | :--- |
 | `bridge(definition)` | Creates a bridge. `definition` may contain `state`, `setup`, getters and actions. |
