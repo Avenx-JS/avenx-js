@@ -19,7 +19,7 @@ The following flags can be passed globally to `avenx` commands:
 
 | Option | Alias | Description | Supported Commands |
 | :--- | :--- | :--- | :--- |
-| `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `generate`, `destroy` |
+| `--dry-run` | `-d` | Previews file creation, modification, or deletion actions without modifying disk. | `init`, `generate`, `destroy` |
 | `--force` | `-f` | Forces command execution by bypassing uncommitted Git working tree status checks. The check reads the project directory, and is skipped when the project is not in a Git repository. Declining its prompt exits `1`. | `init`, `generate`, `destroy`, `build` |
 | `--dev` | | Selects development mode: readable runtime, inline CSS source maps. | `build`, `serve`, `watch`, `stats` |
 | `--prod` | | Selects production mode: minified runtime. The default for `build`. | `build`, `serve`, `watch`, `stats` |
@@ -161,10 +161,13 @@ avenx init [name] [--layout …] [--style …] [-y]
 
 - With no name, the project is scaffolded into the current directory.
 - With a name, `avenx init my-app` creates `./my-app`, scaffolds into it and prints `cd my-app` as the next step. The generated `package.json` takes the directory's name.
+- If `avenx.config.json` already exists, initialization is refused before writing any files. Use `--force` to explicitly reinitialize the project, or `avenx init <name>` to create a new one. `--yes` only accepts wizard defaults; it does not authorize overwriting configuration. A `--dry-run` preview is still available without `--force`.
 - The name follows the rules of the other scaffold commands (a leading letter, then letters, digits, `-` and `_`), so `avenx init ../foo` and `avenx init "my app"` are refused.
 - An existing directory that is not empty is refused before anything is written, unless `--force` is passed.
 
 #### Interactive Project Wizard (`runWizard`)
+
+`--dry-run` (or `-d`) previews the directories and files without creating them, including the named project directory. Existing configuration and package files stay unchanged, and the output is labelled `[Dry Run]`.
 
 When invoked in an interactive terminal, `avenx init` launches an interactive setup wizard prompting for project preferences:
 
