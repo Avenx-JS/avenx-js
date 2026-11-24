@@ -11,7 +11,7 @@ const referenceFile = path.join(docsDirectory, 'troubleshooting/errors.md');
 // troubleshooting reference. Keep the reason beside the code for review.
 const DOCUMENTATION_EXCEPTIONS = Object.freeze({});
 
-const CODE_PATTERN = /AVX_[A-Z][0-9]{2}/g;
+const CODE_PATTERN = /\bAVX_[A-Z]+[0-9]{2}\b/g;
 
 function markdownFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true })

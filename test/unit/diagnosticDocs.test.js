@@ -17,6 +17,7 @@ try {
   fs.writeFileSync(referenceFile, '# Diagnostics\n\nAVX_A01\n');
   fs.writeFileSync(path.join(guides, 'guide.mdx'), 'This guide mentions AVX_OLD01.\n');
   fs.writeFileSync(path.join(guides, 'not-markdown.txt'), 'AVX_OLD02\n');
+  fs.writeFileSync(path.join(guides, 'examples.md'), 'Invalid examples: AVX_W5, AVX_W580, prefixAVX_W58.\n');
 
   const result = compareDiagnosticDocs({
     catalogueCodes: ['AVX_A01', 'AVX_B02'],
