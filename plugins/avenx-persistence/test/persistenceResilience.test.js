@@ -386,6 +386,57 @@ async function testReporting() {
 }
 
 /**
+ * Discovering persisted state never evaluates a getter before hydration.
+ */
+async function testGettersBeforeHydration() {
+  for (const selection of [{}, { include: ['user'] }, { exclude: ['draft'] }]) {
+    reset();
+    const storage = memoryStorage();
+    storage.setItem('avenx:profile', JSON.stringify({ avenx: 1, version: 1, state: { user: { name: 'Ada' } } }));
+    let reads = 0;
+    const profile = bridge({
+      state: { user: null, draft: '' },
+      get displayName() {
+        reads++;
+        return this.user.name;
+      },
+      get missingNumber() {
+        reads++;
+        return NaN;
+      },
+      rename(name) {
+        this.user.name = name;
+      },
+      setup() {
+        return persist(this, { key: 'profile', storage, ...selection });
+      },
+    });
+    assert.strictEqual(profile.user.name, 'Ada', 'hydration succeeds before a derived getter can run');
+    assert.strictEqual(reads, 0, 'discovering state neither evaluates getters nor probes them by assignment');
+    assert.strictEqual(profile.displayName, 'Ada');
+    profile.rename('Grace');
+    await nextTick();
+    const stored = JSON.parse(storage.getItem('avenx:profile')).state;
+    assert.strictEqual(stored.user.name, 'Grace');
+    assert.ok(!('displayName' in stored), 'a getter never reaches storage');
+    assert.ok(!('missingNumber' in stored), 'NaN does not make a getter look like state');
+    profile.$dispose();
+  }
+
+  reset();
+  const invalid = bridge({
+    state: { count: 0 },
+    get derived() {
+      throw new Error('this getter must not run');
+    },
+    setup() {
+      return persist(this, { key: 'invalid-selection', include: ['derived'], storage: memoryStorage() });
+    },
+  });
+  assert.throws(() => invalid.count, /does not declare in state/, 'include must name writable state, not a getter');
+}
+
+/**
  * Runs the suite.
  */
 async function runTests() {
@@ -398,6 +449,7 @@ async function runTests() {
   await testSerializationFailures();
   await testVersioning();
   await testReporting();
+  await testGettersBeforeHydration();
 
   console.log('\n🎉 ALL AVENX PERSISTENCE RESILIENCE TESTS PASSED SUCCESSFULLY!\n');
 }

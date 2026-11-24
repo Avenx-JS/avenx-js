@@ -361,7 +361,7 @@ The plugin will not make that decision unsafe on your behalf: serialization is d
 - **Synchronous adapters.** See [Storage adapters](#storage-adapters).
 - **One key per bridge.** Two bridges may not share a key; they would overwrite each other on every save, so it is refused.
 - **Restoration is startup-only.** State is read once when the bridge initializes. The plugin does not watch storage for changes made by other tabs.
-- **State keys, not getters.** A bridge's getters are derived, so they are recomputed rather than stored. They are identified by writing each declared value back over itself — assigning to a getter is refused, assigning an unchanged value is a no-op — which happens once, before the change watcher exists.
+- **State keys, not getters.** A bridge's getters are derived, so they are recomputed rather than stored. The bridge's property descriptors distinguish writable state from getters without evaluating getters or writing state before restoration. `include` and `exclude` must name state keys.
 - **Size.** Web Storage quotas are a few megabytes per origin. Persist what a reload needs, not a cache.
 
 ---

@@ -40,37 +40,15 @@ import { getController, registerController } from './registry.js';
 /**
  * Lists the state keys of a bridge, leaving its getters out.
  *
- * A bridge's `this` enumerates state and getters together, and there is no
- * flag distinguishing them. There is a difference in behaviour, though:
- * assigning to a getter is refused, and assigning a value that is already
- * there is a no-op the reactivity system does not even report. Writing each
- * value back over itself therefore separates the two without changing
- * anything — and it happens before the change watcher exists, so nothing is
- * listening either way.
- *
- * NaN is the one value that is not equal to itself, so a key holding one is
- * taken to be state rather than probed. If that guess is ever wrong the
- * restore refuses the key and drops it, which is why this can afford to guess.
+ * A bridge's `this` exposes writable data descriptors for state and accessor
+ * descriptors for getters. Reading these descriptors does not evaluate a
+ * getter, which might depend on state that has not been restored yet.
  * @param {object} self - The bridge's own state facade.
  * @returns {string[]} The writable state keys.
  */
 function declaredStateKeys(self) {
-  const keys = [];
-  for (const key of Object.keys(self)) {
-    const value = self[key];
-    if (typeof value === 'number' && Number.isNaN(value)) {
-      keys.push(key);
-      continue;
-    }
-    try {
-      self[key] = value;
-      keys.push(key);
-    } catch {
-      // A getter. Derived values are recomputed from restored state, so there
-      // is nothing to persist.
-    }
-  }
-  return keys;
+  const descriptors = Object.getOwnPropertyDescriptors(self);
+  return Object.keys(descriptors).filter((key) => descriptors[key].enumerable && descriptors[key].writable);
 }
 
 /**
@@ -126,8 +104,7 @@ export function persist(self, options = {}) {
     settings.migrate = options.migrate;
   }
 
-  // `include` names the keys outright, so there is nothing to work out.
-  const declared = options.include === undefined ? declaredStateKeys(self) : Object.keys(self);
+  const declared = declaredStateKeys(self);
   const keys = resolvePersistedKeys(declared, options, label);
 
   if (controller) {
