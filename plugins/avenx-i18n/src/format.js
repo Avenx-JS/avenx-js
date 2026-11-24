@@ -47,7 +47,13 @@ export function resetFormatCache() {
  * @returns {object|null} The formatter, or null.
  */
 function formatter(kind, locale, options) {
-  const cacheKey = `${kind} ${locale} ${JSON.stringify(options || {})}`;
+  let cacheKey = null;
+  try {
+    cacheKey = `${kind} ${locale} ${JSON.stringify(options || {})}`;
+  } catch {
+    // Intl can accept options that JSON cannot serialize (for example, an
+    // ignored metadata property containing a cycle). Only skip the cache.
+  }
   if (formatterCache.has(cacheKey)) {
     return formatterCache.get(cacheKey);
   }
@@ -63,7 +69,9 @@ function formatter(kind, locale, options) {
       instance = null;
     }
   }
-  formatterCache.set(cacheKey, instance);
+  if (cacheKey !== null) {
+    formatterCache.set(cacheKey, instance);
+  }
   return instance;
 }
 

@@ -382,6 +382,23 @@ async function testFormatting() {
   assert.strictEqual(i18n.rel(-2, 'day'), '2 days ago', 'a relative time reads naturally');
   assert.strictEqual(i18n.rel(3, 'hour'), 'in 3 hours', 'in both directions');
 
+  // Extra application metadata is ignored by Intl, even when it is not JSON.
+  const numberOptions = { minimumFractionDigits: 2 };
+  numberOptions.metadata = numberOptions;
+  assert.strictEqual(i18n.n(12, numberOptions), new Intl.NumberFormat('en-US', numberOptions).format(12));
+  assert.strictEqual(i18n.n(12, { metadata: 1n }), new Intl.NumberFormat('en-US').format(12));
+  const dateOptions = { year: 'numeric', timeZone: 'UTC' };
+  dateOptions.metadata = dateOptions;
+  assert.strictEqual(i18n.d(date, dateOptions), new Intl.DateTimeFormat('en-US', dateOptions).format(date));
+  const relativeOptions = { numeric: 'always' };
+  relativeOptions.metadata = relativeOptions;
+  assert.strictEqual(i18n.rel(2, 'day', relativeOptions), new Intl.RelativeTimeFormat('en-US', relativeOptions).format(2, 'day'));
+  assert.strictEqual(i18n.n(12, { minimumFractionDigits: 1n }), '12', 'invalid options use the raw fallback');
+  assert.strictEqual(i18n.d(date, { year: 1n }), date.toISOString());
+  assert.strictEqual(i18n.rel(2, 'day', { numeric: 1n }), '2 day');
+  assert.strictEqual(i18n.n(12, { minimumFractionDigits: 2 }), '12.00', 'ordinary cached options still work');
+  assert.strictEqual(i18n.n(13, { minimumFractionDigits: 2 }), '13.00');
+
   // Formatting follows the locale, which is the point of it living here.
   await i18n.locale.set('de-DE');
   assert.strictEqual(i18n.n(1234.5), '1.234,5', 'the new locale groups differently');
