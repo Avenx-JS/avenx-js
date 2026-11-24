@@ -204,6 +204,28 @@ const CONSTRUCTS = {
       await expect(section.getByTestId('styled')).toHaveCSS('font-weight', '700');
     },
   },
+  'css-text-style': {
+    hash: '#/',
+    async steps({ section }) {
+      const styled = section.getByTestId('css-text');
+      await section.getByTestId('apply-css-text').click();
+      await expect.poll(() => styled.evaluate((el) => el.style.getPropertyValue('--caption'))).toBe('"one;two"');
+      await expect(styled).toHaveCSS('color', 'rgb(255, 0, 0)');
+      expect(await styled.evaluate((el) => el.style.backgroundImage)).toContain('data:image/gif;base64,');
+      expect(await styled.evaluate((el) => el.style.getPropertyPriority('color'))).toBe('important');
+      await expect(styled).toHaveCSS('font-weight', '700');
+
+      await section.getByTestId('update-css-text').click();
+      await expect.poll(() => styled.evaluate((el) => el.style.getPropertyValue('--caption'))).toBe('"after;update"');
+      expect(await styled.evaluate((el) => el.style.getPropertyPriority('color'))).toBe('');
+      expect(await styled.evaluate((el) => el.style.backgroundImage)).toBe('');
+
+      await section.getByTestId('clear-css-text').click();
+      await expect.poll(() => styled.evaluate((el) => el.style.color)).toBe('');
+      expect(await styled.evaluate((el) => el.style.getPropertyValue('--caption'))).toBe('');
+      await expect(styled).toHaveCSS('font-weight', '700');
+    },
+  },
   html: {
     hash: '',
     async steps({ page, section }) {

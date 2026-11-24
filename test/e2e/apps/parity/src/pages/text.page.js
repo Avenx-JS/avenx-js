@@ -3,7 +3,13 @@
   "change" button moves all of them at once, so each construct is checked on
   its first render and on an update.
 -->
-<state name="'Ada'" markup="'<em>raw</em>'" locked="true" expanded="false" visible="false" theme="'theme-a'" active="false" color="'rgb(255, 0, 0)'" html="'<b>bold</b><script>window.__parityXss = true</script>'" radius="10" />
+<state name="'Ada'" markup="'<em>raw</em>'" locked="true" expanded="false" visible="false" theme="'theme-a'" active="false" color="'rgb(255, 0, 0)'" html="'<b>bold</b><script>window.__parityXss = true</script>'" radius="10" cssText="''" />
+
+<action name="applyCssText">
+  cssText = '--caption: "one;two"; color: red !important; background-image: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==")';
+</action>
+<action name="updateCssText">cssText = '--caption: "after;update"; color: red;';</action>
+<action name="clearCssText">cssText = null;</action>
 
 <action name="change">
   name = 'Grace';
@@ -51,6 +57,13 @@
 
   <section data-construct="style">
     <p data-testid="styled" data-ax-style="{{ { color: color, fontWeight: active ? 'bold' : 'normal' } }}">styled</p>
+  </section>
+
+  <section data-construct="css-text-style">
+    <p data-testid="css-text" style="font-weight:700" data-ax-style="cssText">CSS text</p>
+    <button data-testid="apply-css-text" @click="applyCssText()">apply CSS text</button>
+    <button data-testid="update-css-text" @click="updateCssText()">update CSS text</button>
+    <button data-testid="clear-css-text" @click="clearCssText()">clear CSS text</button>
   </section>
 
   <section data-construct="html">

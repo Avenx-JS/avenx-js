@@ -271,7 +271,7 @@ collector; `test/unit/expressionCollectorCoverage.test.js` pins the fix.
 | :--- | :--- | :--- |
 | Construct group | Page | Engine | Constructs |
 | :--- | :--- | :--- | :--- |
-| Text and attributes | `#/` | compiled | interpolation, raw interpolation, boolean attribute coercion, `data-ax-show`, `-class` (string and object), `-style`, `-html` (sanitised), SVG |
+| Text and attributes | `#/` | compiled | interpolation, raw interpolation, boolean attribute coercion, `data-ax-show`, `-class` (string and object), `-style` (objects and CSS text with quoted semicolons, data URLs and priorities), `-html` (sanitised), SVG |
 | Control flow | `#/control` | compiled | `<@if>` / `<@elseif>` / `<@else>`; keyed `<@for>` over an array, object, `Map`, `Set` and numeric range, each with `<@empty>` |
 | Forms | `#/forms` | compiled | `data-ax-bind` on text, textarea, number, range, date, select, multiple select, boolean checkbox, checkbox group and radio |
 | Components | `#/components` | compiled | static nesting to a grandchild, props, default / named / fallback slots, the `<template slot>` wrapper |
