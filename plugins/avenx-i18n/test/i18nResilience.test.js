@@ -161,6 +161,24 @@ async function testErrorReporting() {
   assert.strictEqual(missing.locale, 'en', 'and the locale');
   assert.strictEqual(missing.error, null, 'with no underlying error where there was none');
 
+  // Console deduplication must not suppress another application's callback.
+  const secondFailures = [];
+  const second = createI18n({
+    locale: 'en',
+    fallbackLocale: null,
+    onError: (failure) => secondFailures.push(failure),
+  });
+  second.t('nope');
+  second.t('nope');
+  i18n.t('nope');
+  assert.strictEqual(secondFailures.length, 1, 'each instance receives its own failure once');
+  assert.strictEqual(failures.filter((failure) => failure.phase === 'missing').length, 1);
+  assert.strictEqual(loggedMatching('nope').length, 1, 'the console still deduplicates across instances');
+
+  reset();
+  second.t('nope');
+  assert.strictEqual(secondFailures.length, 2, 'reset clears the history of existing reporters');
+
   // A handler that throws is contained.
   reset();
   const hostile = createI18n({

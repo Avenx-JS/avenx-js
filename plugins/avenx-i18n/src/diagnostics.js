@@ -32,6 +32,12 @@ export const PLUGIN_TAG = '[avenx-i18n]';
 const emitted = new Set();
 
 /**
+ * Per-reporter histories, without retaining discarded i18n instances.
+ * @type {WeakMap<Function, Set<string>>}
+ */
+let reporterMessages = new WeakMap();
+
+/**
  * How many distinct messages the deduplication set remembers.
  *
  * Most of what is deduplicated names a translation key, and an application is
@@ -46,12 +52,13 @@ const MAX_REMEMBERED = 500;
 /**
  * Records a message as emitted, keeping the history bounded.
  * @param {string} text - The message that was just emitted.
+ * @param {Set<string>} [history] - The console or instance history.
  */
-function remember(text) {
-  if (emitted.size >= MAX_REMEMBERED) {
-    emitted.clear();
+function remember(text, history = emitted) {
+  if (history.size >= MAX_REMEMBERED) {
+    history.clear();
   }
-  emitted.add(text);
+  history.add(text);
 }
 
 /**
@@ -98,11 +105,19 @@ export function createReporter(owner) {
     const suffix = detail.locale ? ` (locale "${detail.locale}")` : '';
     const text = `${PLUGIN_TAG} ${message}${suffix}`;
 
-    if (emitted.has(text)) {
+    let reported = reporterMessages.get(report);
+    if (!reported) {
+      reported = new Set();
+      reporterMessages.set(report, reported);
+    }
+    if (reported.has(text)) {
       return;
     }
-    remember(text);
-    logger.warn(text);
+    remember(text, reported);
+    if (!emitted.has(text)) {
+      remember(text);
+      logger.warn(text);
+    }
 
     const onError = owner && owner.onError;
     if (typeof onError !== 'function') {
@@ -128,4 +143,5 @@ export function createReporter(owner) {
  */
 export function resetDiagnostics() {
   emitted.clear();
+  reporterMessages = new WeakMap();
 }
