@@ -22,6 +22,7 @@ const app = new AvenxApp({ target: '#app' });
 
 app.register('BadgeLabel', BadgeLabel);
 app.register('FrameCard', FrameCard);
+app.register('Frame_Card', FrameCard);
 app.register('ScopedList', ScopedList);
 app.register('ProfileCard', ProfileCard);
 app.register('SettingsCard', SettingsCard);

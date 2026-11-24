@@ -56,6 +56,10 @@
     <Component :is="{{ currentView }}" owner="{{ owner }}" />
   </section>
 
+  <section data-construct="underscored-component-on-string-path">
+    <Frame_Card :title="owner"><span data-testid="underscored-slot">inside</span></Frame_Card>
+  </section>
+
   <!-- Known gaps. -->
 
   <section data-construct="dynamic-attribute-update">

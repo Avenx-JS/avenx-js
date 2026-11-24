@@ -340,6 +340,15 @@ const CONSTRUCTS = {
       await expect(section.getByTestId('badge-label')).toHaveText('badge: Annual');
     },
   },
+  'underscored-component': {
+    hash: '#/components',
+    async steps({ page, section }) {
+      await expect(section.getByTestId('frame-title')).toHaveText('Quarterly');
+      await expect(section.getByTestId('underscored-slot')).toHaveText('inside');
+      await page.getByTestId('rename').click();
+      await expect(section.getByTestId('frame-title')).toHaveText('Annual');
+    },
+  },
   slots: {
     hash: '#/components',
     async steps({ page, section }) {
@@ -534,6 +543,16 @@ const CONSTRUCTS = {
       await expect(section.getByTestId('profile-card')).toHaveCount(0);
       await page.getByTestId('rename').click();
       await expect(section.getByTestId('settings-card')).toHaveText('Settings for Grace');
+    },
+  },
+
+  'underscored-component-on-string-path': {
+    hash: '#/string-path',
+    async steps({ page, section }) {
+      await expect(section.getByTestId('frame-title')).toHaveText('Ada');
+      await expect(section.getByTestId('underscored-slot')).toHaveText('inside');
+      await page.getByTestId('rename').click();
+      await expect(section.getByTestId('frame-title')).toHaveText('Grace');
     },
   },
 

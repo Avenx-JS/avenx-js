@@ -15,6 +15,10 @@
     <FrameCard title="{{ title }}" />
   </section>
 
+  <section data-construct="underscored-component">
+    <Frame_Card :title="title"><span data-testid="underscored-slot">inside</span></Frame_Card>
+  </section>
+
   <section data-construct="slots">
     <FrameCard title="slotted">
       <p data-testid="projected-body">projected into the default slot</p>
