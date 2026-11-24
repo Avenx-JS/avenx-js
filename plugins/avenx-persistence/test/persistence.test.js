@@ -848,6 +848,38 @@ async function testClearWithPendingChanges() {
     assert.strictEqual(storage.getItem('avenx:other'), null);
     assert.strictEqual(counter.count, 0, 'the next initialization sees the declared default');
     counter.$dispose();
+    assert.strictEqual(storage.getItem('avenx:cleared'), null, 'disposing a reinitialized bridge keeps it cleared');
+  }
+}
+
+/**
+ * Reinitialization alone does not turn a clear into a pending write.
+ */
+async function testClearSurvivesReinitialization() {
+  for (const pending of [false, true]) {
+    reset();
+    const app = createApp();
+    app.use(avenxPersistence);
+    const storage = memoryStorage();
+    const counter = counterBridge({ key: 'reinitialized', storage });
+    assert.strictEqual(counter.count, 0);
+    if (pending) counter.increment();
+    app.$persistence.clear('reinitialized');
+    counter.$dispose();
+    assert.strictEqual(counter.count, 0, 'reading after disposal initializes default state');
+    app.$persistence.flush('reinitialized');
+    await nextTick();
+    assert.strictEqual(storage.getItem('avenx:reinitialized'), null, 'flush and old queued jobs respect the clear');
+    counter.$dispose();
+    assert.strictEqual(storage.getItem('avenx:reinitialized'), null, 'another disposal leaves storage empty');
+    counter.increment();
+    await nextTick();
+    assert.strictEqual(
+      JSON.parse(storage.getItem('avenx:reinitialized')).state.count,
+      1,
+      'a new mutation resumes saves',
+    );
+    counter.$dispose();
   }
 }
 
@@ -872,6 +904,7 @@ async function runTests() {
   await testCleanup();
   await testPersistenceHandle();
   await testClearWithPendingChanges();
+  await testClearSurvivesReinitialization();
   await testValidation();
 
   console.log('\n🎉 ALL AVENX PERSISTENCE PLUGIN TESTS PASSED SUCCESSFULLY!\n');

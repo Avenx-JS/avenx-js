@@ -128,7 +128,8 @@ export class PersistenceController {
     // Forgetting it means the next save is decided by comparing against the
     // store, not against a value from before the state was reset.
     this.#lastWritten = null;
-    this.#cleared = false;
+    // A successful clear survives disposal and lazy reinitialization. Only
+    // another observed mutation may allow saves to recreate the entry.
   }
 
   /**
