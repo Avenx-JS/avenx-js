@@ -1580,6 +1580,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "nextammy",
+      "name": "Aman Aulakh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/211279635?v=4",
+      "profile": "https://amanaulakh.lol/",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
