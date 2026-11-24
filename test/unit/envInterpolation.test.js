@@ -44,6 +44,17 @@ assert.strictEqual(interpolateEnv(undefined), undefined);
 const testArray = ['$TEST_STAGE', 'fixed', '${TEST_HOST}'];
 assert.deepStrictEqual(interpolateEnv(testArray), ['staging', 'fixed', '127.0.0.1']);
 
+// JSON keys remain own data properties, including names on Object.prototype.
+const specialKeys = JSON.parse('{"__proto__":{"stage":"$TEST_STAGE"},"constructor":"$TEST_HOST","prototype":"$TEST_PORT"}');
+const interpolatedKeys = interpolateEnv(specialKeys);
+assert.deepStrictEqual(Object.keys(interpolatedKeys), Object.keys(specialKeys));
+assert.strictEqual(Object.getPrototypeOf(interpolatedKeys), Object.prototype);
+assert.deepStrictEqual(interpolatedKeys.__proto__, { stage: 'staging' });
+assert.strictEqual(interpolatedKeys.constructor, '127.0.0.1');
+assert.strictEqual(interpolatedKeys.prototype, '8080');
+assert.strictEqual(interpolatedKeys.stage, undefined);
+assert.strictEqual(specialKeys.__proto__.stage, '$TEST_STAGE');
+
 // Test object interpolation
 const testObj = {
   host: '$TEST_HOST',
@@ -96,6 +107,7 @@ try {
   writeTestConfig({
     srcDir: 'src',
     distDir: 'dist',
+    alias: { ['__proto__']: '$TEST_STAGE' },
     server: {
       port: '$AVENX_TEST_PORT',
       host: '${AVENX_TEST_HOST}',
@@ -105,6 +117,7 @@ try {
   const loaded = loadConfig();
   assert.strictEqual(loaded.server.port, 9090);
   assert.strictEqual(loaded.server.host, '0.0.0.0');
+  assert.deepStrictEqual(Object.entries(loaded.alias), [['__proto__', 'staging']]);
 
   console.log('  ✅ loadConfig environment variable interpolation passed!');
 } finally {
