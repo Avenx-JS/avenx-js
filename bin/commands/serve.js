@@ -9,6 +9,7 @@ export { isErrorOverlayEnabled, buildStatusFromPass, overlayMessageFor, getError
 import { getInspectorHtml } from './serve/inspector/index.js';
 export { getInspectorHtml, escapeInlineJson } from './serve/inspector/index.js';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import http from 'http';
 import https from 'https';
@@ -184,6 +185,46 @@ export function getInitialHtml(cli) {
  */
 export function bindAddressFor(host) {
   return host === 'localhost' ? '127.0.0.1' : host;
+}
+
+/** Hosts that bind every interface. */
+const WILDCARD_HOSTS = new Set(['0.0.0.0', '::']);
+
+/**
+ * Whether a host only answers on this machine.
+ * @param {string} host - The configured host, without brackets.
+ * @returns {boolean} True for `localhost`, 127.0.0.0/8 and `::1`.
+ */
+function isLoopbackHost(host) {
+  return host === 'localhost' || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host);
+}
+
+/**
+ * The URLs to announce for a server bound to `host`.
+ *
+ * A wildcard bind (`0.0.0.0`, `::`) is not an address another device can open,
+ * so it is announced as `localhost` plus every external IPv4 address, which is
+ * how a phone on the same network reaches the dev build. A loopback host gets
+ * its one URL, as before. Any other host is a specific interface: it is
+ * reachable as given, and `localhost` is not bound, so there is no local URL.
+ * @param {string} host - The configured host.
+ * @param {number} port - The port the server listens on.
+ * @param {boolean} secure - Whether the server uses TLS.
+ * @param {object} [interfaces] - `os.networkInterfaces()`, injectable for tests.
+ * @returns {{local: string|null, network: string[]|null}} `network` is null for
+ *   a loopback host and empty when no external IPv4 address was found.
+ */
+export function serverUrlsFor(host, port, secure, interfaces = os.networkInterfaces()) {
+  const scheme = secure ? 'https' : 'http';
+  const bare = host.replace(/^\[(.*)\]$/, '$1');
+  const url = (address) => `${scheme}://${address.includes(':') ? `[${address}]` : address}:${port}`;
+  if (isLoopbackHost(bare)) return { local: url(bare), network: null };
+  if (!WILDCARD_HOSTS.has(bare)) return { local: null, network: [url(bare)] };
+  const addresses = Object.values(interfaces)
+    .flat()
+    .filter((entry) => entry && !entry.internal && (entry.family === 'IPv4' || entry.family === 4))
+    .map((entry) => entry.address);
+  return { local: url('localhost'), network: [...new Set(addresses)].map(url) };
 }
 
 /**
@@ -419,9 +460,17 @@ export function serveProject(cli, port, host = 'localhost', open = false) {
     // `localhost` names both loopback families. The primary listener holds the
     // IPv4 one; this adds the IPv6 one so neither address is refused.
     cli._loopbackAlias = listenLoopbackAlias(requestListener, host, activePort, tls?.options);
-    const urlHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
-    const url = `${tls ? 'https' : 'http'}://${urlHost}:${activePort}`;
-    console.log(`\n${green(`🚀 Dev-Server running at ${url}`)}`);
+    // The scheme follows the loaded certificate, not the --https flag.
+    const { local, network } = serverUrlsFor(host, activePort, Boolean(tls));
+    const url = local ?? network[0];
+    if (network === null) {
+      console.log(`\n${green(`🚀 Dev-Server running at ${url}`)}`);
+    } else {
+      console.log(`\n${green('🚀 Dev-Server running')}`);
+      if (local) console.log(green(`   Local:   ${local}`));
+      for (const address of network) console.log(green(`   Network: ${address}`));
+      if (network.length === 0) console.log(yellow('   Network: no external IPv4 address found'));
+    }
     if (cli.config.server.liveReload) {
       console.log(cyan(`👀 Watching for changes in ${cli.config.srcDir}/...\n`));
     }

@@ -471,7 +471,9 @@ Launches a local live-reloading development server with automatic file watching 
 #### Options & Flags
 
 - `--port <number>`, `-p <number>` (or positional argument `avenx serve 8080`): Sets the development server TCP port (default: `3000`).
-- `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`).
+- `--host <string>`, `-h <string>`: Sets the host bind address (default: `localhost`). With an address that binds every
+  interface (`0.0.0.0` or `::`), the startup message lists a `Local` URL and a `Network` URL for each external IPv4
+  address: the addresses another device on the same network can open.
 - `--no-live-reload` / `--live-reload=false`: Disables file watching, live reload SSE client script injection, and automatic browser refreshes.
 - `--no-error-overlay` / `--error-overlay=false`: Keeps live reload, but stops build diagnostics from being shown as a browser overlay. See [Build error overlay](#build-error-overlay).
 - `--trace`: Records a causal trace of the running application. Off by default. See [`avenx trace`](#14-avenx-trace) and the [Avenx Trace guide](/core-concepts/trace/).
@@ -488,7 +490,7 @@ relative to the project root; absolute paths are also accepted. The flags
 override `server.https`, `server.cert` and `server.key` in `avenx.config.json`.
 
 For example, generate a development certificate using [mkcert](https://github.com/FiloSottile/mkcert),
-replacing `192.168.1.20` with your computer's LAN address:
+replacing `192.168.1.20` with your computer's LAN address (the `Network` line `avenx serve --host 0.0.0.0` prints):
 
 ```sh
 mkcert -install
