@@ -16,6 +16,7 @@ import { createSecureContext } from 'tls';
 import { spawn } from 'child_process';
 import { runBuildPass } from './build.js';
 import { cyan, green, yellow, red, gray } from '../colors.js';
+import { UsageError } from '../fatal.js';
 import { saveTrace } from '../../lib/core/trace/store.js';
 import { TRACE_ENDPOINT } from '../../lib/core/trace/devtools.js';
 
@@ -248,7 +249,7 @@ function loadServerTls(cli) {
   const server = cli.config.server;
   if (!server.https) return null;
   if (!server.cert || !server.key) {
-    throw new Error(
+    throw new UsageError(
       'HTTPS requires --cert and --key (or server.cert and server.key). ' +
       'Create a trusted development pair with: mkcert -install && ' +
       'mkcert -cert-file dev.pem -key-file dev-key.pem localhost 127.0.0.1 ::1 <device-IP>',
@@ -261,7 +262,7 @@ function loadServerTls(cli) {
     createSecureContext(options);
     return { options, files: new Set([certPath, keyPath]) };
   } catch (error) {
-    throw new Error(`Cannot load HTTPS certificate/key: ${error.message}`, { cause: error });
+    throw new UsageError(`Cannot load HTTPS certificate/key: ${error.message}`, { cause: error });
   }
 }
 
