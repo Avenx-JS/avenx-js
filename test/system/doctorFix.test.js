@@ -144,7 +144,7 @@ project((cwd) => {
 project((cwd) => {
   fs.rmSync(path.join(cwd, '.git'), { recursive: true, force: true });
   const result = run(cwd, ['doctor', '--fix', '--json']);
-  assert.equal(result.status, 1);
+  assert.equal(result.status, 0);
   assert.ok(!fs.existsSync(path.join(cwd, '.git')), 'doctor must not initialize Git');
   assert.match(
     JSON.parse(result.stdout)

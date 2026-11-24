@@ -50,8 +50,8 @@ const cases = [
     prepare: (root) => fs.writeFileSync(path.join(root, 'format-me.js'), 'const  answer=42;\n'),
   },
   {
-    name: 'doctor --fix', args: ['doctor', '--fix'], status: 1,
-    // The deliberately untracked fixture still fails the Git health check in
+    name: 'doctor --fix', args: ['doctor', '--fix'],
+    // The deliberately untracked fixture still warns on the Git health check in
     // both modes; scaffold repair must still preview and apply correctly.
     prepare: (root) => fs.unlinkSync(path.join(root, '.gitignore')),
   },
