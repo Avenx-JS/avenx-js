@@ -351,6 +351,8 @@ export function createI18n(options = {}) {
    */
   const isCovered = (canonical) => expandLocale(canonical).some((step) => catalogs.get(step)?.size > 0);
 
+  let localeRequest = 0;
+
   /**
    * Activates a locale, loading it first when it is lazy.
    * @param {any} tag - The locale to switch to.
@@ -362,6 +364,7 @@ export function createI18n(options = {}) {
       report('locale', `"${String(tag)}" is not a valid locale tag; the locale was not changed`);
       return Promise.resolve(store.locale);
     }
+    const request = ++localeRequest;
     if (canonical === store.locale) {
       return Promise.resolve(canonical);
     }
@@ -371,6 +374,7 @@ export function createI18n(options = {}) {
      * @returns {string} The active locale.
      */
     const activate = () => {
+      if (request !== localeRequest) return store.locale;
       if (!isCovered(canonical)) {
         report(
           'missing-locale',
