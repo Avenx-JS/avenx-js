@@ -5,6 +5,7 @@ import { validateComponentName } from '../utils.js';
 import loadConfig from '../../lib/config.js';
 import { runWizard } from '../wizard.js';
 import { readScaffoldFile } from './scaffoldFiles.js';
+import { initializeGit } from './initGit.js';
 import { bold, cyan, green, red, gray } from '../colors.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -372,6 +373,10 @@ export async function initProject(cli, args = []) {
     fs.writeFileSync(prettierPath, template);
 
     console.log('  Created: .prettierrc');
+  }
+
+  if (args.includes('--git')) {
+    initializeGit(cli.baseDir, { dryRun: args.includes('--dry-run') || args.includes('-d') });
   }
 
   // Last, so the success line is the last thing printed. It used to be

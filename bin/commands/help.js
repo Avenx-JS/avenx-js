@@ -42,6 +42,7 @@ ${bold(cyan('Commands:'))}
 ${bold(cyan('Options:'))}
   ${green('--layout <blank|routing>')}  ${gray('Specify project layout template for init (default: blank)')}
   ${green('--style <none|sass|...>')}   ${gray('Specify CSS preprocessor for init (none, sass, less, postcss)')}
+  ${green('--git')}                     ${gray('Initialize Git and commit the scaffold after init (opt-in)')}
   ${green('--yes, -y')}                 ${gray('Skip the "init" wizard and take the defaults (none, blank)')}
   ${green('--interactive, -i')}         ${gray('Run the "init" wizard even when stdin or stdout is not a TTY')}
   ${green('--dev')}                     ${gray('Build for development: readable runtime, inline CSS source maps')}

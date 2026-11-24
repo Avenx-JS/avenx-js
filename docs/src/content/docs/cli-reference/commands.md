@@ -156,7 +156,7 @@ logStatus('Checking bundle size', false);
 Scaffolds a new Avenx-JS application workspace structure in the current working directory, or with a name, in a new directory of that name.
 
 ```bash
-avenx init [name] [--layout …] [--style …] [-y]
+avenx init [name] [--layout …] [--style …] [--git] [-y]
 ```
 
 - With no name, the project is scaffolded into the current directory.
@@ -190,9 +190,12 @@ When invoked in an interactive terminal, `avenx init` launches an interactive se
 | :--- | :--- | :--- |
 | `--layout <name>` | | Specifies the starter project template layout (`blank` or `routing`). Default is `blank`. |
 | `--style <preprocessor>` | | Configures the CSS preprocessor in `avenx.config.json` (`none`, `sass`, `less`, or `postcss`). Default is `none`. |
+| `--git` | | After scaffolding, runs `git init`, `git add -A`, and commits with `Initial commit from avenx init`. Off by default, including with `--yes`. |
 | `-y`, `--yes` | | Bypasses interactive wizard prompts in TTY terminals and uses default choices (`none` preprocessor, `blank` layout). Recommended for CI/CD and automated scaffolding scripts. |
 | `-i`, `--interactive` | | Forces interactive wizard prompts to run, even in non-TTY or piped terminal environments. |
 | `-f`, `--force` | | Overwrites existing files or bypasses uncommitted Git working tree status checks. |
+
+With `--git`, an existing repository (including a parent repository or worktree) is left alone: nothing is staged or committed. Git being unavailable or a Git command failing produces a note while the completed scaffold still succeeds. The user's `init.defaultBranch` and commit identity are respected; no remote is added or push attempted. `--dry-run` previews the three Git commands without running them.
 
 #### Environment Variables
 
@@ -209,6 +212,9 @@ npx avenx init my-app
 
 # Non-interactive / CI scaffolding with default options
 npx avenx init -y
+
+# Scaffold a new project and make its first Git commit
+npx avenx init my-app --yes --git
 
 # Force interactive wizard in piped or scripted environments
 npx avenx init --interactive --force

@@ -61,6 +61,10 @@ const NOT_AVENX_FLAGS = new Set([
   '--no-error-on-unmatched-pattern',
   '--list-different',
   '--write',
+  // Arguments initGit.js passes to Git, not options accepted by Avenx.
+  '--git-dir',
+  '-A',
+  '-m',
 ]);
 
 /**
