@@ -39,11 +39,13 @@ async function waitFor(predicate, message, timeoutMs = 3000) {
     // Capture console output
     let logs = [];
     const origLog = console.log;
+    const origInfo = console.info;
     const origError = console.error;
     console.log = (...args) => {
       logs.push(args.join(' '));
       origLog(...args);
     };
+    console.info = console.log;
     console.error = (...args) => {
       logs.push(args.join(' '));
       origError(...args);
@@ -97,6 +99,7 @@ async function waitFor(predicate, message, timeoutMs = 3000) {
 
     // Restore console
     console.log = origLog;
+    console.info = origInfo;
     console.error = origError;
 
     // Clean up fixture directory

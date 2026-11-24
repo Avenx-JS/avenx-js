@@ -7,6 +7,7 @@ import { reportRewindDiagnostics } from '../../lib/compiler/rewind/diagnostics.j
 import { cyan, gray, green, red } from '../colors.js';
 import { BuildError } from '../../lib/compiler/errors/index.js';
 import { AvenxErrorCodes } from '../../lib/core/runtime/AvenxError.js';
+import { AvenxLogger } from '../../lib/core/runtime/AvenxLogger.js';
 import { A11Y_WARNING_CODES } from '../../lib/compiler/rules/accessibility.js';
 import { watchDirectories } from '../utils.js';
 import { toSarif } from '../../lib/compiler/diagnostics/sarif.js';
@@ -29,14 +30,16 @@ export { splitCodeFrame, stripAnsi, createDiagnosticRecord, DiagnosticChannel };
  * @param {string} phase - 'prebuild' or 'postbuild'.
  * @param {string} command - The shell command to run.
  * @param {string} baseDir - Working directory for the hook.
+ * @param {object} [logging] - Invocation logging settings.
  * @throws {BuildError} When the hook exits non-zero.
  */
-function runHook(phase, command, baseDir) {
+function runHook(phase, command, baseDir, logging = {}) {
   if (typeof command !== 'string' || command.trim() === '') {
     return;
   }
 
-  console.log(gray(`🏃 Running ${phase} hook: ${command}...`));
+  const reporter = new AvenxLogger({ formatter: (_level, args) => args, ...logging });
+  reporter.info(gray(`🏃 Running ${phase} hook: ${command}...`));
 
   try {
     execSync(command, { stdio: 'inherit', cwd: baseDir });
@@ -62,7 +65,7 @@ export function buildProject(cli, options = {}) {
   const hooks = (cli && cli.config && cli.config.hooks) || {};
   const baseDir = (cli && cli.baseDir) || process.cwd();
 
-  runHook('prebuild', hooks.prebuild, baseDir);
+  runHook('prebuild', hooks.prebuild, baseDir, cli?.config?.logging);
 
   // `watch` is what lets the compiler reuse cached compilation products, and it
   // is passed only by the commands that keep a process alive across rebuilds.
@@ -74,7 +77,7 @@ export function buildProject(cli, options = {}) {
     ...(options.codeSplitting !== undefined ? { codeSplitting: options.codeSplitting } : {}),
   }, cli.config).build();
 
-  runHook('postbuild', hooks.postbuild, baseDir);
+  runHook('postbuild', hooks.postbuild, baseDir, cli?.config?.logging);
 
   return result;
 }
@@ -229,6 +232,7 @@ export function runCheckPass(cli, args = [], options = {}) {
  * @returns {object|fs.FSWatcher|undefined} Diagnostic report or watcher instance.
  */
 export function checkProject(cli, args = []) {
+  const reporter = new AvenxLogger({ formatter: (_level, args) => args, ...cli?.config?.logging });
   const isJson = args.includes('--json') || args.includes('-j');
   const isWatch = args.includes('--watch') || args.includes('-w');
   const isSarif = args.includes('--sarif');
@@ -247,7 +251,7 @@ export function checkProject(cli, args = []) {
     const srcDir = (cli && cli.config && cli.config.srcDir) || 'src';
     const srcPath = path.join((cli && cli.baseDir) || process.cwd(), srcDir);
 
-    console.log(cyan(`[${getTimestamp()}] 👀 Watching for template changes in ${srcDir}/...`));
+    reporter.info(cyan(`[${getTimestamp()}] 👀 Watching for template changes in ${srcDir}/...`));
 
     const executeCheck = () => {
       const timestamp = getTimestamp();
@@ -264,11 +268,11 @@ export function checkProject(cli, args = []) {
         const blockingIssues = report.errorCount + (isStrict ? report.warningCount : (report.blockingWarningCount || 0));
         if (blockingIssues > 0) {
           const totalIssues = report.warningCount + report.errorCount;
-          console.error(red(`[${timestamp}] ❌ Found ${totalIssues} validation issue(s).`));
+          if (reporter.shouldLog('info')) console.error(red(`[${timestamp}] ❌ Found ${totalIssues} validation issue(s).`));
         } else if (report.warningCount > 0) {
-          console.log(cyan(`[${timestamp}] ✓ Template validation passed with ${report.warningCount} accessibility warning(s).`));
+          reporter.info(cyan(`[${timestamp}] ✓ Template validation passed with ${report.warningCount} accessibility warning(s).`));
         } else {
-          console.log(green(`[${timestamp}] ✓ No template validation issues found.`));
+          reporter.info(green(`[${timestamp}] ✓ No template validation issues found.`));
         }
       }
       return report;
@@ -290,14 +294,14 @@ export function checkProject(cli, args = []) {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
           const fileMsg = filename ? ` in ${filename}` : '';
-          console.log(`\n${cyan(`[${getTimestamp()}] 📄 Change detected${fileMsg}. Re-checking templates...`)}`);
+          reporter.info(`\n${cyan(`[${getTimestamp()}] 📄 Change detected${fileMsg}. Re-checking templates...`)}`);
           executeCheck();
         }, 100);
       },
     );
 
     const cleanup = () => {
-      console.log(`\n${gray('Stopping template check watcher...')}`);
+      reporter.info(`\n${gray('Stopping template check watcher...')}`);
       clearTimeout(timeout);
       if (watcher) watcher.close();
       if (!cli || !cli._noExit) {
@@ -338,7 +342,7 @@ export function checkProject(cli, args = []) {
 
   if (blockingIssues > 0) {
     const totalIssues = report.warningCount + report.errorCount;
-    console.error(`\n${red(`Found ${totalIssues} validation issue(s).`)}`);
+    if (reporter.shouldLog('info')) console.error(`\n${red(`Found ${totalIssues} validation issue(s).`)}`);
     process.exitCode = 1;
     if (!cli || !cli._noExit) {
       process.exit(1);
@@ -347,9 +351,9 @@ export function checkProject(cli, args = []) {
   }
 
   if (report.warningCount > 0) {
-    console.log(cyan(`\n✓ Template validation passed with ${report.warningCount} accessibility warning(s).`));
+    reporter.info(cyan(`\n✓ Template validation passed with ${report.warningCount} accessibility warning(s).`));
   } else {
-    console.log(green('✓ No template validation issues found.'));
+    reporter.info(green('✓ No template validation issues found.'));
   }
   process.exitCode = 0;
   if (!cli || !cli._noExit) {
