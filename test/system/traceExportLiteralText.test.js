@@ -1,4 +1,3 @@
-
 /**
  * Regression test for #1764:
  * Text bindings mixed with literal text inside the same DOM element.
@@ -22,11 +21,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
 
+// `--import` takes a module specifier, not a path. A bare `C:\...` is read as a
+// URL with the scheme `c:` and refused on Windows, so it is passed as a file URL.
+const HAPPY_DOM_HOOK = pathToFileURL(path.join(repoRoot, 'test/helpers/register-happy-dom.js')).href;
+
 console.log('Testing trace export with literal text and bindings...');
 
-const workDir = fs.mkdtempSync(
-  path.join(os.tmpdir(), 'avenx-literal-text-'),
-);
+const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-literal-text-'));
 
 function write(filePath, contents) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -35,10 +36,7 @@ function write(filePath, contents) {
 
 try {
   // 1. Create a real Avenx component with both literal-text cases.
-  const componentPath = path.join(
-    workDir,
-    'src/components/literal/literal.component.js',
-  );
+  const componentPath = path.join(workDir, 'src/components/literal/literal.component.js');
 
   function writeComponent(incrementSecond) {
     write(
@@ -61,13 +59,7 @@ try {
       ].join('\n'),
     );
 
-    write(
-      path.join(
-        workDir,
-        'src/components/literal/literal.component.css',
-      ),
-      '',
-    );
+    write(path.join(workDir, 'src/components/literal/literal.component.css'), '');
   }
 
   writeComponent(1);
@@ -125,21 +117,12 @@ console.log('DETERMINISM:' + trace.determinism.status);
 `,
   );
 
-  const recordRun = spawnSync(
-    process.execPath,
-    [
-      '--import',
-      path.join(repoRoot, 'test/helpers/register-happy-dom.js'),
-      recordScript,
-    ],
-    { encoding: 'utf8', cwd: repoRoot },
-  );
+  const recordRun = spawnSync(process.execPath, ['--import', HAPPY_DOM_HOOK, recordScript], {
+    encoding: 'utf8',
+    cwd: repoRoot,
+  });
 
-  assert.strictEqual(
-    recordRun.status,
-    0,
-    `recording failed:\n${recordRun.stdout}\n${recordRun.stderr}`,
-  );
+  assert.strictEqual(recordRun.status, 0, `recording failed:\n${recordRun.stdout}\n${recordRun.stderr}`);
 
   assert.ok(
     recordRun.stdout.includes('DETERMINISM:deterministic'),
@@ -158,10 +141,7 @@ console.log('DETERMINISM:' + trace.determinism.status);
     'the generated test must not compare a text binding with the whole element text',
   );
 
-  assert.ok(
-    generated.includes('result.verified'),
-    'a deterministic trace must verify replay',
-  );
+  assert.ok(generated.includes('result.verified'), 'a deterministic trace must verify replay');
 
   // 4. Make the generated test runnable from this checkout.
   const runnablePath = path.join(workDir, 'runnable.test.mjs');
@@ -169,30 +149,18 @@ console.log('DETERMINISM:' + trace.determinism.status);
   write(
     runnablePath,
     generated
-      .replace(
-        "'avenx-core/testing'",
-        JSON.stringify(
-          pathToFileURL(path.join(repoRoot, 'lib/core/testing.js')).href,
-        ),
-      )
+      .replace("'avenx-core/testing'", JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/testing.js')).href))
       .replace(
         "'avenx-core/tooling'",
-        JSON.stringify(
-          pathToFileURL(path.join(repoRoot, 'lib/core/tooling/index.js')).href,
-        ),
+        JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/tooling/index.js')).href),
       ),
   );
 
   // 5. The generated test must pass against the original component.
-  const passRun = spawnSync(
-    process.execPath,
-    [
-      '--import',
-      path.join(repoRoot, 'test/helpers/register-happy-dom.js'),
-      runnablePath,
-    ],
-    { encoding: 'utf8', cwd: repoRoot },
-  );
+  const passRun = spawnSync(process.execPath, ['--import', HAPPY_DOM_HOOK, runnablePath], {
+    encoding: 'utf8',
+    cwd: repoRoot,
+  });
 
   assert.strictEqual(
     passRun.status,
@@ -203,32 +171,18 @@ console.log('DETERMINISM:' + trace.determinism.status);
   // 6. Change one binding update and verify that replay catches it.
   writeComponent(2);
 
-  const failRun = spawnSync(
-    process.execPath,
-    [
-      '--import',
-      path.join(repoRoot, 'test/helpers/register-happy-dom.js'),
-      runnablePath,
-    ],
-    { encoding: 'utf8', cwd: repoRoot },
-  );
+  const failRun = spawnSync(process.execPath, ['--import', HAPPY_DOM_HOOK, runnablePath], {
+    encoding: 'utf8',
+    cwd: repoRoot,
+  });
 
-  assert.notStrictEqual(
-    failRun.status,
-    0,
-    'the generated test must fail when a binding update changes',
-  );
+  assert.notStrictEqual(failRun.status, 0, 'the generated test must fail when a binding update changes');
 
   const failOutput = `${failRun.stdout}\n${failRun.stderr}`;
 
-  assert.ok(
-    failOutput.includes('AVX_R27'),
-    `the changed component should cause a replay divergence:\n${failOutput}`,
-  );
+  assert.ok(failOutput.includes('AVX_R27'), `the changed component should cause a replay divergence:\n${failOutput}`);
 
-  console.log(
-    'PASS: literal text bindings are verified by replay, and incorrect updates are detected',
-  );
+  console.log('PASS: literal text bindings are verified by replay, and incorrect updates are detected');
 } finally {
   fs.rmSync(workDir, { recursive: true, force: true });
 }
