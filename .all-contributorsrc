@@ -1616,6 +1616,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "Daytonrad",
+      "name": "Dayton",
+      "avatar_url": "https://avatars.githubusercontent.com/u/106027925?v=4",
+      "profile": "https://github.com/Daytonrad",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
