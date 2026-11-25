@@ -162,6 +162,11 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
   readonly $element: Element | null;
 
   /**
+   * Alias of $element. The component's root DOM element, or null before mount / after unmount.
+   */
+  readonly el: Element | null;
+
+  /**
    * The application instance this component belongs to.
    */
   readonly $app?: AvenxApp;
