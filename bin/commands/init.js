@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { validateComponentName } from '../utils.js';
 import loadConfig from '../../lib/config.js';
 import { runWizard } from '../wizard.js';
-import { readScaffoldFile } from './scaffoldFiles.js';
+import { CONFIG_SCHEMA_REF, readScaffoldFile } from './scaffoldFiles.js';
 import { bold, cyan, green, red, gray } from '../colors.js';
 import { failProcess } from '../fatal.js';
 
@@ -142,7 +142,7 @@ export async function initProject(cli, args = [], dryRun = false) {
     }
   }
 
-  userConfig.$schema ??= './node_modules/avenx-core/schema/avenx.config.schema.json';
+  userConfig.$schema ??= CONFIG_SCHEMA_REF;
   userConfig.style = {
     ...userConfig.style,
     preprocessor: stylePreprocessor,

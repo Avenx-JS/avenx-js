@@ -3,7 +3,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { bold, cyan, green, yellow, red, gray } from '../colors.js';
 import { CONFIG_SCHEMA } from '../../lib/config.js';
-import { SCAFFOLD_FILES, readScaffoldFile } from './scaffoldFiles.js';
+import { CONFIG_SCHEMA_REF, SCAFFOLD_FILES, readScaffoldFile } from './scaffoldFiles.js';
 import { repairBundleReferences, writeRepair } from './doctorRepairs.js';
 
 const MIN_NODE_VERSION = [18, 0, 0];
@@ -87,6 +87,72 @@ function sameScaffoldContent(name, content, expected) {
     }
   }
   return content.replace(/\r\n/g, '\n') === expected.replace(/\r\n/g, '\n');
+}
+
+/**
+ * Serializes `parsed` with `$schema` set to {@link CONFIG_SCHEMA_REF}, preserving
+ * the existing indentation, line endings, and trailing newline of `raw`.
+ * @param {string} raw
+ * @param {object} parsed
+ * @returns {string}
+ */
+function formatConfigWithSchema(raw, parsed) {
+  const indentMatch = raw.match(/^[ \t]+(?=")/m);
+  const indent = indentMatch ? indentMatch[0] : 2;
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+  const trailing = raw.endsWith('\n') ? eol : '';
+  const updated =
+    '$schema' in parsed
+      ? { ...parsed, $schema: CONFIG_SCHEMA_REF }
+      : { $schema: CONFIG_SCHEMA_REF, ...parsed };
+  return JSON.stringify(updated, null, indent).replace(/\n/g, eol) + trailing;
+}
+
+/**
+ * Checks the `$schema` reference in an existing `avenx.config.json` and
+ * repairs it via `repair()` when missing or unresolvable.
+ * @param {string} root
+ * @param {string} configPath
+ * @param {object} userConfig
+ * @param {Function} repair
+ * @param {Function} record
+ * @param {boolean} dryRun
+ */
+function checkConfigSchema(root, configPath, userConfig, repair, record, dryRun) {
+  const schemaRef = userConfig.$schema;
+  const applyFix = (passMessage, warnMessage, warnHint) => {
+    const before = fs.readFileSync(configPath, 'utf8');
+    const after = formatConfigWithSchema(before, userConfig);
+    const repaired = repair('avenx.config.json', 'update', before, after);
+    if (repaired && !dryRun) {
+      userConfig.$schema = CONFIG_SCHEMA_REF;
+      record('pass', passMessage);
+    } else {
+      record('warn', warnMessage, repaired ? undefined : warnHint);
+    }
+  };
+
+  if (typeof schemaRef !== 'string' || !schemaRef.trim()) {
+    applyFix(
+      'avenx.config.json $schema reference added',
+      'avenx.config.json is missing a $schema reference',
+      'Run `avenx doctor --fix` to add the editor schema reference.',
+    );
+    return;
+  }
+
+  const hasNodeModules = fs.existsSync(path.join(root, 'node_modules'));
+  const resolvedSchema = path.isAbsolute(schemaRef) ? schemaRef : path.resolve(root, schemaRef);
+  if (fs.existsSync(resolvedSchema) || !hasNodeModules) {
+    record('pass', 'avenx.config.json $schema reference is valid');
+    return;
+  }
+
+  applyFix(
+    'avenx.config.json $schema reference updated',
+    `avenx.config.json $schema points to missing file "${schemaRef}"`,
+    'Run `avenx doctor --fix` to update the editor schema reference.',
+  );
 }
 
 /**
@@ -233,6 +299,10 @@ export function runDoctor(cli, asJson = false, { fix = false, dryRun = false } =
       return false;
     }
   };
+
+  if (userConfig && validConfig) {
+    checkConfigSchema(root, configPath, userConfig, repair, record, dryRun);
+  }
 
   // --- Directories ---
   area = 'Project structure';
