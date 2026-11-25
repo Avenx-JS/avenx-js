@@ -2,7 +2,7 @@
 /**
  * @file cli.test.js
  * @description Comprehensive CLI end-to-end and lifecycle tests.
- * Declares @avenx-serial for exclusive access to shared scaffold directories.
+ * Keeps generated projects out of the repository.
  */
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -11,11 +11,13 @@ const __dirname = dirname(__filename);
 
 import fs from 'fs';
 import path from 'path';
+import os from 'node:os';
 import assert from 'assert';
 import { execSync, spawnSync, spawn } from 'child_process';
 
-const TEST_DIR = path.join(__dirname, 'test-project');
-const INTERACTIVE_TEST_DIR = path.join(__dirname, 'interactive-test-project');
+const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-cli-'));
+const TEST_DIR = path.join(scratchDir, 'test-project');
+const INTERACTIVE_TEST_DIR = path.join(scratchDir, 'interactive-test-project');
 const BIN_PATH = path.join(__dirname, '../../bin/avenx.js');
 
 /**
@@ -44,12 +46,7 @@ function setup() {
  *
  */
 function cleanup() {
-  if (fs.existsSync(TEST_DIR)) {
-    fs.rmSync(TEST_DIR, { recursive: true, force: true });
-  }
-  if (fs.existsSync(INTERACTIVE_TEST_DIR)) {
-    fs.rmSync(INTERACTIVE_TEST_DIR, { recursive: true, force: true });
-  }
+  fs.rmSync(scratchDir, { recursive: true, force: true });
 }
 
 /**
@@ -1211,7 +1208,7 @@ async function runTest() {
   } catch (error) {
     console.error('❌ Test failed!');
     console.error(error);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     cleanup();
   }
