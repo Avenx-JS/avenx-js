@@ -1625,6 +1625,15 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "cisheengai",
+      "name": "cisheengai",
+      "avatar_url": "https://avatars.githubusercontent.com/u/359751265?v=4",
+      "profile": "https://github.com/cisheengai",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
