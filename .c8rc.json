@@ -1,0 +1,10 @@
+{
+  "all": true,
+  "include": ["lib/**", "bin/**"],
+  "reporter": ["text", "html", "json-summary"],
+  "check-coverage": true,
+  "lines": 92,
+  "branches": 84,
+  "functions": 93,
+  "statements": 92
+}

@@ -87,7 +87,7 @@
     "test:system": "node test/run-tests.js system",
     "test:fuzz": "node test/run-tests.js fuzz",
     "test:e2e": "playwright test",
-    "test:coverage": "c8 --reporter=text --reporter=html npm test",
+    "test:coverage": "c8 npm test && node scripts/check-coverage.js",
     "version": "node scripts/sync-plugin-versions.js && git add plugins/*/package.json plugins/*/package-lock.json",
     "bench": "node benches/run.js",
     "bench:report": "node benches/run.js --json > bench-results/results.json",

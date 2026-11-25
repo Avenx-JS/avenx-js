@@ -1,0 +1,90 @@
+{
+  "baseline": {
+    "global": {
+      "lines": 93.19,
+      "branches": 85.07,
+      "functions": 94.02,
+      "statements": 93.19
+    },
+    "lib/compiler": {
+      "lines": 95.83,
+      "branches": 85.89,
+      "functions": 95.58,
+      "statements": 95.83
+    },
+    "lib/core/runtime": {
+      "lines": 92.17,
+      "branches": 82.49,
+      "functions": 88.93,
+      "statements": 92.17
+    },
+    "lib/core/renderer": {
+      "lines": 92.77,
+      "branches": 83.57,
+      "functions": 94.19,
+      "statements": 92.77
+    },
+    "lib/core": {
+      "lines": 92.63,
+      "branches": 82.99,
+      "functions": 91.66,
+      "statements": 92.63
+    },
+    "lib/bundler": {
+      "lines": 96.77,
+      "branches": 88.71,
+      "functions": 100,
+      "statements": 96.77
+    },
+    "bin": {
+      "lines": 83.24,
+      "branches": 85.89,
+      "functions": 98.1,
+      "statements": 83.24
+    }
+  },
+  "global": {
+    "lines": 92,
+    "branches": 84,
+    "functions": 93,
+    "statements": 92
+  },
+  "areas": {
+    "lib/compiler": {
+      "lines": 95,
+      "branches": 85,
+      "functions": 95,
+      "statements": 95
+    },
+    "lib/core/runtime": {
+      "lines": 91,
+      "branches": 81,
+      "functions": 88,
+      "statements": 91
+    },
+    "lib/core/renderer": {
+      "lines": 92,
+      "branches": 83,
+      "functions": 93,
+      "statements": 92
+    },
+    "lib/core": {
+      "lines": 92,
+      "branches": 82,
+      "functions": 91,
+      "statements": 92
+    },
+    "lib/bundler": {
+      "lines": 96,
+      "branches": 88,
+      "functions": 99,
+      "statements": 96
+    },
+    "bin": {
+      "lines": 82,
+      "branches": 85,
+      "functions": 97,
+      "statements": 82
+    }
+  }
+}
