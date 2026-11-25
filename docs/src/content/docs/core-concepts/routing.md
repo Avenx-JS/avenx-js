@@ -24,6 +24,8 @@ app.initRouter({
   '*': 'Home', // Fallback route
 });
 ```
+
+Route keys are normalized by stripping any leading `#` (and treating `''` as `'/'`), so `'#/foo'` and `'/foo'` — or `'#/'`, `'/'`, and `''` — refer to the same route. Always write the canonical `'/'`-prefixed pattern in `initRouter()`.
 ### Keep-Alive Page Caching
 
 Routes can enable page caching by setting the `keepAlive` option. Instead of destroying the page when navigating away, Avenx stores the page instance in an internal Least Recently Used (LRU) cache.
