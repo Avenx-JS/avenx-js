@@ -243,6 +243,7 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
     page: string;
     params: Record<string, any>;
     query: Record<string, string | boolean | number>;
+    meta: Record<string, any>;
   };
 
   /**
@@ -657,6 +658,36 @@ export interface AvenxRouteDefinition {
    * Optional transition name for page enter/leave animations.
    */
   transition?: string;
+
+  /**
+   * Keeps the page instance in the LRU cache instead of unmounting it on leave.
+   */
+  keepAlive?: boolean;
+
+  /**
+   * Arbitrary data for this route, readable as `$route.meta`.
+   */
+  meta?: Record<string, any>;
+
+  /**
+   * Navigates to this hash (or computes one from `params`) instead of activating a page.
+   */
+  redirect?: string | ((params: Record<string, any>) => string | Promise<string>);
+
+  /**
+   * Optional async loader function returning a page component or module.
+   */
+  loader?: () => Promise<any>;
+
+  /**
+   * Optional loading placeholder shown while resolving a lazy route.
+   */
+  loading?: string | HTMLElement | (() => string | HTMLElement);
+
+  /**
+   * Alias for `loading`.
+   */
+  loadingPlaceholder?: string | HTMLElement | (() => string | HTMLElement);
 }
 
 /**
@@ -729,7 +760,7 @@ export class AvenxRouter {
   /**
    * Info about the currently loaded route.
    */
-  currentRoute: { hash: string; page: string; params: Record<string, any> } | null;
+  currentRoute: { hash: string; path?: string; page: string; params: Record<string, any>; query?: Record<string, string | boolean | number>; meta?: Record<string, any> } | null;
 
   /**
    * Active navigation delegate.
@@ -750,8 +781,8 @@ export class AvenxRouter {
    */
   beforeEach(
     callback: (
-      to: { hash: string; page: string; params: Record<string, any> },
-      from: { hash: string; page: string; params: Record<string, any> } | null,
+      to: { hash: string; path?: string; page: string; params: Record<string, any>; query?: Record<string, string | boolean | number>; meta?: Record<string, any> },
+      from: { hash: string; path?: string; page: string; params: Record<string, any>; query?: Record<string, string | boolean | number>; meta?: Record<string, any> } | null,
     ) => boolean | string | object | void | Promise<boolean | string | object | void> | typeof AvenxGuard | AvenxGuard,
   ): () => void;
 
@@ -762,8 +793,8 @@ export class AvenxRouter {
    */
   afterEach(
     callback: (
-      to: { hash: string; page: string; params: Record<string, any> },
-      from: { hash: string; page: string; params: Record<string, any> } | null,
+      to: { hash: string; path?: string; page: string; params: Record<string, any>; query?: Record<string, string | boolean | number>; meta?: Record<string, any> },
+      from: { hash: string; path?: string; page: string; params: Record<string, any>; query?: Record<string, string | boolean | number>; meta?: Record<string, any> } | null,
     ) => void,
   ): () => void;
 

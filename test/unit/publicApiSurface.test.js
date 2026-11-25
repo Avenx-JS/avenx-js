@@ -127,11 +127,38 @@ function testPackageTypeEntryPointsExist() {
   console.log('  ✅ Declared type entry points exist.');
 }
 
+/**
+ * Every option AvenxRouter honours on a route definition must be declared on
+ * AvenxRouteDefinition, and $route must declare `meta`.
+ */
+function testRouteDefinitionDeclarations() {
+  console.log('🧪 Testing AvenxRouteDefinition and $route declarations...');
+
+  const routeDefMatch = dts.match(/export interface AvenxRouteDefinition\s*\{[\s\S]*?\n\}/);
+  assert.ok(routeDefMatch, 'AvenxRouteDefinition interface should be declared in lib/core/index.d.ts');
+  const routeDefBlock = routeDefMatch[0];
+
+  for (const field of ['keepAlive', 'meta', 'redirect', 'loader', 'loading', 'loadingPlaceholder']) {
+    const fieldRe = new RegExp(`/\\*\\*[\\s\\S]*?\\*/\\s*${field}\\?:`);
+    assert.ok(
+      fieldRe.test(routeDefBlock),
+      `AvenxRouteDefinition must declare documented optional field "${field}?"`,
+    );
+  }
+
+  const dollarRouteMatch = dts.match(/readonly \$route:\s*\{[\s\S]*?\};/);
+  assert.ok(dollarRouteMatch, '$route must be declared on AvenxComponent');
+  assert.ok(/\bmeta:\s*Record<string,\s*any>;/.test(dollarRouteMatch[0]), '$route must declare meta');
+
+  console.log('  ✅ AvenxRouteDefinition and $route declarations verified.');
+}
+
 try {
   testAllRuntimeExportsAreDeclared();
   testAllDeclaredValuesAreExported();
   testPublicClassMembersAreDeclared();
   testPackageTypeEntryPointsExist();
+  testRouteDefinitionDeclarations();
   console.log('🎉 All public API surface tests passed successfully!');
 } catch (err) {
   console.error('❌ Public API surface test failed:', err);
