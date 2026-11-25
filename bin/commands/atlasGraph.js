@@ -111,6 +111,32 @@ export function runAtlasGraph(model, args) {
   writeGraph(graph, args);
 }
 
+const INSPECT_GRAPH_KINDS = [
+  AtlasNodeKind.ROUTE,
+  AtlasNodeKind.PAGE,
+  AtlasNodeKind.COMPONENT,
+  AtlasNodeKind.BRIDGE,
+  AtlasNodeKind.GUARD,
+];
+
+/**
+ * Write an `inspect` hierarchy diagram to stdout or a requested file.
+ * @param {AppModel} model - The retained application model.
+ * @param {string[]} args - CLI arguments.
+ * @returns {void}
+ */
+export function runInspectGraph(model, args) {
+  const options = renderingOptions(args);
+  validateGraphOptions(model, options);
+  writeGraph(
+    renderAtlasGraph(model, {
+      ...options,
+      kinds: options.kinds ?? INSPECT_GRAPH_KINDS,
+    }),
+    args,
+  );
+}
+
 /**
  * Draw exactly the traversal used by an impact/why answer.
  * @param {AppModel} model - The full model, retained for labels and completeness reporting.

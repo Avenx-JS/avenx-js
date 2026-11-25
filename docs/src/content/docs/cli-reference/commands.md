@@ -592,6 +592,11 @@ npx avenx inspect
 
 # Or using the shorthand alias
 npx avenx i
+
+# Emit the project hierarchy as a Mermaid flowchart (default) or DOT graph
+npx avenx inspect --graph
+npx avenx inspect --graph --format dot
+npx avenx inspect --graph --kinds pages,components --out structure.mmd
 ```
 
 **Sample Output:**

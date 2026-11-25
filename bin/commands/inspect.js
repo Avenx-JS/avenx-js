@@ -1,5 +1,6 @@
 import { AtlasEdgeKind, AtlasNodeKind } from '../../lib/compiler/atlas/AppModel.js';
 import { buildModel } from './atlas.js';
+import { runInspectGraph } from './atlasGraph.js';
 import { bold, cyan, gray, yellow } from '../colors.js';
 
 // `inspect` used to answer these questions with its own scanners - one regex
@@ -86,6 +87,11 @@ function collectHierarchy(cli) {
  * @returns {void}
  */
 export function runInspect(cli, args = []) {
+  if (args.includes('--graph')) {
+    runInspectGraph(buildModel(cli), args);
+    return;
+  }
+
   const isJson = args.includes('--json') || args.includes('-j');
   const hierarchy = collectHierarchy(cli);
   const { srcDir: srcRel, pages, components, bridges, guards, unresolved } = hierarchy;
