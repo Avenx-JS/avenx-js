@@ -11,7 +11,7 @@ import { logger } from '../../lib/core/runtime/AvenxLogger.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const schema = JSON.parse(fs.readFileSync(path.join(root, 'schema/avenx.config.schema.json'), 'utf8'));
-assert.deepEqual(schema, buildConfigSchema(), 'published schema must be regenerated after configuration changes');
+assert.deepEqual(schema, buildConfigSchema(), 'published schema is out of date with CONFIG_SCHEMA. Run npm run generate:config-schema');
 assert.deepEqual(Object.keys(schema.properties), CONFIG_SCHEMA.topLevel);
 for (const [group, names] of Object.entries(CONFIG_SCHEMA)) {
   if (group !== 'topLevel') assert.deepEqual(Object.keys(schema.properties[group].properties), names);
