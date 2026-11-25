@@ -28,10 +28,6 @@ const DIAGNOSTIC = /AVX_[WC]\d{2}/g;
  * fix cannot leave a stale exemption behind.
  */
 const ALLOWLIST = {
-  // `'/'` and `'#/'` normalise to the same route pattern, so the second entry
-  // shadows the first. Known defect, to be fixed separately.
-  'avenx-i18n': [{ code: 'AVX_W59', reason: "duplicate '/' and '#/' routes in main.app.js" }],
-  'avenx-charts': [{ code: 'AVX_W59', reason: "duplicate '/' and '#/' routes in main.app.js" }],
   // Hello.component.css is written as CSS selectors (`.title { ... }`) rather
   // than named style blocks, so no `@css` directive reaches it: the same
   // defect the persistence example had. Known defect, to be fixed separately.
