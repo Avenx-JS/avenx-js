@@ -21,7 +21,7 @@ If you have questions or want to contribute, feel free to reach out.
 ## 🌟 Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-179-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-180-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -259,6 +259,7 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Daytonrad"><img src="https://avatars.githubusercontent.com/u/106027925?v=4&size=100" width="100px" height="100px" alt="Dayton"/><br /><sub><b>Dayton</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Daytonrad" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/cisheengai"><img src="https://avatars.githubusercontent.com/u/359751265?v=4&size=100" width="100px" height="100px" alt="cisheengai"/><br /><sub><b>cisheengai</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=cisheengai" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://cloudgpu.app/?utm_source=github&utm_medium=profile&utm_campaign=upstream_pr_20261126"><img src="https://avatars.githubusercontent.com/u/129925370?v=4&size=100" width="100px" height="100px" alt="CloudGPU"/><br /><sub><b>CloudGPU</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=cloudgpuapp" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sauvi72"><img src="https://avatars.githubusercontent.com/u/230492797?v=4&size=100" width="100px" height="100px" alt="Saurav Kumar"/><br /><sub><b>Saurav Kumar</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Sauvi72" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
