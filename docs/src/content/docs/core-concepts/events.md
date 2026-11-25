@@ -11,7 +11,7 @@ To bind an event listener, prefix the event name with `@` followed by the expres
 
 ```html
 <button @click="increment()">Increment</button>
-<input @input="state.inputValue = event.target.value" />
+<input aria-label="Message" @input="state.inputValue = event.target.value" />
 ```
 
 :::note
@@ -59,6 +59,7 @@ The native DOM `event` object is always available inside inline event handlers.
 
 <input
   @input="state.username = event.target.value"
+  aria-label="Username"
   placeholder="Enter your username"
 />
 ```
@@ -126,20 +127,18 @@ Event bindings support dot-suffixed **modifiers** that adjust how the underlying
 </form>
 
 <!-- Stop event bubbling up to parent containers -->
-<div @click.stop="toggleMenu()">
-  <!-- Click here will not bubble up to parent listeners -->
-</div>
+<button @click.stop="toggleMenu()">Toggle menu</button>
 ```
 
-`.self` ensures the handler only fires if the event target is the element itself, not a child element. Ideal for modal backdrop dismissals:
+`.self` lets a backdrop click dismiss the dialog while clicks inside it reach their own controls. When opening the modal, move focus into the dialog and keep it there until dismissal. The heading names the dialog for screen readers, and pressing Escape anywhere inside closes it. Return focus to the opener when it closes.
 
 ```html
-<!-- Modal backdrop click dismissal: clicking .modal-dialog will NOT close the modal -->
-<div class="modal-backdrop" @click.self="closeModal()">
-  <div class="modal-dialog">
-    <h2>Modal Header</h2>
+<div class="modal-backdrop" @click.self="closeModal()" @keydown.esc="closeModal()">
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <h2 id="dialog-title">Confirm action</h2>
     <p>Interacting with modal content does not trigger closeModal().</p>
     <button @click="confirmAction()">Confirm</button>
+    <button @click="closeModal()">Cancel</button>
   </div>
 </div>
 ```
@@ -154,7 +153,7 @@ Event bindings support dot-suffixed **modifiers** that adjust how the underlying
 
 ```html
 <div @scroll.passive="onScroll()">Scroll container</div>
-<div @click.capture="onClickCapture()">Capture-phase click</div>
+<button @click.capture="onClickCapture()">Capture-phase click</button>
 <div @touchstart.passive.capture="onTouch()">Passive capture touch</div>
 ```
 
@@ -169,10 +168,10 @@ System key modifiers filter mouse and keyboard event execution based on whether 
 </a>
 
 <!-- Trigger submitForm on Command + Enter (macOS) or Ctrl + Enter -->
-<textarea @keydown.cmd.enter="submitForm()" @keydown.ctrl.enter="submitForm()"></textarea>
+<textarea aria-label="Message" @keydown.cmd.enter="submitForm()" @keydown.ctrl.enter="submitForm()"></textarea>
 
 <!-- Multi-system key combination: Shift + Alt + Click -->
-<div @click.shift.alt="inspectElement()">Inspect Element</div>
+<button @click.shift.alt="inspectElement()">Inspect Element</button>
 ```
 
 :::tip
@@ -185,10 +184,10 @@ Key modifiers act as key filters on keyboard events, so the handler only runs wh
 
 ```html
 <!-- Search input triggered on Enter key -->
-<input @keyup.enter="performSearch()" placeholder="Search items and press Enter..." />
-<input @keydown.esc="clearInput()" placeholder="Press Esc to clear" />
-<input @keydown.space="togglePlay()" placeholder="Press Space to toggle" />
-<input @keydown.tab.prevent="focusNext()" placeholder="Press Tab to navigate" />
+<input aria-label="Search items" @keyup.enter="performSearch()" placeholder="Search items and press Enter..." />
+<input aria-label="Filter" @keydown.esc="clearInput()" placeholder="Press Esc to clear" />
+<input aria-label="Playback shortcut" @keydown.space="togglePlay()" placeholder="Press Space to toggle" />
+<input aria-label="Current field" @keydown.tab.prevent="focusNext()" placeholder="Press Tab to navigate" />
 <button @keydown.delete="removeItem()">Delete Item</button>
 ```
 
@@ -233,7 +232,7 @@ When multiple modifiers are chained together, they execute in the following orde
 For example:
 
 ```html
-<input @keydown.enter.prevent="submit()" />
+<input aria-label="Message" @keydown.enter.prevent="submit()" />
 ```
 
 The runtime first verifies the key modifier, then applies `.prevent`, and finally executes the event handler.
