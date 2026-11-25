@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url';
 import { readTemplate } from '../utils.js';
 import { getInitialHtml } from './serve.js';
 
+export const CONFIG_SCHEMA_REF = './node_modules/avenx-core/schema/avenx.config.schema.json';
+
 export const SCAFFOLD_FILES = [
   '.vscode/jsconfig.json',
   '.vscode/avenx.html-data.json',

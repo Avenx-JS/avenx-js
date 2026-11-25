@@ -168,4 +168,84 @@ project((cwd) => {
   }
 });
 
+// $schema reference checks and repairs in avenx.config.json
+project((cwd) => {
+  const configPath = path.join(cwd, 'avenx.config.json');
+  const schemaRel = './node_modules/avenx-core/schema/avenx.config.schema.json';
+
+  // Fresh checkout without node_modules passes when $schema is set
+  const freshResult = run(cwd, ['doctor', '--json']);
+  assert.equal(freshResult.status, 0, freshResult.stdout + freshResult.stderr);
+  const freshSchemaCheck = JSON.parse(freshResult.stdout).checks.find((c) => c.message.includes('$schema'));
+  assert.equal(freshSchemaCheck?.status, 'pass');
+
+  // Missing $schema warns, previews in --dry-run, and repairs while preserving keys/indentation
+  const withoutSchema = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  delete withoutSchema.$schema;
+  const fourSpaceConfig = JSON.stringify({ ...withoutSchema, server: { port: 4123 } }, null, 4) + '\n';
+  fs.writeFileSync(configPath, fourSpaceConfig);
+
+  const warnResult = run(cwd, ['doctor', '--json']);
+  assert.equal(warnResult.status, 0);
+  const missingCheck = JSON.parse(warnResult.stdout).checks.find((c) => c.message.includes('$schema'));
+  assert.equal(missingCheck?.status, 'warn');
+  assert.equal(missingCheck?.area, 'Project files');
+  assert.match(missingCheck?.hint || '', /avenx doctor --fix/);
+
+  const preview = run(cwd, ['doctor', '--fix', '--dry-run', '--json']);
+  assert.equal(preview.status, 0, preview.stdout + preview.stderr);
+  assert.deepEqual(
+    JSON.parse(preview.stdout).repairs.map((r) => [r.path, r.action, r.status]),
+    [['avenx.config.json', 'update', 'planned']],
+  );
+  assert.equal(fs.readFileSync(configPath, 'utf8'), fourSpaceConfig, 'dry-run must not modify avenx.config.json');
+
+  const fixed = run(cwd, ['doctor', '--fix', '--json']);
+  assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+  assert.deepEqual(
+    JSON.parse(fixed.stdout).repairs.map((r) => [r.path, r.action, r.status]),
+    [['avenx.config.json', 'update', 'applied']],
+  );
+  const repairedText = fs.readFileSync(configPath, 'utf8');
+  assert.match(repairedText, /^ {4}"\$schema"/m, 'existing 4-space indentation must be preserved');
+  const repairedJson = JSON.parse(repairedText);
+  assert.equal(repairedJson.$schema, schemaRel);
+  assert.deepEqual(repairedJson.server, { port: 4123 });
+  assert.deepEqual(repairedJson.style, withoutSchema.style);
+
+  const repeat = run(cwd, ['doctor', '--fix', '--json']);
+  assert.equal(repeat.status, 0);
+  assert.deepEqual(JSON.parse(repeat.stdout).repairs, [], 'second run must have no repairs');
+
+  // Stale $schema when node_modules exists warns with the stale path and is repaired by --fix
+  const installedSchema = path.join(cwd, schemaRel);
+  fs.mkdirSync(path.dirname(installedSchema), { recursive: true });
+  fs.writeFileSync(installedSchema, '{}\n');
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify({ ...repairedJson, $schema: './node_modules/stale-pkg/missing.json' }, null, 2) + '\n',
+  );
+
+  const staleResult = run(cwd, ['doctor', '--json']);
+  assert.equal(staleResult.status, 0);
+  const staleCheck = JSON.parse(staleResult.stdout).checks.find((c) => c.message.includes('$schema'));
+  assert.equal(staleCheck?.status, 'warn');
+  assert.match(staleCheck?.message || '', /\.\/node_modules\/stale-pkg\/missing\.json/);
+
+  const staleFixed = run(cwd, ['doctor', '--fix', '--json']);
+  assert.equal(staleFixed.status, 0);
+  assert.equal(JSON.parse(fs.readFileSync(configPath, 'utf8')).$schema, schemaRel);
+  const afterStaleFix = run(cwd, ['doctor', '--json']);
+  assert.equal(JSON.parse(afterStaleFix.stdout).checks.find((c) => c.message.includes('$schema'))?.status, 'pass');
+
+  // Missing avenx.config.json must not emit a $schema warning
+  fs.unlinkSync(configPath);
+  const noConfigResult = run(cwd, ['doctor', '--json']);
+  assert.equal(noConfigResult.status, 0);
+  assert.equal(
+    JSON.parse(noConfigResult.stdout).checks.find((c) => c.message.includes('$schema')),
+    undefined,
+  );
+});
+
 console.log('doctor --fix repairs, previews, preservation, and repeat runs passed.');
