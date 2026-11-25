@@ -18,5 +18,4 @@ app.use(AvenxCharts.avenxCharts);
 
 app.initRouter({
   '/': 'Dashboard',
-  '#/': 'Dashboard',
 });
