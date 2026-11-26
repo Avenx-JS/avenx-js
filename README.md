@@ -851,7 +851,7 @@ The repository's own verification, as it stands on the default branch
 
 | Suite | Count | How to run |
 | :--- | ---: | --- |
-| Unit | 312 files | `npm run test:unit` |
+| Unit | 314 files | `npm run test:unit` |
 | Integration | 24 files | `npm run test:integration` |
 | System / CLI | 89 files | `npm run test:system` |
 | Browser (E2E, Chromium) | ~210 test declarations | `npm run test:e2e` |
