@@ -261,6 +261,7 @@ console. Four separate defects met there, each individually invisible.
 | `AVX_W01` no longer counts source maps | None, unless a build relied on failing there |
 | `csp.strict` is validated as a boolean | None; the option is new and off by default. A non-boolean value is refused rather than read as truthy |
 | `data-ax-html` renders sanitized markup from a plain string instead of escaped text | To show markup as text, use `{{ value }}` |
+| `@click.capture` handlers now run before the bubble-phase handlers of their descendants, outermost ancestor first, as the modifier documents. Previously they ran in bubble order | If a `.capture` handler relied on running after its children, move that logic into a bubble handler (`@click`) on the same element |
 
 ### Fixed — compiler correctness
 
