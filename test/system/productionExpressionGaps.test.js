@@ -67,6 +67,36 @@ function build(cwd, args = []) {
   return { status: result.status, output: `${result.stdout || ''}${result.stderr || ''}` };
 }
 
+/**
+ * Runs `avenx check` as a child process.
+ * @param {string} cwd - The project root.
+ * @param {string[]} [args] - Extra arguments.
+ * @returns {{status: number, stdout: string, output: string}} The exit status, stdout, and combined output.
+ */
+function check(cwd, args = []) {
+  const result = spawnSync(process.execPath, [BIN, 'check', ...args], { cwd, encoding: 'utf8' });
+  return {
+    status: result.status,
+    stdout: result.stdout || '',
+    output: `${result.stdout || ''}${result.stderr || ''}`,
+  };
+}
+
+/**
+ * Creates a temp project with arbitrary file entries.
+ * @param {Object<string, string>} files - Relative path to contents.
+ * @returns {string} The project root.
+ */
+function makeCustomProject(files) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-expr-gap-'));
+  for (const [relative, contents] of Object.entries(files)) {
+    const full = path.join(root, relative);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, contents);
+  }
+  return root;
+}
+
 const roots = [];
 try {
   console.log('🧪 Production build refuses an expression it cannot execute');
@@ -92,6 +122,84 @@ try {
   assert.match(warned.output, /list\.component\.js:7 /);
   assert.doesNotMatch(warned.output, /will be interpreted at runtime/, 'the warning must not promise interpretation');
   assert.ok(fs.existsSync(path.join(development, 'dist', 'bundle.js')));
+
+  console.log('🧪 avenx check and check --json emit AVX_W48 for uncompilable expressions including <Component :is>');
+  const checkedProject = makeCustomProject({
+    'avenx.config.json': '{}',
+    'src/components/card-a/card-a.component.js': '<div>A</div>\n',
+    'src/pages/home.page.js': [
+      '<state count="0" view="\'CardA\'" />',
+      '<div>',
+      '  <@defer when="count +"><p>{{ count }}</p></@defer>',
+      '  <Component :is="{{ view + }}" />',
+      '</div>',
+      '',
+    ].join('\n'),
+    'src/main.app.js':
+      "import { AvenxApp } from 'avenx-core/runtime';\nconst app = new AvenxApp({ target: '#app' });\napp.initRouter({ '/': 'Home' });\n",
+  });
+  roots.push(checkedProject);
+
+  const plainCheck = check(checkedProject);
+  assert.notStrictEqual(plainCheck.status, 0, `avenx check must fail on AVX_W48:\n${plainCheck.output}`);
+  assert.match(plainCheck.output, /AVX_W48/, plainCheck.output);
+  assert.match(plainCheck.output, /count \+/, plainCheck.output);
+  assert.match(plainCheck.output, /view \+/, plainCheck.output);
+
+  const jsonCheck = check(checkedProject, ['--json']);
+  assert.notStrictEqual(jsonCheck.status, 0, 'avenx check --json must exit non-zero on AVX_W48');
+  const report = JSON.parse(jsonCheck.stdout);
+  assert.strictEqual(report.valid, false);
+  const w48 = report.diagnostics.find((d) => d.code === 'AVX_W48');
+  assert.ok(w48, `expected AVX_W48 in diagnostics: ${jsonCheck.stdout}`);
+  assert.strictEqual(w48.severity, 'warning');
+  assert.ok(w48.file && w48.file.includes('home.page.js'), `expected file metadata, got ${w48.file}`);
+  assert.strictEqual(typeof w48.line, 'number', 'expected line metadata');
+
+  const prodRefusedDynamic = build(checkedProject);
+  assert.notStrictEqual(prodRefusedDynamic.status, 0, 'production build must refuse uncompilable <Component :is>');
+  assert.match(prodRefusedDynamic.output, /AVX_C27/, prodRefusedDynamic.output);
+
+  const devWarnedDynamic = build(checkedProject, ['--dev']);
+  assert.strictEqual(devWarnedDynamic.status, 0, 'dev build must warn and succeed on <Component :is> gap');
+  assert.match(devWarnedDynamic.output, /AVX_W48/, devWarnedDynamic.output);
+
+  fs.writeFileSync(path.join(checkedProject, 'avenx.config.json'), JSON.stringify({ warnings: { AVX_W48: 'off' } }));
+  const silencedCheck = check(checkedProject, ['--json']);
+  assert.strictEqual(silencedCheck.status, 0, `warnings.AVX_W48: "off" must silence check:\n${silencedCheck.output}`);
+  const silencedReport = JSON.parse(silencedCheck.stdout);
+  assert.strictEqual(
+    silencedReport.diagnostics.some((d) => d.code === 'AVX_W48'),
+    false,
+  );
+
+  console.log('🧪 Valid <Component :is> and quoted ternary :is build cleanly in production');
+  const validDynamicProject = makeCustomProject({
+    'avenx.config.json': '{}',
+    'src/components/card-a/card-a.component.js': '<div>A {{ props.label }}</div>\n',
+    'src/components/card-b/card-b.component.js': '<div>B {{ props.label }}</div>\n',
+    'src/pages/home.page.js': [
+      '<state currentView="\'CardA\'" flag="true" />',
+      '<div>',
+      '  <Component :is="{{ currentView }}" />',
+      '  <Component :is=\'{{ flag ? "CardA" : "CardB" }}\' :label=\'flag ? "One" : "Two"\' />',
+      '</div>',
+      '',
+    ].join('\n'),
+    'src/main.app.js':
+      "import { AvenxApp } from 'avenx-core/runtime';\nimport CardA from './components/card-a/card-a.component.js';\nimport CardB from './components/card-b/card-b.component.js';\nconst app = new AvenxApp({ target: '#app' });\napp.register('CardA', CardA);\napp.register('CardB', CardB);\napp.initRouter({ '/': 'Home' });\n",
+  });
+  roots.push(validDynamicProject);
+
+  const validProd = build(validDynamicProject);
+  assert.strictEqual(validProd.status, 0, `valid <Component :is> must build in production:\n${validProd.output}`);
+  assert.doesNotMatch(validProd.output, /AVX_W48|AVX_C27/, validProd.output);
+  const validBundle = fs.readFileSync(path.join(validDynamicProject, 'dist', 'bundle.js'), 'utf8');
+  const exprTable = (validBundle.match(/Home\.__axExprs\s*=\s*\{[\s\S]*?\n?\};/) || [''])[0];
+  assert.ok(exprTable, 'Home.__axExprs must be emitted in production bundle');
+  assert.ok(exprTable.includes(JSON.stringify('flag ? "CardA" : "CardB"')), 'decoded ternary :is must be in __axExprs');
+  assert.ok(exprTable.includes(JSON.stringify('flag ? "One" : "Two"')), 'decoded ternary prop must be in __axExprs');
+  assert.ok(!exprTable.includes('&quot;CardA&quot;'), 'raw HTML entity must not be used as __axExprs key');
 
   console.log('  ✅ Production expression gap tests passed!');
 } catch (error) {

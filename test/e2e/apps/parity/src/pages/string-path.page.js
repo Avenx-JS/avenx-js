@@ -54,6 +54,9 @@
 
   <section data-construct="dynamic-component">
     <Component :is="{{ currentView }}" owner="{{ owner }}" />
+    <div data-testid="quoted-dynamic">
+      <Component :is='{{ currentView === "SettingsCard" ? "SettingsCard" : "ProfileCard" }}' :owner="owner" />
+    </div>
   </section>
 
   <!-- Known gaps. -->

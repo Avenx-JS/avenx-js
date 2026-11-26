@@ -30,6 +30,7 @@
 import assert from 'assert';
 import { collectExpressions } from '../../lib/compiler/codegen/collect.js';
 import { buildExpressionTable } from '../../lib/compiler/codegen/table.js';
+import { processDefer } from '../../lib/compiler/parser/directives/defer.js';
 import { processTransitionTags } from '../../lib/compiler/parser/directives/transitions.js';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
 import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
@@ -49,14 +50,21 @@ try {
   // The finished templates, produced by the same passes the compiler runs, so
   // a change to what a construct compiles to is a change this file sees.
   const dynamic = parser.processComponentTags('<Component :is="{{ currentView }}" />');
+  const quotedDynamic = parser.processComponentTags(
+    '<Component :is=\'{{ flag ? "Red" : "Blue" }}\' :label=\'flag ? "Yes" : "No"\' />',
+  );
   const transition = processTransitionTags(
     '<transition name="fade"><div data-ax-show="open">panel</div></transition>',
     'Demo.component.js',
   );
+  const customDirective = '<div data-ax-tooltip="hintText" data-ax-show="visible">tip</div>';
 
   const cases = [
     { label: '<Component :is>', template: dynamic, expression: 'currentView' },
+    { label: '<Component :is> quoted ternary', template: quotedDynamic, expression: 'flag ? "Red" : "Blue"' },
+    { label: '<Component :is> quoted prop', template: quotedDynamic, expression: 'flag ? "Yes" : "No"' },
     { label: '<transition name>', template: transition, expression: "'fade'" },
+    { label: 'custom data-ax-* directive', template: customDirective, expression: 'hintText' },
   ];
 
   for (const { label, template, expression } of cases) {
@@ -74,6 +82,21 @@ try {
     );
     console.log(`  ✅ ${label} is compiled rather than left to an interpreter production does not have`);
   }
+
+  // Non-expression <@defer> triggers must not be collected as JS expressions,
+  // or a fallback template carrying them would fail production builds with AVX_C27.
+  const deferTemplate = processDefer(
+    '<@defer when="500ms"><p>a</p></@defer><@defer when="visible; interaction"><p>b</p></@defer>',
+  );
+  const deferCollected = collectExpressions({ template: deferTemplate });
+  assert.ok(!deferCollected.expressions.includes('500ms'), 'duration trigger must not be collected');
+  assert.ok(
+    !deferCollected.expressions.includes('visible; interaction'),
+    'multi-trigger subscription must not be collected',
+  );
+  const deferTable = buildExpressionTable('Demo', deferCollected);
+  assert.deepStrictEqual(deferTable.gaps, [], 'subscription defer triggers must not produce expression gaps');
+  console.log('  ✅ non-expression <@defer> subscription triggers are skipped without false AVX_C27/AVX_W48');
 
   console.log('Expression collector coverage tests passed!');
 } catch (error) {

@@ -118,7 +118,13 @@ async function recordClasses(section) {
           if (node.nodeType === Node.ELEMENT_NODE) take(node.getAttribute('class'));
         }
       }
-    }).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+    }).observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class'],
+      attributeOldValue: true,
+    });
   });
 }
 
@@ -298,8 +304,16 @@ const CONSTRUCTS = {
     async steps({ section }) {
       const bound = section.getByTestId('bound');
       const initial = {
-        text: 'Ada', bio: 'hello', age: 7, volume: 50, when: '2026-11-20', city: 'lisbon',
-        cities: ['oslo'], agreed: false, fruits: ['apple'], plan: 'free',
+        text: 'Ada',
+        bio: 'hello',
+        age: 7,
+        volume: 50,
+        when: '2026-11-20',
+        city: 'lisbon',
+        cities: ['oslo'],
+        agreed: false,
+        fruits: ['apple'],
+        plan: 'free',
       };
       await expect(bound).toHaveText(JSON.stringify(initial));
       await expect(section.getByTestId('text')).toHaveValue('Ada');
@@ -321,10 +335,20 @@ const CONSTRUCTS = {
 
       // Numbers stay numbers, the multiple select and the checkbox group are
       // arrays, and the date input writes its string.
-      await expect(bound).toHaveText(JSON.stringify({
-        text: 'Grace', bio: 'typed', age: 42, volume: 80, when: '2027-01-02', city: 'berlin',
-        cities: ['berlin', 'oslo'], agreed: true, fruits: ['apple', 'pear'], plan: 'pro',
-      }));
+      await expect(bound).toHaveText(
+        JSON.stringify({
+          text: 'Grace',
+          bio: 'typed',
+          age: 42,
+          volume: 80,
+          when: '2027-01-02',
+          city: 'berlin',
+          cities: ['berlin', 'oslo'],
+          agreed: true,
+          fruits: ['apple', 'pear'],
+          plan: 'pro',
+        }),
+      );
     },
   },
 
@@ -449,9 +473,9 @@ const CONSTRUCTS = {
       await recordClasses(section);
       await section.getByTestId('add-item').click();
       await expect(rows(section)).toHaveText(['first', 'added']);
-      await expect.poll(() => recordedClasses(page)).toEqual(
-        expect.arrayContaining(['fade-enter', 'fade-enter-active', 'fade-enter-to']),
-      );
+      await expect
+        .poll(() => recordedClasses(page))
+        .toEqual(expect.arrayContaining(['fade-enter', 'fade-enter-active', 'fade-enter-to']));
       expect((await recordedClasses(page)).filter((token) => !token.startsWith('fade-'))).toEqual([]);
       // At rest before the snapshot: the enter classes are removed again.
       await expect(rows(section).nth(1)).toHaveAttribute('class', '');
@@ -528,12 +552,16 @@ const CONSTRUCTS = {
   'dynamic-component': {
     hash: '#/string-path',
     async steps({ page, section }) {
-      await expect(section.getByTestId('profile-card')).toHaveText('Profile for Ada');
+      const quoted = section.getByTestId('quoted-dynamic');
+      await expect(section.getByTestId('profile-card').first()).toHaveText('Profile for Ada');
+      await expect(quoted.getByTestId('profile-card')).toHaveText('Profile for Ada');
       await page.getByTestId('show-settings').click();
-      await expect(section.getByTestId('settings-card')).toHaveText('Settings for Ada');
+      await expect(section.getByTestId('settings-card').first()).toHaveText('Settings for Ada');
+      await expect(quoted.getByTestId('settings-card')).toHaveText('Settings for Ada');
       await expect(section.getByTestId('profile-card')).toHaveCount(0);
       await page.getByTestId('rename').click();
-      await expect(section.getByTestId('settings-card')).toHaveText('Settings for Grace');
+      await expect(section.getByTestId('settings-card').first()).toHaveText('Settings for Grace');
+      await expect(quoted.getByTestId('settings-card')).toHaveText('Settings for Grace');
     },
   },
 
@@ -585,13 +613,29 @@ test.describe('every documented construct renders the same from both bundles', (
 
       /** @type {Object<string, string[]>} */
       const snapshots = {};
+      /** @type {string[]} */
+      const runtimeDiagMessages = [];
+      page.on('console', (message) => {
+        if (message.type() === 'warning' || message.type() === 'error') {
+          const text = message.text();
+          if (/AVX_W12|AVX_R32/.test(text)) {
+            runtimeDiagMessages.push(text);
+          }
+        }
+      });
+
       for (const build of BUILDS) {
         await test.step(`${build.label} bundle`, async () => {
+          runtimeDiagMessages.length = 0;
           await app.open('parity', { entry: build.entry, hash: construct.hash });
           const section = page.locator(`[data-construct="${name}"]`);
           await expect(section, `the ${name} section did not render`).toHaveCount(1);
 
           await construct.steps({ page, section });
+          expect(
+            runtimeDiagMessages,
+            `${name} (${build.label}) logged unexpected AVX_W12/AVX_R32 runtime diagnostics`,
+          ).toEqual([]);
           snapshots[build.label] = await section.evaluate(serialise);
 
           const interpreted = await page.evaluate(() =>
