@@ -21,7 +21,7 @@ If you have questions or want to contribute, feel free to reach out.
 ## 🌟 Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-175-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-180-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -253,6 +253,13 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://amanaulakh.lol/"><img src="https://avatars.githubusercontent.com/u/211279635?v=4&size=100" width="100px" height="100px" alt="Aman Aulakh"/><br /><sub><b>Aman Aulakh</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=nextammy" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Ocisky"><img src="https://avatars.githubusercontent.com/u/191257128?v=4&size=100" width="100px" height="100px" alt="Ocisky"/><br /><sub><b>Ocisky</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Ocisky" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/khwyen131-rgb"><img src="https://avatars.githubusercontent.com/u/269688738?v=4&size=100" width="100px" height="100px" alt="Hoang Vu Khanh Uyen B2306693"/><br /><sub><b>Hoang Vu Khanh Uyen B2306693</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=khwyen131-rgb" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/avaldivieso-meraki"><img src="https://avatars.githubusercontent.com/u/236871655?v=4&size=100" width="100px" height="100px" alt="avaldivieso-meraki"/><br /><sub><b>avaldivieso-meraki</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=avaldivieso-meraki" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Daytonrad"><img src="https://avatars.githubusercontent.com/u/106027925?v=4&size=100" width="100px" height="100px" alt="Dayton"/><br /><sub><b>Dayton</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Daytonrad" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/cisheengai"><img src="https://avatars.githubusercontent.com/u/359751265?v=4&size=100" width="100px" height="100px" alt="cisheengai"/><br /><sub><b>cisheengai</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=cisheengai" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://cloudgpu.app/?utm_source=github&utm_medium=profile&utm_campaign=upstream_pr_20261126"><img src="https://avatars.githubusercontent.com/u/129925370?v=4&size=100" width="100px" height="100px" alt="CloudGPU"/><br /><sub><b>CloudGPU</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=cloudgpuapp" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sauvi72"><img src="https://avatars.githubusercontent.com/u/230492797?v=4&size=100" width="100px" height="100px" alt="Saurav Kumar"/><br /><sub><b>Saurav Kumar</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Sauvi72" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

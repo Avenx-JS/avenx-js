@@ -107,5 +107,4 @@ app.register('LanguageSwitcher', LanguageSwitcher);
 
 app.initRouter({
   '/': 'Storefront',
-  '#/': 'Storefront',
 });

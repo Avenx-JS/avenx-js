@@ -82,6 +82,7 @@
     "test:snapshots": "node scripts/compilerSnapshots.js",
     "test:docs": "node scripts/check-doc-examples.js",
     "test:diagnostic-docs": "node scripts/check-diagnostic-docs.js",
+    "test:readme-figures": "node scripts/check-readme-figures.js",
     "test:snapshots:update": "node scripts/compilerSnapshots.js --update-snapshots",
     "test:integration": "node test/run-tests.js integration",
     "test:system": "node test/run-tests.js system",
@@ -95,6 +96,7 @@
     "lint": "eslint \"**/*.js\"",
     "format": "prettier --write \"**/*.js\" \"**/*.md\" \"**/*.json\" \"bin/commands/serve/**/*.{html,css}\"",
     "generate:config-schema": "node scripts/generateConfigSchema.js",
+    "check:config-schema": "node scripts/generateConfigSchema.js --check",
     "prepack": "npm run generate:config-schema"
   },
   "keywords": [

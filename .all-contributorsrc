@@ -1607,6 +1607,51 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "avaldivieso-meraki",
+      "name": "avaldivieso-meraki",
+      "avatar_url": "https://avatars.githubusercontent.com/u/236871655?v=4",
+      "profile": "https://github.com/avaldivieso-meraki",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "Daytonrad",
+      "name": "Dayton",
+      "avatar_url": "https://avatars.githubusercontent.com/u/106027925?v=4",
+      "profile": "https://github.com/Daytonrad",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "cisheengai",
+      "name": "cisheengai",
+      "avatar_url": "https://avatars.githubusercontent.com/u/359751265?v=4",
+      "profile": "https://github.com/cisheengai",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "cloudgpuapp",
+      "name": "CloudGPU",
+      "avatar_url": "https://avatars.githubusercontent.com/u/129925370?v=4",
+      "profile": "https://cloudgpu.app/?utm_source=github&utm_medium=profile&utm_campaign=upstream_pr_20261126",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Sauvi72",
+      "name": "Saurav Kumar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/230492797?v=4",
+      "profile": "https://github.com/Sauvi72",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",

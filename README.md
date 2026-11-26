@@ -657,11 +657,11 @@ that ships.
 
 A freshly scaffolded application with one component, production build, measured
 with `avenx init -y`, `avenx generate component hello`, and `avenx build`
-(verified 2026-11-23):
+(verified 2026-11-25):
 
 | Asset | Raw | Gzipped |
 | :--- | ---: | ---: |
-| `bundle.js` | 371.62 KB | 86.87 KB |
+| `bundle.js` | 380.56 KB | 88.97 KB |
 | `bundle.css` | 0.69 KB | 0.31 KB |
 
 That number is honest rather than flattering, and worth understanding: Avenx's
@@ -670,7 +670,7 @@ identifiers or remove dead branches, because doing that safely needs a full
 ECMAScript parser and a minifier that guesses produces a bundle that is smaller
 and wrong. Line numbers therefore survive into production stack traces. Unused
 modules *are* tree-shaken out of the graph — the same scaffolded build reports
-`64 modules · 23 shaken out` — and comments and indentation are what gzip
+`70 modules · 23 shaken out` — and comments and indentation are what gzip
 compresses best, so the gap on the wire is much narrower than on disk.
 
 <div align="right"><a href="#avenxjs">↑ back to top</a></div>
@@ -847,25 +847,27 @@ migration.
   Windows and macOS as well.
 
 The repository's own verification, as it stands on the default branch
-`main` (counts verified 2026-11-06):
+`main` (counts verified 2026-11-26):
 
 | Suite | Count | How to run |
 | :--- | ---: | --- |
-| Unit | 249 files | `npm run test:unit` |
+| Unit | 309 files | `npm run test:unit` |
 | Integration | 24 files | `npm run test:integration` |
-| System / CLI | 46 files | `npm run test:system` |
-| Browser (E2E, Chromium) | ~250 test declarations | `npm run test:e2e` |
+| System / CLI | 88 files | `npm run test:system` |
+| Browser (E2E, Chromium) | ~210 test declarations | `npm run test:e2e` |
 | Plugins | 4 suites | `npm run test:plugins` |
 
 The file counts come from `ls test/unit/*.test.js | wc -l`,
 `ls test/integration/*.test.js | wc -l`, and
 `ls test/system/*.test.js | wc -l`. The E2E declaration count can be checked
 with `grep -RhoE 'test[[:space:]]*\(' test/e2e/specs | wc -l`; it is not a
-count of fixture applications. The 16 fixture directories can be counted with
+count of fixture applications. The 22 fixture directories can be counted with
 `find test/e2e/apps -mindepth 1 -maxdepth 1 -type d | wc -l`. The plugin count
 covers `avenx-i18n`, `avenx-persistence`, `avenx-charts` and `avenx-vite`.
+`npm run test:readme-figures` recomputes every figure in this table and the
+build figures above; CI fails when one is out of date (sizes within 2 %).
 
-The E2E suite compiles 16 real fixture applications from `test/e2e/apps` with
+The E2E suite compiles 22 real fixture applications from `test/e2e/apps` with
 the actual CLI and drives the compiled bundles in a browser, so a test cannot
 pass unless the compiler and the runtime both ran. Chromium gates every pull
 request; Firefox and WebKit run nightly. Some fixtures exist to pin known gaps

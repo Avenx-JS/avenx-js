@@ -36,12 +36,24 @@ jobs:
         if: matrix.node-version == 22
         run: npm run test:snapshots
 
+      # schema/avenx.config.schema.json is generated from CONFIG_SCHEMA and
+      # published; prepack would silently fix drift at release time only.
+      - name: Check configuration schema
+        if: matrix.node-version == 22
+        run: npm run check:config-schema
+
       - name: Run plugin tests
         run: npm run test:plugins
 
       - name: Build documentation examples
         if: matrix.node-version == 22
         run: npm run test:docs
+
+      # Recomputes the test counts and the scaffold build figures README.md
+      # states; sizes have a 2 % band, documented in the script.
+      - name: Check README figures
+        if: matrix.node-version == 22
+        run: npm run test:readme-figures
 
       - name: Check diagnostic documentation
         if: matrix.node-version == 22

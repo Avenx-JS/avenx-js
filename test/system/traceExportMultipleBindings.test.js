@@ -23,6 +23,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
 
+// `--import` takes a module specifier, not a path. A bare `C:\...` is read as a
+// URL with the scheme `c:` and refused on Windows, so it is passed as a file URL.
+const HAPPY_DOM_HOOK = pathToFileURL(path.join(repoRoot, 'test/helpers/register-happy-dom.js')).href;
+
 console.log('Testing trace export with multiple bindings in the same element...');
 
 const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-multiple-bindings-'));
@@ -71,13 +75,9 @@ import fs from 'node:fs';
 
 import { loadComponent } from ${JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/tooling/index.js')).href)};
 
-import { mountTestComponent, flushPromises } from ${JSON.stringify(
-    pathToFileURL(path.join(repoRoot, 'lib/core/testing.js')).href,
-  )};
+import { mountTestComponent, flushPromises } from ${JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/testing.js')).href)};
 
-import { startRecording, stopRecording } from ${JSON.stringify(
-    pathToFileURL(path.join(repoRoot, 'lib/core/trace/recorder.js')).href,
-  )};
+import { startRecording, stopRecording } from ${JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/trace/recorder.js')).href)};
 
 import { generateTest } from ${JSON.stringify(pathToFileURL(path.join(repoRoot, 'lib/core/trace/exportTest.js')).href)};
 
@@ -140,14 +140,10 @@ console.log('DETERMINISM:' + trace.determinism.status);
   );
 
   function runScript(scriptPath) {
-    return spawnSync(
-      process.execPath,
-      ['--import', path.join(repoRoot, 'test/helpers/register-happy-dom.js'), scriptPath],
-      {
-        encoding: 'utf8',
-        cwd: repoRoot,
-      },
-    );
+    return spawnSync(process.execPath, ['--import', HAPPY_DOM_HOOK, scriptPath], {
+      encoding: 'utf8',
+      cwd: repoRoot,
+    });
   }
 
   const recordRun = runScript(recordScript);
