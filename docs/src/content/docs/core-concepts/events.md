@@ -149,7 +149,7 @@ Event bindings support dot-suffixed **modifiers** that adjust how the underlying
 <button @click.once="claimReward()">Claim Reward (Single Click Only)</button>
 ```
 
-`.passive` and `.capture` map to native `addEventListener` options:
+`.passive` and `.capture` map to native `addEventListener` options. Under event delegation, `.capture` handlers still run root-downward before bubble-phase handlers (outermost-first), and `.passive` is isolated from non-passive handlers for the same event so it never blocks `.prevent` elsewhere in the tree:
 
 ```html
 <div @scroll.passive="onScroll()">Scroll container</div>
