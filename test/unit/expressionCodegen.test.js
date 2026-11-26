@@ -163,6 +163,24 @@ for (const source of VALUE_CASES) {
 }
 console.log(`  ✅ ${VALUE_CASES.length} value expressions agree`);
 
+// A brace inside a string or a nested template literal in a `${}` hole is part
+// of that literal. Counting it as the end of the hole cut the expression short,
+// so these failed to parse and a production build refused them (AVX_R32).
+const TEMPLATE_HOLE_CASES = [
+  ['`${flag ? "}" : ""}`', '}'],
+  ['`${flag ? "{" : ""}`', '{'],
+  ["`[${items.map(i => i.label).join('} {')}]`", '[a} {b]'],
+  ['`${`}`}`', '}'],
+  ['`a${`b${count}"}"`}c`', 'ab3"}"c'],
+];
+
+for (const [source, expected] of TEMPLATE_HOLE_CASES) {
+  const { interpreted, compiled } = bothWays(source);
+  assert.deepStrictEqual(interpreted, { value: expected }, `interpreter result for ${JSON.stringify(source)}`);
+  assert.deepStrictEqual(compiled, { value: expected }, `compiled result for ${JSON.stringify(source)}`);
+}
+console.log(`  ✅ ${TEMPLATE_HOLE_CASES.length} template literals with braces inside hole strings parse`);
+
 const STATEMENT_CASES = [
   'count = 0',
   'count++',
