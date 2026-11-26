@@ -90,6 +90,79 @@ export default {
 ```
 
 
+### Lazy Pages and Async Loaders
+
+A route can name a function that loads its page instead of a registered page name. The page is fetched the first time the route is visited, not when the app starts.
+
+The router accepts two shapes:
+
+```javascript
+import { AvenxApp } from 'avenx-core/runtime';
+
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '/': 'Home',
+  // 1. A bare function as the route definition
+  '/reports': () => import('./pages/reports.page.js'),
+  // 2. A `loader` on the route definition object
+  '/settings': { page: 'Settings', loader: () => import('./pages/settings.page.js') },
+});
+```
+
+A loader returns a Promise that resolves to either:
+
+- a page class (a class extending `AvenxPage` / `AvenxComponent`), or
+- a module whose `default` export is one (which is what `import()` gives you for a page module).
+
+Anything else is rejected with `Page "<name>" must be a class extending AvenxComponent.` and handled like a failed load (see below).
+
+Once a loader has resolved, its class replaces the loader in the app's page registry, so later visits mount it without calling the loader again. Give the route a `page` name, as `/settings` does above, so that caching applies to it: a bare function route has no name of its own, so the router registers it under a generated name on each navigation and calls the loader every time.
+
+You can also register a loader directly and route to it by name with `app.registerPage` (see [`registerPage`](/api-reference/app/#registerpagename-pageclass)):
+
+```javascript
+app.registerPage('Reports', () => import('./pages/reports.page.js'));
+app.initRouter({ '/reports': 'Reports' });
+```
+
+#### While the page loads
+
+- Route guards run first. A guard that denies the navigation stops it before the loader is called.
+- The current page stays mounted until the new page has loaded.
+- A loading placeholder (`<div class="avenx-router-loading" data-ax-loading="true">`) is appended to the app target. By default it reads `Loading...` and appears only if the load takes longer than 50 ms. Set `loading` on the route, or as a router option, to supply your own content (an HTML string, a DOM node, or a function returning either); an explicit `loading` is shown immediately. The `loadingDelay` router option (milliseconds) overrides the delay in both cases. The placeholder is removed when the load settles.
+- If the user navigates elsewhere before the load finishes, the newer navigation wins; the late result is not mounted.
+
+```javascript
+app.initRouter(
+  {
+    '/': 'Home',
+    '/reports': { page: 'Reports', loader: () => import('./pages/reports.page.js'), loading: '<p>Loading reports…</p>' },
+  },
+  { loadingDelay: 100 }
+);
+```
+
+#### When the loader rejects
+
+If the loader's Promise rejects (for example, the chunk could not be fetched) or resolves to something that is not a page:
+
+- the navigation is abandoned: the previous page stays mounted and the URL hash is set back to the previous route;
+- the error is logged with `console.error` (no diagnostic code is raised);
+- if the router was created with the `guardTimeoutRedirect` option, the router navigates there instead of restoring the previous hash.
+
+The loader stays registered, so the next visit to the route tries it again.
+
+#### With `avenx build --code-splitting`
+
+With code splitting enabled (`avenx build --code-splitting`, `--split`, or `"codeSplitting": true` in `avenx.config.json`), the compiler emits every page under `src/pages/` as its own ES module chunk in `dist/pages/` and registers it with a loader for you, for example:
+
+```javascript
+app.registerPage('Reports', () => import('./pages/reports.page.js'));
+```
+
+Routes that name a page with a string (`'/reports': 'Reports'`) therefore become lazy without writing a loader yourself, and the loading and failure behaviour above applies to them. Write an explicit loader only for a page the compiler does not register.
+
 ## 3. Dynamic Route Parameters
 
 Route segments starting with `:` are dynamic variables. The values parsed from the URL are automatically added to the Page component's `state` object and can be read inside templates or actions:

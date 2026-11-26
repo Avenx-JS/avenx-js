@@ -170,6 +170,14 @@ Registers a page view class for routing.
 app.registerPage('Dashboard', DashboardPage);
 ```
 
+`pageClass` may also be an async loader: a function returning a Promise that resolves to a page class or to a module whose `default` export is one. The loader is not called at registration; the router calls it the first time a route to the page is visited, then stores the resolved class in place of the loader.
+
+```javascript
+app.registerPage('Dashboard', () => import('./pages/dashboard.page.js'));
+```
+
+While the loader has not resolved yet, `app.isPageLoader(name)` returns `true`; after it has, it returns `false`. See [Lazy Pages and Async Loaders](/core-concepts/routing/#lazy-pages-and-async-loaders) for the loading and failure behaviour.
+
 ### `getRegisteredPages()`
 
 Returns an array of string identifiers for all page components registered via `app.registerPage(name, pageClass)` from the internal `pages` Map.
