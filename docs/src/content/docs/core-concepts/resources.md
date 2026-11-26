@@ -21,8 +21,17 @@ Use block syntax to define inline asynchronous expressions or multi-line fetch l
 </resource>
 ```
 
+A body with several statements is written like the body of a function:
+
+```html
+<resource name="userData">
+  const id = state.userId;
+  return fetch(`/api/users/${id}`).then(res => res.json());
+</resource>
+```
+
 > [!NOTE]
-> For single-line expressions in block syntax, if `return` is omitted and no trailing semicolon exists (e.g. `fetch('/api/data').then(r => r.json())`), the Avenx compiler automatically prepends `return` and appends a semicolon.
+> If the body is a single expression without a trailing semicolon (e.g. `fetch('/api/data').then(r => r.json())`), the Avenx compiler automatically prepends `return` and appends a semicolon. Any other body is a function body and is used as written, so it needs its own `return`.
 
 ### 2. Self-Closing Syntax
 
