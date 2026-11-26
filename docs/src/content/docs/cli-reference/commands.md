@@ -230,14 +230,14 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 - **Page (`page`, `p`)**: Creates `src/pages/<name>.page.js` and `.css` for client-side routing.
 - **Bridge (`bridge`)**: Creates a shared reactive state module at `src/global/<name>.bridge.js` built with the `bridge()` factory.
 - **Guard (`guard`)**: Creates a navigation guard class at `src/guards/<name>.guard.js` extending `AvenxGuard`.
-- **Test (`test`)**: Adds `src/components/<name>/<name>.component.test.js` to an existing component, using the same template as `--with-test`. The component, stylesheet and registrations are left intact. An existing test is protected unless `--force` is given.
+- **Test (`test`)**: Adds `src/components/<name>/<name>.component.test.js` to an existing component. The built-in test mounts the component and checks that it renders, so it passes as written; a `TODO` comment marks where to add assertions for its behavior. A `component.test.js.template` override is used here too, as for `--with-test`. The component, stylesheet and registrations are left intact. An existing test is protected unless `--force` is given.
 
 #### Options
 
 - `--dry-run` / `-d`: Previews generated files without writing to disk.
 - `--force` / `-f`: Bypasses Git working tree status checks.
 - `--with-test`: Also writes a colocated unit test next to a generated component. `--no-test` skips it and takes precedence if both flags are present. Tests are disabled by default.
-  Use `avenx generate test <name>` to add that test later; it also accepts `--dry-run` and `--template`. The built-in test exercises the default component scaffold; adapt its assertions to your component's behavior.
+  The built-in `--with-test` test exercises the default component scaffold; adapt its assertions as the component changes. To add a test to a component later, use `avenx generate test <name>` (see **Test** above); it also accepts `--dry-run` and `--template`.
 - `--no-style`: Writes a component or page without its stylesheet (`.component.css` or `.page.css`), for projects that style components another way. The generated template then has no `@css` references, so it builds without `AVX_W49`.
 
 Project defaults can be set with `scaffold.test`, `scaffold.style`, and `scaffold.template` in `avenx.config.json`. Explicit flags override configuration; see [Scaffold defaults](/getting-started/configuration/#scaffold-defaults-scaffold).
