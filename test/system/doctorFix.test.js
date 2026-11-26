@@ -248,4 +248,17 @@ project((cwd) => {
   );
 });
 
+// `--no-color` is a global flag (`avenx help` lists it for every command), so
+// the doctor's own flag check must not refuse it as a usage error.
+project((cwd) => {
+  for (const flag of ['--no-color', '--no-colors']) {
+    const plain = run(cwd, ['doctor', flag]);
+    assert.equal(plain.status, 0, plain.stdout + plain.stderr);
+    assert.doesNotMatch(plain.stderr, /Usage: avenx doctor/);
+    const json = run(cwd, ['doctor', '--json', flag]);
+    assert.equal(json.status, 0, json.stdout + json.stderr);
+    assert.ok(Array.isArray(JSON.parse(json.stdout).checks));
+  }
+});
+
 console.log('doctor --fix repairs, previews, preservation, and repeat runs passed.');

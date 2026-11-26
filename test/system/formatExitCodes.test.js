@@ -145,6 +145,16 @@ try {
     fs.writeFileSync(path.join(root, 'src/main.app.js'), 'const spacing = 1;\n');
   }
 
+  // --- the global --no-color flag is not an unknown flag ------------------
+  {
+    for (const flag of ['--no-color', '--no-colors']) {
+      const check = avenx(['format', '--check', flag]);
+      assert.strictEqual(check.status, 0, `format --check ${flag} must run like format --check:\n${check.output}`);
+      assert.ok(!check.output.includes('Unknown option'), `${flag} must not be reported as unknown:\n${check.output}`);
+    }
+    console.log('  ✅ --no-color and --no-colors are accepted');
+  }
+
   // --- a file Prettier cannot parse still fails ---------------------------
   {
     fs.writeFileSync(path.join(root, 'broken.js'), 'const a = {');
