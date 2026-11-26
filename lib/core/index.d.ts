@@ -1771,8 +1771,13 @@ export function isCompilable(source: string): boolean;
  */
 export function setExpressionCacheCapacity(capacity: number): void;
 
-/** Whether a URL may be placed in a navigating attribute. */
-export function isSafeUrl(value: string): boolean;
+/**
+ * Whether a URL may be placed in a navigating attribute.
+ *
+ * `allowInertData: false` also refuses the inert `data:` URLs (images and
+ * fonts) that are allowed by default.
+ */
+export function isSafeUrl(value: string, options?: { allowInertData?: boolean }): boolean;
 
 /** Whether an attribute's value is treated as a URL by the renderer. */
 export function isUrlAttribute(name: string): boolean;

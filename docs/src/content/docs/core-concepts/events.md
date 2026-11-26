@@ -104,7 +104,7 @@ Event bindings support dot-suffixed **modifiers** that adjust how the underlying
 | `.self` | Any event | Only triggers the handler if `event.target === event.currentTarget` (i.e. click originates directly on the bound element itself, not on nested children). |
 | `.once` | Any event | Automatically removes or deactivates the listener after it fires a single time. |
 | `.passive` | Any event | Registers the listener with `{ passive: true }`, improving scroll/touch performance. |
-| `.capture` | Any event | Registers the listener with `{ capture: true }` so it runs in the capture phase. |
+| `.capture` | Any event | Runs the handler in the capture phase: before bubble-phase handlers, outermost ancestor first. |
 | `.ctrl` | Mouse & Keyboard events | Only invokes handler if the `Control` key (`event.ctrlKey`) is held down. |
 | `.alt` | Mouse & Keyboard events | Only invokes handler if the `Alt` / `Option` key (`event.altKey`) is held down. |
 | `.shift` | Mouse & Keyboard events | Only invokes handler if the `Shift` key (`event.shiftKey`) is held down. |
@@ -149,7 +149,9 @@ Event bindings support dot-suffixed **modifiers** that adjust how the underlying
 <button @click.once="claimReward()">Claim Reward (Single Click Only)</button>
 ```
 
-`.passive` and `.capture` map to native `addEventListener` options. Under event delegation, `.capture` handlers still run root-downward before bubble-phase handlers (outermost-first), and `.passive` is isolated from non-passive handlers for the same event so it never blocks `.prevent` elsewhere in the tree:
+`.capture` handlers run before bubble-phase handlers, outermost ancestor first, the same order native capture listeners use. Delegation emulates this, so `<div @click.capture="intercept()">` sees a click before the buttons inside it do.
+
+`.passive` maps to the native `addEventListener` option and is isolated from non-passive handlers for the same event so it never blocks `.prevent` elsewhere in the tree:
 
 ```html
 <div @scroll.passive="onScroll()">Scroll container</div>

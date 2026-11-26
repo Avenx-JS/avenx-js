@@ -657,7 +657,7 @@ that ships.
 
 A freshly scaffolded application with one component, production build, measured
 with `avenx init -y`, `avenx generate component hello`, and `avenx build`
-(verified 2026-11-25):
+(verified 2026-11-26):
 
 | Asset | Raw | Gzipped |
 | :--- | ---: | ---: |
@@ -670,7 +670,7 @@ identifiers or remove dead branches, because doing that safely needs a full
 ECMAScript parser and a minifier that guesses produces a bundle that is smaller
 and wrong. Line numbers therefore survive into production stack traces. Unused
 modules *are* tree-shaken out of the graph — the same scaffolded build reports
-`70 modules · 23 shaken out` — and comments and indentation are what gzip
+`70 modules · 27 shaken out` — and comments and indentation are what gzip
 compresses best, so the gap on the wire is much narrower than on disk.
 
 <div align="right"><a href="#avenxjs">↑ back to top</a></div>

@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { Sanitizer } from '../../lib/core/security/sanitize.js';
+import { sanitizeUrlAttribute } from '../../lib/core/security/urlPolicy.js';
 import { logger } from '../../lib/core/runtime/AvenxLogger.js';
 import { MockDOMElement, setupDOMMock, teardownDOMMock } from '../helpers/dom-mock.js';
 
@@ -104,6 +105,77 @@ function testSanitizerRespectsLogger() {
   } finally {
     logger.configure(originalConfig);
     console.warn = originalConsoleWarn;
+    teardownDOMMock();
+  }
+}
+
+// A URL refused while sanitizing data-ax-html markup is reported as AVX_W45,
+// the same code the attribute-binding path uses for the same value (#1982).
+// Before, the sanitizer dropped the attribute without saying anything.
+function testSanitizerReportsBlockedUrl() {
+  console.log('🧪 Testing Sanitizer reports refused URLs as AVX_W45...');
+  setupDOMMock();
+  const originalConfig = { ...logger.config };
+  const warnings = [];
+
+  try {
+    logger.configure({
+      silent: false,
+      level: 'warn',
+      transports: [(level, formatted, args) => warnings.push(args.map(String).join(' '))],
+    });
+    const sanitizer = new Sanitizer();
+    const bad = 'javascript:window.__y=1';
+
+    // The HTML path: the href is still removed, and now reported.
+    assert.strictEqual(sanitizer.sanitize(`<a href="${bad}">sanitized path</a>`), '<a>sanitized path</a>');
+    assert.strictEqual(warnings.length, 1, `expected one warning, got ${JSON.stringify(warnings)}`);
+    assert.match(warnings[0], /\[AVX_W45\]/);
+    assert.match(warnings[0], /"href"/);
+    assert.ok(warnings[0].includes(bad), 'the warning names the refused value');
+
+    // The attribute path reports the same value with the same code.
+    warnings.length = 0;
+    sanitizeUrlAttribute('href', bad);
+    assert.strictEqual(warnings.length, 1);
+    assert.match(warnings[0], /\[AVX_W45\]/);
+
+    // A safe URL is kept and reports nothing.
+    warnings.length = 0;
+    assert.strictEqual(
+      sanitizer.sanitize('<a href="https://example.com">ok</a>'),
+      '<a href="https://example.com">ok</a>',
+    );
+    assert.deepStrictEqual(warnings, []);
+
+    // data: is decided by the shared policy: an inert image on <img> passes,
+    // an SVG (which can carry script) does not, and allowDataUrls: false
+    // refuses even the inert one. Each refusal is reported.
+    const imgContainer = (src) => {
+      const container = new MockDOMElement('div');
+      const img = new MockDOMElement('img');
+      img.setAttribute('src', src);
+      container.appendChild(img);
+      return container;
+    };
+    assert.strictEqual(
+      sanitizer._sanitizeNode(imgContainer('data:image/png;base64,abc')),
+      '<img src="data:image/png;base64,abc" />',
+    );
+    assert.deepStrictEqual(warnings, []);
+    assert.strictEqual(sanitizer._sanitizeNode(imgContainer('data:image/svg+xml,<svg onload=alert(1)>')), '<img />');
+    assert.strictEqual(warnings.length, 1);
+    assert.match(warnings[0], /\[AVX_W45\]/);
+    warnings.length = 0;
+    assert.strictEqual(
+      new Sanitizer({ allowDataUrls: false })._sanitizeNode(imgContainer('data:image/png;base64,abc')),
+      '<img />',
+    );
+    assert.strictEqual(warnings.length, 1);
+
+    console.log('  ✅ Sanitizer refused-URL reporting tests passed!');
+  } finally {
+    logger.configure(originalConfig);
     teardownDOMMock();
   }
 }
@@ -292,6 +364,7 @@ function testStripTags() {
 try {
   testSanitizerWithDOM();
   testSanitizerRespectsLogger();
+  testSanitizerReportsBlockedUrl();
   testSanitizerFallback();
   testCustomVoidTags();
   testConfigurablePolicyOptions();
