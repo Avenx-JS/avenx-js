@@ -6,19 +6,20 @@ This document provides a comprehensive overview of all GitHub Actions workflows 
 
 ## 📊 Overview
 
-| Workflow                        | File                                             | Trigger                                                                   | Purpose                            | Output / Target                                                                                                                      |
-| :------------------------------ | :----------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
-| **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                               | Push/PR to `main`, Release creation                                       | Runs test suite and linter         | Build & multi-version compatibility verification                                                                                     |
-| **Parser & Minifier Fuzz**      | [`fuzz-nightly.yml`](fuzz-nightly.yml)           | Schedule (`0 2 * * *`), `workflow_dispatch`                               | Runs property-based fuzz tests     | Template/JS parser & bundle minifier invariants verification                                                                         |
-| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                          | Publishes `avenx-core` and plugins | npm registry                                                                                                                         |
-| **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)               | Pull Request to `main`                                                    | Monitors JS bundle sizes vs `main` | PR comment report                                                                                                                    |
-| **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                    | Checks compiler changes have tests | PR comment report                                                                                                                    |
-| **Benchmark Comparison**        | [`benchmark-compare.yml`](benchmark-compare.yml) | Pull Request to `main` (measures only on render/reactive/compiler changes) | Gates benchmark regressions vs base | PR comment report                                                                                                                   |
-| **GitHub Pages Docs**           | [`static.yml`](static.yml)                       | Push to `main`, `workflow_dispatch`                                       | Deploys Astro documentation site   | GitHub Pages                                                                                                                         |
-| **E2E (All Browsers)**          | [`e2e-nightly.yml`](e2e-nightly.yml)             | Schedule (`0 3 * * *`), `workflow_dispatch`                               | Runs E2E tests on three browsers   | Per-browser Playwright report on failure                                                                                             |
-| **Compiler Snapshots**          | [`snapshot.yml`](snapshot.yml)                   | Schedule (`0 3 * * 1`), `workflow_dispatch`                               | Checks compiler output snapshots   | Job pass/fail on a snapshot diff                                                                                                     |
+| Workflow                        | File                                             | Trigger                                                                    | Purpose                                               | Output / Target                                                                                                                      |
+| :------------------------------ | :----------------------------------------------- | :------------------------------------------------------------------------- | :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **CI / CD Pipeline**            | [`ci.yml`](ci.yml)                               | Push/PR to `main`, Release creation                                        | Runs test suite and linter                            | Build & multi-version compatibility verification                                                                                     |
+| **Parser & Minifier Fuzz**      | [`fuzz-nightly.yml`](fuzz-nightly.yml)           | Schedule (`0 2 * * *`), `workflow_dispatch`                                | Runs property-based fuzz tests                        | Template/JS parser & bundle minifier invariants verification                                                                         |
+| **NPM Package Release**         | [`npm-publish.yml`](npm-publish.yml)             | Release creation                                                           | Publishes `avenx-core` and plugins                    | npm registry                                                                                                                         |
+| **Bundle Size Monitor**         | [`size-check.yml`](size-check.yml)               | Pull Request to `main`                                                     | Monitors JS bundle sizes vs `main`                    | PR comment report                                                                                                                    |
+| **Test Coverage & Area Gates**  | [`coverage.yml`](coverage.yml)                   | Pull Request to `main`, Push to `main`, `workflow_dispatch`                | Enforces global and per-area test coverage thresholds | PR comment report, step summary & main artifact                                                                                      |
+| **Compiler Test Coverage**      | [`compiler-coverage.yml`](compiler-coverage.yml) | Pull Request to `main`                                                     | Checks compiler changes have tests                    | PR comment report                                                                                                                    |
+| **Benchmark Comparison**        | [`benchmark-compare.yml`](benchmark-compare.yml) | Pull Request to `main` (measures only on render/reactive/compiler changes) | Gates benchmark regressions vs base                   | PR comment report                                                                                                                    |
+| **GitHub Pages Docs**           | [`static.yml`](static.yml)                       | Push to `main`, `workflow_dispatch`                                        | Deploys Astro documentation site                      | GitHub Pages                                                                                                                         |
+| **E2E (All Browsers)**          | [`e2e-nightly.yml`](e2e-nightly.yml)             | Schedule (`0 3 * * *`), `workflow_dispatch`                               | Runs E2E tests on three browsers                      | Per-browser Playwright report on failure                                                                                             |
+| **Compiler Snapshots**          | [`snapshot.yml`](snapshot.yml)                   | Schedule (`0 3 * * 1`), `workflow_dispatch`                               | Checks compiler output snapshots                      | Job pass/fail on a snapshot diff                                                                                                     |
 
-API reference, test coverage and benchmark history are no longer published from this repository. [`Avenx-JS/dev-dashboard`](https://github.com/Avenx-JS/dev-dashboard) checks it out read-only, runs `npm run docs`, `npm run test:coverage` and `benches/run.js --json`, and publishes the results at [dev.avenx-js.com](https://dev.avenx-js.com).
+API reference, test coverage and benchmark history are no longer published from this repository. [`Avenx-JS/dev-dashboard`](https://github.com/Avenx-JS/dev-dashboard) checks it out read-only, runs `npm run docs`, `npm run test:coverage` and `benches/run.js --json`, and publishes the results at [dev.avenx-js.com](https://dev.avenx-js.com). The `npm run test:coverage` script generates HTML output directly into `./coverage/` to support this dashboard integration while enforcing threshold gates.
 
 ---
 
@@ -80,7 +81,7 @@ API reference, test coverage and benchmark history are no longer published from 
   - **Template Parser Invariants (`test/fuzz/templateParser.test.js`)**: Validates compiler and parser invariants across randomized-but-valid template structures (combinations of `<@for>`, `<@empty>`, slots, conditionals, dynamic bindings, and deep nesting).
   - **JavaScript Parser Differential (`test/fuzz/jsParser.test.js`)**: 20,000 generated programs and 20,000 damaged sources are compared with Acorn on scheduled runs. Deterministic repository and hand-written JavaScript cases remain in `test/unit/jsParserDifferential.test.js` under the normal PR gate.
   - **Bundle Minifier Safety Invariants (`test/fuzz/minify.test.js`)**: Asserts that `lib/bundler/minify.js` strips comments and trims line margins without altering program semantics, line counts, or string/template literal values across synthetic programs mixing escaped strings, regex literals, multiline indentation, and division chains. A fast bounded property suite and deterministic regression cases run on every PR in `test/unit/minifyInvariants.test.js`.
-  The manual `num_runs` input overrides `FAST_CHECK_NUM_RUNS` for all steps (manual default: 1,000).
+    The manual `num_runs` input overrides `FAST_CHECK_NUM_RUNS` for all steps (manual default: 1,000).
 - **Node.js Compatibility Matrix**:
   Executes across all supported major Node.js versions (`[18, 20, 22]`).
 - **Template Invariants Verified**:
@@ -135,3 +136,37 @@ The timing counterpart of the Bundle Size Monitor. The [Developer Dashboard](htt
 - **What a failure means**: The compiler output for a fixture changed and the stored snapshots no longer match. Review the diff first: an unintended change is a regression to fix; an intentional change must be accepted deliberately.
 - **Output**: A passing or failing job, with no report artifact. The assertion message points to the update command when the check fails.
 - **Run it locally**: `npm run test:snapshots` checks without writing anything. `npm run test:snapshots:update` rewrites the stored snapshots — review the resulting diff before committing them, and commit the regenerated file alongside the compiler change (see [CONTRIBUTING.md](../../CONTRIBUTING.md#local-development-workflow)).
+
+### 10. Test Coverage & Area Gates (`coverage.yml`)
+
+The authoritative test coverage and regression gate for `avenx-core`.
+
+- **Triggers**:
+  - Pull Request to `main`.
+  - Push to `main`.
+  - Manual execution via `workflow_dispatch`.
+- **Concurrency**: Cancels in-progress runs for the same pull request on subsequent pushes (`coverage-${{ github.event.pull_request.number || github.ref }}`).
+- **Threshold Enforcement**:
+  Executes `npm run test:coverage`, which instruments the complete test suite under `c8` and evaluates both global and per-area minimum coverage floors:
+  1. **Global Thresholds** (configured in `.c8rc.json` with `all: true` for `lib/**` and `bin/**`):
+     - **Lines**: **92%**
+     - **Branches**: **84%**
+     - **Functions**: **93%**
+     - **Statements**: **92%**
+  2. **Per-Area Thresholds** (enforced by `scripts/check-coverage.js` via `coverage-thresholds.json`):
+     - `lib/compiler`: lines **95%**, branches **85%**, functions **95%**, statements **95%**
+     - `lib/core/runtime`: lines **91%**, branches **81%**, functions **88%**, statements **91%**
+     - `lib/core/renderer`: lines **92%**, branches **83%**, functions **93%**, statements **92%**
+     - `lib/core`: lines **92%**, branches **82%**, functions **91%**, statements **92%**
+     - `lib/bundler`: lines **96%**, branches **88%**, functions **99%**, statements **96%**
+     - `bin`: lines **82%**, branches **85%**, functions **97%**, statements **82%**
+- **Authoritative Gating**:
+  Unlike `compiler-coverage.yml` (which is advisory and limited to compiler diffs), `coverage.yml` is an authoritative gate: if the test suite fails or any global or per-area threshold drops below its required floor, the workflow fails.
+- **PR Delta Reporting & Changed Source Files**:
+  - Compares pull request coverage against the latest `coverage-summary-main` artifact produced on `main` (falling back cleanly to the committed baseline in `coverage-thresholds.json` if no artifact exists or permissions restrict access).
+  - Diffs changed files against the base commit and generates a markdown table of changed source files under `lib/` and `bin/`.
+  - Posts or updates a sticky comment (`<!-- avenx-coverage-report -->`) on same-repository pull requests, and always appends the full report to `$GITHUB_STEP_SUMMARY`.
+  - On pull requests from forks, read-only token restrictions cause the comment step to skip safely while the step summary report and gate checks remain fully active.
+- **Main Artifact & Dashboard Compatibility**:
+  - On pushes to `main`, `coverage/coverage-summary.json` is uploaded as the `coverage-summary-main` artifact with a 30-day retention period.
+  - `npm run test:coverage` generates `./coverage/index.html` to ensure continuous compatibility with [`Avenx-JS/dev-dashboard`](https://github.com/Avenx-JS/dev-dashboard) and [dev.avenx-js.com](https://dev.avenx-js.com).

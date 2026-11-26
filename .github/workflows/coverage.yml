@@ -1,0 +1,154 @@
+name: Test Coverage & Area Gates
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: coverage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Enforce Test Coverage & Area Gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Runs test suite under c8 with .c8rc.json global floors and scripts/check-coverage.js per-area floors.
+      # This step is the authoritative gate: test failures or threshold drops fail the job.
+      - name: Run coverage and enforce thresholds
+        id: coverage-gate
+        run: npm run test:coverage
+
+      # On push to main, upload the coverage summary artifact for PR base delta comparisons
+      - name: Upload coverage summary artifact (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-summary-main
+          path: coverage/coverage-summary.json
+          retention-days: 30
+
+      # On PRs, download the latest coverage-summary-main artifact from main for real delta calculation
+      - name: Download base coverage summary
+        if: always() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.json') != ''
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const { owner, repo } = context.repo;
+              const response = await github.rest.actions.listArtifactsForRepo({
+                owner,
+                repo,
+                name: 'coverage-summary-main',
+                per_page: 5,
+              });
+              const artifact = response.data.artifacts.find(a => a.name === 'coverage-summary-main' && !a.expired);
+              if (artifact) {
+                const zip = await github.rest.actions.downloadArtifact({
+                  owner,
+                  repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip',
+                });
+                fs.writeFileSync('/tmp/coverage-summary-main.zip', Buffer.from(zip.data));
+                console.log('Successfully downloaded coverage-summary-main artifact.');
+              } else {
+                console.log('No active coverage-summary-main artifact found on main; falling back to committed baseline.');
+              }
+            } catch (err) {
+              console.log('Could not retrieve base coverage artifact (using committed baseline):', err.message);
+            }
+
+      # Generate Markdown coverage report with global + per-area table, deltas, and changed files
+      - name: Generate coverage report
+        if: always() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.json') != ''
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "$BASE_SHA...$HEAD_SHA" > /tmp/changed-files.txt || true
+
+          BASE_FLAG=""
+          if [ -f /tmp/coverage-summary-main.zip ]; then
+            mkdir -p /tmp/coverage-base
+            unzip -o /tmp/coverage-summary-main.zip -d /tmp/coverage-base
+            if [ -f /tmp/coverage-base/coverage-summary.json ]; then
+              BASE_FLAG="--base /tmp/coverage-base/coverage-summary.json"
+            fi
+          fi
+
+          node scripts/check-coverage.js --markdown coverage/coverage-report.md --changed-files /tmp/changed-files.txt $BASE_FLAG || true
+
+          if [ -f coverage/coverage-report.md ]; then
+            cat coverage/coverage-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Post or update sticky comment on the pull request (same-repo branches only; fork PRs view step summary)
+      - name: Post or Update PR Coverage Comment
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('coverage/coverage-report.md') != ''
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'coverage/coverage-report.md';
+            if (!fs.existsSync(reportPath)) {
+              console.log('Coverage report markdown not found.');
+              return;
+            }
+            const commentBody = fs.readFileSync(reportPath, 'utf8');
+            const { owner, repo, number } = context.issue;
+
+            try {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: number,
+              });
+
+              const existingComment = comments.find(c => c.body.includes('<!-- avenx-coverage-report -->'));
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                  body: commentBody,
+                });
+                console.log('Updated existing coverage report comment.');
+              } else {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  body: commentBody,
+                });
+                console.log('Created new coverage report comment.');
+              }
+            } catch (err) {
+              console.log('Failed to post or update comment (handled gracefully):', err.message);
+            }
