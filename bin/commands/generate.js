@@ -543,6 +543,10 @@ export function generateTest(cli, name, dryRun = false, force = false, templateN
     return;
   }
 
+  // The --with-test template asserts the generated scaffold's markup (an <h1>,
+  // a count and a button), which an existing component does not have. Unless
+  // the project overrides component.test.js.template, write a test that only
+  // checks the component mounts and renders, so it passes as written.
   const template = readTemplate(
     cli.baseDir,
     cli.config,
@@ -550,6 +554,7 @@ export function generateTest(cli, name, dryRun = false, force = false, templateN
     'component',
     'component.test.js.template',
     templateName,
+    { builtinFilename: 'existing-component.test.js.template' },
   );
   const content = renderTemplate(
     template,
