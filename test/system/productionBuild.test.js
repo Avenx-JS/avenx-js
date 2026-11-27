@@ -5,7 +5,7 @@ import path from 'path';
 import zlib from 'zlib';
 import { Window } from 'happy-dom';
 import AvenxCompiler from '../../lib/compiler.js';
-import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL } from '../../lib/core/globals.js';
+import { PUBLIC_GLOBALS, NAMESPACE_GLOBAL, NAMESPACE_MEMBERS } from '../../lib/core/globals.js';
 
 /**
  * Ceiling for a Hello World production bundle, in KB.
@@ -454,6 +454,15 @@ function testExecutesInBrowser(bundle) {
     assert.strictEqual(window[name], namespace[name], `${name} is the same object as on the namespace`);
   }
 
+  for (const name of NAMESPACE_MEMBERS) {
+    assert.ok(namespace[name] !== undefined, `${name} is published on window.${NAMESPACE_GLOBAL}`);
+  }
+  assert.strictEqual(
+    typeof namespace.styleMountManager.setCspNonce,
+    'function',
+    'window.Avenx.styleMountManager.setCspNonce is callable',
+  );
+
   // Only the namespace and the declared globals may be added. Anything else is
   // the 67-name dump creeping back.
   const added = Object.keys(window).filter((key) => !before.has(key));
@@ -539,6 +548,63 @@ function testDevelopmentBuild(devBundle) {
 }
 
 /**
+ * Calling `Avenx.styleMountManager.setCspNonce(nonce)` before mounting in a
+ * built bundle attaches the `nonce` attribute to mounted `<style>` elements.
+ */
+function testStyleMountManagerCspNonce() {
+  console.log('🧪 Testing Avenx.styleMountManager.setCspNonce in a built bundle...');
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-csp-nonce-'));
+  try {
+    const write = (relative, contents) => {
+      const full = path.join(root, relative);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, contents);
+    };
+
+    write(
+      'src/Styled.js',
+      `import { AvenxComponent } from 'avenx-core/runtime';
+
+export default class Styled extends AvenxComponent {
+  static styles = '.styled-box { color: red; }';
+  template() {
+    return '<div class="styled-box">Styled</div>';
+  }
+}`,
+    );
+    write(
+      'src/main.app.js',
+      `import { AvenxApp } from 'avenx-core/runtime';
+import Styled from './Styled.js';
+
+Avenx.styleMountManager.setCspNonce('test-nonce-2055');
+const app = new AvenxApp({ target: '#app' });
+app.register('Styled', Styled);
+app.mount('Styled');`,
+    );
+    write('avenx.config.json', '{}');
+
+    const bundle = buildBundle(root, 'production');
+    const window = new Window({ url: 'http://localhost' });
+    window.document.body.innerHTML = '<div id="app"></div>';
+    window.eval(bundle);
+
+    const styleEl = window.document.head.querySelector('style[data-avenx-style]');
+    assert.ok(styleEl, 'a component <style> element was mounted in document.head');
+    assert.strictEqual(
+      styleEl.getAttribute('nonce'),
+      'test-nonce-2055',
+      'the mounted <style> element carries the configured CSP nonce',
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  console.log('  ✅ Avenx.styleMountManager.setCspNonce applies nonce to mounted <style> elements.');
+}
+
+/**
  * Runs the suite.
  */
 function run() {
@@ -560,6 +626,7 @@ function run() {
     const window = testExecutesInBrowser(bundle);
     testRuntimeStillWorks(window);
     testDevelopmentBuild(devBundle);
+    testStyleMountManagerCspNonce();
 
     console.log('\n✅ All production build tests passed!');
   } finally {
