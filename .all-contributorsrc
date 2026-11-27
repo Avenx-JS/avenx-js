@@ -1661,6 +1661,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "noahkhomer18",
+      "name": "Noah Khomer",
+      "avatar_url": "https://avatars.githubusercontent.com/u/108771853?v=4",
+      "profile": "https://www.noah-khomer.com/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "commitType": "docs",
