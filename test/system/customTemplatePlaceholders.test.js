@@ -4,7 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { generateComponent, generatePage, generateBridge, generateGuard } from '../../bin/commands/generate.js';
+import {
+  generateComponent,
+  generatePage,
+  generateBridge,
+  generateGuard,
+  generateTest,
+} from '../../bin/commands/generate.js';
 
 const frameworkDir = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -78,6 +84,24 @@ try {
   generateGuard(cli, 'auth');
 
   assert.equal(generated('src/guards/auth.guard.js'), 'AuthGuard | AuthGuard | AuthGuard | auth');
+
+  for (const [kind, name, file, expected] of [
+    ['page', 'my-page', 'src/pages/my-page.page.test.js', 'MyPage | MyPage | MyPage | my-page'],
+    ['bridge', 'my-bridge', 'src/global/my-bridge.bridge.test.js', 'myBridge | MyBridge | MyBridge | my-bridge'],
+    ['guard', 'auth', 'src/guards/auth.guard.test.js', 'AuthGuard | AuthGuard | AuthGuard | auth'],
+  ]) {
+    setTemplate(kind, `${kind}.test.js.template`);
+    generateTest(cli, name);
+    assert.equal(generated(file), expected);
+  }
+  generatePage(cli, 'tested-page', { withTest: true });
+  assert.equal(generated('src/pages/tested-page.page.test.js'), 'TestedPage | TestedPage | TestedPage | tested-page');
+
+  setTemplate('page', 'page.test.js.template', '{{PascalCaseNam}}');
+  for (const dryRun of [false, true]) {
+    assert.throws(() => generatePage(cli, 'broken-page', { withTest: true, dryRun }), /Unknown generator placeholder/);
+    for (const extension of ['js', 'css', 'test.js']) assertNoOutput(`src/pages/broken-page.page.${extension}`);
+  }
 
   // 5. Runtime bindings must not be removed.
   setTemplate(

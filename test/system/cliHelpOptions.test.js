@@ -37,6 +37,10 @@ const help = res.stdout || '';
 const options = help.split('Options:')[1] || '';
 assert.ok(options, 'help output should have an Options section');
 
+assert.match(help, /generate test \[<kind>\] <name>.*component, page, bridge or guard/);
+assert.match(help, /generate page <name>.*--with-test/);
+assert.match(options, /--with-test.*component or page/);
+
 for (const flag of ['--port, -p <port>', '--host, -h <host>', '--open, -o', '--no-live-reload', '--trace']) {
   assert.ok(options.includes(flag), `Options should list "${flag}". Got:\n${options}`);
 }
@@ -122,6 +126,17 @@ assert.ok(
 );
 
 const reference = fs.readFileSync(REFERENCE, 'utf8');
+assert.ok(reference.includes('avenx generate test [<kind>] <name>'));
+assert.ok(reference.includes('avenx generate test page home'));
+assert.ok(reference.includes('avenx generate page dashboard --with-test'));
+for (const relative of [
+  'components/<name>/<name>.component.test.js',
+  'pages/<name>.page.test.js',
+  'global/<name>.bridge.test.js',
+  'guards/<name>.guard.test.js',
+]) {
+  assert.ok(reference.includes(relative), `the reference must document ${relative}`);
+}
 const missingFromHelp = [];
 const missingFromReference = [];
 for (const flag of [...parsedFlags.keys()].sort()) {

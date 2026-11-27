@@ -5,7 +5,13 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { generateComponent } from '../../bin/commands/generate.js';
+import {
+  generateComponent,
+  generatePage,
+  generateBridge,
+  generateGuard,
+  generateTest,
+} from '../../bin/commands/generate.js';
 
 const frameworkDir = fileURLToPath(new URL('../../', import.meta.url));
 const binPath = fileURLToPath(new URL('../../bin/avenx.js', import.meta.url));
@@ -65,6 +71,30 @@ try {
     '<p>CardStyle card</p>',
   );
   assert.equal(fs.existsSync(path.join(baseDir, 'src/components/card-style/card-style.component.css')), true);
+
+  for (const [kind, generate, relative] of [
+    ['page', generatePage, 'pages/probe.page.test.js'],
+    ['bridge', generateBridge, 'global/probe.bridge.test.js'],
+    ['guard', generateGuard, 'guards/probe.guard.test.js'],
+  ]) {
+    generate(cli, 'probe');
+    for (const dryRun of [false, true]) {
+      assert.throws(
+        () => generateTest(cli, 'probe', dryRun, false, 'ghost', kind),
+        (error) => error.code === 'AVENX_TEMPLATE_NOT_FOUND',
+      );
+      assert.equal(fs.existsSync(path.join(baseDir, 'src', relative)), false);
+    }
+  }
+  for (const dryRun of [false, true]) {
+    assert.throws(
+      () => generatePage(cli, 'missing-page', { withTest: true, templateName: 'ghost', dryRun }),
+      (error) => error.code === 'AVENX_TEMPLATE_NOT_FOUND',
+    );
+    for (const suffix of ['js', 'css', 'test.js']) {
+      assert.equal(fs.existsSync(path.join(baseDir, `src/pages/missing-page.page.${suffix}`)), false);
+    }
+  }
 
   console.log('PASS: unknown --template names fail instead of using the built-in scaffold');
 } finally {

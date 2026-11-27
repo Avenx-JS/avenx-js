@@ -3,6 +3,7 @@ import path from 'path';
 import { parseName, readTemplate, abortIfGeneratedPathExists, fail } from '../utils.js';
 import { yellow, cyan, green, gray } from '../colors.js';
 import { getClosestKey } from '../../lib/config.js';
+import { getScaffoldPaths, SCAFFOLD_KINDS } from '../scaffoldPaths.js';
 
 /**
  * Renders generator placeholders while preserving runtime bindings in component and page templates.
@@ -51,8 +52,8 @@ function renderTemplate(template, templateFile, names, options = {}) {
 
     throw new Error(
       `Unknown generator placeholder "${match}" in "${templateFile}".` +
-      didYouMean +
-      ` Supported placeholders: ${supported.map((value) => `{{${value}}}`).join(', ')}.`,
+        didYouMean +
+        ` Supported placeholders: ${supported.map((value) => `{{${value}}}`).join(', ')}.`,
     );
   });
 }
@@ -280,12 +281,25 @@ export function generateGuard(cli, name, dryRun = false, force = false, template
  * @param {boolean} [force]
  * @param {string|null} [templateName]
  * @param {boolean} [noStyle] - Skip the stylesheet and the template's `@css` references.
+ * @param {boolean} [withTest] - Generate a colocated test.
+ * @param {boolean} [noTest] - Skip test generation, overriding defaults.
  */
-export function generatePage(cli, name, dryRun = false, force = false, templateName = null, noStyle = false) {
+export function generatePage(
+  cli,
+  name,
+  dryRun = false,
+  force = false,
+  templateName = null,
+  noStyle = false,
+  withTest = false,
+  noTest = false,
+) {
   if (typeof dryRun === 'object' && dryRun !== null) {
     force = dryRun.force || false;
     templateName = dryRun.templateName || null;
     noStyle = dryRun.noStyle || false;
+    withTest = dryRun.withTest || false;
+    noTest = dryRun.noTest || false;
     dryRun = dryRun.dryRun || false;
   }
 
@@ -294,35 +308,34 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
     return;
   }
 
-  const { capitalizedName, folderFileName: lowerName } = parseName(name);
-
-  const pageDir = path.join(cli.baseDir, cli.config.srcDir, 'pages');
-  const jsPath = path.join(pageDir, `${lowerName}.page.js`);
+  const {
+    capitalizedName,
+    lowerName,
+    directory: pageDir,
+    sourcePath: jsPath,
+    testPath,
+  } = getScaffoldPaths(cli, 'page', name);
   const cssPath = path.join(pageDir, `${lowerName}.page.css`);
   const willGenerateStyle = !noStyle;
+  const willGenerateTest = shouldGenerateTest(cli, withTest, noTest);
+  const targetPaths = [jsPath, cssPath, ...(willGenerateTest ? [testPath] : [])];
 
-  if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Page', lowerName, [jsPath, cssPath])) {
+  if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Page', lowerName, targetPaths)) {
     return;
   }
 
-  if (force && (fs.existsSync(jsPath) || fs.existsSync(cssPath))) {
+  if (force && targetPaths.some((targetPath) => fs.existsSync(targetPath))) {
     console.warn(yellow(`⚠️ Force enabled: overwriting existing Page '${lowerName}'.`));
-  }
-
-  if (dryRun) {
-    console.log(cyan(`🧪 [Dry Run] Page '${capitalizedName}' would be created at:`));
-    console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.js`);
-    if (willGenerateStyle) {
-      console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.css`);
-    }
-    console.log(cyan('🧪 [Dry Run] No files were written.'));
-    return;
   }
 
   const jsTemplate = readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.js.template', templateName);
 
   const cssTemplate = willGenerateStyle
     ? readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.css.template', templateName)
+    : null;
+
+  const testTemplate = willGenerateTest
+    ? readTemplate(cli.baseDir, cli.config, cli.frameworkDir, 'page', 'page.test.js.template', templateName)
     : null;
 
   const pageNames = {
@@ -335,11 +348,28 @@ export function generatePage(cli, name, dryRun = false, force = false, templateN
   const jsContent = willGenerateStyle ? renderedPage : stripStyleReferences(renderedPage);
 
   const cssContent = willGenerateStyle ? renderTemplate(cssTemplate, 'page/page.css.template', pageNames) : null;
+  const testContent = willGenerateTest ? renderTemplate(testTemplate, 'page/page.test.js.template', pageNames) : null;
+
+  if (dryRun) {
+    console.log(cyan(`🧪 [Dry Run] Page '${capitalizedName}' would be created at:`));
+    console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.js`);
+    if (willGenerateStyle) {
+      console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.css`);
+    }
+    if (willGenerateTest) {
+      console.log(`  ${cli.config.srcDir}/pages/${lowerName}.page.test.js`);
+    }
+    console.log(cyan('🧪 [Dry Run] No files were written.'));
+    return;
+  }
 
   fs.mkdirSync(pageDir, { recursive: true });
   fs.writeFileSync(jsPath, jsContent);
   if (willGenerateStyle) {
     fs.writeFileSync(cssPath, cssContent);
+  }
+  if (willGenerateTest) {
+    fs.writeFileSync(testPath, testContent);
   }
 
   console.log(green(`✅ Page '${capitalizedName}' generated at ${cli.config.srcDir}/pages/${lowerName}.page.js`));
@@ -515,52 +545,74 @@ export function generateComponent(
 }
 
 /**
- * Generates only the colocated test for an existing component.
+ * Generates only the colocated test for an existing scaffold.
  * @param {object} cli - The CLI instance.
- * @param {string} name - The component name, resolved as in generate/destroy component.
+ * @param {string} name - The scaffold name, normalized as in generate/destroy.
  * @param {boolean} [dryRun] - Preview the test without writing it.
  * @param {boolean} [force] - Replace an existing test.
- * @param {string|null} [templateName] - A named component test template override.
+ * @param {string|null} [templateName] - A named test template override.
+ * @param {import('../scaffoldPaths.js').ScaffoldKind|null} [kind] - Explicit kind, or automatic resolution.
  * @returns {void}
  */
-export function generateTest(cli, name, dryRun = false, force = false, templateName = null) {
+export function generateTest(cli, name, dryRun = false, force = false, templateName = null, kind = null) {
   if (!name) {
-    fail('Please provide a component name (e.g., avenx generate test Card)');
+    fail('Please provide a name (e.g., avenx generate test Card or avenx generate test page Dashboard).');
+    return;
+  }
+  if (kind !== null && !SCAFFOLD_KINDS.includes(kind)) {
+    fail(`Unknown test kind "${kind}". Expected one of: ${SCAFFOLD_KINDS.join(', ')}.`);
     return;
   }
 
-  const { capitalizedName, folderFileName: lowerName } = parseName(name);
-  const compDir = path.join(cli.baseDir, cli.config.srcDir, 'components', lowerName);
-  const jsPath = path.join(compDir, `${lowerName}.component.js`);
-  const testPath = path.join(compDir, `${lowerName}.component.test.js`);
+  const candidates = (kind === null ? SCAFFOLD_KINDS : [kind]).map((candidateKind) =>
+    getScaffoldPaths(cli, candidateKind, name),
+  );
+  const matches = candidates.filter(({ sourcePath }) => fs.existsSync(sourcePath) && fs.statSync(sourcePath).isFile());
+  if (matches.length === 0) {
+    const locations = candidates.map(({ sourcePath }) => path.relative(cli.baseDir, sourcePath).replace(/\\/g, '/'));
+    fail(
+      `No ${kind || 'component, page, bridge, or guard'} named '${name}' was found. Checked: ${locations.join(', ')}.`,
+    );
+    return;
+  }
+  if (matches.length > 1) {
+    console.error(`❌ "${name}" is ambiguous. Did you mean:`);
+    for (const candidate of matches) {
+      const location = path.relative(cli.baseDir, candidate.sourcePath).replace(/\\/g, '/');
+      console.error(`   ${candidate.kind} ${name}${gray(`  ${location}`)}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  const { kind: resolvedKind, capitalizedName, lowerName, testPath } = matches[0];
   const relativePath = path.relative(cli.baseDir, testPath).replace(/\\/g, '/');
-
-  if (!fs.existsSync(jsPath) || !fs.statSync(jsPath).isFile()) {
-    fail(`Component '${lowerName}' was not found at ${path.relative(cli.baseDir, jsPath).replace(/\\/g, '/')}.`);
-    return;
-  }
+  const pascalName = resolvedKind === 'guard' ? `${capitalizedName}Guard` : capitalizedName;
+  const camelName = lowerName
+    .split('-')
+    .map((part, index) => (index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join('');
+  const legacyName = resolvedKind === 'bridge' ? camelName : pascalName;
   if (!force && abortIfGeneratedPathExists(cli.baseDir, 'Test', lowerName, [testPath])) {
     return;
   }
 
-  // The --with-test template asserts the generated scaffold's markup (an <h1>,
-  // a count and a button), which an existing component does not have. Unless
-  // the project overrides component.test.js.template, write a test that only
-  // checks the component mounts and renders, so it passes as written.
+  // Existing components need a render-only test, while retaining the same override lookup.
+  const templateFile = `${resolvedKind}.test.js.template`;
   const template = readTemplate(
     cli.baseDir,
     cli.config,
     cli.frameworkDir,
-    'component',
-    'component.test.js.template',
+    resolvedKind,
+    templateFile,
     templateName,
-    { builtinFilename: 'existing-component.test.js.template' },
+    resolvedKind === 'component' ? { builtinFilename: 'existing-component.test.js.template' } : {},
   );
   const content = renderTemplate(
     template,
-    'component/component.test.js.template',
-    { legacyName: capitalizedName, pascalName: capitalizedName, fileName: lowerName },
-    { legacyTestName: true },
+    `${resolvedKind}/${templateFile}`,
+    { legacyName, pascalName, fileName: lowerName },
+    { legacyTestName: resolvedKind === 'component' },
   );
 
   if (dryRun) {

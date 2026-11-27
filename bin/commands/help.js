@@ -11,10 +11,10 @@ ${bold('Usage:')} ${green('avenx')} ${gray('<command> [type] [name]')}
 ${bold(cyan('Commands:'))}
   ${green('init [name]')}               ${gray('Initialize a new Avenx project here, or in a new ./<name> directory')}
   ${green('generate component <name>')} ${gray('Generate a new component (alias: g)')}
-  ${green('generate page <name>')}      ${gray('Generate a new page (alias: g p)')}
+  ${green('generate page <name>')}      ${gray('Generate a new page; --with-test adds a test (alias: g p)')}
   ${green('generate bridge <name>')}    ${gray('Generate a new shared reactive bridge')}
   ${green('generate guard <name>')}     ${gray('Generate a new route guard')}
-  ${green('generate test <name>')}      ${gray('Add a colocated test to an existing component')}
+  ${green('generate test [<kind>] <name>')} ${gray('Add a colocated test to an existing component, page, bridge or guard; specify kind to disambiguate')}
   ${green('destroy component <name>')}  ${gray('Delete a component and its registrations (alias: d)')}
   ${green('destroy page <name>')}       ${gray('Delete a page (alias: d p)')}
   ${green('destroy bridge <name>')}     ${gray('Delete a shared reactive bridge')}
@@ -52,7 +52,7 @@ ${bold(cyan('Options:'))}
   ${green('--code-splitting, --split')} ${gray('Emit each page as its own chunk in <distDir>/pages/ ("build" only)')}
   ${green('--dry-run, -d')}             ${gray('Preview actions without writing or deleting any files')}
   ${green('--force, -f')}               ${gray('Force overwrite existing files during scaffold generation')}
-  ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component')}
+  ${green('--with-test')}               ${gray('Generate a colocated unit test file alongside the component or page')}
   ${green('--no-test')}                 ${gray('Skip generating unit test files')}
   ${green('--no-style')}                ${gray('Skip the stylesheet of a generated component or page')}
   ${green('--template, -t <name>')}     ${gray('Use a custom scaffold template for code generation')}

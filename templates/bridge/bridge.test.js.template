@@ -1,0 +1,44 @@
+/**
+ * Note: Running bridge tests requires Vitest. No DOM environment is required;
+ * these tests run in Node without happy-dom or @avenx/vite.
+ * Vitest needs Node ^22.12, ^24 or >=26.
+ *
+ * Setup instructions:
+ * 1. Install dependencies:
+ *      pnpm add ../avenx-js/avenx-core-<version>.tgz
+ *      pnpm add -D vitest
+ * 2. The environment annotation below selects Node, even in a DOM project.
+ * 3. Run:
+ *      pnpm exec vitest run
+ */
+
+// @vitest-environment node
+
+import { describe, it, expect, vi } from 'vitest';
+import {{PascalCaseName}} from './{{file}}.bridge.js';
+
+describe('{{PascalCaseName}} Bridge', () => {
+  it('updates state and notifies change subscribers', () => {
+    const originalValue = {{PascalCaseName}}.value;
+    const onChange = vi.fn();
+    const unsubscribe = {{PascalCaseName}}.on('change', onChange);
+
+    try {
+      expect({{PascalCaseName}}.value).toBe('');
+      expect({{PascalCaseName}}.isEmpty).toBe(true);
+
+      {{PascalCaseName}}.setValue('updated');
+
+      expect({{PascalCaseName}}.value).toBe('updated');
+      expect({{PascalCaseName}}.isEmpty).toBe(false);
+      expect(onChange).toHaveBeenCalledExactlyOnceWith('updated');
+
+      unsubscribe();
+      {{PascalCaseName}}.setValue('after unsubscribe');
+      expect(onChange).toHaveBeenCalledTimes(1);
+    } finally {
+      unsubscribe();
+      {{PascalCaseName}}.setValue(originalValue);
+    }
+  });
+});
