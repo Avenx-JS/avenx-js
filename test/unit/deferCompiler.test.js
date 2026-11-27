@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
+import { validateTemplate } from '../../lib/compiler/parser/validate.js';
 
 test('ComponentParser <@defer> tag compilation', async (t) => {
   const parser = new ComponentParser();
@@ -62,5 +63,71 @@ test('ComponentParser <@defer> tag compilation', async (t) => {
 
     assert.strictEqual(result.includes('data-ax-defer-when="state.show"'), true);
     assert.strictEqual(result.includes('{% message %}'), true); // Escaped template expression
+  });
+});
+
+test('validateTemplate <@defer> trigger diagnostics (AVX_W79)', async (t) => {
+  const strictConfig = { warnings: { AVX_W79: 'error' } };
+  const state = { isReady: false };
+
+  await t.test('accepts documented keywords including hover, click, and <n>ms without warning', () => {
+    for (const when of ['idle', 'visible', 'hover', 'click', 'interaction', 'timer(1000)', '300ms', '1500 ms']) {
+      assert.doesNotThrow(() => {
+        validateTemplate(
+          `<@defer when="${when}"><p>Content</p></@defer>`,
+          state,
+          {},
+          {},
+          null,
+          'Demo.component.js',
+          'Demo',
+          [],
+          { config: strictConfig },
+        );
+      });
+    }
+  });
+
+  await t.test('accepts valid expression triggers without warning', () => {
+    for (const when of ['state.isReady', 'isReady']) {
+      assert.doesNotThrow(() => {
+        validateTemplate(
+          `<@defer when="${when}"><p>Content</p></@defer>`,
+          state,
+          {},
+          {},
+          null,
+          'Demo.component.js',
+          'Demo',
+          [],
+          { config: strictConfig },
+        );
+      });
+    }
+  });
+
+  await t.test('reports misspelled and unparseable triggers with accepted values', () => {
+    for (const bad of ['visble', 'onclick', 'timer(2 s)']) {
+      assert.throws(
+        () => {
+          validateTemplate(
+            `<@defer when="${bad}"><p>Content</p></@defer>`,
+            state,
+            {},
+            {},
+            null,
+            'Demo.component.js',
+            'Demo',
+            [],
+            { config: strictConfig },
+          );
+        },
+        (err) => {
+          assert.match(err.message, /<@defer when=/);
+          assert.match(err.message, /idle, visible, hover, click, interaction, timer\(ms\), <n>ms/);
+          return true;
+        },
+      );
+    }
   });
 });

@@ -15,6 +15,7 @@ import {
 import {
   assertWellFormedTemplate,
   validateReconciliationMarkers,
+  validateDeferTriggers,
   validateComponentTags,
 } from '../../lib/compiler/parser/validate/structure.js';
 import {
@@ -37,6 +38,7 @@ test('validate.js re-exports the extracted validation passes identically', () =>
   assert.strictEqual(validateFacade.reportUnterminatedInterpolations, reportUnterminatedInterpolations);
   assert.strictEqual(validateFacade.assertWellFormedTemplate, assertWellFormedTemplate);
   assert.strictEqual(validateFacade.validateReconciliationMarkers, validateReconciliationMarkers);
+  assert.strictEqual(validateFacade.validateDeferTriggers, validateDeferTriggers);
   assert.strictEqual(validateFacade.validateComponentTags, validateComponentTags);
   assert.strictEqual(validateFacade.validateEventHandlerAttributes, validateEventHandlerAttributes);
   assert.strictEqual(validateFacade.validateDynamicAttributeBindings, validateDynamicAttributeBindings);
