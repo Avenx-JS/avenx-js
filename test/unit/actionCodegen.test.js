@@ -19,7 +19,8 @@
 
 import assert from 'assert';
 import { compileActionToSource } from '../../lib/compiler/codegen/actions.js';
-import { ExpressionCodegenError } from '../../lib/compiler/codegen/expression.js';
+import { compileStatementsToSource, ExpressionCodegenError } from '../../lib/compiler/codegen/expression.js';
+import { buildExpressionTable } from '../../lib/compiler/codegen/table.js';
 import * as ops from '../../lib/core/expression/ops.js';
 
 const RUNTIME = {
@@ -128,6 +129,58 @@ await check('destructuring declares its names as locals', async () => {
   await run('const { a, ...rest } = source; const [first] = [10]; sum = a + rest.b + first;', scope);
   assert.strictEqual(scope.sum, 13, 'the destructured locals were used');
   assert.strictEqual(scope.a, 100, 'the state key shadowed by the local is unchanged');
+});
+
+await check('array destructuring in action and resource bodies falls back to action codegen', async () => {
+  const cases = [
+    { name: 'constSingle', body: 'const [a] = args; out = a;', args: ['x'], expected: 'x' },
+    { name: 'letPair', body: 'let [a, b] = args; out = a + b;', args: [3, 4], expected: 7 },
+    {
+      name: 'constNestedObj',
+      body: 'const [{ category }] = args; out = category;',
+      args: [{ category: 'books' }],
+      expected: 'books',
+    },
+  ];
+
+  for (const { body } of cases) {
+    assert.throws(
+      () => compileStatementsToSource(body, { ambient: true }),
+      ExpressionCodegenError,
+      `${body} must not parse as an expression-statement`,
+    );
+  }
+
+  const actions = Object.fromEntries(cases.map((c) => [c.name, c.body]));
+  const resources = { resArray: 'const [first] = args; out = first;' };
+  const table = buildExpressionTable('Demo', { expressions: [], statements: [], actions, resources });
+
+  assert.strictEqual(table.skipped, 0, 'all array-destructuring bodies compiled');
+  assert.ok(!table.source.includes('axWrite('), 'must not miscompile as axWrite(const[x])');
+  assert.ok(!table.source.includes('"const"'), 'must not look up "const" in ambient scope');
+  assert.ok(!table.source.includes('"let"'), 'must not look up "let" in ambient scope');
+
+  const ambientRuntime = {
+    ...RUNTIME,
+    axGetAmbient: ops.readAmbientIdentifier,
+    axSetAmbient: ops.writeAmbientIdentifier,
+    axTypeofAmbient: ops.typeofAmbientIdentifier,
+    axAmbientTarget: ops.ambientAssignmentTarget,
+  };
+  const names = Object.keys(ambientRuntime);
+  const values = names.map((n) => ambientRuntime[n]);
+  const Demo = {};
+  new Function(...names, 'Demo', table.source)(...values, Demo);
+
+  for (const { name, args, expected } of cases) {
+    const scope = { args, out: null };
+    Demo.__axActions[name](scope);
+    assert.strictEqual(scope.out, expected, `action ${name} produced expected result`);
+  }
+
+  const resScope = { args: ['ok'], out: null };
+  Demo.__axResources.resArray(resScope);
+  assert.strictEqual(resScope.out, 'ok', 'resource array destructuring produced expected result');
 });
 
 await check('function parameters are locals', async () => {
