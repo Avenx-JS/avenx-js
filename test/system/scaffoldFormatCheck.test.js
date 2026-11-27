@@ -48,8 +48,12 @@ for (const layout of [[], ['--layout', 'routing']]) {
       ['generate', 'component', 'Widget', '--with-test'],
       ['generate', 'component', 'Other'],
       ['generate', 'page', 'Contact'],
+      ['generate', 'page', 'Profile', '--with-test'],
       ['generate', 'guard', 'admin'],
       ['generate', 'bridge', 'store'],
+      ['generate', 'test', 'page', 'Contact'],
+      ['generate', 'test', 'guard', 'admin'],
+      ['generate', 'test', 'bridge', 'store'],
     ]) {
       const result = avenx(root, [...args, '--force']);
       assert.strictEqual(result.status, 0, `${args.join(' ')} (${name}) should succeed:\n${result.output}`);

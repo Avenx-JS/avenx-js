@@ -18,6 +18,7 @@ import { runEnv } from './commands/env.js';
 import { explainDiagnostic, listDiagnostics } from './commands/explain.js';
 import { runTrace } from './commands/trace.js';
 import { runAtlas, runQuery } from './commands/atlas.js';
+import { SCAFFOLD_KINDS } from './scaffoldPaths.js';
 
 /**
  * The scaffold kinds `generate` and `destroy` accept as their first argument.
@@ -274,20 +275,29 @@ export class AvenxCLI {
           break;
         }
 
-        const targetName = GENERATE_TYPES.includes(type) ? name : type;
+        if (type === 'test' && filteredArgs.length > 3) {
+          fail('Too many arguments. Usage: avenx generate test [<kind>] <name>.');
+          break;
+        }
+        const testKind = type === 'test' && filteredArgs.length === 3 ? name : null;
+        if (testKind !== null && !SCAFFOLD_KINDS.includes(testKind)) {
+          fail(`Unknown test kind "${testKind}". Expected one of: ${SCAFFOLD_KINDS.join(', ')}.`);
+          break;
+        }
+        const targetName = testKind !== null ? filteredArgs[2] : GENERATE_TYPES.includes(type) ? name : type;
         if (refuseInvalidScaffoldName('g', targetName)) {
           break;
         }
 
         try {
           if (type === 'test') {
-            generateTest(this, name, dryRun, force, templateName);
+            generateTest(this, targetName, dryRun, force, templateName, testKind);
           } else if (type === 'bridge') {
             generateBridge(this, name, dryRun, force, templateName);
           } else if (type === 'guard') {
             generateGuard(this, name, dryRun, force, templateName);
           } else if (type === 'page' || type === 'p') {
-            generatePage(this, name, dryRun, force, templateName, noStyle);
+            generatePage(this, name, dryRun, force, templateName, noStyle, withTest, noTest);
           } else if (type === 'component' || type === 'c') {
             generateComponent(this, name, dryRun, force, templateName, withTest, noTest, noStyle);
           } else {
@@ -391,11 +401,12 @@ export class AvenxCLI {
         const certIdx = args.findIndex((a) => a === '--cert' || a.startsWith('--cert='));
         const keyIdx = args.findIndex((a) => a === '--key' || a.startsWith('--key='));
         if (args.includes('--https')) this.config.server.https = true;
-        for (const [name, idx] of [['cert', certIdx], ['key', keyIdx]]) {
+        for (const [name, idx] of [
+          ['cert', certIdx],
+          ['key', keyIdx],
+        ]) {
           if (idx === -1) continue;
-          const value = args[idx].includes('=')
-            ? args[idx].slice(args[idx].indexOf('=') + 1)
-            : args[idx + 1];
+          const value = args[idx].includes('=') ? args[idx].slice(args[idx].indexOf('=') + 1) : args[idx + 1];
           if (!value || value.startsWith('--') || value.trim() === '') {
             throw new Error(`--${name} requires a file path`);
           }

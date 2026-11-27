@@ -1,0 +1,43 @@
+/**
+ * Note: Running page tests requires Vitest, @avenx/vite and a DOM
+ * environment (happy-dom).
+ * Vitest needs Node ^22.12, ^24 or >=26.
+ *
+ * Setup instructions:
+ * 1. Install dependencies (pack @avenx/vite and avenx-core from a checkout;
+ *    see https://docs.avenx-js.com/cli-reference/vite-plugin/#package-installation):
+ *      pnpm add ../avenx-js/avenx-core-<version>.tgz
+ *      pnpm add -D ../avenx-js/avenx-vite-<version>.tgz vitest happy-dom
+ * 2. Ensure vitest.config.js includes:
+ *      import { defineConfig } from 'vitest/config';
+ *      import avenx from '@avenx/vite';
+ *      export default defineConfig({
+ *        plugins: [avenx()],
+ *        test: { environment: 'happy-dom' },
+ *      });
+ * 3. Run:
+ *      pnpm exec vitest run
+ */
+
+import { describe, it, expect, onTestFinished } from 'vitest';
+import { AvenxMock, mountTestComponent } from 'avenx-core/testing';
+import {{PascalCaseName}} from './{{file}}.page.js';
+
+describe('{{PascalCaseName}} Page', () => {
+  it('renders its title and content with route params', async () => {
+    const router = AvenxMock.createMockRouter({
+      hash: '#/{{file}}/42',
+      page: '{{PascalCaseName}}',
+      params: { id: '42' },
+    });
+    onTestFinished(() => router.$destroy());
+
+    const wrapper = await mountTestComponent({{PascalCaseName}});
+    onTestFinished(() => wrapper.unmount());
+
+    expect(wrapper.instance.state.title).toBe('{{PascalCaseName}}');
+    expect(wrapper.find('h1').textContent).toBe('{{PascalCaseName}}');
+    expect(wrapper.find('p').textContent).toBe('Welcome to the {{PascalCaseName}} page.');
+    expect(wrapper.instance.$route.params.id).toBe('42');
+  });
+});

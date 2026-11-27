@@ -1,0 +1,85 @@
+/**
+ * Note: Running guard tests requires Vitest and a DOM environment (happy-dom)
+ * for localStorage. No @avenx/vite plugin is needed for guard modules.
+ * Vitest needs Node ^22.12, ^24 or >=26.
+ *
+ * Setup instructions:
+ * 1. Install dependencies:
+ *      pnpm add ../avenx-js/avenx-core-<version>.tgz
+ *      pnpm add -D vitest happy-dom
+ * 2. Ensure vitest.config.js includes:
+ *      import { defineConfig } from 'vitest/config';
+ *      export default defineConfig({
+ *        test: { environment: 'happy-dom' },
+ *      });
+ * 3. Run:
+ *      pnpm exec vitest run
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest';
+import { GuardContext } from 'avenx-core/runtime';
+import { AvenxMock } from 'avenx-core/testing';
+import {{PascalCaseName}} from './{{file}}.guard.js';
+
+describe('{{PascalCaseName}}', () => {
+  /** @type {string|null} */
+  let originalToken = null;
+
+  beforeEach(() => {
+    originalToken = localStorage.getItem('authToken');
+    localStorage.removeItem('authToken');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalToken === null) {
+      localStorage.removeItem('authToken');
+    } else {
+      localStorage.setItem('authToken', originalToken);
+    }
+  });
+
+  const to = { hash: '#/protected', page: 'Protected', params: {} };
+  const from = { hash: '#/', page: 'Home', params: {} };
+
+  /**
+   * @typedef {object} GuardFixture
+   * @property {{{PascalCaseName}}} guard The scaffolded guard instance.
+   * @property {GuardContext} context Its navigation context.
+   */
+
+  /** @returns {GuardFixture} Guard and its navigation context. */
+  function createGuard() {
+    const session = AvenxMock.createMockBridge({ signedIn: false });
+    const context = new GuardContext({ bridges: { session } });
+    return { guard: new {{PascalCaseName}}(context), context };
+  }
+
+  it('allows navigation when authToken is present', async () => {
+    localStorage.setItem('authToken', 'test-token');
+    const { guard, context } = createGuard();
+
+    expect(guard.$bridge('session')).toBe(context.bridge('session'));
+    expect(await guard.canActivate(to, from, context)).toBe(true);
+  });
+
+  it.each([null, ''])('redirects to login when authToken is %s', async (token) => {
+    if (token !== null) localStorage.setItem('authToken', token);
+    const { guard, context } = createGuard();
+
+    expect(await guard.canActivate(to, from, context)).toBe('#/login');
+  });
+
+  it('blocks navigation when the guard decision is mocked to deny', () => {
+    const { guard, context } = createGuard();
+    vi.spyOn(guard, 'canActivate').mockReturnValue(false);
+    const router = AvenxMock.createMockRouter({ currentRoute: from, guards: [guard] });
+    context.router = router;
+    onTestFinished(() => router.$destroy());
+
+    expect(guard.canActivate(to, from, context)).toBe(false);
+    expect(router.push(to.hash)).toBe(false);
+    expect(router.currentRoute.hash).toBe(from.hash);
+    expect(router.$calls).toEqual([{ method: 'push', args: [to.hash], blocked: true }]);
+  });
+});

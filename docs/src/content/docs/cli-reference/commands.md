@@ -222,7 +222,7 @@ npx avenx init --interactive --force
 
 ### 2. `avenx generate` (alias: `g`)
 
-Generates boilerplate code for components, pages, global state bridges, and navigation guards. Automatically registers new components and pages in `src/main.app.js`.
+Generates boilerplate code for components, pages, global state bridges, and navigation guards. Automatically registers new components in `src/main.app.js`; pages print instructions for adding a route.
 
 #### Subtypes
 
@@ -230,40 +230,71 @@ Generates boilerplate code for components, pages, global state bridges, and navi
 - **Page (`page`, `p`)**: Creates `src/pages/<name>.page.js` and `.css` for client-side routing.
 - **Bridge (`bridge`)**: Creates a shared reactive state module at `src/global/<name>.bridge.js` built with the `bridge()` factory.
 - **Guard (`guard`)**: Creates a navigation guard class at `src/guards/<name>.guard.js` extending `AvenxGuard`.
-- **Test (`test`)**: Adds `src/components/<name>/<name>.component.test.js` to an existing component. The built-in test mounts the component and checks that it renders, so it passes as written; a `TODO` comment marks where to add assertions for its behavior. A `component.test.js.template` override is used here too, as for `--with-test`. The component, stylesheet and registrations are left intact. An existing test is protected unless `--force` is given.
+- **Test (`test`)**: Adds a colocated test to an existing component, page, bridge, or guard with `avenx generate test [<kind>] <name>`. The source, stylesheet and registrations are left intact. An existing test is protected unless `--force` is given.
+
+#### Tests for Existing Files
+
+With one name, `avenx generate test <name>` checks the four scaffold source paths and selects the kind whose file exists. Names use the same normalization as generation: `UserProfile`, `userProfile`, and `user_profile` resolve to `user-profile`. Paths below use the default `srcDir` of `src`; a configured `srcDir` is respected.
+
+| Kind        | Existing source                             | Generated test                                   |
+| :---------- | :------------------------------------------ | :----------------------------------------------- |
+| `component` | `src/components/<name>/<name>.component.js` | `src/components/<name>/<name>.component.test.js` |
+| `page`      | `src/pages/<name>.page.js`                  | `src/pages/<name>.page.test.js`                  |
+| `bridge`    | `src/global/<name>.bridge.js`               | `src/global/<name>.bridge.test.js`               |
+| `guard`     | `src/guards/<name>.guard.js`                | `src/guards/<name>.guard.test.js`                |
+
+If no source file exists, the command exits 1 and lists the checked paths. If multiple kinds share the name, it exits 1 with an ambiguity message and lists each choice and path. It writes nothing, even with `--force` or `--dry-run`. Select the intended kind explicitly, for example `avenx generate test page home` or `avenx generate test component home`. Explicit kinds are `component`, `page`, `bridge`, and `guard`; unknown kinds and surplus arguments are refused.
+
+The built-in component test mounts the component and checks that it renders; a `TODO` comment marks where to add behavior assertions. It retains the `component.test.js.template` override used by `--with-test`. The page test checks the scaffold's title, content, and mocked route params. The bridge test checks `value`, `isEmpty`, and the `change` event after `setValue()`. The guard test checks authentication allow/redirect outcomes and uses an explicitly mocked deny decision to demonstrate blocked navigation. Adapt scaffold assertions when changing the generated page, bridge, or guard.
+
+Follow each generated file's setup comment to run it with Vitest. Pages require `@avenx/vite` and `happy-dom`; guards require `happy-dom` for `localStorage`. Bridge tests run in Node without a DOM or the Vite plugin.
 
 #### Options
 
 - `--dry-run` / `-d`: Previews generated files without writing to disk.
-- `--force` / `-f`: Bypasses Git working tree status checks.
-- `--with-test`: Also writes a colocated unit test next to a generated component. `--no-test` skips it and takes precedence if both flags are present. Tests are disabled by default.
-  The built-in `--with-test` test exercises the default component scaffold; adapt its assertions as the component changes. To add a test to a component later, use `avenx generate test <name>` (see **Test** above); it also accepts `--dry-run` and `--template`.
+- `--force` / `-f`: Allows overwriting existing generated files and bypasses Git working tree status checks. For `generate test`, only the test file is replaced; the target must still exist and resolve unambiguously.
+- `--with-test`: Also writes a colocated unit test next to a generated component or page, for example `avenx generate page dashboard --with-test`. `--no-test` skips it and takes precedence if both flags are present. Tests are disabled by default.
+  The built-in `--with-test` tests exercise the default scaffolds; adapt their assertions as the component or page changes. To add a test later, use `avenx generate test [<kind>] <name>`; it also accepts `--dry-run` and `--template`. Page templates are validated before any source, stylesheet, or test file is written.
 - `--no-style`: Writes a component or page without its stylesheet (`.component.css` or `.page.css`), for projects that style components another way. The generated template then has no `@css` references, so it builds without `AVX_W49`.
 
 Project defaults can be set with `scaffold.test`, `scaffold.style`, and `scaffold.template` in `avenx.config.json`. Explicit flags override configuration; see [Scaffold defaults](/getting-started/configuration/#scaffold-defaults-scaffold).
 
-- `--template <name>` / `-t <name>`: Generates from the override named `<name>` under `templatesDir` (for example `.avenxtemplates/component/<name>/component.js.template`) instead of the default template. See [Custom Templates](/cli-reference/custom-templates/).
+- `--template <name>` / `-t <name>`: Generates from the override named `<name>` under `templatesDir` (for example `.avenxtemplates/component/<name>/component.js.template`) instead of the default template. For tests, use `<kind>.test.js.template`, such as `.avenxtemplates/page/house/page.test.js.template`. Inline `--template=house` and `-t=house` forms are also accepted. Unknown template names fail without writing files; `generate test` validates templates during `--dry-run` too. See [Custom Templates](/cli-reference/custom-templates/).
 
 #### Usage Examples
 
 ```bash
 # Generate component
-npx avenx g counter
+pnpm exec avenx g counter
 
 # Generate page with alias
-npx avenx g p dashboard
+pnpm exec avenx g p dashboard
 
 # Preview page generation without writing to disk
-npx avenx g p user-profile --dry-run
+pnpm exec avenx g p user-profile --dry-run
 
 # Generate shared reactive bridge
-npx avenx g bridge shopping-cart
+pnpm exec avenx g bridge shopping-cart
 
 # Generate route guard
-npx avenx g guard auth
+pnpm exec avenx g guard auth
 
 # Add a test to an existing component
-npx avenx generate test counter
+pnpm exec avenx generate test counter
+
+# Resolve the existing page, bridge, or guard automatically
+pnpm exec avenx generate test dashboard
+pnpm exec avenx generate test shopping-cart
+pnpm exec avenx generate test auth
+
+# Select a page when a component shares its name
+pnpm exec avenx generate test page home
+
+# Preview replacing a page test with a named override
+pnpm exec avenx generate test page dashboard --template house --force --dry-run
+
+# Generate a page and its test together
+pnpm exec avenx generate page reports --with-test
 ```
 
 ---
