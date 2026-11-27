@@ -292,7 +292,6 @@ function testRefusals() {
     ['a suspense boundary', '<@suspense><p>x</p></@suspense>'],
     ['an error boundary', '<@errorBoundary><p>x</p></@errorBoundary>'],
     ['a deadlock boundary', '<@deadlock name="d"><p>x</p></@deadlock>'],
-    ['a transition', '<transition name="fade"><p>x</p></transition>'],
     ['form validation', '<input data-ax-validate="required" />'],
     ['a router view', '<div data-ax-router-view="true"></div>'],
     ['a dynamic attribute name', '<div :[name]="value"></div>'],
@@ -464,5 +463,32 @@ function testTemplateSlotWrapper() {
   refused('<Card><template data-slot-props="row">{{ row.label }}</template></Card>');
 }
 testEmptyTemplate();
+testTransitions();
+
+/**
+ * `<transition>` and `data-ax-transition` compile to `OpKind.TRANSITION` ops.
+ */
+function testTransitions() {
+  console.log('🧪 Testing transitions compile to render programs...');
+
+  const staticProgram = compiled('<transition name="fade"><p data-ax-show="open">x</p></transition>');
+  assert.ok(!staticProgram.html.includes('<transition'), 'transition wrapper must not survive into skeleton');
+  assert.deepStrictEqual(ops(staticProgram), [
+    { k: OpKind.TRANSITION, e: 0, n: 'fade' },
+    { k: OpKind.SHOW, e: 0, x: 'open' },
+  ]);
+
+  const interpProgram = compiled('<transition name="{{ tx }}"><p>x</p></transition>');
+  assert.deepStrictEqual(ops(interpProgram), [{ k: OpKind.TRANSITION, e: 0, x: 'tx' }]);
+
+  const boundProgram = compiled('<transition :name="tx"><p>x</p></transition>');
+  assert.deepStrictEqual(ops(boundProgram), [{ k: OpKind.TRANSITION, e: 0, x: 'tx' }]);
+
+  const defaultProgram = compiled('<transition><p>x</p></transition>');
+  assert.deepStrictEqual(ops(defaultProgram), [{ k: OpKind.TRANSITION, e: 0, n: 'ax' }]);
+
+  const attrProgram = compiled('<li data-ax-transition="fade">x</li>');
+  assert.deepStrictEqual(ops(attrProgram), [{ k: OpKind.TRANSITION, e: 0, x: 'fade', f: 'fade' }]);
+}
 
 console.log('✅ Render program compilation tests passed.');
