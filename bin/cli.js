@@ -355,7 +355,9 @@ export class AvenxCLI {
         break;
       case 'doctor':
         if (
-          args.some((arg) => !['--json', '-j', '--fix', '--dry-run', '-d'].includes(arg)) ||
+          args.some(
+            (arg) => !['--json', '-j', '--fix', '--dry-run', '-d', '--no-color', '--no-colors'].includes(arg),
+          ) ||
           (dryRun && !args.includes('--fix'))
         ) {
           console.error('Usage: avenx doctor [--json] [--fix [--dry-run]]');

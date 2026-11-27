@@ -44,14 +44,15 @@ function resolvePrettierBin(baseDir, frameworkDir) {
  * `avenx format --dry-run` are not broken. Only a genuine failure exits non-zero.
  * With `--check` Prettier lists the files that are not formatted, writes
  * nothing, and exits 1 when any is found, so CI and pre-commit hooks fail.
- * Any flag other than the ones above is rejected rather than ignored, so a
- * typo such as `--wirte` cannot silently format in place.
+ * The global `--no-color` / `--no-colors` flags are accepted as well; they are
+ * read by the color helpers, not here. Any other flag is rejected rather than
+ * ignored, so a typo such as `--wirte` cannot silently format in place.
  * @param {object} cli - AvenxCLI instance containing baseDir and frameworkDir.
  * @param {string[]} [args] - Command arguments: `--dry-run` / `-d` or `--check`.
  * @returns {void}
  */
 export function runFormat(cli, args = []) {
-  const allowedFlags = ['--dry-run', '-d', '--check'];
+  const allowedFlags = ['--dry-run', '-d', '--check', '--no-color', '--no-colors'];
   const unknownFlags = args.filter((arg) => arg.startsWith('-') && !allowedFlags.includes(arg));
   if (unknownFlags.length > 0) {
     console.error(`Unknown option(s) for avenx format: ${unknownFlags.join(', ')}`);
