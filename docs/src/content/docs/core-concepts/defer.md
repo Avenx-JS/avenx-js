@@ -27,13 +27,18 @@ When no `when` attribute is specified, `<@defer>` defaults to the `idle` trigger
 
 The `when` attribute defines when the deferred content should be loaded:
 
-| Trigger              | Syntax                              | Description                                                                               |
-| -------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| **`idle`** (Default) | `<@defer when="idle">`              | Loads content during browser idle time.                                                   |
-| **`visible`**        | `<@defer when="visible">`           | Loads content as soon as the defer container becomes visible in the viewport.             |
-| **`interaction`**    | `<@defer when="interaction">`       | Loads content upon user interaction. Currently, `click` or `mouseenter` triggers loading. |
-| **`timer(ms)`**      | `<@defer when="timer(1000)">`       | Loads content after the specified delay in milliseconds.                                  |
-| **Expression**       | `<@defer when="state.showDetails">` | Evaluates the specified expression and loads content when the result is truthy.           |
+| Trigger              | Syntax                              | Description                                                                                 |
+| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| **`idle`** (Default) | `<@defer when="idle">`              | Loads content during browser idle time.                                                     |
+| **`visible`**        | `<@defer when="visible">`           | Loads content as soon as the defer container becomes visible in the viewport.               |
+| **`hover`**          | `<@defer when="hover">`             | Loads content when the pointer enters (`mouseenter`) the placeholder.                       |
+| **`click`**          | `<@defer when="click">`             | Loads content when the placeholder is clicked.                                              |
+| **`interaction`**    | `<@defer when="interaction">`       | Loads content on either `hover` (`mouseenter`) or `click` interaction with the placeholder. |
+| **`timer(ms)`**      | `<@defer when="timer(1000)">`       | Loads content after the specified delay in milliseconds.                                    |
+| **`<n>ms`**          | `<@defer when="1000ms">`            | Shorthand for `timer(n)`; loads content after the specified delay in milliseconds.          |
+| **Expression**       | `<@defer when="state.showDetails">` | Evaluates the specified expression and loads content when the result is truthy.             |
+
+> **Unrecognised triggers:** For forward compatibility, an unrecognised `when` value that is neither a known trigger nor a valid expression falls back to `idle` at runtime. The compiler raises warning `AVX_W79` at build time so typos (such as `when="visble"`) are caught early.
 
 ---
 

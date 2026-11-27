@@ -4773,3 +4773,15 @@ The check runs on authored markup before compiler-generated markers are added,
 so normal static subtree optimization and keyed lists do not warn. This warning
 does not change rendering. To silence intentional usage, set
 `"warnings": { "AVX_W77": "off" }` in `avenx.config.json`; use `"error"` to reject it.
+
+### AVX_W79 — COMPILER_UNKNOWN_DEFER_TRIGGER
+
+**Cause:** A `<@defer>` block specifies a `when="..."` trigger that is neither a
+known subscription (`idle`, `visible`, `hover`, `click`, `interaction`,
+`timer(ms)`, `<n>ms`) nor a valid expression referencing declared component state.
+At runtime, unrecognised triggers fall back to `idle`.
+
+**Resolution:** Replace the `when` value with one of the accepted triggers
+(`idle`, `visible`, `hover`, `click`, `interaction`, `timer(ms)`, `<n>ms`) or a
+valid expression. To silence this warning, set `"warnings": { "AVX_W79": "off" }`
+in `avenx.config.json`.
