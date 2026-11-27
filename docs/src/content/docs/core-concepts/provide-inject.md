@@ -5,9 +5,69 @@ description: 'Share reactive state, methods, and services down the component tre
 
 Avenx-JS provides a native **Provide & Inject** mechanism for ancestor-descendant component communication. It allows a parent or ancestor component to serve as a dependency provider for all its descendant components, regardless of how deeply nested they are, without having to pass props through intermediate components ("prop drilling").
 
-:::note[Class-based authoring]
-Provide and inject are configured on **class-based** components and pages: subclasses of `AvenxComponent` / `AvenxPage` saved as ordinary `.js` modules and registered with `app.register()` / `app.registerPage()`. Single-file templates (`.component.js` / `.page.js`) do not currently expose `<provide>` or `<inject>` tags. Saving a class module under a `.component.js` or `.page.js` name makes the compiler treat the file as template markup, so the class source can appear as visible text in the page.
+## Single-File Components (`.component.js` & `.page.js`)
+
+In single-file components and pages, declare dependencies directly in markup using `<provide>` and `<inject>` tags. Both tags are parsed at compile time, stripped completely from rendered HTML (rendering zero DOM elements), and registered into template validation so local injected keys are recognized without `AVX_W03`.
+
+### 1. List Form
+
+Declare provided and injected identifiers separated by newlines, spaces, or commas inside the tag body:
+
+```html
+<!-- Ancestor Provider (.page.js or .component.js) -->
+<state theme="dark" />
+<action name="setTheme"> this.state.theme = this.state.theme === 'dark' ? 'light' : 'dark'; </action>
+
+<provide> theme setTheme </provide>
+
+<div>
+  <header />
+  <MainContent />
+</div>
+```
+
+```html
+<!-- Descendant Consumer (.component.js) -->
+<inject> theme setTheme </inject>
+
+<div>
+  <span>Current Theme: {{ theme }}</span>
+  <button @click="setTheme()">Toggle Theme</button>
+</div>
+```
+
+Self-closing valueless attributes are also supported: `<provide theme setTheme />` and `<inject theme setTheme />`.
+
+### 2. Renaming Form (`<inject>`)
+
+To avoid name collisions or use a different local identifier, map local property names to provided ancestor keys using tag attributes:
+
+```html
+<!-- Descendant Consumer with Aliased Names -->
+<inject currentTheme="theme" updateTheme="setTheme" />
+
+<div>
+  <span>Active Theme: {{ currentTheme }}</span>
+  <button @click="updateTheme()">Toggle Theme</button>
+</div>
+```
+
+Inside the component, `currentTheme` and `updateTheme` are bound directly in template expressions, action bodies, and event handlers. Only local injected names (`currentTheme`) are registered in scope; unaliased remote names (`theme`) or undeclared identifiers trigger `AVX_W03` validation warnings as expected.
+
+:::note[Arbitrary-expression object provide]
+The arbitrary-expression object form (`provide = { customKey: () => computeValue() }`) remains available on class-based components. In SFCs, `<provide>` declares keys backed by the component's reactive `<state>`, `<computed>`, `<action>`, or `<resource>` declarations.
 :::
+
+---
+
+## Atlas & Dependency Graph (`avenx why` / `avenx impact`)
+
+Provide and inject relationships are modeled semantically in the Avenx Atlas compiler graph:
+
+- **`avenx why <Consumer.injectedKey>`**: Follows dependency edges outward through `INJECTS` to find the nearest providing ancestor and the provider's backing `state` or `action`.
+- **`avenx impact <Provider.stateKey>`**: Follows dependency edges inward from the provider's state or action through `PROVIDES` and `INJECTS` down to every consuming descendant component and template binding.
+
+---
 
 ## How Provide & Inject Works
 

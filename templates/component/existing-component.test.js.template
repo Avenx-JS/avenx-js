@@ -1,0 +1,39 @@
+/**
+ * Note: Running component tests requires Vitest, @avenx/vite and a DOM
+ * environment (happy-dom).
+ * Vitest needs Node ^22.12, ^24 or >=26.
+ *
+ * Setup instructions:
+ * 1. Install dependencies (@avenx/vite is not on npm yet — pack it and
+ *    avenx-core from a checkout first; see
+ *    https://docs.avenx-js.com/cli-reference/vite-plugin/#package-installation):
+ *      npm install ../avenx-js/avenx-core-<version>.tgz
+ *      npm install -D ../avenx-js/avenx-vite-<version>.tgz vitest happy-dom
+ * 2. Ensure vitest.config.js includes:
+ *      import { defineConfig } from 'vitest/config';
+ *      import avenx from '@avenx/vite';
+ *      export default defineConfig({
+ *        plugins: [avenx()],
+ *        test: { environment: 'happy-dom' },
+ *      });
+ * 3. Run:
+ *      npx vitest run
+ */
+
+import { describe, it, expect } from 'vitest';
+import { mountTestComponent } from 'avenx-core/testing';
+import {{PascalCaseName}} from './{{name}}.component.js';
+
+describe('{{PascalCaseName}} Component', () => {
+  it('renders', async () => {
+    const { container } = await mountTestComponent({{PascalCaseName}});
+
+    expect(container.children.length).toBeGreaterThan(0);
+  });
+
+  // TODO: test what {{PascalCaseName}} does. For example:
+  //   const { find, instance } = await mountTestComponent({{PascalCaseName}}, { props: {}, state: {} });
+  //   expect(find('.title').textContent).toMatch(/.../);
+  //   await fireEvent(find('button'), 'click');
+  // `fireEvent` is exported by 'avenx-core/testing' as well.
+});
