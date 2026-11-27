@@ -151,7 +151,7 @@ Event bindings support dot-suffixed **modifiers** that adjust how the underlying
 
 `.capture` handlers run before bubble-phase handlers, outermost ancestor first, the same order native capture listeners use. Delegation emulates this, so `<div @click.capture="intercept()">` sees a click before the buttons inside it do.
 
-`.passive` maps to the native `addEventListener` option:
+`.passive` maps to the native `addEventListener` option and is isolated from non-passive handlers for the same event so it never blocks `.prevent` elsewhere in the tree:
 
 ```html
 <div @scroll.passive="onScroll()">Scroll container</div>

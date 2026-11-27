@@ -310,9 +310,12 @@ function namedTemplateExists(baseDir, dirs, subfolder, templateName) {
  * @param {string} subfolder
  * @param {string} filename
  * @param {string|null} [templateName]
+ * @param {object} [options]
+ * @param {string} [options.builtinFilename] - The built-in template to use when no override of
+ *   `filename` exists. Defaults to `filename`.
  * @returns {string}
  */
-export function readTemplate(baseDir, config, frameworkDir, subfolder, filename, templateName = null) {
+export function readTemplate(baseDir, config, frameworkDir, subfolder, filename, templateName = null, options = {}) {
   const dirs = [config?.templatesDir || '.avenxtemplates', 'templates'].filter(
     (dir, idx, self) => dir && self.indexOf(dir) === idx,
   );
@@ -366,7 +369,7 @@ export function readTemplate(baseDir, config, frameworkDir, subfolder, filename,
     }
   }
 
-  const globalPath = path.join(frameworkDir, 'templates', subfolder, filename);
+  const globalPath = path.join(frameworkDir, 'templates', subfolder, options.builtinFilename || filename);
   return fs.readFileSync(globalPath, 'utf-8').replace(/\r\n/g, '\n');
 }
 

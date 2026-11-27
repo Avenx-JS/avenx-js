@@ -75,6 +75,32 @@ try {
 
   const automatic = runAvenx(['generate', 'component', 'Automatic', '--with-test']);
   assert.strictEqual(automatic.status, 0, automatic.output);
+  const automaticTest = fs.readFileSync(
+    path.join(root, 'src/components/automatic/automatic.component.test.js'),
+    'utf8',
+  );
+  assert.match(automaticTest, /Current count: 1/, '--with-test keeps the scaffold assertions');
+
+  // `generate test` is for a component that already has its own markup, so it
+  // must not assert the scaffold's <h1>, count and button (#1978). This one,
+  // like the routing layout's navbar, has no state and no events.
+  const navbarDir = path.join(root, 'src/components/navbar');
+  fs.mkdirSync(navbarDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(navbarDir, 'navbar.component.js'),
+    '<nav>\n  <a href="#/">Home</a>\n  <a href="#/about">About</a>\n</nav>\n',
+  );
+  assert.strictEqual(runAvenx(['g', 'test', 'navbar']).status, 0);
+  const navbarTest = fs.readFileSync(path.join(navbarDir, 'navbar.component.test.js'), 'utf8');
+  for (const scaffoldOnly of [/find\('h1'\)/, /Current count/, /findAll\('button'\)/]) {
+    assert.doesNotMatch(header, scaffoldOnly, 'generate test must not assert the scaffold markup');
+    assert.doesNotMatch(navbarTest, scaffoldOnly, 'generate test must not assert the scaffold markup');
+  }
+  assert.strictEqual(
+    navbarTest.slice(0, navbarTest.indexOf('import ')),
+    automaticTest.slice(0, automaticTest.indexOf('import ')),
+    'both templates carry the same setup header',
+  );
 
   assert.strictEqual(runAvenx(['g', 'component', 'CustomCard']).status, 0);
   const templates = path.join(root, '.avenxtemplates/component');
@@ -135,6 +161,8 @@ try {
     const output = `${result.stdout || ''}${result.stderr || ''}`;
 
     assert.strictEqual(result.status, 0, `the generated component test should pass:\n${output}`);
+    // Widget and Navbar (generate test): 1 test each; Automatic (--with-test): 2.
+    assert.match(output, /Test Files\s+3 passed/, `every generated test file should run and pass:\n${output}`);
     assert.match(output, /Tests\s+4 passed/, `both generation paths should produce runnable tests:\n${output}`);
     assert.doesNotMatch(output, /AVX_R(08|33|34)/, `the run should be free of render errors:\n${output}`);
     console.log('Generated component tests pass under Vitest as set up by the file header');
