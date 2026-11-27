@@ -1,7 +1,8 @@
-# Dependabot: keeps our development tooling up to date.
-# Runs once a month (first of the month, UTC) and only looks at devDependencies.
-# Runtime dependencies are intentionally left out so published version ranges
-# stay under manual control.
+# Dependabot: keeps our development tooling and docs site (/docs) up to date.
+# Runs once a month (first of the month, UTC). For the package directories it
+# only looks at devDependencies — runtime dependencies are intentionally left
+# out so published version ranges stay under manual control. /docs is watched
+# separately for its site dependencies.
 version: 2
 
 updates:
@@ -27,6 +28,21 @@ updates:
         update-types:
           - minor
           - patch
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Documentation site (/docs): Astro, Starlight, and sharp are listed under
+  # dependencies, so it needs its own entry without the dev-only filter.
+  # Group minor/patch releases while leaving majors separate.
+  - package-ecosystem: npm
+    directory: "/docs"
+    schedule:
+      interval: monthly
+    groups:
+      docs:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
     commit-message:
       prefix: chore
       include: scope
