@@ -4785,3 +4785,34 @@ At runtime, unrecognised triggers fall back to `idle`.
 (`idle`, `visible`, `hover`, `click`, `interaction`, `timer(ms)`, `<n>ms`) or a
 valid expression. To silence this warning, set `"warnings": { "AVX_W79": "off" }`
 in `avenx.config.json`.
+
+### AVX_W80 — COMPILER_NON_PUBLIC_ENV
+
+**Warning Message**
+
+```text
+process.env.{0} in {1} is not prefixed with AVX_PUBLIC_, so the build does not inline it and it will throw a ReferenceError in the browser.
+Only AVX_PUBLIC_* variables are inlined into client bundles; non-public values are never inlined. Rename it to AVX_PUBLIC_{0} if it is safe for the browser, read it at build time, or guard with `typeof process !== "undefined"`. Silence this class with "warnings": { "AVX_W80": "off" } in avenx.config.json.
+```
+
+**Cause:** The compiler only inlines `process.env.AVX_PUBLIC_*` references into client-side bundles. Any `process.env.X` or `process.env['X']` reference without the `AVX_PUBLIC_` prefix is left as-is in the compiled output, where `process` is undefined in the browser and throws a `ReferenceError` at runtime.
+
+**Resolution:**
+
+1. If the value is safe to expose in client-side code, rename it to `AVX_PUBLIC_<NAME>` and update the reference to `process.env.AVX_PUBLIC_<NAME>`.
+2. If the value is sensitive or server-only, read it at build time (for example in `avenx.config.js` or a build script) instead of inside client code.
+3. If the code runs in both Node and the browser, guard the access with `typeof process !== 'undefined'`.
+4. To silence this warning, set `"warnings": { "AVX_W80": "off" }` in `avenx.config.json`, or `"error"` to fail the build instead.
+
+**Incorrect**
+
+```js
+const token = process.env.SECRET_TOKEN; // ❌ not inlined; emits AVX_W80 and throws in the browser
+```
+
+**Correct**
+
+```js
+const apiUrl = process.env.AVX_PUBLIC_API_URL; // ✅ inlined at build time
+const nodeEnv = typeof process !== 'undefined' ? process.env.NODE_ENV : 'production'; // ✅ guarded
+```
