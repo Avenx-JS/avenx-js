@@ -174,6 +174,19 @@ export default class UserCard extends AvenxComponent {
 
 ## Reactivity & Scope Shadowing
 
+### Lazy Resolution
+
+An injected key is resolved **lazily, on every access** — it is not copied or cached at mount time. When a descendant reads an injected property, Avenx walks up the DOM tree from the component's root element to find the nearest ancestor component whose `provide` declares that key, then reads the current value from it.
+
+This has two practical implications:
+
+- **Object-form `provide` is reactive.** The object passed to `provide` is wrapped in its own reactive proxy internally. Injecting descendants read through that proxy on every access, so they automatically see updates when the provider changes a provided value — no extra wiring required.
+- **Array-form `provide` stays reactive too**, since it reads the provided key directly off the provider's live `state`/`props`/methods each time, rather than a snapshot.
+
+:::caution
+If no ancestor in the tree provides an injected key, the property resolves to `undefined` and a warning is logged to the console — it does not throw. Double-check ancestor/descendant `provide`/`inject` key names match if an injected value is unexpectedly `undefined`.
+:::
+
 ### Targeted Reactivity Updates
 
 When an ancestor component updates a provided property or reactive state:

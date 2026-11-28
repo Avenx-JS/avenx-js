@@ -18,6 +18,7 @@ import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GUIDE = path.join(__dirname, '../../docs/src/content/docs/core-concepts/provide-inject.md');
+const REACTIVITY_GUIDE = path.join(__dirname, '../../docs/src/content/docs/core-concepts/reactivity.md');
 
 /**
  * Asserts the guide's end-to-end section uses plain `.js` module paths.
@@ -26,6 +27,8 @@ function testGuideFilenames() {
   console.log('🧪 Provide/inject guide uses class module filenames');
 
   const markdown = fs.readFileSync(GUIDE, 'utf8');
+  assert.match(markdown, /lazily, on every access/);
+
   const exampleHeading = '## Real-World Example: Theme & State Provider';
   const start = markdown.indexOf(exampleHeading);
   assert.ok(start >= 0, 'Real-World Example section should exist');
@@ -38,7 +41,11 @@ function testGuideFilenames() {
   assert.match(section, /app\.register\('ThemeToggleButton'/);
   assert.match(section, /app\.registerPage\('AppLayout'/);
 
-  console.log('  ✅ Guide filenames and registration match class authoring');
+  const reactivityMarkdown = fs.readFileSync(REACTIVITY_GUIDE, 'utf8');
+  assert.match(reactivityMarkdown, /\/core-concepts\/provide-inject/);
+  assert.doesNotMatch(reactivityMarkdown, /\b(?:provide|inject)\s*=/);
+
+  console.log('  ✅ Guide filenames, lazy resolution, and reactivity guide link match');
 }
 
 /**
