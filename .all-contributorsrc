@@ -1679,6 +1679,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "tony88pisa",
+      "name": "Tony Cerundolo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/144355847?v=4",
+      "profile": "https://github.com/tony88pisa",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "commitType": "docs",
