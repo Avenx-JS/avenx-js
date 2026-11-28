@@ -657,11 +657,11 @@ that ships.
 
 A freshly scaffolded application with one component, production build, measured
 with `avenx init -y`, `avenx generate component hello`, and `avenx build`
-(verified 2026-11-26):
+(verified 2026-11-29):
 
 | Asset | Raw | Gzipped |
 | :--- | ---: | ---: |
-| `bundle.js` | 380.56 KB | 88.97 KB |
+| `bundle.js` | 389.72 KB | 88.97 KB |
 | `bundle.css` | 0.69 KB | 0.31 KB |
 
 That number is honest rather than flattering, and worth understanding: Avenx's
@@ -670,7 +670,7 @@ identifiers or remove dead branches, because doing that safely needs a full
 ECMAScript parser and a minifier that guesses produces a bundle that is smaller
 and wrong. Line numbers therefore survive into production stack traces. Unused
 modules *are* tree-shaken out of the graph — the same scaffolded build reports
-`70 modules · 27 shaken out` — and comments and indentation are what gzip
+`75 modules · 27 shaken out` — and comments and indentation are what gzip
 compresses best, so the gap on the wire is much narrower than on disk.
 
 <div align="right"><a href="#avenxjs">↑ back to top</a></div>
@@ -847,11 +847,11 @@ migration.
   Windows and macOS as well.
 
 The repository's own verification, as it stands on the default branch
-`main` (counts verified 2026-11-28):
+`main` (counts verified 2026-11-29):
 
 | Suite | Count | How to run |
 | :--- | ---: | --- |
-| Unit | 319 files | `npm run test:unit` |
+| Unit | 325 files | `npm run test:unit` |
 | Integration | 25 files | `npm run test:integration` |
 | System / CLI | 91 files | `npm run test:system` |
 | Browser (E2E, Chromium) | ~210 test declarations | `npm run test:e2e` |
