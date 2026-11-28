@@ -17,7 +17,13 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import '../helpers/register-happy-dom.js';
+import ComponentParser from '../../lib/compiler/ComponentParser.js';
+import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
+import { EXPRESSION_OPS } from '../../lib/core/expression/ops.js';
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 import { AvenxPage } from '../../lib/core/runtime/AvenxPage.js';
@@ -210,5 +216,80 @@ test('an unclaimed failing action reaches the app errorHandler with the phase as
     handlerCalls[0].origin,
     'eventHandler:boom',
     `info should name the phase and action, got: ${JSON.stringify(handlerCalls[0].origin)}`,
+  );
+});
+
+/**
+ * Compiles component source the way `avenx build` does for production and
+ * returns the class, evaluated the same way loadComponent evaluates a
+ * development build.
+ * @param {string} source - Component source in Avenx authoring format.
+ * @param {string} name - The class name.
+ * @returns {Function} The compiled class.
+ */
+function compileForProduction(source, name) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avenx-r09-'));
+  try {
+    const file = path.join(dir, `${name}.component.js`);
+    fs.writeFileSync(file, source);
+    const parser = new ComponentParser(new StyleProcessor({}, {}), [], null);
+    parser.production = true;
+    const generated = parser.parse(file, 'component');
+    const opNames = Object.keys(EXPRESSION_OPS);
+    const factory = new Function('AvenxComponent', 'AvenxPage', ...opNames, `${generated}\nreturn ${name};`);
+    return factory(AvenxComponent, AvenxPage, ...opNames.map((op) => EXPRESSION_OPS[op]));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('a production build names the failing action in AVX_R09, not its handler index (#2041)', async (t) => {
+  const { errors } = captureLogs(t);
+  const Prod = compileForProduction(
+    [
+      '<state a="1" obj="null" />',
+      '<action name="plainBoom">',
+      '    this.state.a = 2;',
+      "    throw new Error('plain boom');",
+      '</action>',
+      '<action name="namedHelper">',
+      '    this.plainBoom();',
+      '</action>',
+      '<div>',
+      '  <button id="b1" @click="plainBoom()">plain</button>',
+      '  <button id="b2" @click="namedHelper()">nested</button>',
+      '  <button id="b3" @click="obj.go()">inline</button>',
+      '</div>',
+    ].join('\n'),
+    'Prod',
+  );
+  assert.strictEqual(Prod.__axProgramStmtSrc, undefined, 'a production build ships no statement sources');
+
+  document.body.innerHTML = '<div id="app"></div>';
+  const handlerCalls = [];
+  const app = new AvenxApp({ target: '#app' });
+  app.onError((error, instance, origin) => handlerCalls.push({ error, instance, origin }));
+  app.register('Prod', Prod);
+  app.mount('Prod');
+  const instance = document.querySelector('#app').__avenx_comp_instance;
+  t.after(() => instance.unmount());
+  assert.strictEqual(instance.$compiled, true, 'the component should run its compiled program');
+
+  await dispatchClick(document.querySelector('#b1'));
+  await dispatchClick(document.querySelector('#b2'));
+  await dispatchClick(document.querySelector('#b3'));
+
+  const r09 = errors.filter((line) => line.includes('AVX_R09'));
+  assert.strictEqual(r09.length, 3, `expected three AVX_R09 errors, got: ${JSON.stringify(errors)}`);
+  assert.ok(r09[0].includes('"plainBoom"'), `AVX_R09 should name plainBoom, got: ${r09[0]}`);
+  assert.ok(r09[1].includes('"namedHelper"'), `AVX_R09 should name namedHelper, got: ${r09[1]}`);
+  assert.ok(!r09[0].includes('handler #') && !r09[1].includes('handler #'), 'an action call is not named by index');
+  // A statement that is not an action call still identifies its handler.
+  assert.ok(r09[2].includes('handler #2'), `a non-action statement keeps its index, got: ${r09[2]}`);
+
+  assert.deepStrictEqual(
+    handlerCalls.map((call) => call.origin),
+    ['eventHandler:plainBoom', 'eventHandler:namedHelper', 'eventHandler'],
+    'info should name the action in production as it does in development',
   );
 });
