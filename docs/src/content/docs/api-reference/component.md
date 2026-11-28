@@ -290,10 +290,10 @@ export default class MyComponent extends AvenxComponent {
 | `onUpdate()` | None | `void` | Called immediately after the DOM patch update finishes. Ideal for DOM measurements or re-initializing third-party UI widgets. |
 | `onBeforeLeave()` | None | `void \| Promise<void>` | Called before component unmounting begins. If a `Promise` is returned, unmounting and teardown are postponed until the Promise resolves. Ideal for exit animations or confirmation prompts. |
 | `onLeave()` | None | `void` | Called immediately before internal component teardown begins. Ideal for final transition cleanup and resetting global styles. |
-| `onActivate(params)` | `params: Object` | `void` | Called whenever a cached page configured with `keepAlive: true` becomes active. Receives current route parameters. |
+| `onActivate(params)` | `params: Object` (SFC: `args[0]`) | `void` | Called whenever a cached page configured with `keepAlive: true` becomes active. Receives current route parameters. |
 | `onDeactivate()` | None | `void` | Called when navigating away from a page configured with `keepAlive: true`. The page remains cached in memory rather than unmounted. |
 | `onUnmount()` | None | `void` | Called right before the component element is unmounted and detached from the DOM. Use this to clean up timers, global event listeners, and subscriptions. |
-| `onErrorCaptured(err, instance, info)` | `err: Error, instance: Object, info: String` | `boolean \| void` | Called when an unhandled exception is caught from a descendant child component. Return `false` to stop error propagation. |
+| `onErrorCaptured(err, instance, info)` | `err: Error, instance: Object, info: String` (SFC: `args[0..2]`) | `boolean \| void` | Called when an unhandled exception is caught from a descendant child component. Return `false` to stop error propagation. |
 
 ---
 
@@ -342,6 +342,7 @@ When a parent component renders child components:
 Pages configured with `keepAlive: true` remain cached when users navigate away. Use `onActivate(params)` to refresh route-dependent data whenever the cached page becomes active again.
 
 ```javascript
+// Class-based page
 class ProfilePage extends AvenxPage {
   async onActivate(params) {
     await this.loadProfile(params.id);
@@ -351,6 +352,16 @@ class ProfilePage extends AvenxPage {
     // Fetch the latest profile data
   }
 }
+```
+
+In a single-file page, read `params` from `args[0]`:
+
+```html
+<!-- Single-file page -->
+<action name="onActivate">
+  const params = args[0];
+  await this.loadProfile(params.id);
+</action>
 ```
 
 Unlike `onMount()`, which runs only once when the component is first created, `onActivate(params)` runs every time a cached page is restored, making it the preferred place to reload data that depends on the current route.
@@ -363,6 +374,7 @@ The `onErrorCaptured(error, instance, info)` hook captures unhandled exceptions 
 - Update reactive state inside `onErrorCaptured` to render fallback UI components cleanly.
 
 ```javascript
+// Class-based component
 class ErrorBoundary extends AvenxComponent {
   onErrorCaptured(error, childInstance, info) {
     console.error(`Captured error from ${childInstance.constructor.name} during ${info}:`, error);
@@ -371,6 +383,19 @@ class ErrorBoundary extends AvenxComponent {
     return false; // Stop propagation
   }
 }
+```
+
+In a single-file component, destructure `[error, childInstance, info]` from `args`:
+
+```html
+<!-- Single-file component -->
+<action name="onErrorCaptured">
+  const [error, childInstance, info] = args;
+  console.error(`Captured error from ${childInstance.constructor.name} during ${info}:`, error);
+  this.state.hasError = true;
+  this.state.errorMessage = error.message;
+  return false; // Stop propagation
+</action>
 ```
 
 

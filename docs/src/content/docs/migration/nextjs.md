@@ -150,7 +150,8 @@ When a keep-alive page is revisited, its DOM is re-attached without running full
 <!-- src/pages/dashboard.page.js -->
 <state lastRefreshed="" />
 
-<action name="onActivate" params="routeParams">
+<action name="onActivate">
+  const routeParams = args[0];
   console.log("Dashboard re-activated with params:", routeParams);
   state.lastRefreshed = new Date().toLocaleTimeString();
 </action>
