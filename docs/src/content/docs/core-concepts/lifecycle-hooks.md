@@ -342,29 +342,31 @@ When making asynchronous requests in `onMount()`, the HTTP request may resolve a
 
 Use an `AbortController` to cancel pending requests on unmount:
 
-```javascript
-// src/components/async-widget.component.js
-export default {
-  actions: {
-    async onMount() {
-      this._abortController = new AbortController();
-      try {
-        const res = await fetch('/api/data', { signal: this._abortController.signal });
-        this.state.data = await res.json();
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          this.state.error = err.message;
-        }
-      }
-    },
+```html
+<!-- src/components/async-widget.component.js -->
+<state data="null" error="null" />
 
-    onUnmount() {
-      if (this._abortController) {
-        this._abortController.abort();
-      }
-    },
-  },
-};
+<action name="onMount">
+  this._abortController = new AbortController();
+  try {
+    const res = await fetch('/api/data', { signal: this._abortController.signal });
+    this.state.data = await res.json();
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      this.state.error = err.message;
+    }
+  }
+</action>
+
+<action name="onUnmount">
+  if (this._abortController) {
+    this._abortController.abort();
+  }
+</action>
+
+<div class="async-widget">
+  <p data-ax-show="error">{{ error }}</p>
+</div>
 ```
 
 ---

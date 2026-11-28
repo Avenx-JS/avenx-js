@@ -773,23 +773,30 @@ import {
 
 Inside component actions or methods, use `await nextTick()` (or `this.nextTick()`) to inspect the DOM after new elements or classes have rendered:
 
-```javascript
-// src/components/chat-box.component.js
-export default {
-  actions: {
-    async sendMessage(text) {
-      // 1. Mutate reactive state
-      this.state.messages.push({ id: Date.now(), text });
+```html
+<!-- src/components/chat-box.component.js -->
+<state messages="[]" draft="" />
 
-      // 2. Wait for DOM patch to complete
-      await nextTick();
+<action name="sendMessage">
+  // 1. Mutate reactive state
+  this.state.messages.push({ id: Date.now(), text: this.state.draft });
+  this.state.draft = '';
 
-      // 3. Scroll to the newly rendered message
-      const chatContainer = this.$element.querySelector('.messages-list');
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-  }
-};
+  // 2. Wait for DOM patch to complete
+  await nextTick();
+
+  // 3. Scroll to the newly rendered message
+  const chatContainer = this.$element.querySelector('.messages-list');
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+</action>
+
+<div class="chat-box">
+  <ul class="messages-list">
+    <li data-ax-for="msg in messages">{{ msg.text }}</li>
+  </ul>
+  <input type="text" data-ax-bind="draft" />
+  <button @click="sendMessage()">Send</button>
+</div>
 ```
 
 #### 2. Post-Flush Callbacks with `queueFlushCallback()`

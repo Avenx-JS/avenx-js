@@ -71,22 +71,20 @@ This is useful when page instances hold stale data or user-specific state that m
 
 Calling `this.clearKeepAliveCache('UserProfilePage')` (or `app.clearKeepAliveCache('UserProfilePage')`) evicts the specified cached page instance from memory and triggers its `onUnmount()` hook. Calling `this.clearKeepAliveCache()` without arguments purges all cached page instances.
 
-```javascript
-// Inside a Component Action (e.g. Logout / Refresh Button)
-export default {
-  actions: {
-    handleLogout() {
-      // Evict specific cached page instance
-      this.clearKeepAliveCache('UserProfilePage');
+```html
+<!-- src/components/logout-button.component.js -->
+<action name="handleLogout">
+  // Evict specific cached page instance
+  this.clearKeepAliveCache('UserProfilePage');
 
-      // Or purge all cached keep-alive pages
-      this.clearKeepAliveCache();
+  // Or purge all cached keep-alive pages
+  this.clearKeepAliveCache();
 
-      // Navigate to login
-      this.$router.navigate('/login');
-    }
-  }
-};
+  // Navigate to login
+  this.$router.navigate('/login');
+</action>
+
+<button @click="handleLogout()">Log Out</button>
 ```
 
 

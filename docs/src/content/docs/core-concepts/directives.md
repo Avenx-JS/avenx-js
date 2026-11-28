@@ -26,58 +26,49 @@ After the component mounts (`onMount`), references are accessible on `this.$refs
 
 #### 1. Form Input Auto-Focus Example
 
-```javascript
-// src/components/search-bar.component.js
-export default {
-  actions: {
-    onMount() {
-      // Focus the input element on mount
-      if (this.$refs.searchInput) {
-        this.$refs.searchInput.focus();
-      }
-    },
-    clearSearch() {
-      this.state.query = '';
-      this.$refs.searchInput?.focus();
-    },
-  },
+```html
+<!-- src/components/search-bar.component.js -->
+<state query="" />
 
-  template: `
-    <div class="search-bar">
-      <input
-        data-ax-ref="searchInput"
-        data-ax-bind="query"
-        type="text"
-        placeholder="Type to search..."
-      />
-      <button @click="clearSearch">Clear</button>
-    </div>
-  `,
-};
+<action name="onMount">
+  // Focus the input element on mount
+  if (this.$refs.searchInput) {
+    this.$refs.searchInput.focus();
+  }
+</action>
+
+<action name="clearSearch">
+  this.state.query = '';
+  this.$refs.searchInput?.focus();
+</action>
+
+<div class="search-bar">
+  <input
+    data-ax-ref="searchInput"
+    data-ax-bind="query"
+    type="text"
+    placeholder="Type to search..."
+  />
+  <button @click="clearSearch">Clear</button>
+</div>
 ```
 
 #### 2. HTML5 Canvas Context Example
 
-```javascript
-// src/components/chart.component.js
-export default {
-  actions: {
-    onMount() {
-      const canvas = this.$refs.chartCanvas;
-      if (canvas && canvas.getContext) {
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#4f46e5';
-        ctx.fillRect(10, 10, 150, 100);
-      }
-    },
-  },
+```html
+<!-- src/components/chart.component.js -->
+<action name="onMount">
+  const canvas = this.$refs.chartCanvas;
+  if (canvas && canvas.getContext) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#4f46e5';
+    ctx.fillRect(10, 10, 150, 100);
+  }
+</action>
 
-  template: `
-    <div class="chart-container">
-      <canvas data-ax-ref="chartCanvas" width="300" height="150"></canvas>
-    </div>
-  `,
-};
+<div class="chart-container">
+  <canvas data-ax-ref="chartCanvas" width="300" height="150"></canvas>
+</div>
 ```
 
 > [!IMPORTANT]
