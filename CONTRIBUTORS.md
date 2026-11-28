@@ -21,7 +21,7 @@ If you have questions or want to contribute, feel free to reach out.
 ## 🌟 Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-183-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-184-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -265,6 +265,7 @@ If you have questions or want to contribute, feel free to reach out.
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Phantom6Paradise7"><img src="https://avatars.githubusercontent.com/u/246823359?v=4&size=100" width="100px" height="100px" alt="Phantom8Assassin25"/><br /><sub><b>Phantom8Assassin25</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Phantom6Paradise7" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tony88pisa"><img src="https://avatars.githubusercontent.com/u/144355847?v=4&size=100" width="100px" height="100px" alt="Tony Cerundolo"/><br /><sub><b>Tony Cerundolo</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=tony88pisa" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
