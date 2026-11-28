@@ -32,7 +32,9 @@ global.DOMParser = class {
 global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
 
 import { StateFactory } from '../../lib/core/reactive/createState.js';
-import { AvenxWatcher } from '../../lib/core/reactive/watcher.js';
+import { AvenxWatcher, watchEffect } from '../../lib/core/reactive/watcher.js';
+import { nextTick, queueJob } from '../../lib/core/reactive/scheduler.js';
+import { logger } from '../../lib/core/runtime/AvenxLogger.js';
 import { AvenxComponent } from '../../lib/core/runtime/AvenxComponent.js';
 import { AvenxApp } from '../../lib/core/runtime/AvenxApp.js';
 
@@ -409,6 +411,7 @@ async function runTests() {
     testDynamicDependencyPruning();
     await testDebounceWatcher();
     await testThrottleWatcher();
+    await testFlushOptions();
     await testBridgeTargetedUpdates();
     console.log('✅ All AvenxWatcher tests passed successfully!');
   } catch (error) {
@@ -552,6 +555,141 @@ async function testThrottleWatcher() {
   assert.deepStrictEqual(receivedValues, [1, 3]);
 
   console.log('  ✅ Throttle watcher tests passed!');
+}
+
+/**
+ * Tests AvenxWatcher flush options ('pre', 'post', 'sync'), invalid warning,
+ * teardown safety, watchEffect, and interaction with debounce/throttle.
+ */
+async function testFlushOptions() {
+  console.log('🧪 Testing AvenxWatcher flush options ("pre", "post", "sync")...');
+
+  // 1. Ordering relative to queued DOM patch jobs
+  const state = new StateFactory().create({ count: 0 });
+  const events = [];
+
+  new AvenxWatcher(
+    () => state.count,
+    (n, o) => events.push(`pre:${o}->${n}`),
+    { flush: 'pre' },
+  );
+  new AvenxWatcher(
+    () => state.count,
+    (n, o) => events.push(`sync:${o}->${n}`),
+    { flush: 'sync' },
+  );
+  new AvenxWatcher(
+    () => state.count,
+    (n, o) => events.push(`post:${o}->${n}`),
+    { flush: 'post' },
+  );
+
+  queueJob(() => events.push('job:patch'));
+  state.count = 1;
+  state.count = 2;
+
+  // 'pre' and 'sync' run synchronously before microtask flush; 'post' is deferred
+  assert.deepStrictEqual(events, [
+    'pre:0->1',
+    'sync:0->1',
+    'pre:1->2',
+    'sync:1->2',
+  ]);
+
+  await nextTick();
+  // 'post' runs after queued job and deduplicates within the same tick (0 -> 2)
+  assert.deepStrictEqual(events, [
+    'pre:0->1',
+    'sync:0->1',
+    'pre:1->2',
+    'sync:1->2',
+    'job:patch',
+    'post:0->2',
+  ]);
+
+  // 2. Teardown cancels pending 'post' callback
+  let tornDownCalled = 0;
+  const wTear = new AvenxWatcher(
+    () => state.count,
+    () => {
+      tornDownCalled++;
+    },
+    { flush: 'post' },
+  );
+  state.count = 3;
+  wTear.teardown();
+  await nextTick();
+  assert.strictEqual(tornDownCalled, 0, 'Torn-down post watcher must not fire');
+
+  // 3. Invalid flush value warns and defaults to 'pre'
+  const origWarn = logger.warn;
+  const warnings = [];
+  logger.warn = (...args) => warnings.push(args.join(' '));
+  let invalidWatcher;
+  try {
+    invalidWatcher = new AvenxWatcher(
+      () => state.count,
+      () => {},
+      { flush: 'bogus' },
+    );
+  } finally {
+    logger.warn = origWarn;
+  }
+  assert.strictEqual(invalidWatcher.flush, 'pre');
+  assert.strictEqual(warnings.length, 1);
+  assert.ok(warnings[0].includes('Invalid flush option'));
+  invalidWatcher.teardown();
+
+  // 4. watchEffect with flush: 'post'
+  const effectState = new StateFactory().create({ val: 0 });
+  const effectLog = [];
+  const stopEffect = watchEffect(
+    () => {
+      effectLog.push(`effect:${effectState.val}`);
+    },
+    { flush: 'post' },
+  );
+  assert.deepStrictEqual(effectLog, ['effect:0']);
+  queueJob(() => effectLog.push('job:effect-patch'));
+  effectState.val = 1;
+  assert.deepStrictEqual(effectLog, ['effect:0']);
+  await nextTick();
+  assert.deepStrictEqual(effectLog, ['effect:0', 'job:effect-patch', 'effect:1']);
+  stopEffect();
+
+  // 5. Debounce + flush: 'post' runs in the next post-flush phase after the timer
+  const debouncedState = new StateFactory().create({ q: '' });
+  const debouncedLog = [];
+  new AvenxWatcher(
+    () => debouncedState.q,
+    (n) => debouncedLog.push(`debounced-post:${n}`),
+    { debounce: 30, flush: 'post' },
+  );
+  debouncedState.q = 'hi';
+  await new Promise((resolve) => setTimeout(resolve, 45));
+  // Timer fired, scheduling into post-flush; flush runs in next microtask
+  await nextTick();
+  assert.deepStrictEqual(debouncedLog, ['debounced-post:hi']);
+
+  // 6. Throttle + flush: 'post' runs leading and trailing in post-flush phase
+  const throttledState = new StateFactory().create({ x: 0 });
+  const throttledLog = [];
+  new AvenxWatcher(
+    () => throttledState.x,
+    (n) => throttledLog.push(`throttled-post:${n}`),
+    { throttle: 50, flush: 'post' },
+  );
+  throttledState.x = 1;
+  assert.deepStrictEqual(throttledLog, [], 'Leading throttled post watcher must wait for post flush');
+  await nextTick();
+  assert.deepStrictEqual(throttledLog, ['throttled-post:1']);
+
+  throttledState.x = 2;
+  await new Promise((resolve) => setTimeout(resolve, 70));
+  await nextTick();
+  assert.deepStrictEqual(throttledLog, ['throttled-post:1', 'throttled-post:2']);
+
+  console.log('  ✅ Flush option tests passed!');
 }
 
 runTests();
