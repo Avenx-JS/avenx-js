@@ -4,6 +4,11 @@ import { parseName, readTemplate, abortIfGeneratedPathExists, fail } from '../ut
 import { yellow, cyan, green, gray } from '../colors.js';
 import { getClosestKey } from '../../lib/config.js';
 import { getScaffoldPaths, SCAFFOLD_KINDS } from '../scaffoldPaths.js';
+import {
+  generateExistingBridgeTest,
+  generateExistingPageTest,
+  hasCustomTestTemplate,
+} from './generateExistingTest.js';
 
 /**
  * Renders generator placeholders while preserving runtime bindings in component and page templates.
@@ -585,7 +590,7 @@ export function generateTest(cli, name, dryRun = false, force = false, templateN
     return;
   }
 
-  const { kind: resolvedKind, capitalizedName, lowerName, testPath } = matches[0];
+  const { kind: resolvedKind, capitalizedName, lowerName, sourcePath, testPath } = matches[0];
   const relativePath = path.relative(cli.baseDir, testPath).replace(/\\/g, '/');
   const pascalName = resolvedKind === 'guard' ? `${capitalizedName}Guard` : capitalizedName;
   const camelName = lowerName
@@ -597,23 +602,32 @@ export function generateTest(cli, name, dryRun = false, force = false, templateN
     return;
   }
 
-  // Existing components need a render-only test, while retaining the same override lookup.
-  const templateFile = `${resolvedKind}.test.js.template`;
-  const template = readTemplate(
-    cli.baseDir,
-    cli.config,
-    cli.frameworkDir,
-    resolvedKind,
-    templateFile,
-    templateName,
-    resolvedKind === 'component' ? { builtinFilename: 'existing-component.test.js.template' } : {},
-  );
-  const content = renderTemplate(
-    template,
-    `${resolvedKind}/${templateFile}`,
-    { legacyName, pascalName, fileName: lowerName },
-    { legacyTestName: resolvedKind === 'component' },
-  );
+  const names = { legacyName, pascalName, fileName: lowerName };
+  const useCustomTemplate = hasCustomTestTemplate(cli, resolvedKind, templateName);
+  let content;
+
+  if (!useCustomTemplate && resolvedKind === 'page') {
+    content = generateExistingPageTest(cli, names);
+  } else if (!useCustomTemplate && resolvedKind === 'bridge') {
+    content = generateExistingBridgeTest(cli, names, sourcePath);
+  } else {
+    // Existing components and guards need non-scaffold assertions, while retaining override lookup.
+    const templateFile = `${resolvedKind}.test.js.template`;
+    const builtinFilename =
+      resolvedKind === 'component' || resolvedKind === 'guard' ? `existing-${resolvedKind}.test.js.template` : undefined;
+    const template = readTemplate(
+      cli.baseDir,
+      cli.config,
+      cli.frameworkDir,
+      resolvedKind,
+      templateFile,
+      templateName,
+      builtinFilename ? { builtinFilename } : {},
+    );
+    content = renderTemplate(template, `${resolvedKind}/${templateFile}`, names, {
+      legacyTestName: resolvedKind === 'component',
+    });
+  }
 
   if (dryRun) {
     console.log(cyan(`🧪 [Dry Run] Test for '${capitalizedName}' would be created at ${relativePath}`));

@@ -853,7 +853,7 @@ The repository's own verification, as it stands on the default branch
 | :--- | ---: | --- |
 | Unit | 319 files | `npm run test:unit` |
 | Integration | 25 files | `npm run test:integration` |
-| System / CLI | 90 files | `npm run test:system` |
+| System / CLI | 91 files | `npm run test:system` |
 | Browser (E2E, Chromium) | ~210 test declarations | `npm run test:e2e` |
 | Plugins | 4 suites | `npm run test:plugins` |
 

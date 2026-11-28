@@ -243,6 +243,11 @@ try {
   for (const suffix of ['js', 'css', 'test.js']) {
     assert.ok(fs.existsSync(path.join(root, `src/pages/automatic.page.${suffix}`)));
   }
+  assert.match(
+    read('src/pages/automatic.page.test.js'),
+    /Welcome to the Automatic page\./,
+    '--with-test keeps the page scaffold assertions',
+  );
   run(['g', 'page', 'OptOut', '--with-test', '--no-test']);
   assert.equal(fs.existsSync(path.join(root, 'src/pages/opt-out.page.test.js')), false);
   unchanged(['g', 'page', 'Preview', '--with-test', '--dry-run']);
@@ -273,9 +278,9 @@ try {
   const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(Number);
   const supportsVitest = nodeMajor === 24 || nodeMajor >= 26 || (nodeMajor === 22 && nodeMinor >= 12);
   if (supportsVitest) {
-    runVitest('vitest.config.js', files, 6);
+    runVitest('vitest.config.js', files, 4);
     write('vitest.node.config.js', "export default { test: { environment: 'node' } };\n");
-    runVitest('vitest.node.config.js', [files[1]], 1);
+    runVitest('vitest.node.config.js', [files[1]], 2);
     assert.deepEqual(files.map(read), originals, 'Vitest must execute the generated files unchanged');
   } else {
     console.log(`Skipping the Vitest run: Vitest 5 does not support Node ${process.versions.node}`);

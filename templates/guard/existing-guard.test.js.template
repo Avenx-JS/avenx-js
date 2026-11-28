@@ -1,0 +1,39 @@
+/**
+ * Note: Running guard tests requires Vitest and a DOM environment (happy-dom)
+ * for localStorage. No @avenx/vite plugin is needed for guard modules.
+ * Vitest needs Node ^22.12, ^24 or >=26.
+ *
+ * Setup instructions:
+ * 1. Install dependencies:
+ *      pnpm add ../avenx-js/avenx-core-<version>.tgz
+ *      pnpm add -D vitest happy-dom
+ * 2. Ensure vitest.config.js includes:
+ *      import { defineConfig } from 'vitest/config';
+ *      export default defineConfig({
+ *        test: { environment: 'happy-dom' },
+ *      });
+ * 3. Run:
+ *      pnpm exec vitest run
+ */
+
+import { describe, it, expect } from 'vitest';
+import { GuardContext } from 'avenx-core/runtime';
+import {{PascalCaseName}} from './{{file}}.guard.js';
+
+describe('{{PascalCaseName}}', () => {
+  it('returns a navigation decision from canActivate', async () => {
+    const to = { hash: '#/protected', page: 'Protected', params: {} };
+    const from = { hash: '#/', page: 'Home', params: {} };
+    const context = new GuardContext();
+    const guard = new {{PascalCaseName}}(context);
+
+    const decision = await guard.canActivate(to, from, context);
+
+    expect(decision).toBeDefined();
+
+    // Possible outcomes:
+    //   expect(decision).toBe(true); // allow navigation
+    //   expect(decision).toBe(false); // block navigation
+    //   expect(decision).toBe('#/login'); // redirect to another route
+  });
+});
