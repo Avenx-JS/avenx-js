@@ -847,11 +847,11 @@ migration.
   Windows and macOS as well.
 
 The repository's own verification, as it stands on the default branch
-`main` (counts verified 2026-11-28):
+`main` (counts verified 2026-11-29):
 
 | Suite | Count | How to run |
 | :--- | ---: | --- |
-| Unit | 319 files | `npm run test:unit` |
+| Unit | 320 files | `npm run test:unit` |
 | Integration | 25 files | `npm run test:integration` |
 | System / CLI | 91 files | `npm run test:system` |
 | Browser (E2E, Chromium) | ~210 test declarations | `npm run test:e2e` |
