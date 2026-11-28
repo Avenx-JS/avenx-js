@@ -313,7 +313,7 @@ The active mode is printed in the build header, so it is never ambiguous which o
 --- Avenx-JS Compiler (production) ---
 ```
 
-Both modes compile the same application and link the same framework. A development build additionally carries the expression interpreter (hence `'unsafe-eval'` in its CSP) and the statement sources used by diagnostics, so a production build refuses expressions the interpreter would have run (`AVX_C27`) and reports some diagnostics (e.g. `AVX_R09`) in less detail; use `--csp-strict` where relevant. See the [deployment guide](/guides/deployment#build-modes) for the full comparison.
+Both modes compile the same application and link the same framework, while a development build additionally carries the expression interpreter (which requires `'unsafe-eval'` unless `--csp-strict` is enabled) and the statement sources used by diagnostics. Because a production build omits them, it refuses expressions the interpreter would have run (`AVX_C27`) and reports some diagnostics (e.g. `AVX_R09`) in less detail. See the [deployment guide](/guides/deployment#build-modes) for the full comparison.
 
 ## Custom void tags
 

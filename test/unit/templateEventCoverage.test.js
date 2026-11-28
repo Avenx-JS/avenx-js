@@ -68,8 +68,7 @@ function exprsOfType(template, type) {
   assert.deepStrictEqual(
     exprsOfType('<@if (a > b && c < d)><p>x</p></@if>', 'condition'),
     ['(a > b && c < d)'],
-    'the condition is read by the markup lexer, which does not end a directive ' +
-      'header at a ">" inside brackets',
+    'the condition is read by the markup lexer, which does not end a directive ' + 'header at a ">" inside brackets',
   );
   console.log('  ✅ comparison operators inside a condition survive');
 }
@@ -79,7 +78,9 @@ function exprsOfType(template, type) {
   const template = '<div title="a > b" @click="go()" data-ax-html="body" id="row">x</div>';
   assert.deepStrictEqual(exprsOfType(template, 'event'), ['go()'], 'the handler must be found');
   assert.deepStrictEqual(exprsOfType(template, 'directive'), ['body'], 'the directive must be found');
-  const ids = collectTemplateEvents(template).filter((e) => e.type === 'id_attribute').map((e) => e.idValue);
+  const ids = collectTemplateEvents(template)
+    .filter((e) => e.type === 'id_attribute')
+    .map((e) => e.idValue);
   assert.deepStrictEqual(ids, ['row'], 'the static id must be found');
   console.log('  ✅ an attribute after one containing ">" is still found');
 }
@@ -103,8 +104,7 @@ function exprsOfType(template, type) {
   assert.deepStrictEqual(
     types,
     ['loop_start', 'condition', 'interpolation', 'loop_end'],
-    'events are ordered by offset, so a condition inside a loop is walked while ' +
-      'the loop variable is in scope',
+    'events are ordered by offset, so a condition inside a loop is walked while ' + 'the loop variable is in scope',
   );
   console.log('  ✅ a condition inside a loop is ordered within the loop');
 }
@@ -122,10 +122,38 @@ function exprsOfType(template, type) {
 
 // --- an interpolated id is not treated as a static one -------------------
 {
-  const ids = collectTemplateEvents('<div id="row-{{ n }}">x</div>')
-    .filter((e) => e.type === 'id_attribute');
+  const ids = collectTemplateEvents('<div id="row-{{ n }}">x</div>').filter((e) => e.type === 'id_attribute');
   assert.strictEqual(ids.length, 0, 'an interpolated id is not a duplicate-id candidate');
   console.log('  ✅ an interpolated id is not collected as a static id');
 }
 
+{
+  assert.deepStrictEqual(
+    exprsOfType('<@defer when="state.show"><p>x</p></@defer>', 'condition'),
+    ['state.show'],
+    'a reactive <@defer when> expression must be walked',
+  );
+  assert.deepStrictEqual(
+    exprsOfType('<@defer when="items"><p>x</p></@defer>', 'condition'),
+    ['items'],
+    'a state identifier ending in "ms" must not be mistaken for a duration trigger',
+  );
+  for (const trigger of [
+    'idle',
+    'visible',
+    'hover',
+    'click',
+    'interaction',
+    'timer(500)',
+    '300ms',
+    'visible; timer(500)',
+  ]) {
+    assert.deepStrictEqual(
+      exprsOfType(`<@defer when="${trigger}"><p>x</p></@defer>`, 'condition'),
+      [],
+      `built-in defer trigger "${trigger}" must not emit an expression event`,
+    );
+  }
+  console.log('  ✅ <@defer when="..."> expressions are collected while built-in triggers are skipped');
+}
 console.log('✅ Template event coverage tests passed!');

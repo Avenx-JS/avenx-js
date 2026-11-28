@@ -21,7 +21,7 @@ If you have questions or want to contribute, feel free to reach out.
 ## 🌟 Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-182-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-183-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -262,6 +262,9 @@ If you have questions or want to contribute, feel free to reach out.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sauvi72"><img src="https://avatars.githubusercontent.com/u/230492797?v=4&size=100" width="100px" height="100px" alt="Saurav Kumar"/><br /><sub><b>Saurav Kumar</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Sauvi72" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bardrop"><img src="https://avatars.githubusercontent.com/u/100354790?v=4&size=100" width="100px" height="100px" alt="bardrop"/><br /><sub><b>bardrop</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=bardrop" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.noah-khomer.com/"><img src="https://avatars.githubusercontent.com/u/108771853?v=4&size=100" width="100px" height="100px" alt="Noah Khomer"/><br /><sub><b>Noah Khomer</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=noahkhomer18" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Phantom6Paradise7"><img src="https://avatars.githubusercontent.com/u/246823359?v=4&size=100" width="100px" height="100px" alt="Phantom8Assassin25"/><br /><sub><b>Phantom8Assassin25</b></sub></a><br /><a href="https://github.com/Avenx-JS/avenx-js/commits?author=Phantom6Paradise7" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
