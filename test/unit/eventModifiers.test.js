@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { EventBinder } from '../../lib/core/events/bindEvents.js';
+import { attachEvent } from '../../lib/core/renderer/program/bindings.js';
 import StyleProcessor from '../../lib/compiler/StyleProcessor.js';
 import ComponentParser from '../../lib/compiler/ComponentParser.js';
 
@@ -384,6 +385,53 @@ try {
   binder.bind(dataAxEl, dispatcher);
   assert.deepStrictEqual(dataAxEl.listeners.scroll.options, { passive: true });
   assert.deepStrictEqual(dataAxEl.listeners.click.options, { capture: true });
+
+  // 21. The compiled renderer's listener applies modifiers in the same order:
+  // filters first, then .prevent / .stop, then the handler.
+  const compiledListener = (modifiers) => {
+    let listener = null;
+    const calls = [];
+    attachEvent(
+      {
+        addEventListener(name, callback) {
+          listener = callback;
+        },
+      },
+      { n: 'keydown', m: modifiers },
+      (event) => calls.push(event.key),
+    );
+    return { listener, calls };
+  };
+  const keyEvent = (key, extra = {}) => {
+    const event = { key, target: null, currentTarget: null, prevented: false, stopped: false, ...extra };
+    event.preventDefault = () => (event.prevented = true);
+    event.stopPropagation = () => (event.stopped = true);
+    return event;
+  };
+
+  const enterPrevent = compiledListener(['enter', 'prevent', 'stop']);
+  const typed = keyEvent('a');
+  enterPrevent.listener(typed);
+  assert.strictEqual(typed.prevented, false, 'compiled .enter.prevent must not prevent other keys');
+  assert.strictEqual(typed.stopped, false, 'compiled .enter.stop must not stop other keys');
+  const entered = keyEvent('Enter');
+  enterPrevent.listener(entered);
+  assert.strictEqual(entered.prevented, true, 'compiled .enter.prevent prevents Enter');
+  assert.strictEqual(entered.stopped, true, 'compiled .enter.stop stops Enter');
+  assert.deepStrictEqual(enterPrevent.calls, ['Enter'], 'compiled .enter runs only on Enter');
+
+  const ctrlEnter = compiledListener(['ctrl', 'enter', 'prevent']);
+  const plainEnter = keyEvent('Enter');
+  ctrlEnter.listener(plainEnter);
+  assert.deepStrictEqual(ctrlEnter.calls, [], 'compiled .ctrl.enter must not run without Ctrl');
+  assert.strictEqual(plainEnter.prevented, false, 'compiled .ctrl.enter.prevent must not prevent a plain Enter');
+  ctrlEnter.listener(keyEvent('Enter', { ctrlKey: true }));
+  assert.deepStrictEqual(ctrlEnter.calls, ['Enter'], 'compiled .ctrl.enter runs with Ctrl held');
+
+  const cmdEnter = compiledListener(['cmd', 'enter']);
+  cmdEnter.listener(keyEvent('Enter', { ctrlKey: true }));
+  cmdEnter.listener(keyEvent('Enter', { metaKey: true }));
+  assert.deepStrictEqual(cmdEnter.calls, ['Enter'], 'compiled .cmd checks metaKey');
 
   console.log('  ✅ Event Modifiers tests passed!');
 } catch (error) {
