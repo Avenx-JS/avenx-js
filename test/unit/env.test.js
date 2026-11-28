@@ -202,6 +202,71 @@ try {
 
   console.log('✅ AVX_W60 tests passed!');
 
+  console.log('🧪 Testing AVX_W80 (non-public process.env reference)...');
+  const nonPublicSource = `
+    const token = process.env.SECRET_TOKEN;
+    const tokenBracket = process.env['SECRET_TOKEN'];
+    const other = process.env["OTHER_SECRET"];
+  `;
+  let nonPublicOutput;
+  const nonPublicWarnings = warningsFrom(() => {
+    nonPublicOutput = replaceEnvVariables(nonPublicSource, 'src/pages/home.page.js');
+  });
+  assert.ok(nonPublicOutput.includes('process.env.SECRET_TOKEN'), 'non-public dotted reference is not inlined');
+  assert.ok(nonPublicOutput.includes("process.env['SECRET_TOKEN']"), 'non-public bracket reference is not inlined');
+  assert.strictEqual(nonPublicWarnings.length, 2, 'one warning per non-public variable, not per reference');
+  assert.ok(nonPublicWarnings[0].includes('AVX_W80'));
+  assert.ok(nonPublicWarnings[0].includes('SECRET_TOKEN'), 'names the variable');
+  assert.ok(nonPublicWarnings[0].includes('src/pages/home.page.js'), 'names the file');
+  assert.ok(nonPublicWarnings[0].includes('AVX_PUBLIC_'), 'mentions AVX_PUBLIC_ prefix');
+  assert.ok(nonPublicWarnings[0].includes('build time'), 'suggests reading at build time');
+  assert.ok(nonPublicWarnings[1].includes('OTHER_SECRET'), 'reports double-quoted bracket access');
+
+  // Guarded references and comments must not be flagged.
+  const guardedSource = `
+    // process.env.COMMENTED_OUT
+    /* process.env.BLOCK_COMMENTED */
+    const a = typeof process !== 'undefined' && process.env.NODE_ENV;
+    const b = typeof process !== 'undefined' ? process.env['SECRET_TOKEN'] : '';
+    if (typeof process !== 'undefined') {
+      const c = process.env.BLOCK_GUARDED;
+    }
+    function readSafe() {
+      if (typeof process === 'undefined') return;
+      return process.env.EARLY_RETURN_GUARDED;
+    }
+  `;
+  const guardedWarnings = warningsFrom(() => {
+    replaceEnvVariables(guardedSource, 'src/pages/home.page.js');
+  });
+  assert.deepStrictEqual(guardedWarnings, [], 'guarded process.env references and comments are not flagged');
+
+  // Without a file: no warning.
+  const noFileNonPublicWarnings = warningsFrom(() => {
+    replaceEnvVariables(nonPublicSource);
+  });
+  assert.deepStrictEqual(noFileNonPublicWarnings, [], 'callers that omit the file are not reported for AVX_W80');
+
+  // Severity overrides apply like any other warning.
+  const offNonPublicWarnings = warningsFrom(() => {
+    replaceEnvVariables(nonPublicSource, 'src/pages/home.page.js', { warnings: { AVX_W80: 'off' } });
+  });
+  assert.deepStrictEqual(offNonPublicWarnings, [], '"off" silences AVX_W80');
+  assert.throws(
+    () => replaceEnvVariables(nonPublicSource, 'src/pages/home.page.js', { warnings: { AVX_W80: 'error' } }),
+    /AVX_W80/,
+    '"error" escalates AVX_W80',
+  );
+
+  // Registered, and answered by `avenx explain`.
+  assert.strictEqual(AvenxErrorCodes.COMPILER_NON_PUBLIC_ENV, 'AVX_W80');
+  const w80Entry = getDiagnostic('AVX_W80');
+  assert.ok(w80Entry && w80Entry.code === 'AVX_W80', 'AVX_W80 is in the catalogue');
+  assert.ok(w80Entry.summary && w80Entry.causes.length > 0 && w80Entry.remedies.length > 0, 'AVX_W80 is documented');
+  assert.strictEqual(getDiagnostic('W80').code, 'AVX_W80', 'the short form resolves too');
+
+  console.log('✅ AVX_W80 tests passed!');
+
   console.log('🧪 Testing AvenxCompiler environment integration...');
   // Verify that the compiler exposes publicEnv and replaces it in compilation
   const compilerTestDir = path.join(__dirname, 'temp_compiler_env_test');
