@@ -54,7 +54,6 @@ const COVERAGE = {
     uncovered:
       '<@defer> is a compiled block and no longer refuses; the reason is kept for the shapes the block builder still declines. test/e2e/apps/defer covers the compiled path.',
   },
-  TRANSITION: { uncovered: 'Covered on the string path by test/integration/transition.test.js; no browser coverage yet.' },
   RESOURCE: { uncovered: 'A <resource> in template position. test/unit/suspense.test.js covers declarations.' },
   DYNAMIC_COMPONENT: { uncovered: 'Covered by test/unit/dynamicComponent.test.js on the string path; no browser coverage yet.' },
   DYNAMIC_ATTR: { uncovered: 'No browser coverage yet.' },
