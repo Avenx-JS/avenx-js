@@ -16,6 +16,106 @@ rest of that directory, and nothing replaced it, so the reference was dead.)
 Production-readiness cycle. No public API was removed and no documented feature
 was dropped. Behaviour changes are listed with their migration.
 
+### Added — CLI and developer tooling
+
+- **`avenx atlas diff <baseline>`** compares the current application model
+  against a saved `atlas --json` baseline, with `--json` output and
+  `--fail-on-change` for CI gates.
+- **Graph output for Atlas and inspect queries** (`avenx atlas --graph`,
+  `avenx impact --graph`, `avenx why --graph`, and `avenx inspect --graph`)
+  renders dependency and component relationships in Mermaid (default) or DOT
+  (`--format dot`), with `--out` to write to a file and one arrow per distinct
+  relationship.
+- **`avenx trace diff <a> <b>`** compares two recorded interaction traces by
+  input and causal position, with `--json` and `--fail-on-change`.
+- **`avenx generate test <target>`** generates test files for existing
+  components, pages, bridges and guards, with assertions matched to the target
+  rather than empty scaffolds.
+- **`avenx doctor --fix` and `--dry-run`** repair missing scaffold files,
+  append missing `.gitignore` entries, update `index.html` bundle references and
+  add or repair `"$schema"` in `avenx.config.json`; `--dry-run` previews repairs
+  without modifying files, and `avenx doctor --json` emits machine-readable
+  output. The Git repository check stays a warning under `--fix`.
+- **`avenx check --sarif`** emits SARIF 2.1.0 diagnostics (with `--out <file>`
+  for code-scanning uploads) and exits 1 when blocking issues are present.
+- **`avenx serve --https`** (with `--cert` and `--key`, or `server.https`,
+  `server.cert` and `server.key` in `avenx.config.json`) serves development
+  projects over HTTPS. `avenx serve` also prints network URLs when binding all
+  interfaces and hot-swaps CSS without a full page reload.
+- **`avenx stats --save`, `--compare` and `--max-increase <n%>`** save and
+  compare bundle size baselines across raw, minified and gzip totals, exiting 1
+  when growth exceeds the threshold. `avenx stats` also reports emitted runtime
+  bundle composition.
+- **`avenx build --quiet` and `avenx check --quiet`** suppress non-error output
+  while preserving exit codes for CI scripts.
+- **`avenx generate --no-style` and the `scaffold` config group** omit the
+  stylesheet when generating a component or page and let projects configure
+  scaffold defaults (`scaffold.style`, layout, etc.) in `avenx.config.json`.
+- **Published `schema/avenx.config.schema.json`** (exported as
+  `avenx-core/schema/avenx.config.schema.json`) for editor autocomplete and
+  validation of `avenx.config.json`.
+- **`avenx explain --list`** enumerates the full diagnostic catalogue, and
+  `avenx inspect --json` / `avenx env --json` emit machine-readable output.
+- **`avenx init <name>`** creates `./<name>` and scaffolds into it (with
+  `--dry-run` support to preview without writing).
+
+### Added — compiler and runtime
+
+- **`<provide>` and `<inject>` tags** for single-file components, allowing
+  ancestor components to share reactive values with descendants without prop
+  drilling.
+- **Route-level code splitting and async page loaders**: the compiler emits
+  separate page chunks under `--code-splitting` (`--split`) and the router
+  supports lazy/async route resolution (`loader` on `AvenxRouteDefinition`,
+  alongside `keepAlive`, `meta` and `redirect` type declarations).
+- **Per-boundary `<@deadlock>` controls** (`maxDepth`, `action` and
+  `isolated`) for recovering from reactive cycles locally.
+- **ARIA role and attribute validation rules** in template checks, plus
+  authored reconciliation marker warnings and per-category/rule-name
+  configuration under `"warnings"` in `avenx.config.json`.
+- **Runtime and compiler performance**: state mutations that touch no template
+  dependency skip render and DOM patching; `<transition>` compiles into render
+  programs; and router code is linked only when the application uses routing.
+- **Diagnostics**: `AVX_C33` (`import.meta` in a classic script bundle),
+  `AVX_W80` (unguarded non-`AVX_PUBLIC_` `process.env` reference), `AVX_R37`
+  (unsupported environment when preparing a compiled template), and `AVX_W45`
+  (URL refused by the HTML sanitizer).
+
+### Fixed
+
+- **`<@defer>` and dynamic components**: `<@defer when>` reactive expressions
+  are collected for Atlas reads, `<@defer>` subscriptions combine with
+  first-trigger cleanup, and `avenx check` reports `AVX_W48` across dynamic
+  components and broken expressions with declared refs.
+- **Compiler & expression parsing**: array destructuring no longer miscompiles
+  as a member write, reserved keywords are rejected as identifiers, template
+  literal holes ignore braces inside strings, `@keyframes` names are scoped in
+  component stylesheets, JSON modules are supported in the bundler, `node:` and
+  subpath builtins diagnose as `AVX_C17`, and multi-line `<resource>` bodies
+  are preserved verbatim (including in the Prettier plugin).
+- **Runtime & events**: `styleMountManager` is exposed on `window.Avenx`, `el`
+  is available as an alias for `$element`, nested component props resolve in
+  their owner's scope, page transitions work without the string renderer, passive
+  event listeners are isolated, and initial form validation results render.
+- **Trace & CLI**: redacted traces replay without false divergence, exported
+  assertions handle multiple text bindings, `avenx format` and `avenx doctor`
+  accept `--no-color`, `avenx generate` fails when a named `--template` does
+  not exist, and `avenx check` / `avenx router` show both route spellings in
+  `AVX_W59`.
+
+### Behaviour changes and migration
+
+| Change | Migration |
+|---|---|
+| `avenx init` refuses to overwrite an existing `avenx.config.json` | Pass `--force` to reinitialize, or `avenx init <name>` for a new directory |
+| `avenx init <name>` creates `./<name>` instead of exiting 1 | None; drop any manual `mkdir <name> && cd <name>` wrapper if desired |
+| `avenx clean --dry-run` previews without deleting build output | Drop `--dry-run` to delete files |
+| `avenx destroy` refuses when remaining references would break | Remove or update the reported references first |
+| Invalid CLI flag values exit 1 as usage errors | Pass a valid flag value; the error prints the expected format |
+| Unknown keys in `warnings` config are reported as errors | Use valid `AVX_*` codes or category/rule names |
+| `AVX_W80` warns on unguarded non-`AVX_PUBLIC_` `process.env` reads | Prefix with `AVX_PUBLIC_`, guard with `typeof process !== "undefined"`, or silence `AVX_W80` |
+| `import.meta` in bundled modules fails with `AVX_C33` | Remove `import.meta` or guard/replace it for classic script bundles |
+
 ### Added — the official plugins can be published
 
 - **A release now publishes `@avenx/i18n`, `@avenx/persistence`,
