@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload raw samples
         if: always() && steps.changed-files.outputs.relevant == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bench-samples
           path: bench-samples.json
