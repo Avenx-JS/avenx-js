@@ -496,29 +496,31 @@ Calling `this.$watch()` returns an `AvenxWatcher` instance that provides program
 
 Debounce autocomplete API requests to avoid excess network traffic as the user types:
 
-```javascript
-// src/components/search-box.component.js
-export default {
-  actions: {
-    onMount() {
-      // Debounce input changes by 300ms
-      this._searchWatcher = this.$watch(
-        'searchQuery',
-        async (query) => {
-          if (!query || query.trim() === '') {
-            this.state.results = [];
-            return;
-          }
-          this.state.isSearching = true;
-          const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-          this.state.results = await res.json();
-          this.state.isSearching = false;
-        },
-        { debounce: 300 }
-      );
+```html
+<!-- src/components/search-box.component.js -->
+<state searchQuery="" results="[]" isSearching="false" />
+
+<action name="onMount">
+  // Debounce input changes by 300ms
+  this._searchWatcher = this.$watch(
+    'searchQuery',
+    async (query) => {
+      if (!query || query.trim() === '') {
+        this.state.results = [];
+        return;
+      }
+      this.state.isSearching = true;
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      this.state.results = await res.json();
+      this.state.isSearching = false;
     },
-  },
-};
+    { debounce: 300 }
+  );
+</action>
+
+<div class="search-box">
+  <input type="text" data-ax-bind="searchQuery" placeholder="Search..." />
+</div>
 ```
 
 #### 2. Multi-Source Array Watcher

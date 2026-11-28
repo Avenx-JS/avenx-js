@@ -294,55 +294,47 @@ export default {
 
 The following Single File Component demonstrates a user directory search card using a `<resource>` tag, state dependency tracking (`state.searchQuery`), status checks, and error rendering:
 
-```javascript
-// src/components/user-search.component.js
-export default {
-  state: {
-    searchQuery: 'alex',
-  },
+```html
+<!-- src/components/user-search.component.js -->
+<state searchQuery="alex" />
 
-  actions: {
-    updateQuery(event) {
-      this.state.searchQuery = event.target.value;
-    },
-  },
+<action name="updateQuery">
+  this.state.searchQuery = event.target.value;
+</action>
 
-  template: `
-    <resource name="searchResults">
-      return fetch(\`/api/users/search?q=\${state.searchQuery}\`)
-        .then(res => {
-          if (!res.ok) throw new Error('Search request failed');
-          return res.json();
-        });
-    </resource>
+<resource name="searchResults">
+  return fetch(`/api/users/search?q=${state.searchQuery}`)
+    .then(res => {
+      if (!res.ok) throw new Error('Search request failed');
+      return res.json();
+    });
+</resource>
 
-    <div class="user-search-card">
-      <input
-        type="text"
-        data-ax-bind="searchQuery"
-        @input="updateQuery"
-        placeholder="Search users..."
-      />
+<div class="user-search-card">
+  <input
+    type="text"
+    data-ax-bind="searchQuery"
+    @input="updateQuery"
+    placeholder="Search users..."
+  />
 
-      <!-- Pending Loading State -->
-      <div data-ax-show="searchResults.status === 'pending'" class="spinner">
-        Loading user search results for "{{ state.searchQuery }}"...
-      </div>
+  <!-- Pending Loading State -->
+  <div data-ax-show="$resources.searchResults.status === 'pending'" class="spinner">
+    Loading user search results for "{{ state.searchQuery }}"...
+  </div>
 
-      <!-- Rejected Error State -->
-      <div data-ax-show="searchResults.status === 'rejected'" class="error-banner">
-        Error: {{ searchResults.error?.message }}
-      </div>
+  <!-- Rejected Error State -->
+  <div data-ax-show="$resources.searchResults.status === 'rejected'" class="error-banner">
+    Error: {{ $resources.searchResults.error?.message }}
+  </div>
 
-      <!-- Resolved Data State -->
-      <ul data-ax-show="searchResults.status === 'resolved'" class="user-list">
-        <li data-ax-for="user in searchResults.value">
-          <strong>{{ user.name }}</strong> ({{ user.email }})
-        </li>
-      </ul>
-    </div>
-  `,
-};
+  <!-- Resolved Data State -->
+  <ul data-ax-show="$resources.searchResults.status === 'resolved'" class="user-list">
+    <li data-ax-for="user in $resources.searchResults.value">
+      <strong>{{ user.name }}</strong> ({{ user.email }})
+    </li>
+  </ul>
+</div>
 ```
 
 ---
