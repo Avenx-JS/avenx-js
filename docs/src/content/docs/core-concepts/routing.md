@@ -90,6 +90,46 @@ export default {
 ```
 
 
+### Route Metadata
+
+Attach arbitrary metadata to any route definition with the `meta` object:
+
+```javascript avenx-build
+import { AvenxApp } from 'avenx-core/runtime';
+
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '/': 'Home',
+  '/second': { page: 'Second', meta: { title: 'Second page', requiresAuth: true } },
+});
+```
+
+`AvenxRouter` does not interpret `meta` itself — it passes the object through unchanged as `$route.meta` (defaulting to `{}` when a route omits `meta`). `$route.meta` is reactive like the rest of `$route`, so components and templates update when the active route changes, and route guards receive it on `to.meta` and `from.meta` in `canActivate(to, from)`. Typical uses include page titles, breadcrumbs, layout flags, and authentication requirements.
+
+### Redirects
+
+Use `redirect` on a route definition to forward a path to another route without rendering a page for the source path:
+
+```javascript avenx-build
+import { AvenxApp } from 'avenx-core/runtime';
+
+const app = new AvenxApp({ target: '#app' });
+
+app.initRouter({
+  '/': 'Home',
+  '/second': { page: 'Second', meta: { title: 'Second page', requiresAuth: true } },
+  '/old': { redirect: '/second' },
+});
+```
+
+Navigating to `#/old` updates `location.hash` to `#/second` (replacing the current history entry) and renders `Second`. `redirect` can also be a function `(params) => targetHash` that computes the target from matched route parameters.
+
+- **Order relative to guards:** Route-level `redirect` runs **before** any route guards (`beforeEach` or `guards`), `afterEach` hooks, or page mounting on the source route. Guards run on the target route after the redirect resolves.
+- **Loop and chain protection:** `AvenxRouter` tracks the redirect chain for each navigation. It aborts with an error if a target appears twice in the chain (redirect loop) or if the chain exceeds the maximum of **10** redirects (`MAX_REDIRECT`).
+
+For conditional redirects based on runtime state, return a redirect path from a [route guard](#7-route-guards) instead.
+
 ### Lazy Pages and Async Loaders
 
 A route can name a function that loads its page instead of a registered page name. The page is fetched the first time the route is visited, not when the app starts.
@@ -246,9 +286,12 @@ The `$route` object exposes the following properties:
 
 | Property | Description |
 | -------- | ----------- |
-| `$route.params` | Contains the dynamic route parameters extracted from the current URL. |
 | `$route.hash` | Returns the current route hash. |
+| `$route.path` | Returns the matched route path without the leading `#`. |
 | `$route.page` | Returns the active page associated with the current route. |
+| `$route.params` | Contains the dynamic route parameters extracted from the current URL. |
+| `$route.query` | Contains the parsed query string parameters (see [Query Parameters](#query-parameters)). |
+| `$route.meta` | Contains the `meta` object from the active route definition, or `{}` if omitted (see [Route Metadata](#route-metadata)). |
 
 ### Example
 
@@ -529,7 +572,7 @@ export default class AuthGuard extends AvenxGuard {
 :::caution
 Redirect paths returned from `canActivate` must start with `#`. `AvenxRouter.navigate` only applies the configured `prefix` and namespace settings to hash paths — a path without the `#` prefix bypasses this resolution and can break navigation in apps served with a custom `prefix`.
 :::warning
-Redirect paths must start with a `#` prefix to ensure router prefix and namespace settings are respected.
+Redirect paths must start with a `#` prefix to ensure router prefix and namespace settings are respected. For unconditional route aliases that do not depend on guard logic, see [Redirects](#redirects).
 :::
 Map guards to routes in your application router initialization:
 
