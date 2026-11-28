@@ -31,6 +31,26 @@ graph TD
     E -- "Descendant Threw Error" --> L["onErrorCaptured(err, inst, info)"]
 ```
 
+### Hook Arguments in Single-File Components
+
+Lifecycle hook signatures such as `onActivate(params)` and `onErrorCaptured(error, instance, info)` show the parameter names for **class-based** components (`extends AvenxComponent` / `extends AvenxPage`) and object-style `actions`.
+
+In a **single-file component** (`.component.js` or `.page.js`), lifecycle hooks are compiled from `<action name="...">` blocks. An `<action>` body is compiled without a parameter list, so writing `params` or `error` directly inside `<action name="onActivate">` resolves to an ambient global (`undefined`). Instead, read the arguments passed to the hook from the implicit zero-indexed `args` array:
+
+```html
+<!-- Single-file component / page -->
+<state userId="" />
+
+<action name="onActivate">
+  const params = args[0];
+  this.state.userId = params.id;
+</action>
+
+<div>User ID: {{ userId }}</div>
+```
+
+For hooks that receive multiple arguments, destructure `args` in order (for example, `const [error, instance, info] = args;` inside `<action name="onErrorCaptured">`).
+
 ### Lifecycle Hooks Summary Matrix
 
 | Hook Name | Execution Phase | DOM Available? | Primary Purpose |
@@ -43,9 +63,9 @@ graph TD
 | `onBeforeLeave()` | Pre-Unmount Transition | ✅ Yes | Postpone unmounting by returning a `Promise` (e.g. exit animations or confirm dialogs). |
 | `onLeave()` | Unmount Transition | ✅ Yes | Execute final transition cleanup immediately before internal teardown begins. |
 | `onUnmount()` | Teardown | ✅ Yes (pre-removal) | Clear timers (`clearInterval`), remove `window` listeners, close WebSockets. |
-| `onActivate(params)` | Page Route Activation | ✅ Yes | Runs on every page-route activation: after `onMount()` and optional `onEnter()` on the first activation, and when returning to a cached `keepAlive` page, with the latest route parameters. |
+| `onActivate(params)` | Page Route Activation | ✅ Yes | Runs on every page-route activation: after `onMount()` and optional `onEnter()` on the first activation, and when returning to a cached `keepAlive` page, with the latest route parameters (read `args[0]` in [SFC actions](#hook-arguments-in-single-file-components)). |
 | `onDeactivate()` | KeepAlive Inactive | ✅ Yes | Triggered when navigating away from a cached `keepAlive` page route. |
-| `onErrorCaptured()` | Error Handling | ✅ Yes | Catches unhandled errors thrown by descendant components. |
+| `onErrorCaptured(error, instance, info)` | Error Handling | ✅ Yes | Catches unhandled errors thrown by descendant components (read `args[0]`, `args[1]`, `args[2]` in [SFC actions](#hook-arguments-in-single-file-components)). |
 
 ---
 
@@ -190,6 +210,7 @@ For a page configured with `keepAlive: true` and no `onEnter()` hook, the measur
 ```
 
 ```javascript
+// Class-based page
 onMount() {
   this.setupFeedSubscriptions();
 }
@@ -202,6 +223,28 @@ async onActivate(params) {
 onDeactivate() {
   console.log('Page deactivated and saved to keepAlive cache.');
 }
+```
+
+In a single-file page (`.page.js`), read `params` from `args[0]`:
+
+```html
+<!-- Single-file page -->
+<state userId="" feedStatus="idle" />
+
+<action name="onActivate">
+  const params = args[0];
+  this.state.userId = params.id;
+  this.state.feedStatus = `Activated for user ${params.id}`;
+</action>
+
+<action name="onDeactivate">
+  this.state.feedStatus = 'Cached in keepAlive';
+</action>
+
+<div>
+  <p>User: {{ userId }}</p>
+  <p>Status: {{ feedStatus }}</p>
+</div>
 ```
 
 > [!IMPORTANT]
@@ -232,12 +275,30 @@ Hooks run from the nearest component towards the page, then the application's er
 Returning `false` stops the error from propagating further and from reaching the application's error handler. It also changes how the failure is reported: the `AVX_R09` (event handler) and `AVX_R12` (lifecycle hook) diagnostics of an error that a hook claimed are written at the `debug` log level and end with `(handled: <Component> claimed it in onErrorCaptured)`, so a handled failure does not show up as a console error. An error that nothing claims is still logged at the `error` level. Set `logging.level` to `debug` to see the diagnostics of claimed errors as well. Your own hook still receives the error object and decides what else to record.
 
 ```javascript
+// Class-based component
 onErrorCaptured(error, instance, info) {
   console.error(`Captured error from ${instance.constructor.name} during ${info}:`, error);
   this.state.hasError = true;
   this.state.errorMessage = error.message;
   return false; // Suppress further error propagation up the tree
 }
+```
+
+In a single-file component, destructure `[error, instance, info]` from `args`:
+
+```html
+<!-- Single-file component -->
+<state hasError="false" errorMessage="" />
+
+<action name="onErrorCaptured">
+  const [error, instance, info] = args;
+  console.error(`Captured error from ${instance.constructor.name} during ${info}:`, error);
+  this.state.hasError = true;
+  this.state.errorMessage = error.message;
+  return false; // Suppress further error propagation up the tree
+</action>
+
+<div data-ax-show="state.hasError" class="error">{{ state.errorMessage }}</div>
 ```
 
 ---
