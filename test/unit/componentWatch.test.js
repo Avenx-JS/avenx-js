@@ -354,7 +354,127 @@ function testUnmountedRegistration() {
   console.log('  ✅ Unmounted watcher registration safety check passed.');
 }
 
-function runTests() {
+/**
+ * Test 11: Execution timing with flush: 'pre' | 'post' | 'sync' against DOM patches.
+ */
+async function testWatchFlushDomTiming() {
+  console.log('🧪 Testing $watch flush timing ("pre", "post", "sync") against DOM patches...');
+
+  class ListComponent extends AvenxComponent {
+    constructor() {
+      super({ messages: ['one'] });
+    }
+    render() {
+      const lis = this.state.messages.map((m) => `<li>${m}</li>`).join('');
+      return `<div><ul class="chat-messages">${lis}</ul></div>`;
+    }
+  }
+
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const comp = new ListComponent();
+  comp.mount(host);
+
+  assert.strictEqual(comp.el.querySelectorAll('li').length, 1);
+
+  const observations = [];
+  comp.$watch(
+    'messages',
+    () => {
+      observations.push({ when: 'pre', lis: comp.el.querySelectorAll('li').length });
+    },
+    { flush: 'pre' },
+  );
+  comp.$watch(
+    'messages',
+    () => {
+      observations.push({ when: 'sync', lis: comp.el.querySelectorAll('li').length });
+    },
+    { flush: 'sync' },
+  );
+  comp.$watch(
+    'messages',
+    () => {
+      observations.push({ when: 'post', lis: comp.el.querySelectorAll('li').length });
+    },
+    { flush: 'post' },
+  );
+
+  comp.state.messages = ['one', 'two', 'three'];
+
+  // Before microtask flush: 'pre' and 'sync' have already fired (seeing 1 <li>); 'post' has not.
+  assert.deepStrictEqual(observations, [
+    { when: 'pre', lis: 1 },
+    { when: 'sync', lis: 1 },
+  ]);
+
+  await comp.$nextTick();
+
+  // After DOM patch flush: 'post' has fired and observed 3 <li>s.
+  assert.strictEqual(comp.el.querySelectorAll('li').length, 3);
+  assert.deepStrictEqual(observations, [
+    { when: 'pre', lis: 1 },
+    { when: 'sync', lis: 1 },
+    { when: 'post', lis: 3 },
+  ]);
+
+  comp.unmount();
+  host.remove();
+  console.log('  ✅ $watch flush timing ("pre", "post", "sync") tests passed.');
+}
+
+/**
+ * Test 12: Documented chat-messages scroll example with { flush: 'post' }.
+ */
+async function testWatchFlushChatScrollExample() {
+  console.log('🧪 Testing documented { flush: "post" } chat scroll example...');
+
+  class ChatComponent extends AvenxComponent {
+    constructor() {
+      super({ messages: ['hello'] });
+    }
+    render() {
+      const lis = this.state.messages.map((m) => `<li>${m}</li>`).join('');
+      return `<div><ul class="chat-messages">${lis}</ul></div>`;
+    }
+  }
+
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const comp = new ChatComponent();
+  comp.mount(host);
+
+  let observedScrollTop = -1;
+  let observedCount = 0;
+
+  comp.$watch(
+    'messages.length',
+    () => {
+      const listEl = comp.el.querySelector('.chat-messages');
+      Object.defineProperty(listEl, 'scrollHeight', {
+        configurable: true,
+        get: () => listEl.querySelectorAll('li').length * 24,
+      });
+      listEl.scrollTop = listEl.scrollHeight;
+      observedScrollTop = listEl.scrollTop;
+      observedCount = listEl.querySelectorAll('li').length;
+    },
+    { flush: 'post' },
+  );
+
+  comp.state.messages = ['hello', 'world', 'avenx'];
+  assert.strictEqual(observedScrollTop, -1, 'post watcher must not run before DOM patch');
+
+  await comp.$nextTick();
+  assert.strictEqual(observedCount, 3);
+  assert.strictEqual(observedScrollTop, 72);
+
+  comp.unmount();
+  host.remove();
+  console.log('  ✅ Documented { flush: "post" } chat scroll example passed.');
+}
+
+async function runTests() {
   try {
     testWatchKeyString();
     testWatchPathString();
@@ -366,6 +486,8 @@ function runTests() {
     testWatchMethodAndDestroy();
     testDeclarativeWatchOption();
     testUnmountedRegistration();
+    await testWatchFlushDomTiming();
+    await testWatchFlushChatScrollExample();
     console.log('✅ All $watch API tests passed!');
   } catch (error) {
     console.error('❌ $watch API tests failed!');

@@ -356,6 +356,8 @@ this.$watch('messages.length', () => {
 }, { flush: 'post' });
 ```
 
+> **Combining `flush` with `debounce` or `throttle`**: When `flush: 'post'` is used alongside `debounce` or `throttle`, the timer fires outside a scheduler flush cycle, so the callback is scheduled into the next post-flush phase after the timer completes rather than running immediately inside the timer callback.
+
 
 ## Reactivity Injection (Provide / Inject)
 
@@ -474,6 +476,7 @@ Configure watcher execution behavior by passing an `options` object:
 | `deep` | `boolean` | `false` | When `true`, recursively traverses nested objects and arrays so modifications to nested child properties trigger the callback. |
 | `debounce` | `number` (ms) | `undefined` | Delays callback execution until `number` milliseconds of inactivity have elapsed since the last state mutation (debouncing). |
 | `throttle` | `number` (ms) | `undefined` | Limits callback execution frequency to at most once per `number` milliseconds (throttling). |
+| `flush` | `'pre' \| 'post' \| 'sync'` | `'pre'` | Controls when the watcher executes relative to DOM patch rendering (`'pre'` before, `'post'` after, `'sync'` synchronously). |
 | `lazy` | `boolean` | `false` | Postpones initial value calculation until first evaluated (used internally for lazy computed properties). |
 
 ---

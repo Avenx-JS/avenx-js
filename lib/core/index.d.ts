@@ -385,7 +385,14 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
   watch(
     getter: () => any,
     callback: (newValue: any, oldValue: any) => void,
-    options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number },
+    options?: {
+      immediate?: boolean;
+      lazy?: boolean;
+      deep?: boolean;
+      debounce?: number;
+      throttle?: number;
+      flush?: 'pre' | 'post' | 'sync';
+    },
   ): AvenxWatcher;
 
   /**
@@ -397,7 +404,14 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
   $watch(
     source: string | (() => any) | Array<string | (() => any)>,
     callback: (newValue: any, oldValue: any) => void,
-    options?: { immediate?: boolean; lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number },
+    options?: {
+      immediate?: boolean;
+      lazy?: boolean;
+      deep?: boolean;
+      debounce?: number;
+      throttle?: number;
+      flush?: 'pre' | 'post' | 'sync';
+    },
   ): AvenxWatcher;
 
   /**
@@ -409,7 +423,14 @@ export class AvenxComponent<S extends Record<string, any> = Record<string, any>>
    */
   $watchEffect(
     effect: () => void,
-    options?: { lazy?: boolean; deep?: boolean; debounce?: number; throttle?: number; name?: string },
+    options?: {
+      lazy?: boolean;
+      deep?: boolean;
+      debounce?: number;
+      throttle?: number;
+      flush?: 'pre' | 'post' | 'sync';
+      name?: string;
+    },
   ): () => void;
 
   /**
@@ -1454,10 +1475,12 @@ export class AvenxWatcher {
     deep?: boolean;
     debounce?: number;
     throttle?: number;
+    flush?: 'pre' | 'post' | 'sync';
     name?: string;
     isEffect?: boolean;
     effect?: boolean;
   };
+  flush: 'pre' | 'post' | 'sync';
   value: any;
   dirty: boolean;
   isEffect: boolean;
@@ -1470,6 +1493,7 @@ export class AvenxWatcher {
       deep?: boolean;
       debounce?: number;
       throttle?: number;
+      flush?: 'pre' | 'post' | 'sync';
       name?: string;
       isEffect?: boolean;
       effect?: boolean;
